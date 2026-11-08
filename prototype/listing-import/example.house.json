@@ -1,0 +1,12 @@
+{
+  "schema": "house-listing/1",
+  "listingUrl": "https://www.zillow.com/homedetails/EXAMPLE-fictional-listing",
+  "capturedOn": "2026-11-08",
+  "address": "123 Example St, Springfield, IL 62701",
+  "price": { "value": 285000, "source": "listing" },
+  "rentMonthly": { "value": 2050, "source": "estimate", "note": "Zillow rent estimate shown on listing" },
+  "taxAnnual": { "value": 3420, "source": "listing" },
+  "insuranceAnnual": { "value": 1200, "source": "estimate", "note": "Zillow monthly payment breakdown" },
+  "hoaMonthly": { "value": null, "source": "missing" },
+  "info": { "beds": 3, "baths": 2, "sqft": 1450, "yearBuilt": 1998, "propertyType": "Single family" }
+}
