@@ -11,3 +11,6 @@ WebFetch failed for finviz.com, sba.gov, fih.com and windsordrake.com (hosts not
 - Broker commission 8-12% under $1M (BizBen).
 
 Not found: size-band multiples, industry margins, growth/CAGR evidence, SBA term/DSCR/fees, 504, seller-note terms, buyer closing costs, GM salary, owner-operated share, roll-up multiple expansion.
+
+## Retry 2026-11-08
+www.bizbuysell.com, www.sba.gov, www.gfdata.com and fred.stlouisfed.org still failed with getaddrinfo ENOTFOUND (DNS, not a 403 or bot block) on two attempts. No fetched pages; nothing upgraded to verified.

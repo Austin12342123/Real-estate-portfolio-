@@ -132,3 +132,9 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
 .editlink{background:none;border:0;color:var(--acc);font-size:14px;font-weight:600;min-height:44px;min-width:44px;padding:0 4px;text-transform:none;letter-spacing:0}
 .rm{display:block;width:100%;min-height:44px;margin-top:6px;border:1px solid var(--line);background:none;color:var(--bad);border-radius:10px;font-weight:600;font-size:14px}
 .okbox{background:color-mix(in srgb,var(--ok) 12%,var(--card))}
+
+input,select,textarea{font-size:16px!important}
+table.cmp{table-layout:fixed;width:100%}
+table.cmp td:first-child,table.cmp th:first-child{width:34%;white-space:normal}
+table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
+.linkbtn{min-height:44px}

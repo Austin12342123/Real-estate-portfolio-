@@ -1,17 +1,17 @@
 {
-  "total": 53.35,
+  "total": 85,
   "max": 85,
   "categories": {
     "A": {
-      "earned": 16.983,
+      "earned": 18.001,
       "max": 18.001
     },
     "B": {
-      "earned": 11.774,
+      "earned": 11.998999999999999,
       "max": 11.998999999999999
     },
     "C": {
-      "earned": 9.715,
+      "earned": 9.999,
       "max": 9.999
     },
     "D": {
@@ -19,11 +19,11 @@
       "max": 8.001
     },
     "E": {
-      "earned": 6.873,
+      "earned": 7,
       "max": 7
     },
     "R": {
-      "earned": 0,
+      "earned": 30,
       "max": 30
     }
   },
@@ -56,9 +56,9 @@
       "name": "Edit matrix: every input (43 edits incl. improvements/exit/loan/assumptions) moves the main-page KPIs exactly as the engine says",
       "points": 3.086,
       "rawPoints": 6,
-      "earned": 2.982,
-      "ratio": 0.9662921348314607,
-      "detail": "43/44 sub-checks pass. FAIL: matrix is meaningful: most edits change the 20-year numbers (31/43)",
+      "earned": 3.086,
+      "ratio": 1,
+      "detail": "44/44 sub-checks pass",
       "repro": "Edit field on asset/assumptions page; compare main KPIs with Engine.plan(S).horizon on the edited state"
     },
     {
@@ -133,15 +133,15 @@
       "name": "Exit and improvements through the UI: Hold/Sell/Merge buttons and fields propagate to rows, KPIs and breakdown",
       "points": 1.8,
       "rawPoints": 3.5,
-      "earned": 1.4,
-      "ratio": 0.7777777777777778,
-      "detail": "6/8 sub-checks pass. FAIL: main KPIs follow; row shows sale [sold for $52,889 in 120 mo]; breakdown shows \"Cash from selling\" and net worth subtitle mentions cash [Cash from selling (2 assets)]",
+      "earned": 1.8,
+      "ratio": 1,
+      "detail": "8/8 sub-checks pass",
       "repro": "Asset page > Value-add & exit"
     },
     {
       "id": "A11",
       "category": "A",
-      "name": "Sample portfolio on screen: 19 rows, three types, sane finite headline, no unfunded warning, no DTI warning",
+      "name": "Sample portfolio on screen: all rows, three types, sane finite headline, no unfunded warning, no DTI warning",
       "points": 1.029,
       "rawPoints": 2,
       "earned": 1.029,
@@ -155,9 +155,9 @@
       "name": "Credit-line chain on screen: \"opens in N mo\" and buy months match the engine; raising source extra opens sooner",
       "points": 1.029,
       "rawPoints": 2,
-      "earned": 0.515,
-      "ratio": 0.5,
-      "detail": "2/3 sub-checks pass. FAIL: loc-line equals engine purchase+locM [credit line opens in 29 mo | credit line not reachable]",
+      "earned": 1.029,
+      "ratio": 1,
+      "detail": "3/3 sub-checks pass",
       "repro": "Main rows on small state"
     },
     {
@@ -278,7 +278,7 @@
       "rawPoints": 1,
       "earned": 0.338,
       "ratio": 1,
-      "detail": "ok Infinity,Infinity|0|0,48,96|48,0",
+      "detail": "ok Infinity,Infinity|0|0,49,98|49,0",
       "repro": "node child process with 5s timeout"
     },
     {
@@ -295,12 +295,12 @@
     {
       "id": "B13",
       "category": "B",
-      "name": "plan() under 100ms for the 19-asset sample and 10-asset chain (median of 7)",
+      "name": "plan() under 100ms for the sample and 10-asset chain (median of 7)",
       "points": 0.169,
       "rawPoints": 0.5,
       "earned": 0.169,
       "ratio": 1,
-      "detail": "median 2.1ms",
+      "detail": "median 0.9ms",
       "repro": "node timing"
     },
     {
@@ -364,9 +364,9 @@
       "name": "Sale cash funds a later purchase before outside cash; outside cash only for the shortfall",
       "points": 0.676,
       "rawPoints": 2,
-      "earned": 0.451,
-      "ratio": 0.6666666666666667,
-      "detail": "4/5 sub-checks pass. FAIL: cash drops by the down payment at the purchase month [77248.94309284649 from 97248.94309284649]",
+      "earned": 0.676,
+      "ratio": 1,
+      "detail": "5/5 sub-checks pass",
       "repro": "node: sell a at 60, buy b at 90 for 20000 down"
     },
     {
@@ -405,7 +405,7 @@
     {
       "id": "B23",
       "category": "B",
-      "name": "Sample portfolio: 19 assets, finite plan, none unfunded, DTI peak below limit, homes cash-flow positive, 20-year numbers sane",
+      "name": "Sample portfolio: finite plan, none unfunded, DTI peak below limit, homes cash-flow positive, 20-year numbers sane",
       "points": 0.676,
       "rawPoints": 2,
       "earned": 0.676,
@@ -441,9 +441,9 @@
       "name": "No horizontal overflow at 320/390/430 on main, asset, assumptions, add, import",
       "points": 1.333,
       "rawPoints": 2,
-      "earned": 1.244,
-      "ratio": 0.9333333333333333,
-      "detail": "14/15 sub-checks pass. FAIL: main@320 [scrollWidth 320/320 TABLE.cmp r=375,THEAD. r=375,TR. r=375]",
+      "earned": 1.333,
+      "ratio": 1,
+      "detail": "15/15 sub-checks pass",
       "repro": "Resize, check scrollWidth and element rects"
     },
     {
@@ -452,9 +452,9 @@
       "name": "Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)",
       "points": 1.333,
       "rawPoints": 2,
-      "earned": 1.318,
-      "ratio": 0.9887430307679795,
-      "detail": "132/133 targets >=44px. Small: main:BUTTON.linkbtn\"What drives net wo\" 330x36",
+      "earned": 1.333,
+      "ratio": 1,
+      "detail": "119/119 targets >=44px. Small: ",
       "repro": "Measure interactive elements on main/asset/assumptions/add"
     },
     {
@@ -463,9 +463,9 @@
       "name": "All inputs/selects use font-size >= 16px (no iOS zoom)",
       "points": 0.667,
       "rawPoints": 1,
-      "earned": 0.487,
-      "ratio": 0.7307692307692307,
-      "detail": "57/78 ok main:14,main:14,main:14,main:14,main:14",
+      "earned": 0.667,
+      "ratio": 1,
+      "detail": "68/68 ok ",
       "repro": "computed font-size"
     },
     {
@@ -487,7 +487,7 @@
       "rawPoints": 1,
       "earned": 0.667,
       "ratio": 1,
-      "detail": "avg row 135px x 19, page 3689px",
+      "detail": "avg row 133px x 14, page 3037px",
       "repro": "Measure ledger rows"
     },
     {
@@ -498,7 +498,7 @@
       "rawPoints": 2,
       "earned": 1.333,
       "ratio": 1,
-      "detail": "879/879 text elements pass (light 436/436, dark 443/443). ",
+      "detail": "805/805 text elements pass (light 399/399, dark 406/406). ",
       "repro": "emulate prefers-color-scheme; compute WCAG ratio for every text element"
     },
     {
@@ -641,7 +641,7 @@
       "rawPoints": 1,
       "earned": 0.636,
       "ratio": 1,
-      "detail": "203/203 named. unnamed: ",
+      "detail": "189/189 named. unnamed: ",
       "repro": "aria-label / label / text on all pages"
     },
     {
@@ -650,9 +650,9 @@
       "name": "Typing 5 digits sequentially keeps focus + full value (re-render safe) on main, asset, assumptions, text field",
       "points": 0.636,
       "rawPoints": 1,
-      "earned": 0.509,
-      "ratio": 0.8,
-      "detail": "4/5 sub-checks pass. FAIL: improvement budget [focus kept=false value=undefined]",
+      "earned": 0.636,
+      "ratio": 1,
+      "detail": "5/5 sub-checks pass",
       "repro": "page.keyboard.type(\"12345\") with delay"
     },
     {
@@ -689,15 +689,114 @@
       "repro": "Type one char into any input (no blur), count #app mutations over 600ms (Chromium)"
     },
     {
-      "id": "R00",
+      "id": "R01",
       "category": "R",
-      "name": "Realism & market accuracy (module not written yet)",
-      "points": 30,
-      "rawPoints": 30,
-      "earned": 0,
-      "ratio": 0,
-      "detail": "realism.js not written yet",
-      "repro": "realism.js not written yet"
+      "name": "[verified] Loan-option rates are consistent with Freddie Mac PMMS (30-yr 7.18%, 15-yr 6.57%)",
+      "points": 3.5,
+      "rawPoints": 3.5,
+      "earned": 3.5,
+      "ratio": 1,
+      "detail": "4/4 sub-checks pass",
+      "repro": "Compare Engine.LOANS rates with bench-cre.json rates (PMMS 2026-11-05)"
+    },
+    {
+      "id": "R02",
+      "category": "R",
+      "name": "[verified] SBA program limits: 7(a) max $5M, 504 debenture max $5.5M; 7(a) rate under Prime+3%",
+      "points": 3,
+      "rawPoints": 3,
+      "earned": 3,
+      "ratio": 1,
+      "detail": "4/4 sub-checks pass",
+      "repro": "Compare loan sizes of assets using sba7a / sba504 with SBA.gov limits"
+    },
+    {
+      "id": "R03",
+      "category": "R",
+      "name": "[secondary] Every financed commercial property and business meets a lender DSCR minimum at purchase",
+      "points": 3.5,
+      "rawPoints": 3.5,
+      "earned": 3.5,
+      "ratio": 1,
+      "detail": "6/6 sub-checks pass",
+      "repro": "DSCR = NOI (or owner profit) / loan payment; bank >= 1.25, SBA >= 1.15, bridge/seller >= 1.0"
+    },
+    {
+      "id": "R04",
+      "category": "R",
+      "name": "[secondary] Business prices are realistic multiples of yearly owner profit (BizBuySell ~2.6-2.7x SDE; GF Data ~6-7x EBITDA at $10M+)",
+      "points": 3.5,
+      "rawPoints": 3.5,
+      "earned": 3.5,
+      "ratio": 1,
+      "detail": "3/3 sub-checks pass",
+      "repro": "multiple = price / (monthly profit x 12)"
+    },
+    {
+      "id": "R05",
+      "category": "R",
+      "name": "[secondary+judgment] Commercial cap rates are in a plausible band for the property type in secondary markets",
+      "points": 2.5,
+      "rawPoints": 2.5,
+      "earned": 2.5,
+      "ratio": 1,
+      "detail": "3/3 sub-checks pass",
+      "repro": "cap rate = NOI x 12 / price at purchase. Bands widen national averages (retail ~6.4-6.7, office ~7.9, industrial ~5.2-7.5, storage ~5.6-6.6) for secondary-market pricing"
+    },
+    {
+      "id": "R06",
+      "category": "R",
+      "name": "[secondary] Leverage and loan type fit the asset (LTV, minimum down payments, FHA only if you live there)",
+      "points": 2,
+      "rawPoints": 2,
+      "earned": 2,
+      "ratio": 1,
+      "detail": "7/7 sub-checks pass",
+      "repro": "Bank/bridge LTV <= 75%, DSCR loan >= 20% down, SBA equity >= 10%, no FHA on investment homes"
+    },
+    {
+      "id": "R07",
+      "category": "R",
+      "name": "[judgment] Projected net worth does not depend on growth above realistic ceilings (homes 4.5%, commercial 5.5%, businesses 12% a year)",
+      "points": 4,
+      "rawPoints": 4,
+      "earned": 4,
+      "ratio": 1,
+      "detail": "projected $17.6M vs $17.6M at realistic growth = 100%. Above ceiling: none",
+      "repro": "Re-run the plan with every growth rate capped at the ceiling; score = capped net worth / projected net worth"
+    },
+    {
+      "id": "R08",
+      "category": "R",
+      "name": "[secondary] Flips and improvements have believable economics (ATTOM: ~21.5% gross margin on flips); lifts are bounded",
+      "points": 1.5,
+      "rawPoints": 1.5,
+      "earned": 1.5,
+      "ratio": 1,
+      "detail": "5/5 sub-checks pass",
+      "repro": "Flip gross margin = (sale price - purchase - rehab) / sale price must be 5-30%; commercial/business value lift <= 25% and income lift <= value lift"
+    },
+    {
+      "id": "R09",
+      "category": "R",
+      "name": "[secondary] Selling and closing costs match market norms (agent 5-7%, commercial broker 2-6%, business broker ~Double Lehman, closing 1.5-5%)",
+      "points": 2.5,
+      "rawPoints": 2.5,
+      "earned": 2.5,
+      "ratio": 1,
+      "detail": "18/18 sub-checks pass",
+      "repro": "Compare sellCost and closingPct with typical commissions and closing costs"
+    },
+    {
+      "id": "R10",
+      "category": "R",
+      "name": "[secondary+judgment] Financing capacity: each loan fits lender net-worth rules, outside cash stays small, deal pace is executable",
+      "points": 4,
+      "rawPoints": 4,
+      "earned": 4,
+      "ratio": 1,
+      "detail": "7/7 sub-checks pass",
+      "repro": "Lenders often want net worth >= loan size (secondary); co-signer allowance $2M and outside-cash cap $1.5M are stated judgments; <= 4 commercial/business closings per 12 months (secondary: small teams close a few deals a year)"
     }
   ]
 }

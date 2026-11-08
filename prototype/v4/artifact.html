@@ -136,6 +136,12 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
 .rm{display:block;width:100%;min-height:44px;margin-top:6px;border:1px solid var(--line);background:none;color:var(--bad);border-radius:10px;font-weight:600;font-size:14px}
 .okbox{background:color-mix(in srgb,var(--ok) 12%,var(--card))}
 
+input,select,textarea{font-size:16px!important}
+table.cmp{table-layout:fixed;width:100%}
+table.cmp td:first-child,table.cmp th:first-child{width:34%;white-space:normal}
+table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
+.linkbtn{min-height:44px}
+
 </style>
 <main id="app" aria-live="polite"></main>
 <script>
@@ -149,16 +155,16 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
   const TYPES = { house: { label: 'Single-family home', short: 'Home' }, commercial: { label: 'Commercial property', short: 'Commercial' }, business: { label: 'Business', short: 'Business' } };
   /* Loan options. term is in months. io = interest-only (balloon at maturity is not modeled; refinance is assumed). */
   const LOANS = [
-    { id: 'conv30', types: ['house'], name: 'Conventional 30-year', dp: 20, rate: 6.75, term: 360, io: false, closing: 3, note: 'Standard investor mortgage.' },
-    { id: 'conv15', types: ['house'], name: 'Conventional 15-year', dp: 20, rate: 6.0, term: 180, io: false, closing: 3, note: 'Higher payment, builds equity fast.' },
-    { id: 'fha', types: ['house'], name: 'FHA 30-year (you live there)', dp: 3.5, rate: 6.25, term: 360, io: false, closing: 4, note: 'Low down payment. Owner-occupied only.' },
-    { id: 'dscr', types: ['house'], name: 'DSCR investor loan', dp: 25, rate: 7.5, term: 360, io: false, closing: 4, note: 'Qualifies on the rent, not your income.' },
+    { id: 'conv30', types: ['house'], name: 'Conventional 30-year', dp: 20, rate: 7.5, term: 360, io: false, closing: 3, note: 'Standard investor mortgage. Priced above the Freddie Mac average.' },
+    { id: 'conv15', types: ['house'], name: 'Conventional 15-year', dp: 20, rate: 7.0, term: 180, io: false, closing: 3, note: 'Higher payment, builds equity fast.' },
+    { id: 'fha', types: ['house'], name: 'FHA 30-year (you live there)', dp: 3.5, rate: 6.9, term: 360, io: false, closing: 4, note: 'Low down payment. Owner-occupied only.' },
+    { id: 'dscr', types: ['house'], name: 'DSCR investor loan', dp: 25, rate: 7.75, term: 360, io: false, closing: 4, note: 'Qualifies on the rent, not your income.' },
     { id: 'cashh', types: ['house'], name: 'Cash purchase', dp: 100, rate: 0, term: 360, io: false, closing: 2, note: 'No loan.' },
-    { id: 'comm25', types: ['commercial'], name: 'Commercial bank, 25-year', dp: 25, rate: 7.0, term: 300, io: false, closing: 3, note: 'Typical bank loan on income property.' },
-    { id: 'sba504', types: ['commercial'], name: 'SBA 504 (you operate in it)', dp: 10, rate: 6.5, term: 300, io: false, closing: 3.5, note: 'Low down payment. Needs owner-occupancy.' },
+    { id: 'comm25', types: ['commercial'], name: 'Commercial bank, 25-year', dp: 25, rate: 7.25, term: 300, io: false, closing: 3, note: 'Typical bank loan on income property.' },
+    { id: 'sba504', types: ['commercial'], name: 'SBA 504 (you operate in it)', dp: 10, rate: 6.75, term: 300, io: false, closing: 3.5, note: 'Low down payment. Needs owner-occupancy.' },
     { id: 'bridge', types: ['commercial'], name: 'Bridge loan, interest-only', dp: 30, rate: 9.5, term: 36, io: true, closing: 3, note: 'Payment covers interest only. Refinance at maturity.' },
     { id: 'sellerc', types: ['commercial'], name: 'Seller financing', dp: 10, rate: 6.0, term: 240, io: false, closing: 2, note: 'Seller carries the loan. Terms vary.' },
-    { id: 'sba7a', types: ['business'], name: 'SBA 7(a) loan', dp: 10, rate: 10.5, term: 120, io: false, closing: 3, note: 'Common for buying a business.' },
+    { id: 'sba7a', types: ['business'], name: 'SBA 7(a) loan (up to $5M)', dp: 10, rate: 9.75, term: 120, io: false, closing: 3, note: 'Common for buying a business. SBA caps 7(a) at $5M.' },
     { id: 'bankbiz', types: ['business'], name: 'Bank term loan', dp: 25, rate: 9.0, term: 84, io: false, closing: 2, note: 'Shorter term, bigger payment.' },
     { id: 'sellerb', types: ['business'], name: 'Seller note', dp: 20, rate: 7.0, term: 60, io: false, closing: 1.5, note: 'The seller finances part of the price.' },
     { id: 'cashb', types: ['business'], name: 'Cash purchase', dp: 100, rate: 0, term: 360, io: false, closing: 1.5, note: 'No loan.' }];
@@ -381,9 +387,9 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
     c.houses = c.houses.filter((h) => h.id !== id); c.houses.forEach((h) => { if (h.target === id) h.target = ''; if (h.mergeInto === id) h.mergeInto = ''; });
     return c;
   }
-  /* Sample scenario (listed in the order the assets are bought): tuned so the plan reaches about $540M of net worth and +$1.4M/mo of cash flow
+  /* STRETCH scenario (listed in the order the assets are bought): tuned so the plan reaches about $540M of net worth and +$1.4M/mo of cash flow
      after 20 years. It leans on two large business exits at 21-25%/yr growth. Not a forecast. */
-  const seed = () => { const A = newAsset; return normalize({ g: Object.assign({}, GDEF), houses: [
+  const seedStretch = () => { const A = newAsset; return normalize({ g: Object.assign({}, GDEF), houses: [
     A('house', 'conv30', { id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4, target: 'birch' }),
     A('house', 'conv30', { id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4, target: 'willow' }),
     A('business', 'sba7a', { id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 9 }),
@@ -403,7 +409,24 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
     A('house', 'conv30', { id: 'linden', addr: '2914 Linden Way', price: 175000, buyIn: 90, rent: 1825, tax: 195, ins: 85, growth: 4 }),
     A('commercial', 'bridge', { id: 'river', addr: 'Riverside Flex Industrial', price: 16000000, rent: 161800, tax: 5800, ins: 4500, hoa: 2500, growth: 5, buyIn: 96, capex: 1200000, capexMonths: 12, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 160 }),
     A('commercial', 'comm25', { id: 'west', addr: 'Westfield Office Park', price: 11000000, rent: 112000, tax: 4200, ins: 3300, hoa: 2400, growth: 5, buyIn: 120 })] }); };
-  const E = { GDEF, TYPES, LOANS, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  /* DEFAULT sample (listed in the order the assets are bought). Every loan, price, cap rate, multiple and growth rate is checked against
+     the grader's benchmark file (prototype/grader). Homes cash flow positive. Recycles sale cash; needs about $1.3M of outside cash. */
+  const seed = () => { const A = newAsset; return normalize({ g: Object.assign({}, GDEF), houses: [
+    A('house', undefined, { id: 'maple', status: 'owned', extra: 600, paid: 18, target: 'birch', growth: 3.5, loanId: 'custom', rate: 6.5, addr: '1412 Maple Ridge Dr', price: 185000, rent: 1900, tax: 215, ins: 90 }),
+    A('house', undefined, { id: 'cedar', status: 'owned', extra: 400, paid: 30, target: 'willow', growth: 3.5, loanId: 'custom', rate: 6.75, addr: '2207 Cedar Hollow Ln', price: 165000, rent: 1750, tax: 180, ins: 85 }),
+    A('business', undefined, { id: 'auto', status: 'owned', paid: 12, growth: 5, loanId: 'custom', rate: 9.5, addr: 'Precision Auto Care', price: 1100000, rent: 33950 }),
+    A('house', 'cashh', { id: 'ridge', buyIn: 8, growth: 3.5, capex: 35000, capexMonths: 4, liftValue: 45, exit: 'sell', exitMonth: 20, addr: '5521 Ridgeview Ct', price: 130000, rent: 1300, tax: 150, ins: 70 }),
+    A('commercial', 'comm25', { id: 'north', buyIn: 18, capex: 70000, capexMonths: 8, liftValue: 16, liftIncome: 12, exit: 'sell', exitMonth: 96, addr: 'Northgate Retail Strip', price: 750000, rent: 8300, tax: 500, ins: 380, hoa: 250, sellCost: 4 }),
+    A('house', 'cashh', { id: 'syc', buyIn: 26, growth: 3.5, capex: 32000, capexMonths: 4, liftValue: 42, exit: 'sell', exitMonth: 44, addr: '7702 Sycamore Dr', price: 140000, rent: 1400, tax: 160, ins: 75 }),
+    A('house', 'dscr', { id: 'birch', growth: 3.5, addr: '908 Birchwood Ct', price: 195000, rent: 2050, tax: 220, ins: 90 }),
+    A('business', 'sba7a', { id: 'keystone', buyIn: 32, growth: 7, exit: 'merge', exitMonth: 68, exitLift: 10, mergeInto: 'auto', addr: 'Keystone HVAC Services', rent: 27800 }),
+    A('house', 'dscr', { id: 'willow', growth: 3.5, addr: '3350 Willow Bend Rd', price: 210000, rent: 2175, tax: 235, ins: 95 }),
+    A('house', 'cashh', { id: 'elm', buyIn: 46, growth: 3.5, capex: 38000, capexMonths: 5, liftValue: 44, exit: 'sell', exitMonth: 66, addr: '418 Elm Street', price: 150000, rent: 1500, tax: 170, ins: 80 }),
+    A('commercial', undefined, { id: 'harbor', buyIn: 56, loanId: 'custom', dp: 35, addr: 'Harbor St Self-Storage', price: 1400000, rent: 13650, ins: 650 }),
+    A('business', 'sba7a', { id: 'freight', buyIn: 62, growth: 8, addr: 'Summit Freight & Logistics', price: 1800000, rent: 41650 }),
+    A('house', 'dscr', { id: 'linden', buyIn: 84, growth: 3.5, addr: '2914 Linden Way', price: 175000, rent: 1850, tax: 195, ins: 85 }),
+    A('commercial', undefined, { id: 'lake', buyIn: 100, loanId: 'custom', dp: 35, addr: 'Lakeview Medical Office', price: 1800000, rent: 17450, tax: 1000, ins: 800, hoa: 500 })] }); };
+  const E = { GDEF, TYPES, LOANS, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -414,7 +437,7 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
   let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan' };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  const DATA_V = 7; /* bump when the sample portfolio changes so old saved samples are replaced */
+  const DATA_V = 8; /* bump when the sample portfolio changes so old saved samples are replaced */
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seed();
   E.normalize(S); S.v = DATA_V;
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
@@ -539,7 +562,7 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
     ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
     <section class="card" data-testid="summary"><div class="kg">
       ${kpi('kpi-networth', 'Net worth', $f(sn.nw), `${n} assets${sn.cash > 0.5 ? ' · incl. ' + $c(sn.cash) + ' from sales' : ''}`)}
-      ${kpi('kpi-monthly', 'Total monthly payments', $f(sn.monthly), `incl. ${$f(sn.extra)} extra`)}
+      ${kpi('kpi-monthly', 'Total monthly payments', $f(sn.monthly), sn.extra > 0.5 ? `incl. ${$f(sn.extra)} extra` : 'most loans are paid off by then')}
       ${kpi('kpi-cashflow', 'Cash flow / mo', $s(sn.cf), `${$s(sn.cfx)} after extra`, sn.cf < 0 ? 'bad' : '', 1)}
       ${kpi('kpi-dscr', 'DSCR', r(sn.dscr, 2), sn.dscr >= 1.2 ? 'healthy' : sn.dscr >= 1 ? 'thin' : 'below 1.0', sn.dscr && sn.dscr < 1 ? 'bad' : '', 1)}</div>
       <div class="bar"><i class="${sn.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (sn.cltv / g.cap) * 100)}%"></i></div>
@@ -630,7 +653,9 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
       <label class="btn plain filebtn">Restore from backup file<input type="file" accept="application/json,.json,text/plain" hidden id="imp" aria-label="Choose backup file" data-testid="import-file"></label>
       <textarea rows="2" id="bkin" aria-label="Or paste backup text" placeholder="…or paste backup text here"></textarea><button class="btn plain" data-restore-text>Restore from pasted text</button>
       ${pendingImport ? confirmBox('Replace all current data with this backup?', 'data-import-yes', 'Yes, replace') : ''}
-      ${ask === 'reset' ? confirmBox('Reset to the sample houses? This replaces your current houses.', 'data-reset-yes', 'Yes, reset') : '<button class="btn plain" data-reset>Reset to sample data</button>'}
+      ${ask === 'reset' ? confirmBox('Replace your assets with the realistic sample?', 'data-reset-yes', 'Yes, replace') : '<button class="btn plain" data-reset data-testid="load-realistic">Load realistic sample</button>'}
+      ${ask === 'stretch' ? confirmBox('Replace your assets with the $540M stretch scenario?', 'data-stretch-yes', 'Yes, load it') : '<button class="btn plain" data-stretch data-testid="load-stretch">Load $540M stretch scenario</button>'}
+      <p class="note">The realistic sample uses market-checked prices, loans and growth. The stretch scenario reaches about $540M and +$1.4M a month, but needs 21-25% yearly business growth for nearly 20 years and about $21M of outside cash.</p>
       <p class="note">${(() => { try { const t = localStorage.getItem('rep-v4-backup'); return t ? 'Backup last shown: ' + new Date(+t).toLocaleDateString() : 'No backup yet. Copy one regularly.'; } catch (e) { return ''; } })()}</p></section>`;
   }
 
@@ -713,7 +738,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     else if (k === 'down') { h.dp = Math.min(100, Math.max(0, (n / h.price) * 100)); }
     else if (k === 'dp') { h.dp = Math.min(100, Math.max(0, n)); }
     else if (k === 'termY') { h.term = Math.max(12, Math.round(n * 12)); }
-    else if (k === 'payoff') { const B0 = E.balToday(h), i = h.rate / 1200, m = Math.max(1, Math.round(n)); h.extra = Math.max(0, E.pmt(B0, i, m) - v.P); h.driver = 'extra'; }
+    else if (k === 'payoff') { const B0 = E.balToday(h), i = h.rate / 1200, m = Math.max(1, Math.round(n)); h.extra = Math.max(0, E.pmt(B0, i, m) - v.P + 0.02); h.driver = 'extra'; /* +2 cents so rounding up never lands one month late */ }
     else if (k === 'price') { h.price = Math.max(0, n); }
     else if (k === 'rate') { h.rate = Math.min(30, Math.max(0, n)); }
     else if (k === 'loan' || k === 'need' || k === 'caprate' || k === 'mult' || k === 'proceeds') return false;
@@ -762,6 +787,8 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
     if (t.dataset.importYes !== undefined) { S = E.normalize(pendingImport); S.v = DATA_V; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     if (t.dataset.reset !== undefined) { ask = 'reset'; render(); return; }
+    if (t.dataset.stretch !== undefined) { ask = 'stretch'; render(); return; }
+    if (t.dataset.stretchYes !== undefined) { S = E.seedStretch(); S.v = DATA_V; ask = null; save(); render(); return; }
     if (t.dataset.resetYes !== undefined) { S = E.seed(); S.v = DATA_V; ask = null; save(); render(); return; }
     const go = t.closest('[data-go]'); if (go) goto(go.dataset.go);
   });

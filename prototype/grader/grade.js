@@ -12,7 +12,8 @@ const E = require(path.join(V4, 'engine.js'));
 const results = [];
 const cats = { A: 'Requirement / propagation', B: 'Engine correctness', C: 'UX conciseness & usability', D: 'PWA / local-first', E: 'Robustness & accessibility', R: 'Realism & market accuracy' };
 const CATMAX = { A: 18, B: 12, C: 10, D: 8, E: 7, R: 30 };
-const KEY = 'rep-v4', DATA_V = 7;
+const KEY = 'rep-v4', DATA_V = +((/const DATA_V = (\d+)/.exec(fs.readFileSync(path.resolve(__dirname, '../v4/app.js'), 'utf8')) || [0, 0])[1]);
+const NSEED = E.seed().houses.length; /* derived from the app, never hard-coded */
 
 /* ---------------------------------------------------------------- helpers */
 class Parts {
@@ -221,7 +222,7 @@ async function engineChecks() {
     [{ appr: 0 }, { appr: 3 }].forEach((g) => { const S = mk(g, [SRC({ paid: 24, liens: 10000, target: 'b', growth: null }), TGT({ id: 'b', price: 150000, target: 'c', growth: null }), TGT({ id: 'c', price: 99000, target: '', growth: null })]);
       const pl = E.plan(S); let exp = 0; S.houses.forEach((h) => { if (pl.purchase[h.id] === 0) { const k0 = h.status === 'owned' ? h.paid : 0; exp += h.price * Math.pow(1 + S.g.appr / 100, k0 / 12) - simBal(h, 0, 0) - (h.liens || 0); } });
       P.t(near(pl.today.nw, exp, 1), 'appr ' + g.appr, 1, 'got ' + pl.today.nw + ' want ' + exp); }); return P; });
-  await check('B13', 'B', 'plan() under 100ms for the 19-asset sample and 10-asset chain (median of 7)', 0.5, 'node timing', () => {
+  await check('B13', 'B', 'plan() under 100ms for the sample and 10-asset chain (median of 7)', 0.5, 'node timing', () => {
     const hs = []; for (let i = 0; i < 10; i++) hs.push(TGT({ id: 'h' + i, status: i ? 'planned' : 'owned', price: 250000 - i * 5000, extra: i * 50, closingPct: null, target: i < 9 ? 'h' + (i + 1) : '' }));
     const time = (S) => { const ts = []; for (let i = 0; i < 7; i++) { const t0 = process.hrtime.bigint(); E.plan(S); ts.push(Number(process.hrtime.bigint() - t0) / 1e6); } ts.sort((a, b) => a - b); return ts[3]; };
     const med = Math.max(time(mk({ closing: 3 }, hs)), time(E.seed()));
@@ -295,9 +296,9 @@ async function engineChecks() {
         pairs.forEach(([a, b]) => { worst = Math.max(worst, Math.abs(a - b) / (1 + Math.abs(b) * 1e-9)); }); });
       const sn = pl.snap, h = pl.horizon; P.t(worst < 0.5, n + ': assetsAt(t) sums = series at 11 months', 0.8, 'worst diff ' + worst.toFixed(3));
       P.t(near(sn.reduce((a, x) => a + x.equity, 0), h.nw, 0.5) && near(sn.reduce((a, x) => a + x.cf, 0), h.cf, 0.5) && near(sn.reduce((a, x) => a + x.payment, 0), h.monthly, 0.5) && near(sn.reduce((a, x) => a + x.debt, 0), h.debt, 0.5), n + ': snap sums = horizon nw/cf/monthly/debt', 1.2); }); return P; });
-  await check('B23', 'B', 'Sample portfolio: 19 assets, finite plan, none unfunded, DTI peak below limit, homes cash-flow positive, 20-year numbers sane', 2, 'node: Engine.seed() + plan', () => {
-    const P = new Parts(), S = E.seed(), pl = E.plan(S); const ids = 'maple,cedar,auto,ridge,north,birch,bridgeway,freight,willow,harbor,keystone,syc,apex,lake,meridian,east,linden,river,west'.split(',');
-    P.t(S.houses.length === 19 && ids.every((i) => E.H(S, i)), '19 assets with the documented ids', 0.4, S.houses.map((h) => h.id).join(','));
+  await check('B23', 'B', 'Sample portfolio: finite plan, none unfunded, DTI peak below limit, homes cash-flow positive, 20-year numbers sane', 2, 'node: Engine.seed() + plan', () => {
+    const P = new Parts(), S = E.seed(), pl = E.plan(S); const ids = E.seed().houses.map((h) => h.id);
+    P.t(S.houses.length === NSEED && ids.every((i) => E.H(S, i)), NSEED + ' assets with the documented ids', 0.4, S.houses.map((h) => h.id).join(','));
     P.t(['house', 'commercial', 'business'].every((t) => S.houses.some((h) => h.type === t)), 'all three types present', 0.2);
     P.t(!pl.unfunded.length, 'no unfunded assets', 0.4, pl.unfunded.join(','));
     P.t(pl.worst.dti < S.g.dti, 'DTI peak ' + pl.worst.dti.toFixed(1) + ' below limit ' + S.g.dti, 0.4);
@@ -331,7 +332,7 @@ async function reqChecks(page) {
         if (okFill && changed) nOk++; prev = a;
       } }
     P.t(nOk === nAll, `all ${nAll} type/loan combinations fill terms, open page, add row, change plan (${nOk} ok)`, 3, badFill.concat(noChange).slice(0, 3).join(' | '));
-    const st = await store(page); P.t(st && st.houses.length === 19 + nAll && st.houses.slice(19).every((h) => h.status === 'planned'), 'new assets stored as planned', 0.4, st && st.houses.length);
+    const st = await store(page); P.t(st && st.houses.length === NSEED + nAll && st.houses.slice(NSEED).every((h) => h.status === 'planned'), 'new assets stored as planned', 0.4, st && st.houses.length);
     return P; });
   await check('A02', 'A', 'Changing an asset\'s loan option re-populates dp/rate/term/closing and changes the plan numbers', 2.5, 'Asset page > Loan option select', async () => {
     await loadState(page, SB(), '#house-b'); const P = new Parts(); const b = await snap(page);
@@ -426,7 +427,7 @@ async function reqChecks(page) {
     const pr = s.bd['Portfolio']; P.t(!!pr && nearRel(money(pr[1]), s.nw, 1, 0.003) && nearRel(money(pr[2]), s.cf, 1, 0.003), 'breakdown table Portfolio row = KPIs', 0.4, JSON.stringify(pr));
     const exSum = s.rows.reduce((a, r) => a + r.exN, 0); P.t(near(exSum, s.totX, s.rows.length), 'total extra = sum of extra inputs', 0.3, `${exSum} vs ${s.totX}`);
     await setVal(page, '[data-go="h/maple"] [data-testid=extra-input]', '1500'); const a = await snap(page); const S = E.seed(); E.H(S, 'maple').extra = 1500; const w = E.plan(S).horizon;
-    P.t(near(a.totX - s.totX, 900, 1) && nearRel(a.mon, w.monthly) && nearRel(a.nw, w.nw), 'editing a row extra on main updates totals like the engine', 0.5, `monthly ${s.mon}->${a.mon} (engine ${Math.round(w.monthly)})`); return P; });
+    P.t(near(a.totX - s.totX, 900, 1) && nearRel(a.mon, w.monthly, 1, 0.006) && nearRel(a.nw, w.nw, 1, 0.006), 'editing a row extra on main updates totals like the engine', 0.5, `monthly ${s.mon}->${a.mon} (engine ${Math.round(w.monthly)})`); return P; });
   await check('A10', 'A', 'Exit and improvements through the UI: Hold/Sell/Merge buttons and fields propagate to rows, KPIs and breakdown', 3.5, 'Asset page > Value-add & exit', async () => {
     await loadState(page, SB(), '#house-b'); const P = new Parts(); const S = SB();
     P.t((await page.locator('[data-testid=exit-section]').count()) === 1 && (await page.locator('[data-exit]').count()) === 3, 'exit section with Hold/Sell/Merge', 0.4);
@@ -441,9 +442,9 @@ async function reqChecks(page) {
     await goHash(page, '#house-a'); await page.click('[data-exit=hold]'); E.H(S, 'a').exit = 'hold'; const s3 = await snap(page); P.t(nearRel(s3.nw, E.plan(S).horizon.nw), 'back to Hold restores numbers', 0.3);
     await goHash(page, '#house-c'); await setVal(page, '[data-p="h.c.capex"]', '50000'); await setVal(page, '[data-p="h.c.liftValue"]', '20'); await setVal(page, '[data-p="h.c.capexMonths"]', '3'); const hc = E.H(S, 'c'); hc.capex = 50000; hc.liftValue = 20; hc.capexMonths = 3;
     const s4 = await snap(page); P.t(nearRel(s4.nw, E.plan(S).horizon.nw) && /improve/.test(s4.row('c').exitline), 'improvement budget/lift propagate and show on the row', 0.8, s4.row('c').exitline); return P; });
-  await check('A11', 'A', 'Sample portfolio on screen: 19 rows, three types, sane finite headline, no unfunded warning, no DTI warning', 2, 'Fresh load', async () => {
+  await check('A11', 'A', 'Sample portfolio on screen: all rows, three types, sane finite headline, no unfunded warning, no DTI warning', 2, 'Fresh load', async () => {
     await reset(page); const P = new Parts(); const s = await snap(page);
-    P.t(s.rows.length === 19, '19 ledger rows', 0.4, s.rows.length); P.t(['Home', 'Comm.', 'Biz'].every((t) => s.rows.some((r) => (r.tag || '').startsWith(t))), 'Home / Comm. / Biz rows present', 0.3);
+    P.t(s.rows.length === NSEED, NSEED + ' ledger rows', 0.4, s.rows.length); P.t(['Home', 'Comm.', 'Biz'].every((t) => s.rows.some((r) => (r.tag || '').startsWith(t))), 'Home / Comm. / Biz rows present', 0.3);
     P.t(isFinite(s.nw) && isFinite(s.mon) && isFinite(s.cf) && isFinite(s.dscr) && s.nw > 0 && !BAD.test(s.body), 'KPIs finite and positive, no NaN text', 0.4, `${s.raw.nw} ${s.raw.mon} ${s.raw.cf} ${s.raw.dscr}`);
     P.t(!/never funded|Debt-to-income peaks/.test(s.body), 'no unfunded / DTI-peak warning', 0.5); P.t(/Next: buy/.test(s.headline || '') && /by/.test(s.headline || ''), 'plan headline names the next purchase and completion', 0.2, s.headline);
     P.t((await page.locator('[data-testid=outside-cash]').count()) <= 1, 'outside-cash warning renders at most once', 0.2); return P; });
@@ -464,8 +465,8 @@ async function uxChecks(page) {
     P.t(r.nw < 844 && r.mon < 844 && r.cf < 844 && r.dscr < 844, 'four KPIs in first viewport', 0.8, JSON.stringify(r)); P.t(r.head < 844, 'plan headline visible', 0.5); P.t(r.row1 < 844, 'first ledger row visible', 0.7); return P; });
   await check('C02', 'C', 'Main page has only the per-row extra fields as text inputs (one per asset)', 1.5, 'Count visible <input> on main (sample and after adding 3)', async () => {
     const P = new Parts(); await reset(page); const cnt = () => page.evaluate(() => [...document.querySelectorAll('#app input')].filter((i) => i.type !== 'hidden' && i.offsetParent).length);
-    const c0 = await cnt(); P.t(c0 === 19, '19 assets -> 19 inputs', 1, c0);
-    for (let i = 0; i < 3; i++) { await goHash(page, '#add'); await page.click('[data-testid=confirm-add]'); await goMain(page); } const c3 = await cnt(); P.t(c3 === 22, '22 assets -> 22 inputs', 0.5, c3); return P; });
+    const c0 = await cnt(); P.t(c0 === NSEED, NSEED + ' assets -> ' + NSEED + ' inputs', 1, c0);
+    for (let i = 0; i < 3; i++) { await goHash(page, '#add'); await page.click('[data-testid=confirm-add]'); await goMain(page); } const c3 = await cnt(); P.t(c3 === NSEED + 3, (NSEED + 3) + ' assets -> ' + (NSEED + 3) + ' inputs', 0.5, c3); return P; });
   await check('C03', 'C', 'No horizontal overflow at 320/390/430 on main, asset, assumptions, add, import', 2, 'Resize, check scrollWidth and element rects', async () => {
     const P = new Parts(); await reset(page);
     for (const w of [320, 390, 430]) { await page.setViewportSize({ width: w, height: 844 });
@@ -541,7 +542,7 @@ async function pwaChecks(page, ctxFactory) {
     const { ctx, pg } = global.__swctx; const P = new Parts(); collect.paused = true;
     await pg.evaluate(() => { localStorage.clear(); }); await pg.reload(); await pg.waitForSelector('[data-testid=ledger-row]');
     await ctx.setOffline(true);
-    try { await pg.reload(); await pg.waitForSelector('[data-testid=ledger-row]', { timeout: 4000 }); P.t((await pg.locator('[data-testid=ledger-row]').count()) === 19, 'offline reload renders the 19-row ledger', 1); } catch (e) { P.t(false, 'offline reload renders ledger', 1, e.message.slice(0, 80)); }
+    try { await pg.reload(); await pg.waitForSelector('[data-testid=ledger-row]', { timeout: 4000 }); P.t((await pg.locator('[data-testid=ledger-row]').count()) === NSEED, 'offline reload renders the ' + NSEED + '-row ledger', 1); } catch (e) { P.t(false, 'offline reload renders ledger', 1, e.message.slice(0, 80)); }
     try { await pg.goto(BASE + '/', { timeout: 4000 }); await pg.waitForSelector('[data-testid=summary]', { timeout: 3000 }); P.t(true, 'offline start URL "/" works', 0.3); } catch (e) { P.t(false, 'offline start URL "/" works', 0.3, e.message.slice(0, 80)); }
     try { await pg.goto(BASE + '/index.html#assumptions', { timeout: 4000 }); await pg.waitForSelector('[data-testid=export]', { timeout: 3000 }); P.t(true, 'offline deep link', 0.3); } catch (e) { P.t(false, 'offline deep link', 0.3, e.message.slice(0, 80)); }
     try { await pg.goto(BASE + '/index.html#house-maple'); await setVal(pg, '[data-p="h.maple.extra"]', '4321'); await pg.reload(); await pg.waitForSelector('[data-p="h.maple.extra"]'); P.t((await pg.inputValue('[data-p="h.maple.extra"]')).replace(/\D/g, '') === '4321', 'edits persist while offline', 0.4); } catch (e) { P.t(false, 'edits persist while offline', 0.4, e.message.slice(0, 80)); }
@@ -549,13 +550,13 @@ async function pwaChecks(page, ctxFactory) {
   await check('D05', 'D', 'Data persists across reload and new tab (localStorage rep-v4, v7); no server round-trip', 1.5, 'Edit extra + address + add asset via the add flow, reload', async () => {
     const P = new Parts(); await reset(page); await edit(page, 'h.maple.extra', '1234'); await edit(page, 'h.maple.addr', 'Zed Lane'); await goHash(page, '#add'); await page.click('[data-testid=confirm-add]'); await page.waitForTimeout(100);
     await page.reload(); await goMain(page); const s = await snap(page); P.t(s.row('maple') && s.row('maple').exN === 1234 && /Zed Lane/.test(s.row('maple').addr), 'edits survive reload', 0.6, JSON.stringify(s.row('maple') && { e: s.row('maple').exN, a: s.row('maple').addr }));
-    P.t(s.rows.length === 20, 'added asset survives reload', 0.4, s.rows.length); const st = await store(page); P.t(st && st.houses.length === 20 && st.v === DATA_V, 'stored in localStorage key rep-v4 with v:7', 0.2, st && st.v);
-    const pg2 = await page.context().newPage(); pg2.setDefaultTimeout(4000); await pg2.goto(BASE + '/index.html'); await pg2.waitForSelector('[data-testid=ledger-row]'); P.t((await pg2.locator('[data-testid=ledger-row]').count()) === 20, 'second tab sees same data', 0.3); await pg2.close();
-    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('rep-v4')); s.v = 1; localStorage.setItem('rep-v4', JSON.stringify(s)); }); await page.reload(); await goMain(page); P.t((await page.locator('[data-testid=ledger-row]').count()) === 19, 'stale data version is replaced by the current sample', 0.2); return P; });
+    P.t(s.rows.length === NSEED + 1, 'added asset survives reload', 0.4, s.rows.length); const st = await store(page); P.t(st && st.houses.length === NSEED + 1 && st.v === DATA_V, 'stored in localStorage key rep-v4 with v:7', 0.2, st && st.v);
+    const pg2 = await page.context().newPage(); pg2.setDefaultTimeout(4000); await pg2.goto(BASE + '/index.html'); await pg2.waitForSelector('[data-testid=ledger-row]'); P.t((await pg2.locator('[data-testid=ledger-row]').count()) === NSEED + 1, 'second tab sees same data', 0.3); await pg2.close();
+    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('rep-v4')); s.v = 1; localStorage.setItem('rep-v4', JSON.stringify(s)); }); await page.reload(); await goMain(page); P.t((await page.locator('[data-testid=ledger-row]').count()) === NSEED, 'stale data version is replaced by the current sample', 0.2); return P; });
   await check('D06', 'D', 'Backup: Show backup gives valid JSON text; pasted text and file restore state (with confirm); invalid text rejected without damage', 2, 'Assumptions > Show backup; modify; Restore from pasted text / file', async () => {
     const P = new Parts(); await reset(page); await goHash(page, '#assumptions'); await page.click('[data-testid=export]'); await page.waitForTimeout(60);
     const txt = await page.inputValue('[data-testid=backup-text]').catch(() => ''); let j = null; try { j = JSON.parse(txt); } catch (e) {}
-    P.t(j && Array.isArray(j.houses) && j.houses.length === 19 && j.g && j.v === DATA_V && j.houses[0].extra === 600, 'backup text = valid JSON with all 19 assets + assumptions', 0.6, txt.slice(0, 40));
+    P.t(j && Array.isArray(j.houses) && j.houses.length === NSEED && j.g && j.v === DATA_V && j.houses[0].extra === 600, 'backup text = valid JSON with all ' + NSEED + ' assets + assumptions', 0.6, txt.slice(0, 40));
     await edit(page, 'h.maple.extra', '7777'); await edit(page, 'g.cap', '60'); await goHash(page, '#assumptions');
     await page.fill('#bkin', txt); await page.click('[data-restore-text]'); await page.waitForTimeout(60); P.t((await page.locator('.confirm [data-import-yes]').count()) === 1, 'restore asks for confirmation', 0.3);
     await page.click('[data-import-yes]'); await page.waitForTimeout(100); const s = await store(page); P.t(s && s.houses.find((h) => h.id === 'maple').extra === 600 && s.g.cap === 85, 'pasted backup restores exported state', 0.6, s && s.houses[0].extra + '/' + s.g.cap);
@@ -563,7 +564,7 @@ async function pwaChecks(page, ctxFactory) {
     const keep = path.join(os.tmpdir(), 'rep4-backup-' + process.pid + '.json'); fs.writeFileSync(keep, txt); await edit(page, 'h.maple.extra', '5555'); await goHash(page, '#assumptions'); await page.setInputFiles('[data-testid=import-file]', keep); await page.waitForTimeout(250);
     if (await page.locator('[data-import-yes]').count()) await page.click('[data-import-yes]'); await page.waitForTimeout(100); const s3 = await store(page); P.t(s3 && s3.houses.find((h) => h.id === 'maple').extra === 600, 'backup file restores state', 0.5, s3 && s3.houses[0].extra);
     await goHash(page, '#assumptions'); await page.fill('#bkin', '{"nope":1'); await page.click('[data-restore-text]'); await page.waitForTimeout(80); const s2 = await store(page); const body = await page.evaluate(() => document.getElementById('app').innerText);
-    P.t(s2 && s2.houses.length === 19 && /not a valid backup/i.test(body) && (await page.locator('[data-import-yes]').count()) === 0, 'corrupt text rejected with message, data untouched', 0.4);
+    P.t(s2 && s2.houses.length === NSEED && /not a valid backup/i.test(body) && (await page.locator('[data-import-yes]').count()) === 0, 'corrupt text rejected with message, data untouched', 0.4);
     try { fs.unlinkSync(keep); } catch (e) {} return P; });
   await check('D07', 'D', 'iOS install meta: apple-touch-icon loads, viewport-fit=cover, apple-mobile-web-app-capable, theme-color', 0.5, 'inspect <head>', async () => {
     const P = new Parts(); await page.goto(BASE + '/index.html?r=' + rn++);

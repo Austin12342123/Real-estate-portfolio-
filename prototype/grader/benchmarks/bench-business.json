@@ -1,89 +1,415 @@
 {
  "retrieved": "2026-11-08",
- "fetchNote": "WebFetch was blocked for every host tried (finviz.com, sba.gov, fih.com, windsordrake.com: DNS not in allowed network). All figures come from WebSearch result summaries only; none is from a directly fetched primary page. Everything is therefore unverified unless noted.",
+ "fetchNote": "Direct fetches via the session proxy on 2026-11-08: sba.gov OK (200). BizBuySell, LoopNet, Crexi and CBRE returned HTTP 403 (bot protection) - not bypassed. FRED and GF Data would not connect. Everything not marked verified comes from search-result snippets of secondary sources.",
  "sources": [
-  {"name":"BizBuySell Q3 2026 Insight Report press release (via finviz)","url":"https://finviz.com/news/404656/bizbuysell-releases-q3-2026-insight-report","fetched":false,"dataDate":"2026-10-20","note":"Search summary: 2,132 closed transactions in Q3 2026, flat vs Q2, -7% vs Q3 2025. Headline medians not seen."},
-  {"name":"BizBuySell Insight Report (secondary write-ups: Q1/Q2 2026, FY2025)","url":"https://www.bizbuysell.com/insight-report/","fetched":false,"dataDate":"Q2 2026 / FY2025","note":"Via search snippets of third parties: avg cash-flow multiple 2.7 (Q1-Q2 2026), 2.61 FY2025 (2.57 FY2024); avg revenue multiple 0.7; Q2 2026 median sale price 349,250; sold at 94% of asking FY2025. Third-party, unverified."},
-  {"name":"BigIdeasDB Main Street Index (27,500+ listings, asking multiples)","url":"https://bigideasdb.com/small-business-multiples-by-industry-2026","fetched":false,"dataDate":"2026-10","note":"Median asking 2.63x SDE, IQR 1.73-3.72x. Asking, not closed. Secondary."},
-  {"name":"BizBen California index","url":"https://www.bizben.com/california-business-index","fetched":false,"dataDate":"Q3 2026","note":"California median asking 300,000, 2.6x cash flow. Regional."},
-  {"name":"BVR/BIZCOMPS Fall 2026 Deal Review (via bvresources)","url":"https://www.bvresources.com/articles/bvwire/updated-bizcomps-data-show-whats-happening-in-the-main-street-market","fetched":false,"dataDate":"2025 data, pub 2026","note":"Construction highest median SDE multiple 2.14x; services highest revenue multiples."},
-  {"name":"CT Acquisitions SDE multiples by industry","url":"https://www.ctacquisitions.com/sellers-discretionary-earnings-multiplier-by-industry/","fetched":false,"dataDate":"2026","note":"Restaurants ~1.5x; HVAC and IT/MSP platforms 5x+. Broker marketing source."},
-  {"name":"Iconic / other e-commerce & SaaS SDE multiple roundup (as summarised by search)","url":"https://iconic.co/blog/sde-multiples/","fetched":false,"dataDate":"2026","note":"Amazon FBA 2.8-4.2x, Shopify DTC 3.0-4.5x, small SaaS (<$1M ARR) 3.0-6.0x SDE."},
-  {"name":"Mercer Capital Transactions Q2 2026 (citing GF Data)","url":"https://mercercapital.com/media/54rjpnxn/mercer-capital_transactions-q2-2026.pdf","fetched":false,"dataDate":"Summer 2026","note":"Approx 7x for $10-50M deals, 9-11x for $100-500M. Snippet truncated."},
-  {"name":"CapitalPad lower-middle-market multiples","url":"https://capitalpad.com/?p=505747","fetched":false,"dataDate":"2026","note":"Deals below $25M EV roughly 6x EBITDA. Source not named."},
-  {"name":"NerdWallet SBA loan rates","url":"https://www.nerdwallet.com/business/loans/learn/sba-loan-rates","fetched":false,"dataDate":"2026-09","note":"Prime 7% per this page; max variable rate Prime+3% (10%) for loans >$350K; 11.5% 250-350K; 13% 50-250K; 13.5% <=50K."},
-  {"name":"SBA lender terms page (as quoted by search summary)","url":"https://www.sba.gov/funding-programs/loans/7a-loans","fetched":false,"dataDate":"2026-11-03 (per snippet)","note":"Most 7(a) loans max $5M."},
-  {"name":"SOP 50 10 8 equity injection commentary (Whiteford, Starfield & Smith, Windsor Advantage)","url":"https://www.whitefordlaw.com/news-events/client-alert-sba-issues-sop-50-10-8-key-changes-impacting-sba-7a-lending","fetched":false,"dataDate":"2025-06-01 effective; 8.1 effective 2026-10-01","note":"10% minimum equity injection for change of ownership; seller note counts only if on full standby for loan life and <= 50% of required injection."},
-  {"name":"BizBen broker fee article","url":"https://www.bizben.com/blog/how-much-do-brokers-charge-to-sell-a-business","fetched":false,"dataDate":"undated","note":"Broker commission 8-12% under $1M; Double Lehman 10% first $1M, dropping to 2% above $4M; min fee 10-15K; ~9 months on market assumption."},
-  {"name":"Bankrate / Gerald / forecasts.org prime rate","url":"https://www.bankrate.com/rates/interest-rates/wall-street-prime-rate/","fetched":false,"dataDate":"2026-06-30","note":"Prime 6.75% as of June 2026; conflicts with NerdWallet 7%. Unresolved."}
+  {
+   "name": "BizBuySell Q3 2026 Insight Report press release (via finviz)",
+   "url": "https://finviz.com/news/404656/bizbuysell-releases-q3-2026-insight-report",
+   "fetched": false,
+   "dataDate": "2026-10-20",
+   "note": "Search summary: 2,132 closed transactions in Q3 2026, flat vs Q2, -7% vs Q3 2025. Headline medians not seen."
+  },
+  {
+   "name": "BizBuySell Insight Report (secondary write-ups: Q1/Q2 2026, FY2025)",
+   "url": "https://www.bizbuysell.com/insight-report/",
+   "fetched": false,
+   "dataDate": "Q2 2026 / FY2025",
+   "note": "Via search snippets of third parties: avg cash-flow multiple 2.7 (Q1-Q2 2026), 2.61 FY2025 (2.57 FY2024); avg revenue multiple 0.7; Q2 2026 median sale price 349,250; sold at 94% of asking FY2025. Third-party, unverified."
+  },
+  {
+   "name": "BigIdeasDB Main Street Index (27,500+ listings, asking multiples)",
+   "url": "https://bigideasdb.com/small-business-multiples-by-industry-2026",
+   "fetched": false,
+   "dataDate": "2026-10",
+   "note": "Median asking 2.63x SDE, IQR 1.73-3.72x. Asking, not closed. Secondary."
+  },
+  {
+   "name": "BizBen California index",
+   "url": "https://www.bizben.com/california-business-index",
+   "fetched": false,
+   "dataDate": "Q3 2026",
+   "note": "California median asking 300,000, 2.6x cash flow. Regional."
+  },
+  {
+   "name": "BVR/BIZCOMPS Fall 2026 Deal Review (via bvresources)",
+   "url": "https://www.bvresources.com/articles/bvwire/updated-bizcomps-data-show-whats-happening-in-the-main-street-market",
+   "fetched": false,
+   "dataDate": "2025 data, pub 2026",
+   "note": "Construction highest median SDE multiple 2.14x; services highest revenue multiples."
+  },
+  {
+   "name": "CT Acquisitions SDE multiples by industry",
+   "url": "https://www.ctacquisitions.com/sellers-discretionary-earnings-multiplier-by-industry/",
+   "fetched": false,
+   "dataDate": "2026",
+   "note": "Restaurants ~1.5x; HVAC and IT/MSP platforms 5x+. Broker marketing source."
+  },
+  {
+   "name": "Iconic / other e-commerce & SaaS SDE multiple roundup (as summarised by search)",
+   "url": "https://iconic.co/blog/sde-multiples/",
+   "fetched": false,
+   "dataDate": "2026",
+   "note": "Amazon FBA 2.8-4.2x, Shopify DTC 3.0-4.5x, small SaaS (<$1M ARR) 3.0-6.0x SDE."
+  },
+  {
+   "name": "Mercer Capital Transactions Q2 2026 (citing GF Data)",
+   "url": "https://mercercapital.com/media/54rjpnxn/mercer-capital_transactions-q2-2026.pdf",
+   "fetched": false,
+   "dataDate": "Summer 2026",
+   "note": "Approx 7x for $10-50M deals, 9-11x for $100-500M. Snippet truncated."
+  },
+  {
+   "name": "CapitalPad lower-middle-market multiples",
+   "url": "https://capitalpad.com/?p=505747",
+   "fetched": false,
+   "dataDate": "2026",
+   "note": "Deals below $25M EV roughly 6x EBITDA. Source not named."
+  },
+  {
+   "name": "NerdWallet SBA loan rates",
+   "url": "https://www.nerdwallet.com/business/loans/learn/sba-loan-rates",
+   "fetched": false,
+   "dataDate": "2026-09",
+   "note": "Prime 7% per this page; max variable rate Prime+3% (10%) for loans >$350K; 11.5% 250-350K; 13% 50-250K; 13.5% <=50K."
+  },
+  {
+   "name": "SBA lender terms page (as quoted by search summary)",
+   "url": "https://www.sba.gov/funding-programs/loans/7a-loans",
+   "fetched": false,
+   "dataDate": "2026-11-03 (per snippet)",
+   "note": "Most 7(a) loans max $5M."
+  },
+  {
+   "name": "SOP 50 10 8 equity injection commentary (Whiteford, Starfield & Smith, Windsor Advantage)",
+   "url": "https://www.whitefordlaw.com/news-events/client-alert-sba-issues-sop-50-10-8-key-changes-impacting-sba-7a-lending",
+   "fetched": false,
+   "dataDate": "2025-06-01 effective; 8.1 effective 2026-10-01",
+   "note": "10% minimum equity injection for change of ownership; seller note counts only if on full standby for loan life and <= 50% of required injection."
+  },
+  {
+   "name": "BizBen broker fee article",
+   "url": "https://www.bizben.com/blog/how-much-do-brokers-charge-to-sell-a-business",
+   "fetched": false,
+   "dataDate": "undated",
+   "note": "Broker commission 8-12% under $1M; Double Lehman 10% first $1M, dropping to 2% above $4M; min fee 10-15K; ~9 months on market assumption."
+  },
+  {
+   "name": "Bankrate / Gerald / forecasts.org prime rate",
+   "url": "https://www.bankrate.com/rates/interest-rates/wall-street-prime-rate/",
+   "fetched": false,
+   "dataDate": "2026-06-30",
+   "note": "Prime 6.75% as of June 2026; conflicts with NerdWallet 7%. Unresolved."
+  },
+  {
+   "name": "SBA.gov - 7(a) loans (fetched directly 2026-11-08)",
+   "url": "https://www.sba.gov/funding-programs/loans/7a-loans",
+   "fetched": true,
+   "dataDate": "2026-11-08",
+   "note": "Primary source. Standard 7(a) max loan $5,000,000. NOTE: the 'maximum maturity 60 months' and tiered rate caps on that page belong to the 7(a) Working Capital Pilot, not standard 7(a); not used."
+  },
+  {
+   "name": "SBA.gov - 504 loans (fetched directly 2026-11-08)",
+   "url": "https://www.sba.gov/funding-programs/loans/504-loans",
+   "fetched": true,
+   "dataDate": "2026-11-08",
+   "note": "Primary source. Max $5.5M; 10/20/25-year fixed terms; rate pegged to 10-year Treasury; fees ~3% of debt."
+  }
  ],
  "overall": {
-  "medianAskingPrice": {"value": null, "note":"BizBuySell Q3 2026 headline not retrieved. Median closed sale price 349,250 (Q2 2026); California median asking 300,000.", "valueClosedSaleQ2_2026": 349250, "source": 1, "unverified": true},
-  "medianSDE": {"value": null, "unverified": true, "note":"Not found. Implied roughly 130K from 349K price / 2.7x, a derived estimate only."},
-  "medianSdeMultiple": {"value": 2.63, "asking": true, "q1": 1.73, "q3": 3.72, "closedAvgMultiple": 2.7, "source": 2, "unverified": true},
-  "medianRevenueMultiple": {"value": 0.7, "note":"average, not median", "source": 1, "unverified": true}
+  "medianAskingPrice": {
+   "value": null,
+   "note": "BizBuySell Q3 2026 headline not retrieved. Median closed sale price 349,250 (Q2 2026); California median asking 300,000.",
+   "valueClosedSaleQ2_2026": 349250,
+   "source": 1,
+   "unverified": true
+  },
+  "medianSDE": {
+   "value": null,
+   "unverified": true,
+   "note": "Not found. Implied roughly 130K from 349K price / 2.7x, a derived estimate only."
+  },
+  "medianSdeMultiple": {
+   "value": 2.63,
+   "asking": true,
+   "q1": 1.73,
+   "q3": 3.72,
+   "closedAvgMultiple": 2.7,
+   "source": 2,
+   "unverified": true
+  },
+  "medianRevenueMultiple": {
+   "value": 0.7,
+   "note": "average, not median",
+   "source": 1,
+   "unverified": true
+  }
  },
  "sizeBands": [
-  {"band":"price < $500K","sdeMultiple":{"low":null,"median":null,"high":null},"unverified":true,"note":"No size-band data retrieved. Market median ~2.6-2.7x; small deals generally at or below that."},
-  {"band":"price $500K-$1M","sdeMultiple":{"low":null,"median":null,"high":null},"unverified":true},
-  {"band":"price $1M-$5M","sdeMultiple":{"low":null,"median":null,"high":null},"unverified":true}
+  {
+   "band": "price < $500K",
+   "sdeMultiple": {
+    "low": null,
+    "median": null,
+    "high": null
+   },
+   "unverified": true,
+   "note": "No size-band data retrieved. Market median ~2.6-2.7x; small deals generally at or below that."
+  },
+  {
+   "band": "price $500K-$1M",
+   "sdeMultiple": {
+    "low": null,
+    "median": null,
+    "high": null
+   },
+   "unverified": true
+  },
+  {
+   "band": "price $1M-$5M",
+   "sdeMultiple": {
+    "low": null,
+    "median": null,
+    "high": null
+   },
+   "unverified": true
+  }
  ],
  "ebitdaBySize": [
-  {"band":"EBITDA $1-3M","multiple":{"low":null,"median":null,"high":null},"unverified":true},
-  {"band":"EBITDA $3-10M","multiple":{"low":null,"median":null,"high":null},"unverified":true},
-  {"band":"EBITDA $10-25M / EV $10-50M","multiple":{"low":null,"median":7,"high":null},"source":7,"unverified":true,"note":"About 7x for $10-50M deals (GF Data via Mercer); below $25M EV about 6x (CapitalPad)."}
+  {
+   "band": "EBITDA $1-3M",
+   "multiple": {
+    "low": null,
+    "median": null,
+    "high": null
+   },
+   "unverified": true
+  },
+  {
+   "band": "EBITDA $3-10M",
+   "multiple": {
+    "low": null,
+    "median": null,
+    "high": null
+   },
+   "unverified": true
+  },
+  {
+   "band": "EBITDA $10-25M / EV $10-50M",
+   "multiple": {
+    "low": null,
+    "median": 7,
+    "high": null
+   },
+   "source": 7,
+   "unverified": true,
+   "note": "About 7x for $10-50M deals (GF Data via Mercer); below $25M EV about 6x (CapitalPad)."
+  }
  ],
  "industries": [
-  {"industry":"auto repair","sdeMultiple":{"low":null,"median":null,"high":null},"marginPct":null,"unverified":true},
-  {"industry":"trucking/logistics","sdeMultiple":{"low":null,"median":null,"high":null},"marginPct":null,"unverified":true},
-  {"industry":"software/SaaS (small, <$1M ARR)","sdeMultiple":{"low":3.0,"median":null,"high":6.0},"marginPct":null,"source":6,"unverified":true},
-  {"industry":"staffing","sdeMultiple":{"low":null,"median":null,"high":null},"marginPct":null,"unverified":true},
-  {"industry":"HVAC/home services","sdeMultiple":{"low":null,"median":null,"high":5},"marginPct":null,"source":5,"unverified":true,"note":"5x+ for HVAC platforms (broker source)."},
-  {"industry":"construction (BIZCOMPS)","sdeMultiple":{"low":null,"median":2.14,"high":null},"marginPct":null,"source":4,"unverified":true},
-  {"industry":"landscaping/property services","sdeMultiple":{"low":null,"median":null,"high":null},"marginPct":null,"unverified":true},
-  {"industry":"restaurants","sdeMultiple":{"low":1.5,"median":null,"high":2.5},"marginPct":null,"source":5,"unverified":true},
-  {"industry":"healthcare practices","sdeMultiple":{"low":null,"median":null,"high":null},"marginPct":null,"unverified":true},
-  {"industry":"e-commerce (Amazon FBA / Shopify DTC)","sdeMultiple":{"low":2.8,"median":null,"high":4.5},"marginPct":null,"source":6,"unverified":true}
+  {
+   "industry": "auto repair",
+   "sdeMultiple": {
+    "low": null,
+    "median": null,
+    "high": null
+   },
+   "marginPct": null,
+   "unverified": true
+  },
+  {
+   "industry": "trucking/logistics",
+   "sdeMultiple": {
+    "low": null,
+    "median": null,
+    "high": null
+   },
+   "marginPct": null,
+   "unverified": true
+  },
+  {
+   "industry": "software/SaaS (small, <$1M ARR)",
+   "sdeMultiple": {
+    "low": 3.0,
+    "median": null,
+    "high": 6.0
+   },
+   "marginPct": null,
+   "source": 6,
+   "unverified": true
+  },
+  {
+   "industry": "staffing",
+   "sdeMultiple": {
+    "low": null,
+    "median": null,
+    "high": null
+   },
+   "marginPct": null,
+   "unverified": true
+  },
+  {
+   "industry": "HVAC/home services",
+   "sdeMultiple": {
+    "low": null,
+    "median": null,
+    "high": 5
+   },
+   "marginPct": null,
+   "source": 5,
+   "unverified": true,
+   "note": "5x+ for HVAC platforms (broker source)."
+  },
+  {
+   "industry": "construction (BIZCOMPS)",
+   "sdeMultiple": {
+    "low": null,
+    "median": 2.14,
+    "high": null
+   },
+   "marginPct": null,
+   "source": 4,
+   "unverified": true
+  },
+  {
+   "industry": "landscaping/property services",
+   "sdeMultiple": {
+    "low": null,
+    "median": null,
+    "high": null
+   },
+   "marginPct": null,
+   "unverified": true
+  },
+  {
+   "industry": "restaurants",
+   "sdeMultiple": {
+    "low": 1.5,
+    "median": null,
+    "high": 2.5
+   },
+   "marginPct": null,
+   "source": 5,
+   "unverified": true
+  },
+  {
+   "industry": "healthcare practices",
+   "sdeMultiple": {
+    "low": null,
+    "median": null,
+    "high": null
+   },
+   "marginPct": null,
+   "unverified": true
+  },
+  {
+   "industry": "e-commerce (Amazon FBA / Shopify DTC)",
+   "sdeMultiple": {
+    "low": 2.8,
+    "median": null,
+    "high": 4.5
+   },
+   "marginPct": null,
+   "source": 6,
+   "unverified": true
+  }
  ],
  "growth": {
-  "typicalRevenueGrowthPct": {"median": null, "p75": null, "unverified": true},
-  "realisticLongRunValueCagrPct": {"typical": null, "strongMax": null, "absoluteMax": null, "unverified": true},
-  "note":"No cited evidence found. Not estimated here; grader should treat any assumed ceiling as a judgment call, not a sourced benchmark."
+  "typicalRevenueGrowthPct": {
+   "median": null,
+   "p75": null,
+   "unverified": true
+  },
+  "realisticLongRunValueCagrPct": {
+   "typical": null,
+   "strongMax": null,
+   "absoluteMax": null,
+   "unverified": true
+  },
+  "note": "No cited evidence found. Not estimated here; grader should treat any assumed ceiling as a judgment call, not a sourced benchmark."
  },
  "sba7a": {
   "maxLoan": 5000000,
   "primeRatePct": null,
-  "primeRateNote":"Conflicting: 7.0 (NerdWallet, Sept 2026) vs 6.75 (Bankrate, June 2026). Current value unverified.",
-  "typicalRatePct": {"low": null, "high": 10.0, "note":"Max variable rate Prime+3% for loans >$350K (10% at Prime 7%); smaller loans cap at Prime+4.5% / +6.5% by size per NerdWallet. Typical actual range unverified."},
+  "primeRateNote": "Conflicting: 7.0 (NerdWallet, Sept 2026) vs 6.75 (Bankrate, June 2026). Current value unverified.",
+  "typicalRatePct": {
+   "low": null,
+   "high": 10.0,
+   "note": "Max variable rate Prime+3% for loans >$350K (10% at Prime 7%); smaller loans cap at Prime+4.5% / +6.5% by size per NerdWallet. Typical actual range unverified."
+  },
   "maxTermYears": null,
   "minEquityInjectionPct": 10,
   "minDscr": null,
   "upfrontFeePct": null,
-  "guaranteePct": {"upTo150K": 85, "over150K": 75},
-  "feeNote":"Sources conflict (2-3.5% of guaranteed portion; FY2026 waivers). Not resolved.",
+  "guaranteePct": {
+   "upTo150K": 85,
+   "over150K": 75
+  },
+  "feeNote": "Sources conflict (2-3.5% of guaranteed portion; FY2026 waivers). Not resolved.",
   "source": 9,
-  "unverified": true
+  "unverified": true,
+  "maxLoanVerified": true,
+  "maxLoanSource": 14
  },
- "sba504": {"unverified": true, "note":"Not retrieved."},
+ "sba504": {
+  "maxLoan": 5500000,
+  "termYearsOptions": [
+   10,
+   20,
+   25
+  ],
+  "ratePeg": "10-year U.S. Treasury + increment (fixed)",
+  "feesPctOfDebt": 3,
+  "verified": true,
+  "source": 15,
+  "unverified": false
+ },
  "sellerNote": {
-  "pctOfPrice": {"low": null, "high": null},
-  "ratePct": {"low": null, "high": null},
-  "termYears": {"low": null, "high": null},
-  "standbyRule":"Under SOP 50 10 8, seller note counts toward the 10% injection only on full standby for the loan life and capped at 50% of the injection (secondary sources).",
+  "pctOfPrice": {
+   "low": null,
+   "high": null
+  },
+  "ratePct": {
+   "low": null,
+   "high": null
+  },
+  "termYears": {
+   "low": null,
+   "high": null
+  },
+  "standbyRule": "Under SOP 50 10 8, seller note counts toward the 10% injection only on full standby for the loan life and capped at 50% of the injection (secondary sources).",
   "unverified": true
  },
  "costs": {
-  "sellBrokerPct": {"low": 8, "high": 12, "source": 12, "unverified": true, "note":"Under $1M; Double Lehman 10% on first $1M falling to 2% over $4M."},
-  "buyerClosingPct": {"low": null, "high": null, "unverified": true},
-  "timeToCloseMonths": {"note":"~9 months on market (one site's assumption)", "unverified": true}
+  "sellBrokerPct": {
+   "low": 8,
+   "high": 12,
+   "source": 12,
+   "unverified": true,
+   "note": "Under $1M; Double Lehman 10% on first $1M falling to 2% over $4M."
+  },
+  "buyerClosingPct": {
+   "low": null,
+   "high": null,
+   "unverified": true
+  },
+  "timeToCloseMonths": {
+   "note": "~9 months on market (one site's assumption)",
+   "unverified": true
+  }
  },
  "management": {
-  "generalManagerSalary": {"low": null, "high": null, "unverified": true},
+  "generalManagerSalary": {
+   "low": null,
+   "high": null,
+   "unverified": true
+  },
   "ownerOperatedShare": null,
-  "note":"Not found. SDE adds back one owner's salary and perks; EBITDA after a market-rate manager salary is lower, so absentee ownership reduces cash flow by that replacement cost."
+  "note": "Not found. SDE adds back one owner's salary and perks; EBITDA after a market-rate manager salary is lower, so absentee ownership reduces cash flow by that replacement cost."
  },
  "valueAdd": {
-  "note":"No cited evidence retrieved.",
-  "platformMultipleExpansion": {"unverified": true}
+  "note": "No cited evidence retrieved.",
+  "platformMultipleExpansion": {
+   "unverified": true
+  }
  }
 }

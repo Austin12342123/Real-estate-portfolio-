@@ -3,7 +3,7 @@
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
   let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan' };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  const DATA_V = 7; /* bump when the sample portfolio changes so old saved samples are replaced */
+  const DATA_V = 8; /* bump when the sample portfolio changes so old saved samples are replaced */
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seed();
   E.normalize(S); S.v = DATA_V;
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
@@ -128,7 +128,7 @@
     ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
     <section class="card" data-testid="summary"><div class="kg">
       ${kpi('kpi-networth', 'Net worth', $f(sn.nw), `${n} assets${sn.cash > 0.5 ? ' · incl. ' + $c(sn.cash) + ' from sales' : ''}`)}
-      ${kpi('kpi-monthly', 'Total monthly payments', $f(sn.monthly), `incl. ${$f(sn.extra)} extra`)}
+      ${kpi('kpi-monthly', 'Total monthly payments', $f(sn.monthly), sn.extra > 0.5 ? `incl. ${$f(sn.extra)} extra` : 'most loans are paid off by then')}
       ${kpi('kpi-cashflow', 'Cash flow / mo', $s(sn.cf), `${$s(sn.cfx)} after extra`, sn.cf < 0 ? 'bad' : '', 1)}
       ${kpi('kpi-dscr', 'DSCR', r(sn.dscr, 2), sn.dscr >= 1.2 ? 'healthy' : sn.dscr >= 1 ? 'thin' : 'below 1.0', sn.dscr && sn.dscr < 1 ? 'bad' : '', 1)}</div>
       <div class="bar"><i class="${sn.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (sn.cltv / g.cap) * 100)}%"></i></div>
@@ -219,7 +219,9 @@
       <label class="btn plain filebtn">Restore from backup file<input type="file" accept="application/json,.json,text/plain" hidden id="imp" aria-label="Choose backup file" data-testid="import-file"></label>
       <textarea rows="2" id="bkin" aria-label="Or paste backup text" placeholder="…or paste backup text here"></textarea><button class="btn plain" data-restore-text>Restore from pasted text</button>
       ${pendingImport ? confirmBox('Replace all current data with this backup?', 'data-import-yes', 'Yes, replace') : ''}
-      ${ask === 'reset' ? confirmBox('Reset to the sample houses? This replaces your current houses.', 'data-reset-yes', 'Yes, reset') : '<button class="btn plain" data-reset>Reset to sample data</button>'}
+      ${ask === 'reset' ? confirmBox('Replace your assets with the realistic sample?', 'data-reset-yes', 'Yes, replace') : '<button class="btn plain" data-reset data-testid="load-realistic">Load realistic sample</button>'}
+      ${ask === 'stretch' ? confirmBox('Replace your assets with the $540M stretch scenario?', 'data-stretch-yes', 'Yes, load it') : '<button class="btn plain" data-stretch data-testid="load-stretch">Load $540M stretch scenario</button>'}
+      <p class="note">The realistic sample uses market-checked prices, loans and growth. The stretch scenario reaches about $540M and +$1.4M a month, but needs 21-25% yearly business growth for nearly 20 years and about $21M of outside cash.</p>
       <p class="note">${(() => { try { const t = localStorage.getItem('rep-v4-backup'); return t ? 'Backup last shown: ' + new Date(+t).toLocaleDateString() : 'No backup yet. Copy one regularly.'; } catch (e) { return ''; } })()}</p></section>`;
   }
 
@@ -302,7 +304,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     else if (k === 'down') { h.dp = Math.min(100, Math.max(0, (n / h.price) * 100)); }
     else if (k === 'dp') { h.dp = Math.min(100, Math.max(0, n)); }
     else if (k === 'termY') { h.term = Math.max(12, Math.round(n * 12)); }
-    else if (k === 'payoff') { const B0 = E.balToday(h), i = h.rate / 1200, m = Math.max(1, Math.round(n)); h.extra = Math.max(0, E.pmt(B0, i, m) - v.P); h.driver = 'extra'; }
+    else if (k === 'payoff') { const B0 = E.balToday(h), i = h.rate / 1200, m = Math.max(1, Math.round(n)); h.extra = Math.max(0, E.pmt(B0, i, m) - v.P + 0.02); h.driver = 'extra'; /* +2 cents so rounding up never lands one month late */ }
     else if (k === 'price') { h.price = Math.max(0, n); }
     else if (k === 'rate') { h.rate = Math.min(30, Math.max(0, n)); }
     else if (k === 'loan' || k === 'need' || k === 'caprate' || k === 'mult' || k === 'proceeds') return false;
@@ -351,6 +353,8 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
     if (t.dataset.importYes !== undefined) { S = E.normalize(pendingImport); S.v = DATA_V; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     if (t.dataset.reset !== undefined) { ask = 'reset'; render(); return; }
+    if (t.dataset.stretch !== undefined) { ask = 'stretch'; render(); return; }
+    if (t.dataset.stretchYes !== undefined) { S = E.seedStretch(); S.v = DATA_V; ask = null; save(); render(); return; }
     if (t.dataset.resetYes !== undefined) { S = E.seed(); S.v = DATA_V; ask = null; save(); render(); return; }
     const go = t.closest('[data-go]'); if (go) goto(go.dataset.go);
   });
