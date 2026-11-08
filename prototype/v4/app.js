@@ -1,23 +1,27 @@
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
-  let S, UI = { tab: 'timeline', open: false, coll: {}, hideLegend: false };
+  let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '' };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  if (!S || !Array.isArray(S.houses) || !S.g) S = E.seed();
-  E.normalize(S);
+  const DATA_V = 5; /* bump when the sample portfolio changes so old saved samples are replaced */
+  if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seed();
+  E.normalize(S); S.v = DATA_V;
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
   let storageOK = true, imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false;
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
-  const hashOf = (p) => (!p ? '#' : p === 'settings' ? '#assumptions' : p.startsWith('h/') ? '#house-' + p.slice(2) : p.startsWith('import/') ? '#import-' + p.slice(7) : '#');
-  const routeOf = () => { const h = location.hash.slice(1); return h === 'assumptions' ? 'settings' : h.startsWith('house-') ? 'h/' + h.slice(6) : h.startsWith('import-') ? 'import/' + h.slice(7) : ''; };
+  const hashOf = (p) => (!p ? '#' : p === 'settings' ? '#assumptions' : p.startsWith('h/') ? '#house-' + p.slice(2) : p.startsWith('import/') ? '#import-' + p.slice(7) : p === 'add' ? '#add' : '#');
+  const routeOf = () => { const h = location.hash.slice(1); return h === 'assumptions' ? 'settings' : h.startsWith('house-') ? 'h/' + h.slice(6) : h.startsWith('import-') ? 'import/' + h.slice(7) : h === 'add' ? 'add' : ''; };
   const goto = (p) => { location.hash = hashOf(p); };
 
   /* ---------- formatting ---------- */
   const num = (n) => (isFinite(n) ? n : 0);
-  const $f = (n) => (n < -0.5 ? '−' : '') + '$' + Math.round(Math.abs(num(n))).toLocaleString('en-US');
-  const $s = (n) => (n < -0.5 ? '−' : '+') + '$' + Math.round(Math.abs(num(n))).toLocaleString('en-US');
+  const $f = (n) => { const a = Math.abs(num(n)), sg = n < -0.5 ? '−' : ''; return a >= 1e9 ? sg + '$' + (a / 1e9).toFixed(2) + 'B' : a >= 1e7 ? sg + '$' + (a / 1e6).toFixed(1) + 'M' : sg + '$' + Math.round(a).toLocaleString('en-US'); };
+  const $s = (n) => (n < -0.5 ? '−' : '+') + $f(Math.abs(n));
+  const $c = (n) => { const a = Math.abs(num(n)); return a >= 1e9 ? $f(n) : a >= 1e7 ? (n < 0 ? '−' : '') + '$' + (a / 1e6).toFixed(1) + 'M' : a >= 1e6 ? (n < 0 ? '−' : '') + '$' + (a / 1e6).toFixed(2) + 'M' : $f(n); };
+  const $cs = (n) => (n < -0.5 ? '−' : '+') + $c(Math.abs(n));
+  const TL = { house: 'Home', commercial: 'Commercial', business: 'Business' }, TPL = { house: 'Single-family homes', commercial: 'Commercial properties', business: 'Businesses' };
   const grp = (n) => Math.round(num(n)).toLocaleString('en-US');
   const mo = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 24 ? m + ' mo' : Math.floor(m / 12) + 'y ' + (m % 12) + 'm');
   const mm = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m + ' mo'); /* credit-line timing: plain months */
@@ -46,7 +50,7 @@
     return `<div class="tlw" data-testid="timeline">${rows}</div><p class="note">Bar = paying down until the line of credit opens · ● = buy the next house. Tap a row to edit.</p>`;
   }
   function nwChart(pl) {
-    const T = Math.max(12, Math.min(pl.T, pl.lastBuy + 60)), s = pl.series.nw.slice(0, T + 1);
+    const T = Math.max(12, Math.min(pl.T, Math.max(pl.lastBuy + 60, pl.planM))), s = pl.series.nw.slice(0, T + 1);
     const W = 340, Hh = 170, pad = 10, min = Math.min(0, ...s), max = Math.max(1, ...s);
     const x = (t) => pad + (t / T) * (W - 2 * pad), y = (v) => Hh - 24 - ((v - min) / (max - min || 1)) * (Hh - 44);
     const step = Math.max(1, Math.ceil(T / 160)); let d = '';
@@ -83,24 +87,27 @@
 
   /* ---------- main page ---------- */
   function main() {
-    const pl = E.plan(S), t0 = pl.today, tf = pl.final, g = S.g, owned = S.houses.filter((h) => h.status === 'owned');
-    if (!S.houses.length) return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings">⚙</button></h1><div class="card empty"><p><b>No houses yet</b></p><p>Add your first house to see your plan.</p><button class="linkbtn" data-go="import/new">Or import one from a listing file</button><button class="btn" data-add data-testid="add-house" style="margin-top:8px">+ Add house</button></div>`;
+    const pl = E.plan(S), t0 = pl.today, tf = pl.final, th = pl.horizon, g = S.g, yrs = g.planYears, owned = S.houses.filter((h) => h.status === 'owned');
+    if (!S.houses.length) return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings">⚙</button></h1><div class="card empty"><p><b>Nothing here yet</b></p><p>Add a home, a commercial property or a business to see your plan.</p><button class="btn" data-add data-testid="add-house" style="margin-top:8px">+ Add property or business</button><button class="linkbtn" data-go="import/new">Or import a home from a listing file</button></div>`;
     const tot = S.houses.reduce((s, h) => s + E.view(S, h).X, 0);
     const n = S.houses.length, sched = n - pl.unfunded.length;
-    const rows = S.houses.map((h) => {
-      const v = pl.V[h.id], a = E.afford(S, h, pl), t = H(h.target), p = pl.purchase[h.id];
+    const rowOf = (h) => {
+      const v = pl.V[h.id], t = H(h.target), p = pl.purchase[h.id], type = h.type || 'house';
       const tag = h.status === 'owned' ? 'owned' : isFinite(p) ? 'buy ' + mo(p) : 'unfunded';
       const loc = !t ? '' : !isFinite(p + v.locM) ? 'not reachable' : p + v.locM <= 0 ? 'opens now' : 'opens in ' + mm(p + v.locM);
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
-      return `<div class="row" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span><span class="addr">${esc(h.addr)}</span><span class="tag">${tag}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}">${$f(v.payment)}/mo ${h.status === 'planned' ? 'when bought' : 'total'} ${hi}</div></span>
+      return `<div class="row" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span class="nm"><span class="addr">${esc(h.addr)}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}"><span class="tag">${tag}</span> ${$f(v.payment)}/mo${h.status === 'planned' ? '' : ' total'} ${hi}</div></span>
         <span class="ex ${h.driver === 'months' ? 'calc' : ''}">Extra<span class="iw"><em>$</em><input inputmode="decimal" data-testid="extra-input" data-p="h.${h.id}.extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(v.X)}"></span></span></div>
-        <div class="r2"><span class="fund">Funds</span>${targetSel(h)}<span class="locline" data-testid="loc-line">${loc}</span><span class="cfl ${v.cf < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="Rent minus expenses and the loan payment, before extra payments"><b data-k="cf-${h.id}">${$s(v.cf)}/mo</b><small>cash flow</small></span></div></div>`; }).join('');
-    const cmp = (label, a, b, f, cls) => `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td class="${cls || ''}" data-k="c-${label}-b"><b>${f(b)}</b></td></tr>`;
-    const warn = pl.unfunded.length ? `<div class="warnbox">⚠ ${pl.unfunded.length} planned house${pl.unfunded.length > 1 ? 's are' : ' is'} never funded under the current numbers.</div>` : '';
+        <div class="r2"><div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div><span class="cfl ${v.cf < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="Income minus expenses and the loan payment, before extra payments"><b data-k="cf-${h.id}">${$s(v.cf)}/mo</b><small>cash flow</small></span></div></div>`; };
+    const rows = ['house', 'commercial', 'business'].map((tp) => { const list = S.houses.filter((h) => (h.type || 'house') === tp); return list.length ? `<div class="grp">${TPL[tp]}</div>` + list.map(rowOf).join('') : ''; }).join('');
+    const c3 = (label, a, b, c, f, cls) => `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td data-k="c-${label}-b">${f(b)}</td><td class="${cls || ''}" data-k="c-${label}-c"><b>${f(c)}</b></td></tr>`;
+    const warn = pl.unfunded.length ? `<div class="warnbox">⚠ ${pl.unfunded.length} planned asset${pl.unfunded.length > 1 ? 's are' : ' is'} never funded under the current numbers.</div>` : '';
     const health = pl.worst.dti > g.dti ? `<div class="warnbox">⚠ Debt-to-income peaks at ${r(pl.worst.dti)}% in ${mo(pl.worst.month)} (limit ${g.dti}%).</div>` : '';
-    const tab = UI.tab;
-    const nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0];
-    const headline = (nb ? `Next: buy <b>${esc(nb.addr)}</b> in <b>${mo(pl.purchase[nb.id])}</b>. ` : '') + (pl.unfunded.length ? `${pl.unfunded.length} not funded yet.` : `All ${n} house${n > 1 ? 's' : ''} by <b>${mo(pl.lastBuy)}</b>.`);
+    const outside = th.outside > 0 ? `<div class="warnbox" data-testid="outside-cash">Needs <b>${$f(th.outside)}</b> of outside cash for purchases a credit line doesn't fund (partners, investors, savings). The plan doesn't repay it.</div>` : '';
+    const tab = UI.tab, nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0];
+    const headline = (nb ? `Next: buy <b>${esc(nb.addr)}</b> in <b>${mm(pl.purchase[nb.id])}</b>. ` : '') + (pl.unfunded.length ? `${pl.unfunded.length} not funded yet. ` : `All ${n} assets by <b>${mo(pl.lastBuy)}</b>. `) + `Net worth <b>${$f(th.nw)}</b> in ${yrs} years.`;
+    const drv = pl.assetsAt(pl.planM).sort((a, b) => b.equity - a.equity), drvOpen = !UI.coll.drivers;
+    const drivers = `<button class="linkbtn leftbtn" data-coll="drivers" aria-expanded="${drvOpen}">What drives the ${yrs}-year number ${drvOpen ? '▾' : '▸'}</button>${drvOpen ? `<div data-testid="drivers">${drv.slice(0, 6).map((d) => `<div class="drv"><span>${esc(d.addr)}</span><span><b>${$f(d.equity)}</b> <small>${th.nw > 0 ? r((d.equity / th.nw) * 100) : 0}%</small></span></div>`).join('')}<p class="note">Equity = value − loans − credit lines drawn. A sample like this leans on a few fast-growing businesses; check the growth rate on each.</p></div>` : ''}`;
     return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></h1>
     ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
     <section class="card" data-testid="summary"><div class="kg">
@@ -111,48 +118,65 @@
       <div class="bar"><i class="${t0.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (t0.cltv / g.cap) * 100)}%"></i></div>
       <div class="cap"><span data-k="cltv">Debt ${r(t0.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
       <p class="plan-line" data-testid="plan-headline">${headline}</p></section>
-    <div class="sec">Extra payments &amp; credit lines<span class="tot" data-testid="total-extra" data-k="tot">${$f(tot)}/mo extra</span></div><section class="card" id="ledger" data-testid="ledger">${rows}<button class="addrow" data-add data-testid="add-house">+ Add house</button></section>
-    <button class="linkbtn" data-go="import/new" data-testid="import-link">Import a house from a listing file</button>
-    <section class="card" data-testid="plan-card"><b>Plan</b> <span class="note">${sched} of ${n} houses by ${mo(pl.lastBuy)}</span>
-      <table class="cmp"><thead><tr><th></th><th>Today</th><th>Plan complete</th></tr></thead><tbody>
-      ${cmp('Net worth', t0.nw, tf.nw, $f)}${cmp('Monthly payments', t0.monthly, tf.monthly, $f)}${cmp('Cash flow / mo', t0.cf, tf.cf, $s, tf.cf < 0 ? 'bad' : '')}${cmp('Debt', t0.debt, tf.debt, $f)}${cmp('Houses', t0.count, tf.count, (x) => x)}</tbody></table>
-      ${warn}${health}
+    <div class="sec">Extra payments &amp; credit lines<span class="tot" data-testid="total-extra" data-k="tot">${$f(tot)}/mo extra</span></div><section class="card" id="ledger" data-testid="ledger">${rows}<button class="addrow" data-add data-testid="add-house">+ Add property or business</button></section>
+    <button class="linkbtn" data-go="import/new" data-testid="import-link">Import a home from a listing file</button>
+    <section class="card" data-testid="plan-card"><b>Plan</b> <span class="note">${sched} of ${n} assets by ${mo(pl.lastBuy)}</span>
+      <table class="cmp"><thead><tr><th></th><th>Today</th><th>Plan done</th><th>${yrs} yrs</th></tr></thead><tbody>
+      ${c3('Net worth', t0.nw, tf.nw, th.nw, $c)}${c3('Monthly payments', t0.monthly, tf.monthly, th.monthly, $c)}${c3('Cash flow / mo', t0.cf, tf.cf, th.cf, $cs, th.cf < 0 ? 'bad' : '')}${c3('Debt', t0.debt, tf.debt, th.debt, $c)}${c3('Assets', t0.count, tf.count, th.count, (x) => x)}${c3('Outside cash', t0.outside, tf.outside, th.outside, $c)}</tbody></table>
+      ${outside}${warn}${health}${drivers}
       <div class="seg" role="tablist"><button data-tab="timeline" class="${tab === 'timeline' && UI.open ? 'on' : ''}" data-testid="timeline-toggle">Timeline</button><button data-tab="nw" class="${tab === 'nw' && UI.open ? 'on' : ''}" data-testid="networth-toggle">Net worth</button><button data-tab="hide" class="${!UI.open ? 'on' : ''}">Hide</button></div>
       ${UI.open ? (tab === 'nw' ? nwChart(pl) : timeline(pl)) : ''}</section>`;
   }
 
   /* ---------- house page ---------- */
   function house(h) {
-    const pl = E.plan(S), v = pl.V[h.id], g = S.g, a = E.afford(S, h, pl), t = H(h.target), P = `h.${h.id}.`;
+    const pl = E.plan(S), v = pl.V[h.id], g = S.g, a = E.afford(S, h, pl), t = H(h.target), P = `h.${h.id}.`, type = h.type || 'house';
     const wo = E.plan(E.without(S, h.id)), p0 = pl.purchase[h.id];
     const sooner = t && isFinite(v.locM) ? v.locM - E.locMonths(S, h, v.X + 100) : 0;
-    const src = S.houses.filter((x) => x.target === h.id);
-    const heloc = pl.funds[h.id] ? v.D : 0;
-    const debt = v.debtNow, capPct = (debt / h.price) * 100;
-    const L = [['Net worth today', wo.today.nw, pl.today.nw, $f], ['Net worth, plan complete', wo.final.nw, pl.final.nw, $f], ['Monthly payments, plan complete', wo.final.monthly, pl.final.monthly, $f], ['Cash flow today', wo.today.cf, pl.today.cf, $s]];
+    const src = S.houses.filter((x) => x.target === h.id), heloc = pl.funds[h.id] ? v.D : 0, debt = v.debtNow;
+    const LB = { house: { rent: 'Monthly rent', sec: 'Rent & expenses', growth: 'Appreciation / yr', price: 'Price' }, commercial: { rent: 'Monthly rent (all tenants)', sec: 'Rent & operating costs', growth: 'Value growth / yr', price: 'Purchase price' }, business: { rent: 'Monthly owner profit', sec: 'Profit', growth: 'Business growth / yr', price: 'Purchase price' } }[type];
+    const invested = v.invested, coc = invested > 0 ? ((v.cf * 12) / invested) * 100 : NaN, dscrH = v.P > 0 ? v.noi / v.P : NaN;
+    const lo = E.LOANS.find((l) => l.id === h.loanId);
+    const loanSel = `<div class="f"><span class="lb">Loan option</span><select class="loansel" data-loan="${h.id}" aria-label="Loan option">${E.loansFor(type).map((l) => `<option value="${l.id}" ${h.loanId === l.id ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}<option value="custom" ${lo ? '' : 'selected'}>Custom terms</option></select></div>`;
+    const L = [['Net worth today', wo.today.nw, pl.today.nw, $f], [`Net worth, ${g.planYears} years`, wo.horizon.nw, pl.horizon.nw, $f], [`Monthly payments, ${g.planYears} years`, wo.horizon.monthly, pl.horizon.monthly, $f], ['Cash flow today', wo.today.cf, pl.today.cf, $s]];
     const impactLines = L.filter((x) => Math.abs(x[1] - x[2]) > 0.5).map((x) => `<div class="f"><span class="lb">${x[0]}</span><span>${x[3](x[1])} → <b>${x[3](x[2])}</b></span></div>`);
-    const invested = v.down + (h.price * g.closing) / 100, coc = invested > 0 ? ((v.cf * 12) / invested) * 100 : NaN, dscrH = v.P > 0 ? v.noi / v.P : NaN;
     const timing = h.status === 'planned'
       ? (src.length ? `<p class="note">Bought when ${src.map((x) => esc(x.addr)).join(' or ')}'s line of credit opens — ${isFinite(p0) ? mo(p0) + ' from now' : 'not reachable'}.</p>` : field('Buy in (months)', P + 'buyIn', h.buyIn))
       : field('Months already paid', P + 'paid', h.paid);
-    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Address" title="${esc(h.addr)}"></h2></div>
-    ${h.fresh ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
-    <section class="card"><div class="kg">${kpi('h-payment', 'Monthly payment', $f(v.payment), `P&amp;I ${$f(v.P)} + extra ${$f(v.X)} + escrow ${$f(v.escrow)}`)}${kpi('h-cf', 'Cash flow / mo', $s(v.cf), `${$s(v.cf - v.X)} after extra`, v.cf < 0 ? 'bad' : '')}
+    const income = type === 'business'
+      ? `${field(LB.rent, P + 'rent', grp(h.rent), { pre: '$' })}<p class="note">What the business pays you each month before this loan. Price ÷ yearly profit is ${r(v.multiple, 1)}×.</p>`
+      : `${field(LB.rent, P + 'rent', grp(h.rent), { pre: '$' })}${field(type === 'commercial' ? 'Property tax / mo (your share)' : 'Property tax / mo', P + 'tax', grp(h.tax), { pre: '$' })}${field('Insurance / mo', P + 'ins', grp(h.ins), { pre: '$' })}${field(type === 'commercial' ? 'CAM & operating / mo' : 'HOA / mo', P + 'hoa', grp(h.hoa), { pre: '$' })}
+      <button class="chip link" data-go="settings">Vacancy ${g.vac}%</button><button class="chip link" data-go="settings">Mgmt ${g.mgmt}%</button><button class="chip link" data-go="settings">Repairs ${g.maint}%/yr</button>
+      <p class="note">Net operating income ${$f(v.noi)}/mo · after loan payment ${$s(v.cf)}/mo</p>`;
+    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Name or address" title="${esc(h.addr)}"></h2><span class="tag" style="margin:0">${TL[type]}</span></div>
+    ${h.fresh && type === 'house' ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
+    <section class="card"><div class="kg">${kpi('h-payment', 'Monthly payment', $f(v.payment), `${h.io ? 'interest ' : 'P&amp;I '}${$f(v.P)} + extra ${$f(v.X)}${v.escrow ? ' + costs ' + $f(v.escrow) : ''}`)}${kpi('h-cf', 'Cash flow / mo', $s(v.cf), `${$s(v.cf - v.X)} after extra`, v.cf < 0 ? 'bad' : '')}
       ${kpi('h-dscr', 'DSCR', r(dscrH, 2), isFinite(dscrH) ? (dscrH >= 1.2 ? 'income covers the loan' : dscrH >= 1 ? 'thin cushion' : 'below 1.0') : 'no loan payment', isFinite(dscrH) && dscrH < 1 ? 'bad' : '', 1)}${kpi('h-coc', 'Cash-on-cash return', isFinite(coc) ? r(coc, 1) + '%' : '—', 'yearly cash flow ÷ cash invested', coc < 0 ? 'bad' : '', 1)}</div>
       <div class="seg"><button class="${h.status === 'owned' ? 'on' : ''}" data-status="owned">Owned</button><button class="${h.status === 'planned' ? 'on' : ''}" data-status="planned">Planned</button></div>${timing}</section>
     ${UI.hideLegend && !h.listingUrl ? '' : `<p class="note" style="margin:10px 4px 0">${UI.hideLegend ? '' : '<i class="auto">auto</i> = calculated from your other numbers; tap to override. <button class="chip link" data-hidelegend>Got it</button> '}${h.listingUrl ? 'Imported from a listing' + (h.info && h.info.beds ? ' · ' + h.info.beds + ' bd / ' + h.info.baths + ' ba · ' + (h.info.sqft || '?') + ' sqft' : '') + '.' : ''}</p>`}
-    <div class="sec">Purchase</div><section class="card">${field('Price', P + 'price', grp(h.price), { pre: '$' })}${field('Down payment', P + 'dp', r(h.dp, 2), { suf: '%' })}${field('Down payment $', P + 'down', grp(v.down), { pre: '$', calc: 1 })}${field('Loan amount', P + 'loan', grp(v.L), { pre: '$', calc: 1, ro: 1 })}</section>
-    <div class="sec">Loan</div><section class="card">${field('Interest rate', P + 'rate', r(h.rate, 3), { suf: '%' })}${field('Term (years)', P + 'termY', h.term / 12)}${field('Extra / month', P + 'extra', grp(v.X), { pre: '$', calc: h.driver === 'months' })}${field('Paid off in (months)', P + 'payoff', isFinite(v.payoff) ? v.payoff : '', { calc: 1 })}${field('Other liens on this house', P + 'liens', grp(h.liens), { pre: '$' })}
-      <p class="note">${isFinite(v.payoff) ? `Paid off in ${mo(v.payoff)}. ` : 'Payment does not cover interest. '}Debt now: ${$f(debt)} (${r((debt / h.price) * 100)}% of value).${v.cltvAtLoc != null ? ` When its line of credit opens: ${r(v.cltvAtLoc)}% (cap ${g.cap}%).` : ''}</p>${v.cltvAtLoc != null && v.cltvAtLoc > g.cap + 0.01 ? '<span class="chip warnchip">Over the debt cap</span>' : ''}</section>
-    ${colSec('rent', 'Rent &amp; expenses', 'rent ' + $f(h.rent) + ' · costs ' + $f(h.tax + h.ins + h.hoa), `<section class="card">${field('Monthly rent', P + 'rent', grp(h.rent), { pre: '$' })}${field('Property tax / mo', P + 'tax', grp(h.tax), { pre: '$' })}${field('Insurance / mo', P + 'ins', grp(h.ins), { pre: '$' })}${field('HOA / mo', P + 'hoa', grp(h.hoa), { pre: '$' })}
-      <button class="chip link" data-go="settings">Vacancy ${g.vac}%</button><button class="chip link" data-go="settings">Mgmt ${g.mgmt}%</button><button class="chip link" data-go="settings">Repairs ${g.maint}%/yr</button>
-      <p class="note">Net operating income ${$f(v.noi)}/mo · after P&amp;I ${$s(v.cf)}/mo</p></section>`)}
+    <div class="sec">Purchase</div><section class="card">${field(LB.price, P + 'price', grp(h.price), { pre: '$' })}${field('Down payment', P + 'dp', r(h.dp, 2), { suf: '%' })}${field('Down payment $', P + 'down', grp(v.down), { pre: '$', calc: 1 })}${field('Loan amount', P + 'loan', grp(v.L), { pre: '$', calc: 1, ro: 1 })}${field(LB.growth, P + 'growth', r(v.growth, 2), { suf: '%' })}
+      ${type === 'commercial' ? field('Cap rate', P + 'caprate', r(v.capRate, 1), { suf: '%', calc: 1, ro: 1 }) : ''}${type === 'business' ? field('Price ÷ yearly profit', P + 'mult', r(v.multiple, 1), { suf: '×', calc: 1, ro: 1 }) : ''}</section>
+    <div class="sec">Loan</div><section class="card">${loanSel}${lo || h.io ? `<p class="note">${lo ? esc(lo.note) + ' ' : ''}${h.io ? 'Interest-only: extra payments reduce the balance. Balloon at maturity is not modeled.' : ''}</p>` : '<p class="note">Custom terms. Pick a loan option to auto-fill them.</p>'}
+      ${field('Interest rate', P + 'rate', r(h.rate, 3), { suf: '%' })}${field('Term (years)', P + 'termY', r(h.term / 12, 2))}${field('Closing costs', P + 'closingPct', r(h.closingPct == null ? g.closing : h.closingPct, 2), { suf: '%' })}${field('Extra / month', P + 'extra', grp(v.X), { pre: '$', calc: h.driver === 'months' })}${field('Paid off in (months)', P + 'payoff', isFinite(v.payoff) ? v.payoff : '', { calc: 1 })}${field('Other liens', P + 'liens', grp(h.liens), { pre: '$' })}
+      <p class="note">${isFinite(v.payoff) ? `Paid off in ${mo(v.payoff)}. ` : h.io ? 'Not paid off until you refinance or sell. ' : 'Payment does not cover interest. '}Debt now: ${$f(debt)} (${r((debt / h.price) * 100)}% of value).${v.cltvAtLoc != null ? ` When its line of credit opens: ${r(v.cltvAtLoc)}% (cap ${g.cap}%).` : ''}</p>${v.cltvAtLoc != null && v.cltvAtLoc > g.cap + 0.01 ? '<span class="chip warnchip">Over the debt cap</span>' : ''}</section>
+    ${colSec('rent', LB.sec, type === 'business' ? 'profit ' + $f(h.rent) : 'rent ' + $f(h.rent) + ' · costs ' + $f(h.tax + h.ins + h.hoa), `<section class="card">${income}</section>`)}
     <div class="sec">Line of credit strategy</div><section class="card"><div class="f"><span class="lb">Funds</span>${targetSel(h)}</div>
       ${t ? `${field('Cash needed', P + 'need', grp(v.D), { pre: '$', calc: 1, ro: 1 })}${field('Months until LOC', P + 'wait', isFinite(v.locM) ? v.locM : '', { calc: h.driver === 'extra' })}
       <div class="f"><span class="lb">Opens (from today)</span><b>${isFinite(p0 + v.locM) ? mm(p0 + v.locM) : 'never'}</b></div>
-      ${v.infeasible ? '<p class="note">⚠ That wait is not reachable, even with the loan fully paid.</p>' : ''}${a.cls === 'warn' || a.cls === 'bad' ? `<span class="chip warnchip" title="${esc(a.why || '')}">Debt-to-income ${a.cls === 'bad' ? 'over' : 'near'} your limit when ${esc(t.addr)} closes</span>` : ''}${sooner > 0 ? `<span class="chip">+$100/mo → ${sooner} mo sooner</span>` : ''}` : '<p class="note">Pick the house this line of credit will fund.</p>'}</section>
-    ${colSec('impact', 'Impact on your plan', impactLines.length ? impactLines.length + ' changes' : 'no change', `<section class="card" data-testid="impact">${impactLines.length ? impactLines.join('') : '<p class="note" style="margin:0">Adding or removing this house does not change the numbers below.</p>'}<p class="note">Your plan without this house → with it.</p></section>`)}
-    ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? It is also cleared as a funding target.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="btn ghost" data-del="${h.id}" data-testid="h-delete">Remove house</button>`}`;
+      ${v.infeasible ? '<p class="note">⚠ That wait is not reachable, even with the loan fully paid.</p>' : ''}${a.cls === 'warn' || a.cls === 'bad' ? `<span class="chip warnchip" title="${esc(a.why || '')}">Debt-to-income ${a.cls === 'bad' ? 'over' : 'near'} your limit when ${esc(t.addr)} closes</span>` : ''}${sooner > 0 ? `<span class="chip">+$100/mo → ${sooner} mo sooner</span>` : ''}` : '<p class="note">Pick the asset this line of credit will fund.</p>'}</section>
+    ${colSec('impact', 'Impact on your plan', impactLines.length ? impactLines.length + ' changes' : 'no change', `<section class="card" data-testid="impact">${impactLines.length ? impactLines.join('') : '<p class="note" style="margin:0">Adding or removing this does not change the numbers below.</p>'}<p class="note">Your plan without this asset → with it.</p></section>`)}
+    ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? It is also cleared as a funding target.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="btn ghost" data-del="${h.id}" data-testid="h-delete">Remove</button>`}`;
+  }
+
+  /* ---------- add page: pick a type, then a loan option that auto-fills the terms ---------- */
+  function addPage() {
+    const tp = E.TYPES[UI.addType] ? UI.addType : 'house', list = E.loansFor(tp), sel = list.find((l) => l.id === UI.addLoan) ? UI.addLoan : list[0].id;
+    const blurb = { house: 'A single-family rental or primary home.', commercial: 'Retail, office, storage or industrial. Valued on rent and cap rate.', business: 'An operating business you buy. Valued on owner profit and growth.' }[tp];
+    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Add to portfolio</h2></div>
+    <section class="card"><div class="seg" role="tablist">${['house', 'commercial', 'business'].map((x) => `<button data-addtype="${x}" class="${x === tp ? 'on' : ''}">${TL[x]}</button>`).join('')}</div><p class="note">${blurb}</p></section>
+    <div class="sec">Loan option</div><section class="card" data-testid="loan-options">${list.map((l) => `<button class="loanopt ${l.id === sel ? 'on' : ''}" data-pickloan="${l.id}" aria-pressed="${l.id === sel}"><b>${esc(l.name)}</b><span>${l.dp}% down · ${l.rate}% · ${l.io ? 'interest-only, ' : ''}${r(l.term / 12, 1)} yr</span><small>${esc(l.note)}</small></button>`).join('')}</section>
+    <button class="btn" style="width:100%" data-confirm-add="${tp}|${sel}" data-testid="confirm-add">Add ${TL[tp].toLowerCase()}</button>
+    ${tp === 'house' ? '<button class="linkbtn" data-go="import/new">Or import a home from a listing file</button>' : ''}`;
   }
 
   /* ---------- settings ---------- */
@@ -161,7 +185,7 @@
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Assumptions</h2></div>
     <div class="sec">Borrowing</div><section class="card">${F('Max debt on a house (cap)', 'cap', { suf: '%' })}${F('Lender appraisal haircut', 'haircut', { suf: '%' })}${F('Closing costs (of price)', 'closing', { suf: '%' })}${F('Line of credit rate', 'hrate', { suf: '%' })}</section>
     <div class="sec">Co-signers &amp; qualifying</div><section class="card">${F('Parent 1 income / yr', 'p1', { pre: '$' })}${F('Parent 2 income / yr', 'p2', { pre: '$' })}${F('Debt-to-income limit', 'dti', { suf: '%' })}${F('Rent counted as income', 'rentCount', { suf: '%' })}${F('Other monthly debts', 'otherDebt', { pre: '$' })}</section>
-    <div class="sec">Operating costs</div><section class="card">${F('Vacancy', 'vac', { suf: '%' })}${F('Management (of rent)', 'mgmt', { suf: '%' })}${F('Repairs reserve (of value / yr)', 'maint', { suf: '%' })}${F('Appreciation / yr', 'appr', { suf: '%' })}</section>
+    <div class="sec">Operating costs</div><section class="card">${F('Vacancy', 'vac', { suf: '%' })}${F('Management (of rent)', 'mgmt', { suf: '%' })}${F('Repairs reserve (of value / yr)', 'maint', { suf: '%' })}${F('Default growth / yr', 'appr', { suf: '%' })}${F('Plan horizon (years)', 'planYears', {})}</section>
     <div class="sec">Data — stays on this device</div><section class="card">
       ${notice ? `<div class="warnbox">${esc(notice)}</div>` : ''}
       <button class="btn" data-export data-testid="export">${exportOpen ? 'Hide backup' : 'Show backup to copy'}</button>
@@ -230,7 +254,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   function render() {
     const route = routeOf(), a = document.activeElement, id = a && a.dataset && (a.dataset.p || a.dataset.sel), typed = a && a.value, pos = a && a.selectionStart;
     const app = document.getElementById('app');
-    app.innerHTML = route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
+    app.innerHTML = route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
     if (id) { const el = app.querySelector(`[data-p="${id}"],[data-sel="${id}"]`); if (el) { el.focus(); if (a.dataset.p && !el.readOnly && document.hasFocus()) { el.value = typed; try { el.setSelectionRange(pos, pos); } catch (e) {} } } }
     const cur = {};
     app.querySelectorAll('[data-k]').forEach((el) => { const k = el.dataset.k, v = el.tagName === 'INPUT' ? el.value : el.textContent; cur[k] = v;
@@ -254,8 +278,11 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     else if (k === 'payoff') { const B0 = E.balToday(h), i = h.rate / 1200, m = Math.max(1, Math.round(n)); h.extra = Math.max(0, E.pmt(B0, i, m) - v.P); h.driver = 'extra'; }
     else if (k === 'price') { h.price = Math.max(0, n); }
     else if (k === 'rate') { h.rate = Math.min(30, Math.max(0, n)); }
-    else if (k === 'loan' || k === 'need') return false;
+    else if (k === 'loan' || k === 'need' || k === 'caprate' || k === 'mult') return false;
+    else if (k === 'growth') h.growth = Math.min(100, Math.max(-50, n));
+    else if (k === 'closingPct') h.closingPct = Math.min(20, Math.max(0, n));
     else h[k] = Math.max(0, n);
+    if (['dp', 'down', 'rate', 'termY'].indexOf(k) >= 0) h.loanId = 'custom';
     return true;
   }
   const app = document.getElementById('app');
@@ -264,6 +291,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   app.addEventListener('pointerleave', nwLeave, true); app.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') return; });
   app.addEventListener('focusout', (e) => { if (e.target.dataset && e.target.dataset.p && e.target.tagName === 'INPUT' && !e.relatedTarget) setTimeout(() => { const a = document.activeElement; if (!(a && a.dataset && (a.dataset.p || a.dataset.sel))) render(); }, 0); });
   app.addEventListener('change', (e) => {
+    const ln = e.target.dataset.loan; if (ln) { const h = H(ln); if (e.target.value === 'custom') h.loanId = 'custom'; else E.applyLoan(h, e.target.value); save(); render(); return; }
     const sel = e.target.dataset.sel; if (sel) { H(sel).target = e.target.value; save(); render(); return; }
     if (e.target.dataset.listingFile !== undefined && e.target.files[0]) { const rd = new FileReader(); rd.onload = () => readListing(String(rd.result)); rd.readAsText(e.target.files[0]); return; }
     if (e.target.id === 'imp' && e.target.files[0]) { const rd = new FileReader(); rd.onload = () => stageBackup(String(rd.result)); rd.readAsText(e.target.files[0]); } });
@@ -274,7 +302,10 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.readListing !== undefined) { const ta = document.querySelector('[data-listing-text]'); readListing(ta ? ta.value : ''); return; }
     if (t.dataset.applyListing) { applyListing(t.dataset.applyListing); return; }
     if (t.dataset.tab) { if (t.dataset.tab === 'hide') UI.open = false; else { UI.open = true; UI.tab = t.dataset.tab; } save(); render(); return; }
-    if (t.dataset.add !== undefined) { const h = E.newHouse({ fresh: true }); S.houses.push(h); save(); goto('h/' + h.id); return; }
+    if (t.dataset.add !== undefined) { goto('add'); return; }
+    const at = t.closest('[data-addtype]'); if (at) { UI.addType = at.dataset.addtype; UI.addLoan = ''; render(); return; }
+    const pk = t.closest('[data-pickloan]'); if (pk) { UI.addLoan = pk.dataset.pickloan; render(); return; }
+    if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const h = E.newAsset(tp, lid, { fresh: true }); S.houses.push(h); save(); goto('h/' + h.id); return; }
     if (t.dataset.del) { ask = 'del:' + t.dataset.del; render(); return; }
     if (t.dataset.delYes) { S = E.without(S, t.dataset.delYes); ask = null; save(); goto(''); render(); return; }
     if (t.dataset.askCancel !== undefined) { ask = null; pendingImport = null; render(); return; }
@@ -286,9 +317,9 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.copybackup !== undefined) { const m = document.getElementById('cbm'), ta = document.getElementById('bkout'); const fail = () => { ta.focus(); ta.select(); m.textContent = 'Select the text above and copy it by hand.'; };
       try { navigator.clipboard.writeText(ta.value).then(() => { m.textContent = 'Copied.'; }, fail); } catch (x) { fail(); } return; }
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
-    if (t.dataset.importYes !== undefined) { S = E.normalize(pendingImport); pendingImport = null; notice = ''; save(); goto(''); render(); return; }
+    if (t.dataset.importYes !== undefined) { S = E.normalize(pendingImport); S.v = DATA_V; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     if (t.dataset.reset !== undefined) { ask = 'reset'; render(); return; }
-    if (t.dataset.resetYes !== undefined) { S = E.seed(); ask = null; save(); render(); return; }
+    if (t.dataset.resetYes !== undefined) { S = E.seed(); S.v = DATA_V; ask = null; save(); render(); return; }
     const go = t.closest('[data-go]'); if (go) goto(go.dataset.go);
   });
   render();

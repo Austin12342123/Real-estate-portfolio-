@@ -105,3 +105,23 @@ svg.nw .hit{fill:transparent}svg.nw .xh{stroke:var(--mut);stroke-width:1;stroke-
 svg.nw .hv{fill:var(--acc);stroke:var(--card);stroke-width:2}svg.nw circle.buy{fill:var(--ok)}
 .tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--card);border-radius:8px;padding:5px 9px;font-size:12px;white-space:nowrap;display:flex;flex-direction:column;line-height:1.25;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .tip[hidden]{display:none}.tip b{font-size:14px}
+
+.grp{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);padding:10px 0 2px;border-top:1px solid var(--line)}.grp:first-child{border-top:0;padding-top:2px}
+.row{border-top:0}.grp+.row{border-top:0}.row+.row{border-top:1px solid var(--line)}
+.loanopt{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 12px;margin:0 0 8px;min-height:44px}
+.loanopt span{font-size:13px;color:var(--ink)}.loanopt small{font-size:12px;color:var(--mut)}
+.loanopt.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc) inset}
+.loansel{max-width:230px;font-size:15px;background:var(--field);border-radius:14px;padding:0 8px;min-height:44px}
+.leftbtn{text-align:left;margin:8px 0 0;min-height:36px}
+.drv{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0;border-top:1px solid var(--line)}.drv span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.drv small{color:var(--mut)}
+table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp td:first-child{padding-left:0;white-space:nowrap}
+.nm{min-width:0}.addr{max-width:170px}
+
+.addr{max-width:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r1>.nm{flex:1;min-width:0}
+.pay .tag{margin:0 4px 0 0;font-size:10px}
+.r2{align-items:center;gap:8px}
+.fcol{display:flex;flex-direction:column;min-width:0;flex:1}
+.frow{display:flex;align-items:center;gap:6px;min-width:0}
+.frow select[data-sel]{flex:1;min-width:0;max-width:210px;font-size:14px}
+.fcol .locline{margin:0 0 0 0;font-size:12px;color:var(--mut);padding-left:2px}
