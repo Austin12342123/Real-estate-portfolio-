@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v3`  |  Run: 2026-11-08T19:56:57.943Z  |  50s
+Target: `prototype/v3`  |  Run: 2026-11-08T20:08:27.513Z  |  51s
 
 ## Score: **84.00 / 85**
 
@@ -35,7 +35,7 @@ Target: `prototype/v3`  |  Run: 2026-11-08T19:56:57.943Z  |  50s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (15 edge scenarios) | 2 | 2.00 | 15/15 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 1 | 1.00 | ok Infinity,Infinity/0/0,162,324/162,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of owned/bought houses | 1 | 1.00 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for 10 houses (median of 7) | 0.5 | 0.50 | median 2.1ms |
+| B13 | plan() under 100ms for 10 houses (median of 7) | 0.5 | 0.50 | median 2.5ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 1.5 | 1.50 | exact 60/60, within1 60/60  |
 | B15 | 85% cap counts loan + liens + drawn LOC for every house in a 3-chain (and totals add up) | 2 | 2.00 | 4/4 sub-checks pass |
 | C01 | At 390x844 all 3 ledger rows (incl. extra field + LOC info) fit in first viewport | 2 | 2.00 | 3/3 rows fully visible above fold/bottom bar; last row bottom 751px, bar top 779px |

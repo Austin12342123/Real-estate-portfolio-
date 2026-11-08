@@ -16,6 +16,7 @@
   const $s = (n) => (n < -0.5 ? '−' : '+') + '$' + Math.round(Math.abs(num(n))).toLocaleString('en-US');
   const grp = (n) => Math.round(num(n)).toLocaleString('en-US');
   const mo = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 24 ? m + ' mo' : Math.floor(m / 12) + 'y ' + (m % 12) + 'm');
+  const mm = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m + ' mo'); /* credit-line timing: plain months */
   const r = (n, d = 0) => (isFinite(n) ? String(+n.toFixed(d)) : '—');
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -34,7 +35,7 @@
     const grid = tk.map((y) => `<i class="tk" style="left:${pc(y * 12)}%"><span>${y ? y + 'y' : 'Now'}</span></i>`).join('');
     const rows = steps.map((x) => { const h = H(x.id), t = H(x.target), startOk = isFinite(x.start);
       return `<div class="tr" data-go="h/${h.id}"><div class="tl">${esc(h.addr)} <b>→ ${esc(t.addr)}</b></div><div class="trk">${grid}${x.ok ? `<span class="seg2 ${h.status === 'planned' ? 'pl' : ''}" style="left:${pc(x.start)}%;width:${Math.max(1.5, pc(x.end - x.start))}%"></span><span class="dot" style="left:${pc(x.end)}%"></span>` : '<span class="nr">not reachable</span>'}</div>
-      <div class="tm">${x.ok ? `${x.start ? `starts ${mo(x.start)} · ` : ''}LOC ready <b>${mo(x.end)}</b>${x.funds ? '' : ' (not used — target bought sooner)'}` : startOk ? 'the debt cap leaves no room' : 'waiting on an earlier house'}</div></div>`; }).join('');
+      <div class="tm">${x.ok ? `${x.start ? `starts ${mm(x.start)} · ` : ''}LOC ready <b>${mm(x.end)}</b>${x.funds ? '' : ' (not used — target bought sooner)'}` : startOk ? 'the debt cap leaves no room' : 'waiting on an earlier house'}</div></div>`; }).join('');
     return `<div class="tlw" data-testid="timeline">${rows}</div><p class="note">Bar = paying down until the line of credit opens · ● = buy the next house. Tap a row to edit.</p>`;
   }
   function nwChart(pl) {
@@ -59,7 +60,7 @@
     const rows = S.houses.map((h) => {
       const v = pl.V[h.id], a = E.afford(S, h, pl), t = H(h.target), p = pl.purchase[h.id];
       const tag = h.status === 'owned' ? 'owned' : isFinite(p) ? 'buy ' + mo(p) : 'unfunded';
-      const loc = !t ? '' : `Credit line ${isFinite(p + v.locM) ? 'opens ' + mo(p + v.locM) : 'not reachable'}`;
+      const loc = !t ? '' : `Credit line ${isFinite(p + v.locM) ? 'opens ' + mm(p + v.locM) : 'not reachable'}`;
       return `<div class="row" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span><span class="addr">${esc(h.addr)}</span><span class="tag">${tag}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}">${$f(v.payment)}/mo ${h.status === 'planned' ? 'when bought' : 'total'}</div></span>
         <span class="ex ${h.driver === 'months' ? 'calc' : ''}">Extra<span class="iw"><em>$</em><input inputmode="decimal" data-testid="extra-input" data-p="h.${h.id}.extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(v.X)}"></span></span></div>
         <div class="r2"><span data-testid="loc-line">${loc} ${targetSel(h)}</span><span class="st ${a.cls}" data-testid="afford-status" title="${esc(a.why || '')}">${a.cls === 'na' ? '' : a.txt}</span></div></div>`; }).join('');

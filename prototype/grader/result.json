@@ -201,7 +201,7 @@
       "name": "plan() under 100ms for 10 houses (median of 7)",
       "points": 0.5,
       "earned": 0.5,
-      "detail": "median 2.1ms",
+      "detail": "median 2.5ms",
       "repro": "node timing"
     },
     {

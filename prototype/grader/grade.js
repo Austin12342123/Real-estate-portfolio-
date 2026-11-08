@@ -295,7 +295,7 @@ async function reqChecks(page) {
     const Sx = Object.assign({}, S1, { g: Object.assign({}, E.GDEF, S1.g) }); const want = E.extraFor(Sx, E.H(Sx, 'oak'), 24);
     P.t(near(ex24, want, 1.01), 'wait=24 -> extra field = back-solved value', 1.0, `extra field ${ex24}, engine ${want && want.toFixed(2)}`);
     const tgt = E.H(Sx, 'elm'); P.t(simLoc(Sx.g, oak, tgt, ex24 + 1) <= 24 && simLoc(Sx.g, oak, tgt, ex24 - 3) > 24, 'independent simulation: that extra opens LOC in <=24 and 3$ less does not', 0.5, 'sim ' + simLoc(Sx.g, oak, tgt, ex24));
-    const m = await snap(page); P.t(m.row('oak').exN === Math.round(ex24) && near(m.mon, money((await snap(page)).raw.mon), 0) && m.row('oak').loc && /2y 0m/.test(m.row('oak').loc), 'main page: extra input + "LOC opens 2y 0m" reflect wait=24', 0.3, m.row('oak').exN + ' / ' + m.row('oak').loc);
+    const m = await snap(page); P.t(m.row('oak').exN === Math.round(ex24) && near(m.mon, money((await snap(page)).raw.mon), 0) && m.row('oak').loc && /24 mo/.test(m.row("oak").loc), 'main page: extra input + "opens 24 mo" reflect wait=24', 0.3, m.row('oak').exN + ' / ' + m.row('oak').loc);
     await edit(page, 'h.oak.wait', '12'); const ex12 = money(await page.inputValue('[data-p="h.oak.extra"]')); P.t(ex12 > ex24, 'shorter wait -> bigger extra', 0.2, ex12 + ' vs ' + ex24);
     /* payoff */
     await reset(page); await edit(page, 'h.oak.payoff', '120'); const exP = money(await page.inputValue('[data-p="h.oak.extra"]'));
