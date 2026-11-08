@@ -58,8 +58,10 @@
     const egi = h.rent * (1 - g.vac / 100);
     const opex = h.tax + h.ins + h.hoa + (g.maint / 100) * h.price / 12 + (g.mgmt / 100) * egi;
     const noi = egi - opex, escrow = h.tax + h.ins + h.hoa;
-    return { L, B0, P, X, infeasible, egi, noi, cf: noi - P, escrow, pitia: P + escrow, payment: P + X + escrow,
-      D: need(S, h), down: (h.price * h.dp) / 100, payoff: payoffN(h, X), locM: locMonths(S, h, X),
+    const lm = locMonths(S, h, X), A = P + X;
+    const cltvAtLoc = H(S, h.target) && isFinite(lm) ? ((balK(B0, i, A, lm) + (h.liens || 0) + need(S, h)) / valK(S, h, lm)) * 100 : null;
+    return { cltvAtLoc, L, B0, P, X, infeasible, egi, noi, cf: noi - P, escrow, pitia: P + escrow, payment: P + X + escrow,
+      D: need(S, h), down: (h.price * h.dp) / 100, payoff: payoffN(h, X), locM: lm,
       head0: Math.max(0, g.cap / 100 * h.price - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0) };
   }
 
@@ -102,7 +104,8 @@
       }
       s.cf[t] = s.noi[t] - s.ds[t]; s.cfx[t] = s.cf[t] - s.extra[t];
       const inc = (g.p1 + g.p2) / 12 + (g.rentCount / 100) * s.rent[t];
-      s.dti[t] = ((g.otherDebt + s.dsti[t]) / inc) * 100;
+      const debts = g.otherDebt + s.dsti[t];
+      s.dti[t] = inc > 0 ? Math.min(999, (debts / inc) * 100) : debts > 0 ? 999 : 0;
     }
     const at = (t) => { const o = { month: t }; keys.forEach((k) => (o[k] = s[k][t])); o.cltv = o.value ? (o.debt / o.value) * 100 : 0;
       o.dscr = o.ds ? o.noi / o.ds : 0; return o; };
@@ -120,14 +123,41 @@
     const m = pl.purchase[t.id];
     if (!isFinite(m)) return { cls: 'bad', txt: '✗ Not reachable', why: 'The debt cap leaves no room within 50 years.' };
     const dti = pl.series.dti[Math.min(pl.T, m)], lim = S.g.dti;
+    if (dti >= 999) return { cls: 'bad', dti, txt: '✗ Short', why: 'No qualifying income is set (see Assumptions).' };
     const cls = dti <= lim * 0.8 ? 'ok' : dti <= lim ? 'warn' : 'bad';
     return { cls, dti, txt: cls === 'ok' ? '✓ Afford' : cls === 'warn' ? '△ Tight' : '✗ Short', why: 'Debt-to-income ' + dti.toFixed(0) + '% vs ' + lim + '% limit when ' + t.addr + ' closes.' };
+  }
+  /* fill in any missing fields (old/sparse backups) so nothing ever renders NaN */
+  function normalize(S) {
+    S.g = Object.assign({}, GDEF, S.g || {});
+    S.houses = (S.houses || []).filter((h) => h && h.id).map((h) => Object.assign(newHouse({ id: h.id }), h));
+    S.houses.forEach((h) => { ['price','dp','rate','term','extra','rent','tax','ins','hoa','liens','paid','buyIn','wait'].forEach((k) => { if (!isFinite(+h[k])) h[k] = newHouse()[k]; else h[k] = +h[k]; }); if (h.term < 12) h.term = 360; });
+    return S;
+  }
+  /* Zillow-listing file (house-listing/1, produced by a Claude chat) -> house fields + a preview table */
+  function fromListing(o) {
+    const err = (m) => ({ ok: false, error: m });
+    if (!o || typeof o !== 'object') return err('That file is not a listing file.');
+    if (o.schema !== 'house-listing/1') return err('Unrecognized file. Expected schema "house-listing/1".');
+    const val = (f) => (f && typeof f === 'object' && isFinite(+f.value) && f.value !== null && +f.value >= 0 ? +f.value : null);
+    const src = (f, v) => (v === null ? 'missing' : f && ['listing', 'estimate'].includes(f.source) ? f.source : 'estimate');
+    const price = val(o.price); if (!price) return err('The file has no purchase price.');
+    const rent = val(o.rentMonthly), taxA = val(o.taxAnnual), insA = val(o.insuranceAnnual), hoa = val(o.hoaMonthly);
+    const patch = { price, addr: typeof o.address === 'string' && o.address.trim() ? o.address.trim().slice(0, 80) : 'Imported house' };
+    if (rent !== null) patch.rent = rent; if (taxA !== null) patch.tax = Math.round(taxA / 12); if (insA !== null) patch.ins = Math.round(insA / 12); if (hoa !== null) patch.hoa = hoa;
+    const rows = [['Address', patch.addr, 'listing'], ['Price', '$' + price.toLocaleString('en-US'), src(o.price, price)],
+      ['Monthly rent', rent === null ? 'keeps default' : '$' + rent.toLocaleString('en-US'), src(o.rentMonthly, rent)],
+      ['Property tax / mo', taxA === null ? 'keeps default' : '$' + Math.round(taxA / 12).toLocaleString('en-US'), src(o.taxAnnual, taxA)],
+      ['Insurance / mo', insA === null ? 'keeps default' : '$' + Math.round(insA / 12).toLocaleString('en-US'), src(o.insuranceAnnual, insA)],
+      ['HOA / mo', hoa === null ? 'keeps default' : '$' + hoa.toLocaleString('en-US'), src(o.hoaMonthly, hoa)]];
+    const info = o.info && typeof o.info === 'object' ? o.info : {};
+    return { ok: true, patch, rows, info, url: typeof o.listingUrl === 'string' ? o.listingUrl : '' };
   }
   function without(S, id) {
     const c = JSON.parse(JSON.stringify(S));
     c.houses = c.houses.filter((h) => h.id !== id); c.houses.forEach((h) => { if (h.target === id) h.target = ''; });
     return c;
   }
-  const E = { GDEF, seed, newHouse, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, loan, balToday, need, H };
+  const E = { GDEF, seed, newHouse, normalize, fromListing, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

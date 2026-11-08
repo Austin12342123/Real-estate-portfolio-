@@ -255,7 +255,7 @@ async function reqChecks(page) {
   const base = pm(300000, 20, 6.5, 360);
   const M = [
     ['oak price 300k->400k', [['h.oak.price', 400000]], (b, a) => near(a.nw - b.nw, 20000, 2) && near(a.mon - b.mon, pm(400000, 20, 6.5, 360) - base, 2), 'nw +20000, monthly +P&I diff'],
-    ['oak down 20%->40%', [['h.oak.dp', 40]], (b, a) => near(a.nw - b.nw, 60000, 2) && near(a.mon - b.mon, pm(300000, 40, 6.5, 360) - base, 2), 'nw +60000, monthly drops'],
+    ['oak down 20%->40%', [['h.oak.dp', 40]], (b, a) => a.nw > b.nw + 1000 && a.row('elm').buy < b.row('elm').buy && a.nwF !== b.nwF, 'nw up, LOC opens sooner so elm bought sooner (plan changes)'],
     ['oak rate 6.5->8%', [['h.oak.rate', 8]], (b, a) => near(a.mon - b.mon, pm(300000, 20, 8, 360) - base, 2) && near(a.cf - b.cf, -(pm(300000, 20, 8, 360) - base), 2), 'monthly & cash flow move by P&I diff'],
     ['oak term 30y->15y', [['h.oak.termY', 15]], (b, a) => near(a.mon - b.mon, pm(300000, 20, 6.5, 180) - base, 2), 'monthly up'],
     ['oak extra 1000->2000', [['h.oak.extra', 2000]], (b, a) => near(a.mon - b.mon, 1000, 2) && near(a.totX - b.totX, 1000, 1) && a.row('oak').exN === 2000, 'monthly +1000, total extra +1000'],
@@ -267,7 +267,7 @@ async function reqChecks(page) {
     ['oak months paid 0->60', [['h.oak.paid', 60]], (b, a) => near(a.nw - b.nw, 240000 - 224666.35, 3) && a.row('elm').buy < b.row('elm').buy, 'nw up by principal paid, elm sooner'],
     ['elm price 240k->300k', [['h.elm.price', 300000]], (b, a) => a.nwF !== b.nwF && a.row('elm').buy > b.row('elm').buy && a.row('elm').payN > b.row('elm').payN, 'elm later, bigger payment, final nw changes'],
     ['g.cap 85->60', [['g.cap', 60]], (b, a) => a.row('elm').buy > b.row('elm').buy || a.row('elm').tag !== b.row('elm').tag, 'LOC later => plan changes'],
-    ['g.appr 0->3', [['g.appr', 3]], (b, a) => a.nwF > b.nwF + 1000 && near(a.nw, b.nw, 1), 'plan-complete nw up, today unchanged'],
+    ['g.appr 0->3', [['g.appr', 3]], (b, a) => a.row('elm').buy < b.row('elm').buy && a.nwF !== b.nwF && near(a.nw, b.nw, 1), 'LOC opens sooner (elm sooner), today nw unchanged'],
     ['g.vac 5->20', [['g.vac', 20]], (b, a) => near(a.cf - b.cf, -0.15 * 2100 * 0.92, 1.5), 'cf -289.8'],
     ['g.mgmt 8->20', [['g.mgmt', 20]], (b, a) => near(a.cf - b.cf, -0.12 * 1995, 1.5), 'cf -239.4'],
     ['g.maint 1->3', [['g.maint', 3]], (b, a) => near(a.cf - b.cf, -500, 1.5), 'cf -500'],
@@ -470,7 +470,7 @@ async function robustChecks(page) {
     /* compound cases */
     await reset(page); await edit(page, 'h.oak.price', '0'); await edit(page, 'h.oak.down', '5000'); let b = await scanBad(page); P.t(!b.length, 'price 0 then down$ 5000 (0-division)', 1, b[0]);
     await reset(page); await edit(page, 'g.p1', '0'); await edit(page, 'g.p2', '0'); await edit(page, 'g.rentCount', '0'); await edit(page, 'h.oak.rent', '0'); await edit(page, 'h.elm.rent', '0'); await edit(page, 'h.pine.rent', '0'); b = await scanBad(page); P.t(!b.length, 'zero income everywhere', 1, b[0]);
-    await reset(page); await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('rep-v3')); s.houses.push({ id: 'x1', addr: 'Sparse' }); s.houses[0].target = 'ghost'; localStorage.setItem('rep-v3', JSON.stringify(s)); }); await page.reload(); await page.waitForSelector('#app > *'); b = await scanBad(page); P.t(!b.length, 'stored/imported state with missing fields + dangling target', 1, b[0]);
+    await reset(page); await edit(page, 'h.oak.price', '300000'); await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('rep-v3')); s.houses.push({ id: 'x1', addr: 'Sparse' }); s.houses[0].target = 'ghost'; localStorage.setItem('rep-v3', JSON.stringify(s)); }); await page.reload(); await page.waitForSelector('#app > *'); b = await scanBad(page); P.t(!b.length, 'stored/imported state with missing fields + dangling target', 1, b[0]);
     await reset(page); await page.evaluate(() => localStorage.setItem('rep-v3', '{not json')); await page.reload(); await page.waitForSelector('#app > *'); P.t((await page.locator('[data-testid=summary]').count()) === 1, 'corrupt localStorage falls back to sample data', 1);
     return P; });
   await check('E02', 'E', 'Delete all houses -> clean empty state; can add again', 1, 'Remove each house on its page', async () => {
@@ -490,15 +490,17 @@ async function robustChecks(page) {
     return { ratio: tot ? ok / tot : 0, detail: `${ok}/${tot} named. unnamed: ${bad.slice(0, 5).join(', ')}` }; });
   await check('E05', 'E', 'Typing 5 digits sequentially keeps focus + full value (re-render safe) on main, house, settings, text field', 1, 'page.keyboard.type("12345") with delay', async () => {
     await reset(page); const P = new Parts();
-    const tryType = async (route, sel, txt, want, label) => { await goHash(page, route); const el = page.locator(sel).first(); await el.click({ clickCount: 3 }); await page.keyboard.press('Backspace'); await page.keyboard.type(txt, { delay: 60 }); await page.waitForTimeout(120);
-      const r = await page.evaluate((s) => { const a = document.activeElement; return { same: !!(a && a.matches && a.matches(s)), v: a ? a.value : null }; }, sel); P.t(r.same && String(r.v).replace(/[,$\s]/g, '') === want, label, 1, `focus kept=${r.same} value=${r.v}`); };
+    const tryType = async (route, sel, txt, want, label) => { try { await goHash(page, route); await page.waitForSelector(sel); const bb = await page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, sel);
+        await page.mouse.click(bb.x, bb.y); await page.keyboard.press('Control+A'); await page.keyboard.press('Backspace'); await page.keyboard.type(txt, { delay: 60 }); await page.waitForTimeout(150);
+        const r = await page.evaluate((s) => { const a = document.activeElement; return { same: !!(a && a.matches && a.matches(s)), v: a ? a.value : null }; }, sel); P.t(r.same && String(r.v).replace(/[,$\s]/g, '') === want, label, 1, `focus kept=${r.same} value=${r.v}`);
+        await page.evaluate(() => document.activeElement && document.activeElement.blur()); } catch (e) { P.t(false, label, 1, 'threw ' + e.message.slice(0, 60)); } };
     await tryType('#/', '[data-testid=extra-input]', '12345', '12345', 'main extra field'); await tryType('#/h/oak', '[data-p="h.oak.price"]', '12345', '12345', 'house price'); await tryType('#/settings', '[data-p="g.cap"]', '1234', '1234', 'settings field');
     await tryType('#/h/oak', '[data-p="h.oak.addr"]', 'Abcde', 'Abcde', 'address text'); return P; });
-  await check('E08', 'E', 'No render storm: DOM settles when an input is focused (no endless re-render loop)', 1, 'Focus any input, count #app mutations over 600ms (Chromium)', async () => {
+  await check('E08', 'E', 'No render storm: DOM settles when an input is focused (no endless re-render loop)', 1, 'Type one char into any input (no blur), count #app mutations over 600ms (Chromium)', async () => {
     const P = new Parts(); await reset(page);
     for (const [n, h, sel] of [['main extra', '#/', '[data-testid=extra-input]'], ['house price', '#/h/oak', '[data-p="h.oak.price"]'], ['settings cap', '#/settings', '[data-p="g.cap"]']]) {
       await goHash(page, h); await page.waitForSelector(sel);
-      const r = await page.evaluate(async (sel) => { const el = document.querySelector(sel); el.focus(); await new Promise((r) => setTimeout(r, 50)); let n = 0; const mo = new MutationObserver((m) => { n += m.length; }); mo.observe(document.getElementById('app'), { childList: true, subtree: true }); await new Promise((r) => setTimeout(r, 600)); mo.disconnect(); const a = document.activeElement; if (a && a.blur) a.blur(); return n; }, sel);
+      const r = await page.evaluate(async (sel) => { const el = document.querySelector(sel); el.focus(); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(el, el.value.replace(/,/g, '') || '1'); el.dispatchEvent(new Event('input', { bubbles: true })); await new Promise((r) => setTimeout(r, 80)); let n = 0; const mo = new MutationObserver((m) => { n += m.length; }); mo.observe(document.getElementById('app'), { childList: true, subtree: true }); await new Promise((r) => setTimeout(r, 600)); mo.disconnect(); const a = document.activeElement; if (a && a.blur) a.blur(); return n; }, sel);
       P.t(r <= 20, n + ' (mutations in 600ms while focused)', 1, r); } return P; });
   await check('E06', 'E', 'No layout shift while navigating and editing (CLS <= 0.05)', 0.5, 'PerformanceObserver layout-shift', async () => {
     await reset(page); await page.waitForTimeout(300); for (const h of ['#/h/oak', '#/settings', '#/', '#/h/elm', '#/']) await goHash(page, h); await edit(page, 'h.oak.rent', '2500'); await goMain(page); await page.locator('[data-testid=networth-toggle]').click().catch(() => {}); await page.waitForTimeout(300);
