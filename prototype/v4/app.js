@@ -47,15 +47,38 @@
   }
   function nwChart(pl) {
     const T = Math.max(12, Math.min(pl.T, pl.lastBuy + 60)), s = pl.series.nw.slice(0, T + 1);
-    const W = 340, Hh = 150, pad = 6, min = Math.min(0, ...s), max = Math.max(1, ...s);
-    const x = (t) => pad + (t / T) * (W - 2 * pad), y = (v) => Hh - 22 - ((v - min) / (max - min || 1)) * (Hh - 40);
+    const W = 340, Hh = 170, pad = 10, min = Math.min(0, ...s), max = Math.max(1, ...s);
+    const x = (t) => pad + (t / T) * (W - 2 * pad), y = (v) => Hh - 24 - ((v - min) / (max - min || 1)) * (Hh - 44);
     const step = Math.max(1, Math.ceil(T / 160)); let d = '';
     for (let t = 0; t <= T; t += step) d += (d ? 'L' : 'M') + x(t).toFixed(1) + ' ' + y(s[t]).toFixed(1);
     d += 'L' + x(T).toFixed(1) + ' ' + y(s[T]).toFixed(1);
     const ys = T <= 60 ? 1 : T <= 120 ? 2 : T <= 240 ? 5 : 10; let ticks = '';
-    for (let yr = 0; yr * 12 <= T; yr += ys) ticks += `<text x="${x(yr * 12)}" y="${Hh - 6}" text-anchor="middle">${yr ? yr + 'y' : 'Now'}</text>`;
-    const buys = S.houses.filter((h) => isFinite(pl.purchase[h.id]) && pl.purchase[h.id] > 0 && pl.purchase[h.id] <= T).map((h) => `<circle cx="${x(pl.purchase[h.id])}" cy="${y(s[pl.purchase[h.id]])}" r="4.5"><title>${esc(h.addr)} bought ${mo(pl.purchase[h.id])}</title></circle>`).join('');
-    return `<svg class="nw" data-testid="networth-chart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Net worth over time, ${$f(s[0])} now to ${$f(s[T])} in ${mo(T)}"><line class="ax" x1="${pad}" x2="${W - pad}" y1="${y(0)}" y2="${y(0)}"/><path class="ar" d="${d}L${x(T)} ${y(0)}L${x(0)} ${y(0)}Z"/><path class="ln" d="${d}"/>${buys}${ticks}<text x="${pad}" y="12">${$f(max)}</text></svg><p class="note">Net worth = value − loans − other liens − lines of credit drawn. ● = a house is bought.</p>`;
+    for (let yr = 0; yr * 12 <= T; yr += ys) ticks += `<text x="${x(yr * 12)}" y="${Hh - 8}" text-anchor="${yr === 0 ? 'start' : 'middle'}">${yr ? yr + 'y' : 'Now'}</text>`;
+    const buyList = S.houses.filter((h) => isFinite(pl.purchase[h.id]) && pl.purchase[h.id] > 0 && pl.purchase[h.id] <= T);
+    const buys = buyList.map((h) => `<circle cx="${x(pl.purchase[h.id])}" cy="${y(s[pl.purchase[h.id]])}" r="4.5" class="buy"><title>${esc(h.addr)} bought in ${mm(pl.purchase[h.id])}</title></circle>`).join('');
+    const ev = buyList.map((h) => pl.purchase[h.id] + ':' + h.addr.replace(/[|:]/g, ' ')).join('|');
+    return `<div class="chartwrap"><svg class="nw" data-testid="networth-chart" viewBox="0 0 ${W} ${Hh}" data-w="${W}" data-h="${Hh}" data-pad="${pad}" data-t="${T}" data-min="${min}" data-max="${max}" data-nw="${s.map((v) => Math.round(v)).join(',')}" data-ev="${esc(ev)}" role="img" aria-label="Net worth over time, ${$f(s[0])} now to ${$f(s[T])} in ${mo(T)}. Hover or drag to read values.">
+      <line class="ax" x1="${pad}" x2="${W - pad}" y1="${y(0)}" y2="${y(0)}"/><path class="ar" d="${d}L${x(T)} ${y(0)}L${x(0)} ${y(0)}Z"/><path class="ln" d="${d}"/>${buys}${ticks}
+      <text x="${pad}" y="12">${$f(max)}</text>${min < 0 ? `<text x="${pad}" y="${y(min) - 4}">${$f(min)}</text>` : ''}
+      <line class="xh" id="nwx" y1="14" y2="${Hh - 24}" x1="0" x2="0" visibility="hidden"/><circle class="hv" id="nwd" r="5.5" cx="0" cy="0" visibility="hidden"/><rect class="hit" x="0" y="0" width="${W}" height="${Hh}"/></svg>
+      <div class="tip" id="nwtip" hidden></div></div><p class="note">Net worth = value − loans − other liens − lines of credit drawn. Hover or drag across the line to read it. ● = a house is bought.</p>`;
+  }
+  function nwHover(e) {
+    const svg = e.target.closest && e.target.closest('svg.nw'); if (!svg) return;
+    const d = svg.dataset, r0 = svg.getBoundingClientRect(), W = +d.w, Hh = +d.h, pad = +d.pad, T = +d.t, min = +d.min, max = +d.max, sc = r0.width / W;
+    const t = Math.max(0, Math.min(T, Math.round(((e.clientX - r0.left) / sc - pad) / (W - 2 * pad) * T)));
+    const v = +d.nw.split(',')[t], cx = pad + (t / T) * (W - 2 * pad), cy = Hh - 24 - ((v - min) / (max - min || 1)) * (Hh - 44);
+    const ln = svg.querySelector('#nwx'), dot = svg.querySelector('#nwd'), tip = document.getElementById('nwtip');
+    ln.setAttribute('x1', cx); ln.setAttribute('x2', cx); dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); ln.setAttribute('visibility', 'visible'); dot.setAttribute('visibility', 'visible');
+    const hit = (d.ev || '').split('|').map((q) => q.split(':')).filter((q) => q[0] && +q[0] === t).map((q) => q[1]);
+    tip.innerHTML = `<b>${$f(v)}</b><span>${t === 0 ? 'today' : 'in ' + mm(t) + (t >= 24 ? ' (' + mo(t) + ')' : '')}${hit.length ? ' · bought ' + esc(hit.join(', ')) : ''}</span>`;
+    tip.hidden = false;
+    const w = tip.offsetWidth, left = Math.min(Math.max(cx * sc - w / 2, 0), r0.width - w);
+    tip.style.left = left + 'px'; tip.style.top = Math.max(cy * sc - tip.offsetHeight - 12, 0) + 'px';
+  }
+  function nwLeave(e) {
+    const svg = e.target && e.target.closest && e.target.closest('svg.nw'); if (!svg) return;
+    ['#nwx', '#nwd'].forEach((q) => svg.querySelector(q).setAttribute('visibility', 'hidden')); const tip = document.getElementById('nwtip'); if (tip) tip.hidden = true;
   }
 
   /* ---------- main page ---------- */
@@ -108,12 +131,14 @@
     const debt = v.debtNow, capPct = (debt / h.price) * 100;
     const L = [['Net worth today', wo.today.nw, pl.today.nw, $f], ['Net worth, plan complete', wo.final.nw, pl.final.nw, $f], ['Monthly payments, plan complete', wo.final.monthly, pl.final.monthly, $f], ['Cash flow today', wo.today.cf, pl.today.cf, $s]];
     const impactLines = L.filter((x) => Math.abs(x[1] - x[2]) > 0.5).map((x) => `<div class="f"><span class="lb">${x[0]}</span><span>${x[3](x[1])} → <b>${x[3](x[2])}</b></span></div>`);
+    const invested = v.down + (h.price * g.closing) / 100, coc = invested > 0 ? ((v.cf * 12) / invested) * 100 : NaN, dscrH = v.P > 0 ? v.noi / v.P : NaN;
     const timing = h.status === 'planned'
       ? (src.length ? `<p class="note">Bought when ${src.map((x) => esc(x.addr)).join(' or ')}'s line of credit opens — ${isFinite(p0) ? mo(p0) + ' from now' : 'not reachable'}.</p>` : field('Buy in (months)', P + 'buyIn', h.buyIn))
       : field('Months already paid', P + 'paid', h.paid);
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Address" title="${esc(h.addr)}"></h2></div>
     ${h.fresh ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
-    <section class="card"><div class="kg">${kpi('h-payment', 'Monthly payment', $f(v.payment), `P&amp;I ${$f(v.P)} + extra ${$f(v.X)} + escrow ${$f(v.escrow)}`)}${kpi('h-cf', 'Cash flow / mo', $s(v.cf), `${$s(v.cf - v.X)} after extra`, v.cf < 0 ? 'bad' : '')}</div>
+    <section class="card"><div class="kg">${kpi('h-payment', 'Monthly payment', $f(v.payment), `P&amp;I ${$f(v.P)} + extra ${$f(v.X)} + escrow ${$f(v.escrow)}`)}${kpi('h-cf', 'Cash flow / mo', $s(v.cf), `${$s(v.cf - v.X)} after extra`, v.cf < 0 ? 'bad' : '')}
+      ${kpi('h-dscr', 'DSCR', r(dscrH, 2), isFinite(dscrH) ? (dscrH >= 1.2 ? 'income covers the loan' : dscrH >= 1 ? 'thin cushion' : 'below 1.0') : 'no loan payment', isFinite(dscrH) && dscrH < 1 ? 'bad' : '', 1)}${kpi('h-coc', 'Cash-on-cash return', isFinite(coc) ? r(coc, 1) + '%' : '—', 'yearly cash flow ÷ cash invested', coc < 0 ? 'bad' : '', 1)}</div>
       <div class="seg"><button class="${h.status === 'owned' ? 'on' : ''}" data-status="owned">Owned</button><button class="${h.status === 'planned' ? 'on' : ''}" data-status="planned">Planned</button></div>${timing}</section>
     ${UI.hideLegend && !h.listingUrl ? '' : `<p class="note" style="margin:10px 4px 0">${UI.hideLegend ? '' : '<i class="auto">auto</i> = calculated from your other numbers; tap to override. <button class="chip link" data-hidelegend>Got it</button> '}${h.listingUrl ? 'Imported from a listing' + (h.info && h.info.beds ? ' · ' + h.info.beds + ' bd / ' + h.info.baths + ' ba · ' + (h.info.sqft || '?') + ' sqft' : '') + '.' : ''}</p>`}
     <div class="sec">Purchase</div><section class="card">${field('Price', P + 'price', grp(h.price), { pre: '$' })}${field('Down payment', P + 'dp', r(h.dp, 2), { suf: '%' })}${field('Down payment $', P + 'down', grp(v.down), { pre: '$', calc: 1 })}${field('Loan amount', P + 'loan', grp(v.L), { pre: '$', calc: 1, ro: 1 })}</section>
@@ -124,9 +149,8 @@
       <p class="note">Net operating income ${$f(v.noi)}/mo · after P&amp;I ${$s(v.cf)}/mo</p></section>`)}
     <div class="sec">Line of credit strategy</div><section class="card"><div class="f"><span class="lb">Funds</span>${targetSel(h)}</div>
       ${t ? `${field('Cash needed', P + 'need', grp(v.D), { pre: '$', calc: 1, ro: 1 })}${field('Months until LOC', P + 'wait', isFinite(v.locM) ? v.locM : '', { calc: h.driver === 'extra' })}
-      <div class="f"><span class="lb">Opens (from today)</span><b>${isFinite(p0 + v.locM) ? mo(p0 + v.locM) : 'never'}</b></div>
-      <div class="f"><span class="lb">Status</span><b class="st ${a.cls}">${a.txt}</b></div>
-      <p class="note">${v.infeasible ? '⚠ That wait is not reachable, even with the loan fully paid. ' : ''}${esc(a.why || '')}</p>${sooner > 0 ? `<span class="chip">+$100/mo → ${sooner} mo sooner</span>` : ''}` : '<p class="note">Pick the house this line of credit will fund.</p>'}</section>
+      <div class="f"><span class="lb">Opens (from today)</span><b>${isFinite(p0 + v.locM) ? mm(p0 + v.locM) : 'never'}</b></div>
+      ${v.infeasible ? '<p class="note">⚠ That wait is not reachable, even with the loan fully paid.</p>' : ''}${a.cls === 'warn' || a.cls === 'bad' ? `<span class="chip warnchip" title="${esc(a.why || '')}">Debt-to-income ${a.cls === 'bad' ? 'over' : 'near'} your limit when ${esc(t.addr)} closes</span>` : ''}${sooner > 0 ? `<span class="chip">+$100/mo → ${sooner} mo sooner</span>` : ''}` : '<p class="note">Pick the house this line of credit will fund.</p>'}</section>
     ${colSec('impact', 'Impact on your plan', impactLines.length ? impactLines.length + ' changes' : 'no change', `<section class="card" data-testid="impact">${impactLines.length ? impactLines.join('') : '<p class="note" style="margin:0">Adding or removing this house does not change the numbers below.</p>'}<p class="note">Your plan without this house → with it.</p></section>`)}
     ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? It is also cleared as a funding target.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="btn ghost" data-del="${h.id}" data-testid="h-delete">Remove house</button>`}`;
   }
@@ -236,6 +260,8 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   }
   const app = document.getElementById('app');
   app.addEventListener('input', (e) => { const p = e.target.dataset.p; if (p && setField(p, e.target.value)) { save(); render(); } });
+  app.addEventListener('pointermove', nwHover); app.addEventListener('pointerdown', nwHover);
+  app.addEventListener('pointerleave', nwLeave, true); app.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') return; });
   app.addEventListener('focusout', (e) => { if (e.target.dataset && e.target.dataset.p && e.target.tagName === 'INPUT' && !e.relatedTarget) setTimeout(() => { const a = document.activeElement; if (!(a && a.dataset && (a.dataset.p || a.dataset.sel))) render(); }, 0); });
   app.addEventListener('change', (e) => {
     const sel = e.target.dataset.sel; if (sel) { H(sel).target = e.target.value; save(); render(); return; }

@@ -98,3 +98,10 @@ select[data-sel]{max-width:118px;font-size:14px;padding:0 6px;border-radius:14px
 @media(max-width:360px){.r2{flex-wrap:wrap}}
 
 .cfl{margin-left:auto;text-align:right;line-height:1.15;white-space:nowrap}.cfl b{display:block;font-size:14px;font-variant-numeric:tabular-nums}.cfl small{font-size:10px;color:var(--mut)}
+
+.chartwrap{position:relative;margin-top:6px}
+svg.nw{margin-top:0;touch-action:pan-y;cursor:crosshair;overflow:visible}
+svg.nw .hit{fill:transparent}svg.nw .xh{stroke:var(--mut);stroke-width:1;stroke-dasharray:3 3}
+svg.nw .hv{fill:var(--acc);stroke:var(--card);stroke-width:2}svg.nw circle.buy{fill:var(--ok)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--card);border-radius:8px;padding:5px 9px;font-size:12px;white-space:nowrap;display:flex;flex-direction:column;line-height:1.25;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.tip[hidden]{display:none}.tip b{font-size:14px}
