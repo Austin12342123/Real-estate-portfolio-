@@ -100,6 +100,8 @@ select[data-sel]{max-width:118px;font-size:14px;padding:0 6px;border-radius:14px
 .r2{flex-wrap:nowrap}.locline{font-size:12px;white-space:nowrap}.r2 .st{font-size:13px}
 @media(max-width:360px){.r2{flex-wrap:wrap}}
 
+.cfl{margin-left:auto;text-align:right;line-height:1.15;white-space:nowrap}.cfl b{display:block;font-size:14px;font-variant-numeric:tabular-nums}.cfl small{font-size:10px;color:var(--mut)}
+
 </style>
 <main id="app" aria-live="polite"></main>
 <script>
@@ -342,7 +344,7 @@ select[data-sel]{max-width:118px;font-size:14px;padding:0 6px;border-radius:14px
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
       return `<div class="row" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span><span class="addr">${esc(h.addr)}</span><span class="tag">${tag}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}">${$f(v.payment)}/mo ${h.status === 'planned' ? 'when bought' : 'total'} ${hi}</div></span>
         <span class="ex ${h.driver === 'months' ? 'calc' : ''}">Extra<span class="iw"><em>$</em><input inputmode="decimal" data-testid="extra-input" data-p="h.${h.id}.extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(v.X)}"></span></span></div>
-        <div class="r2"><span class="fund">Funds</span>${targetSel(h)}<span class="locline" data-testid="loc-line">${loc}</span><span class="st ${a.cls}" data-testid="afford-status" title="${esc(a.why || '')}">${a.cls === 'na' ? '' : a.txt}</span></div></div>`; }).join('');
+        <div class="r2"><span class="fund">Funds</span>${targetSel(h)}<span class="locline" data-testid="loc-line">${loc}</span><span class="cfl ${v.cf < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="Rent minus expenses and the loan payment, before extra payments"><b data-k="cf-${h.id}">${$s(v.cf)}/mo</b><small>cash flow</small></span></div></div>`; }).join('');
     const cmp = (label, a, b, f, cls) => `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td class="${cls || ''}" data-k="c-${label}-b"><b>${f(b)}</b></td></tr>`;
     const warn = pl.unfunded.length ? `<div class="warnbox">⚠ ${pl.unfunded.length} planned house${pl.unfunded.length > 1 ? 's are' : ' is'} never funded under the current numbers.</div>` : '';
     const health = pl.worst.dti > g.dti ? `<div class="warnbox">⚠ Debt-to-income peaks at ${r(pl.worst.dti)}% in ${mo(pl.worst.month)} (limit ${g.dti}%).</div>` : '';

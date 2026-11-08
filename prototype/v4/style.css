@@ -96,3 +96,5 @@ select[data-sel]{background:var(--field);border-radius:16px;padding:0 10px;max-w
 select[data-sel]{max-width:118px;font-size:14px;padding:0 6px;border-radius:14px}
 .r2{flex-wrap:nowrap}.locline{font-size:12px;white-space:nowrap}.r2 .st{font-size:13px}
 @media(max-width:360px){.r2{flex-wrap:wrap}}
+
+.cfl{margin-left:auto;text-align:right;line-height:1.15;white-space:nowrap}.cfl b{display:block;font-size:14px;font-variant-numeric:tabular-nums}.cfl small{font-size:10px;color:var(--mut)}
