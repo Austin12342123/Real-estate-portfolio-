@@ -1,0 +1,546 @@
+<title>Real Estate Portfolio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{--bg:#f2f2f7;--card:#fff;--ink:#111;--mut:#6b6b72;--line:#e5e5ea;--acc:#0a5fd6;--ok:#167a41;--warn:#965600;--bad:#c4271f;--flash:#fff0a0;--bar:#dfe6f5;--field:#f2f2f7}
+:root[data-theme=dark]{color-scheme:dark;--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mut:#a0a0a8;--line:#2c2c2e;--acc:#5aa2ff;--ok:#32d27a;--warn:#ffb340;--bad:#ff7a72;--flash:#5a4a00;--bar:#2a3550;--field:#2c2c2e}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mut:#a0a0a8;--line:#2c2c2e;--acc:#5aa2ff;--ok:#32d27a;--warn:#ffb340;--bad:#ff7a72;--flash:#5a4a00;--bar:#2a3550;--field:#2c2c2e}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
+#app{max-width:430px;margin:0 auto;min-height:100vh;padding-block:8px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-x:hidden}
+h1{font-size:28px;margin:6px 0 10px;display:flex;justify-content:space-between;align-items:center}
+button{font:inherit;cursor:pointer}
+.ic{background:none;border:0;font-size:24px;color:var(--acc);min-width:44px;min-height:44px}
+.card{background:var(--card);border-radius:14px;padding:12px 14px;margin:0 0 12px}
+.kg{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.kpi small{display:block;color:var(--mut);font-size:12px}.kpi b{font-size:20px;display:block}.kpi .sub{font-size:11px;color:var(--mut)}
+.bar{height:8px;background:var(--bar);border-radius:4px;margin:12px 0 4px;position:relative;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--acc);border-radius:4px}
+.bar i.over{background:var(--bad)}
+.cap{display:flex;justify-content:space-between;font-size:12px;color:var(--mut)}
+.sec{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin:14px 4px 6px}
+.row{padding:10px 0;border-top:1px solid var(--line);cursor:pointer}.row:first-child{border-top:0}
+.r1,.r2{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.r2{margin-top:4px;font-size:13px;color:var(--mut);flex-wrap:wrap}
+.addr{font-weight:600}.tag{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:0 5px;margin-left:6px;white-space:nowrap}
+.pay{font-size:12px;color:var(--mut)}
+.ex{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--mut)}
+.iw{display:inline-flex;align-items:center;background:var(--field);border-radius:8px;padding:0 8px;min-height:44px}
+.iw em{font-style:normal;color:var(--mut)}
+input,select{font:inherit;font-size:16px;color:var(--ink);background:transparent;border:0;outline:0;min-width:0}
+.iw input{width:92px;height:44px;text-align:right;padding:0 2px;font-weight:600}
+.iw:focus-within{box-shadow:0 0 0 2px var(--acc)}
+.calc .iw{background:transparent;border:1px dashed var(--line)}.calc .iw input{color:var(--mut);font-weight:400}
+select{color:var(--acc);max-width:150px;min-height:44px}
+.st{font-weight:600;white-space:nowrap}.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.f{display:flex;align-items:center;justify-content:space-between;padding:2px 0;border-top:1px solid var(--line);min-height:48px}.f:first-of-type{border-top:0}
+.lb i{color:var(--acc);font-style:normal;font-weight:700}
+.note{font-size:12px;color:var(--mut);margin:4px 0 0}
+.chip{display:inline-flex;align-items:center;min-height:44px;font-size:13px;background:var(--field);border-radius:12px;padding:2px 10px;margin:4px 6px 0 0;color:var(--mut);border:0}
+.chip.link{color:var(--acc)}
+.top{display:flex;align-items:center;gap:6px;margin:4px 0 8px}
+.top h2{margin:0;font-size:20px;flex:1}
+.top input.t{font-size:20px;font-weight:700;width:100%;min-height:44px}
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(env(safe-area-inset-bottom) + 10px);background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 16px rgba(0,0,0,.06)}
+.bottom>div{max-width:430px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.btn{background:#0a5fd6;color:#fff;border:0;border-radius:10px;padding:0 16px;min-height:44px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--bad);border:1px solid var(--line);width:100%;margin-top:8px}
+.btn.plain{background:var(--field);color:var(--ink);width:100%;margin-top:8px}
+.seg{display:flex;background:var(--field);border-radius:8px;padding:2px;margin:8px 0}.seg button{flex:1;border:0;background:none;min-height:44px;border-radius:6px;font-size:13px;color:var(--mut)}.seg button.on{background:var(--card);color:var(--ink);font-weight:600}
+table.cmp{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+table.cmp th{font-weight:500;color:var(--mut);text-align:right;padding:2px 0;font-size:12px}table.cmp th:first-child{text-align:left}
+table.cmp td{padding:4px 0;border-top:1px solid var(--line);text-align:right}table.cmp td:first-child{text-align:left;color:var(--mut)}
+.tlw{margin-top:4px}.tr{padding:8px 0 4px;cursor:pointer}.tl{font-size:13px}.tl b{color:var(--acc)}
+.trk{position:relative;height:26px;margin:14px 0 2px}
+.trk .tk{position:absolute;top:0;bottom:0;border-left:1px dashed var(--line)}
+.trk .tk span{position:absolute;top:-14px;left:-6px;font-size:10px;color:var(--mut)}
+.seg2{position:absolute;top:8px;height:10px;background:var(--acc);border-radius:5px}
+.seg2.pl{background:repeating-linear-gradient(45deg,var(--acc),var(--acc) 5px,color-mix(in srgb,var(--acc) 55%,var(--card)) 5px,color-mix(in srgb,var(--acc) 55%,var(--card)) 10px)}
+.dot{position:absolute;top:5px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:var(--ok);border:3px solid var(--card)}
+.nr{position:absolute;left:4px;top:3px;font-size:12px;color:var(--bad);font-weight:600}
+.tm{font-size:12px;color:var(--mut)}.tm b{color:var(--ink)}
+svg.nw{width:100%;height:auto;display:block;margin-top:6px}
+svg.nw text{fill:var(--mut);font-size:9px}svg.nw .ln{fill:none;stroke:var(--acc);stroke-width:2}svg.nw .ar{fill:var(--acc);opacity:.12}
+svg.nw .ax{stroke:var(--line);stroke-width:1}svg.nw circle{fill:var(--ok);stroke:var(--card);stroke-width:2}
+.empty{text-align:center;padding:28px 8px;color:var(--mut)}
+.warnbox{background:color-mix(in srgb,var(--warn) 14%,var(--card));border-radius:10px;padding:8px 10px;font-size:13px;margin:8px 0 0}
+@keyframes fl{from{background:var(--flash)}to{background:transparent}}
+.flash{animation:fl .8s ease-out;border-radius:6px}
+@media(prefers-reduced-motion:reduce){.flash{animation:none}}
+
+.kpi.sm b{font-size:16px}
+.auto{font-style:normal;font-size:10px;font-weight:600;color:var(--acc);border:1px solid var(--acc);border-radius:8px;padding:0 5px;margin-left:4px;vertical-align:1px}
+.plan-line{margin:10px 0 0;font-size:14px}
+.warnchip{background:color-mix(in srgb,var(--bad) 16%,var(--card));color:var(--bad);font-weight:600}
+.linkbtn{display:block;width:100%;min-height:44px;background:none;border:0;color:var(--acc);font-size:14px;font-weight:600;margin:-4px 0 8px}
+.steps{margin:0 0 8px;padding-left:20px;font-size:14px}.steps li{margin:4px 0}
+textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:0;border-radius:8px;padding:8px;margin-top:6px;resize:vertical}
+.pre{white-space:pre-wrap;font-size:11px;background:var(--field);border-radius:8px;padding:8px;color:var(--ink)}
+.src{font-size:11px;border-radius:8px;padding:1px 7px;border:1px solid var(--line)}.src.listing{color:var(--ok)}.src.estimate{color:var(--warn)}.src.missing{color:var(--mut)}
+table.cmp td:nth-child(2){color:var(--ink)}
+
+.sec{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tot{text-transform:none;letter-spacing:0;font-size:12px;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.r2{gap:6px 8px;justify-content:flex-start}.r2 .st{margin-left:auto}
+.fund{font-size:12px;color:var(--mut)}
+select[data-sel]{background:var(--field);border-radius:16px;padding:0 10px;max-width:160px;font-size:15px}
+.locline{color:var(--mut);font-size:13px}
+.hi{color:var(--warn);font-weight:600;font-size:11px;margin-left:4px}
+.addrow{display:block;width:100%;min-height:48px;border:0;border-top:1px solid var(--line);background:none;color:var(--acc);font-weight:600;font-size:15px}
+.cs{cursor:pointer;min-height:44px;align-items:center}.cx{color:var(--acc);text-transform:none;letter-spacing:0;font-size:13px}
+.confirm{background:color-mix(in srgb,var(--bad) 10%,var(--card));border-radius:10px;padding:10px;margin-top:8px}.confirm p{margin:0 0 4px;font-size:14px}
+.btn.danger{background:#b3261e;width:100%;margin-top:6px}.confirm .btn.plain{margin-top:6px}
+.filebtn{display:flex;align-items:center;justify-content:center;cursor:pointer}
+.top input.t{text-overflow:ellipsis}
+.top h2{min-width:0}
+
+.addr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;display:inline-block;vertical-align:bottom}
+.r1>span:first-child{min-width:0}
+select[data-sel]{max-width:118px;font-size:14px;padding:0 6px;border-radius:14px}
+.r2{flex-wrap:nowrap}.locline{font-size:12px;white-space:nowrap}.r2 .st{font-size:13px}
+@media(max-width:360px){.r2{flex-wrap:wrap}}
+
+</style>
+<main id="app" aria-live="polite"></main>
+<script>
+/* Portfolio finance engine v3 — pure functions, no DOM. Works in browser (window.Engine) and Node (module.exports).
+   State shape: { g:{...assumptions}, houses:[{id,addr,status:'owned'|'planned',price,dp,rate,term,extra,driver:'extra'|'months',wait,
+   rent,tax,ins,hoa,liens,paid,buyIn,target}] }  All percentages are plain numbers (85 = 85%). Money is dollars. Time is months. */
+(function (root) {
+  const GDEF = { cap: 85, haircut: 0, closing: 3, vac: 5, mgmt: 8, maint: 1, appr: 0, hrate: 8.5, dti: 43,
+    p1: 200000, p2: 200000, rentCount: 75, otherDebt: 0, horizon: 480 };
+  let uid = 0;
+  const newHouse = (o) => Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), addr: 'New house', status: 'planned', price: 250000, dp: 20,
+    rate: 6.75, term: 360, extra: 0, driver: 'extra', wait: 24, rent: 1800, tax: 250, ins: 100, hoa: 0, liens: 0, paid: 0, buyIn: 12, target: '' }, o || {});
+  const seed = () => ({ g: Object.assign({}, GDEF), houses: [
+    newHouse({ id: 'oak', addr: '12 Oak St', status: 'owned', price: 300000, dp: 20, rate: 6.5, extra: 1000, rent: 2100, tax: 300, ins: 100, target: 'elm' }),
+    newHouse({ id: 'elm', addr: '8 Elm Ave', status: 'planned', price: 240000, rate: 6.75, extra: 100, rent: 1800, tax: 250, ins: 90, target: 'pine' }),
+    newHouse({ id: 'pine', addr: '3 Pine Rd', status: 'planned', price: 200000, rate: 7, extra: 0, rent: 1600, tax: 200, ins: 80, target: '' })] });
+
+  const H = (S, id) => S.houses.find((h) => h.id === id);
+  const mi = (h) => h.rate / 1200;
+  const loan = (h) => h.price * (1 - h.dp / 100);
+  const pmt = (L, i, n) => (L <= 0 ? 0 : i ? (L * i) / (1 - Math.pow(1 + i, -n)) : L / n);
+  const age0 = (h) => (h.status === 'owned' ? Math.max(0, h.paid || 0) : 0);
+  /* balance today under the scheduled payment (age0 months already paid) */
+  function balToday(h) {
+    const L = loan(h), i = mi(h), P = pmt(L, i, h.term), k = age0(h);
+    if (!k) return L;
+    return Math.max(0, i ? L * Math.pow(1 + i, k) - P * (Math.pow(1 + i, k) - 1) / i : L - P * k);
+  }
+  const balK = (B0, i, A, k) => Math.max(0, i ? B0 * Math.pow(1 + i, k) - A * (Math.pow(1 + i, k) - 1) / i : B0 - A * k);
+  const valK = (S, h, k) => h.price * Math.pow(1 + S.g.appr / 100, (age0(h) + k) / 12);
+  const need = (S, h) => { const t = H(S, h.target); return t ? t.price * (t.dp / 100 + S.g.closing / 100) : 0; };
+
+  function payoffN(h, X) {
+    const B0 = balToday(h), i = mi(h), A = pmt(loan(h), i, h.term) + X;
+    if (B0 <= 0.005) return 0;
+    if (A <= i * B0) return Infinity;
+    return Math.ceil(i ? -Math.log(1 - (i * B0) / A) / Math.log(1 + i) : B0 / A);
+  }
+  /* months (from the house's own start) until cap*value - balance - other liens >= cash needed for its target */
+  function locMonths(S, h, X) {
+    if (!H(S, h.target)) return Infinity;
+    const D = need(S, h), B0 = balToday(h), i = mi(h), A = pmt(loan(h), i, h.term) + X, g = S.g;
+    for (let k = 0; k <= 600; k++) {
+      const head = g.cap / 100 * valK(S, h, k) - balK(B0, i, A, k) - (h.liens || 0);
+      if (Math.max(0, head) * (1 - g.haircut / 100) >= D) return k;
+    }
+    return Infinity;
+  }
+  /* back-solve: smallest extra payment so the line of credit opens within m months (null = impossible) */
+  function extraFor(S, h, m) {
+    if (locMonths(S, h, 0) <= m) return 0;
+    let lo = 0, hi = balToday(h) + 1;
+    if (locMonths(S, h, hi) > m) return null;
+    for (let j = 0; j < 50; j++) { const mid = (lo + hi) / 2; locMonths(S, h, mid) <= m ? (hi = mid) : (lo = mid); }
+    return hi;
+  }
+  function view(S, h) {
+    const g = S.g, L = loan(h), i = mi(h), P = pmt(L, i, h.term), B0 = balToday(h);
+    let X = h.extra, infeasible = false;
+    if (h.driver === 'months' && H(S, h.target)) { const x = extraFor(S, h, h.wait); if (x == null) infeasible = true; else X = x; }
+    const egi = h.rent * (1 - g.vac / 100);
+    const opex = h.tax + h.ins + h.hoa + (g.maint / 100) * h.price / 12 + (g.mgmt / 100) * egi;
+    const noi = egi - opex, escrow = h.tax + h.ins + h.hoa;
+    const lm = locMonths(S, h, X), A = P + X;
+    const cltvAtLoc = H(S, h.target) && isFinite(lm) ? ((balK(B0, i, A, lm) + (h.liens || 0) + need(S, h)) / valK(S, h, lm)) * 100 : null;
+    return { cltvAtLoc, L, B0, P, X, infeasible, egi, noi, cf: noi - P, escrow, pitia: P + escrow, payment: P + X + escrow,
+      D: need(S, h), down: (h.price * h.dp) / 100, payoff: payoffN(h, X), locM: lm,
+      head0: Math.max(0, g.cap / 100 * h.price - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0) };
+  }
+
+  /* The whole-portfolio plan: purchase months, month-by-month series, plan-level KPIs. */
+  function plan(S) {
+    const hs = S.houses, g = S.g, V = {};
+    hs.forEach((h) => (V[h.id] = view(S, h)));
+    const memo = {}, stack = {};
+    function pm(h) {
+      if (memo[h.id] !== undefined) return memo[h.id];
+      if (h.status === 'owned') return (memo[h.id] = 0);
+      if (stack[h.id]) return Infinity;
+      stack[h.id] = 1;
+      const srcs = hs.filter((x) => x.target === h.id && x.id !== h.id);
+      let r;
+      if (!srcs.length) r = Math.max(0, h.buyIn || 0);
+      else { r = Infinity; srcs.forEach((s) => { const a = pm(s) + V[s.id].locM; if (a < r) r = a; }); }
+      stack[h.id] = 0;
+      return (memo[h.id] = r);
+    }
+    const P0 = {}; hs.forEach((h) => (P0[h.id] = pm(h)));
+    /* a house "funds" its target only if its line of credit is what opens first for that target */
+    const funds = {}; hs.forEach((h) => { const t = H(S, h.target);
+      funds[h.id] = !!(t && t.status === 'planned' && isFinite(P0[h.id] + V[h.id].locM) && P0[t.id] === P0[h.id] + V[h.id].locM); });
+    const finiteBuys = hs.map((h) => P0[h.id]).filter(isFinite);
+    const lastBuy = finiteBuys.length ? Math.max.apply(null, finiteBuys) : 0;
+    const T = Math.min(g.horizon, Math.max(120, lastBuy + 60));
+    const keys = ['nw', 'monthly', 'extra', 'noi', 'ds', 'cf', 'cfx', 'debt', 'value', 'rent', 'dsti', 'dti', 'count'];
+    const s = {}; keys.forEach((k) => (s[k] = new Array(T + 1).fill(0)));
+    for (let t = 0; t <= T; t++) {
+      for (const h of hs) {
+        const p = P0[h.id]; if (!isFinite(p) || t < p) continue;
+        const v = V[h.id], age = t - p, i = mi(h), live = age < v.payoff;
+        const B = live ? balK(v.B0, i, v.P + v.X, age) : 0, val = valK(S, h, age);
+        const heloc = funds[h.id] && age >= v.locM ? v.D : 0, hi = (heloc * g.hrate) / 1200;
+        const sched = live ? v.P : 0, ex = live ? v.X : 0;
+        s.count[t]++; s.value[t] += val; s.debt[t] += B + (h.liens || 0) + heloc; s.nw[t] += val - B - (h.liens || 0) - heloc;
+        s.noi[t] += v.noi; s.ds[t] += sched + hi; s.extra[t] += ex; s.rent[t] += h.rent;
+        s.monthly[t] += sched + ex + v.escrow + hi; s.dsti[t] += sched + v.escrow + hi;
+      }
+      s.cf[t] = s.noi[t] - s.ds[t]; s.cfx[t] = s.cf[t] - s.extra[t];
+      const inc = (g.p1 + g.p2) / 12 + (g.rentCount / 100) * s.rent[t];
+      const debts = g.otherDebt + s.dsti[t];
+      s.dti[t] = inc > 0 ? Math.min(999, (debts / inc) * 100) : debts > 0 ? 999 : 0;
+    }
+    const at = (t) => { const o = { month: t }; keys.forEach((k) => (o[k] = s[k][t])); o.cltv = o.value ? (o.debt / o.value) * 100 : 0;
+      o.dscr = o.ds ? o.noi / o.ds : 0; return o; };
+    const rows = hs.filter((h) => H(S, h.target)).map((h) => ({ id: h.id, target: h.target, start: P0[h.id], locM: V[h.id].locM,
+      end: P0[h.id] + V[h.id].locM, ok: isFinite(P0[h.id] + V[h.id].locM), funds: funds[h.id] }));
+    let worst = { dti: 0, month: 0 }; for (let t = 0; t <= T; t++) if (s.dti[t] > worst.dti) worst = { dti: s.dti[t], month: t };
+    return { purchase: P0, series: s, T, lastBuy, today: at(0), final: at(Math.min(T, lastBuy)), at, rows, funds, V,
+      worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id) };
+  }
+  /* affordability of the purchase a house's line of credit funds: DTI in the month the target is bought */
+  function afford(S, h, pl) {
+    pl = pl || plan(S);
+    const t = H(S, h.target);
+    if (!t) return { cls: 'na', txt: 'No target', why: 'Pick the house this line of credit will fund.' };
+    const m = pl.purchase[t.id];
+    if (!isFinite(m)) return { cls: 'bad', txt: '✗ Not reachable', why: 'The debt cap leaves no room within 50 years.' };
+    const dti = pl.series.dti[Math.min(pl.T, m)], lim = S.g.dti;
+    if (dti >= 999) return { cls: 'bad', dti, txt: '✗ Short', why: 'No qualifying income is set (see Assumptions).' };
+    const cls = dti <= lim * 0.8 ? 'ok' : dti <= lim ? 'warn' : 'bad';
+    return { cls, dti, txt: cls === 'ok' ? '✓ Afford' : cls === 'warn' ? '△ Tight' : '✗ Short', why: 'Debt-to-income ' + dti.toFixed(0) + '% vs ' + lim + '% limit when ' + t.addr + ' closes.' };
+  }
+  /* fill in any missing fields (old/sparse backups) so nothing ever renders NaN */
+  function normalize(S) {
+    S.g = Object.assign({}, GDEF, S.g || {});
+    S.houses = (S.houses || []).filter((h) => h && h.id).map((h) => Object.assign(newHouse({ id: h.id }), h));
+    S.houses.forEach((h) => { ['price','dp','rate','term','extra','rent','tax','ins','hoa','liens','paid','buyIn','wait'].forEach((k) => { if (!isFinite(+h[k])) h[k] = newHouse()[k]; else h[k] = +h[k]; }); if (h.term < 12) h.term = 360; });
+    return S;
+  }
+  /* Zillow-listing file (house-listing/1, produced by a Claude chat) -> house fields + a preview table */
+  function fromListing(o) {
+    const err = (m) => ({ ok: false, error: m });
+    if (!o || typeof o !== 'object') return err('That file is not a listing file.');
+    if (o.schema !== 'house-listing/1') return err('Unrecognized file. Expected schema "house-listing/1".');
+    const val = (f) => (f && typeof f === 'object' && isFinite(+f.value) && f.value !== null && +f.value >= 0 ? +f.value : null);
+    const src = (f, v) => (v === null ? 'missing' : f && ['listing', 'estimate'].includes(f.source) ? f.source : 'estimate');
+    const price = val(o.price); if (!price) return err('The file has no purchase price.');
+    const rent = val(o.rentMonthly), taxA = val(o.taxAnnual), insA = val(o.insuranceAnnual), hoa = val(o.hoaMonthly);
+    const patch = { price, addr: typeof o.address === 'string' && o.address.trim() ? o.address.trim().slice(0, 80) : 'Imported house' };
+    if (rent !== null) patch.rent = rent; if (taxA !== null) patch.tax = Math.round(taxA / 12); if (insA !== null) patch.ins = Math.round(insA / 12); if (hoa !== null) patch.hoa = hoa;
+    const rows = [['Address', patch.addr, 'listing'], ['Price', '$' + price.toLocaleString('en-US'), src(o.price, price)],
+      ['Monthly rent', rent === null ? 'keeps default' : '$' + rent.toLocaleString('en-US'), src(o.rentMonthly, rent)],
+      ['Property tax / mo', taxA === null ? 'keeps default' : '$' + Math.round(taxA / 12).toLocaleString('en-US'), src(o.taxAnnual, taxA)],
+      ['Insurance / mo', insA === null ? 'keeps default' : '$' + Math.round(insA / 12).toLocaleString('en-US'), src(o.insuranceAnnual, insA)],
+      ['HOA / mo', hoa === null ? 'keeps default' : '$' + hoa.toLocaleString('en-US'), src(o.hoaMonthly, hoa)]];
+    const info = o.info && typeof o.info === 'object' ? o.info : {};
+    return { ok: true, patch, rows, info, url: typeof o.listingUrl === 'string' ? o.listingUrl : '' };
+  }
+  function without(S, id) {
+    const c = JSON.parse(JSON.stringify(S));
+    c.houses = c.houses.filter((h) => h.id !== id); c.houses.forEach((h) => { if (h.target === id) h.target = ''; });
+    return c;
+  }
+  const E = { GDEF, seed, newHouse, normalize, fromListing, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, loan, balToday, need, H };
+  if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
+(function () {
+  const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
+  let S, UI = { tab: 'timeline', open: false, coll: {}, hideLegend: false };
+  try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+  if (!S || !Array.isArray(S.houses) || !S.g) S = E.seed();
+  E.normalize(S);
+  try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
+  let storageOK = true, imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false;
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
+  const H = (id) => E.H(S, id);
+  /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
+  const hashOf = (p) => (!p ? '#' : p === 'settings' ? '#assumptions' : p.startsWith('h/') ? '#house-' + p.slice(2) : p.startsWith('import/') ? '#import-' + p.slice(7) : '#');
+  const routeOf = () => { const h = location.hash.slice(1); return h === 'assumptions' ? 'settings' : h.startsWith('house-') ? 'h/' + h.slice(6) : h.startsWith('import-') ? 'import/' + h.slice(7) : ''; };
+  const goto = (p) => { location.hash = hashOf(p); };
+
+  /* ---------- formatting ---------- */
+  const num = (n) => (isFinite(n) ? n : 0);
+  const $f = (n) => (n < -0.5 ? '−' : '') + '$' + Math.round(Math.abs(num(n))).toLocaleString('en-US');
+  const $s = (n) => (n < -0.5 ? '−' : '+') + '$' + Math.round(Math.abs(num(n))).toLocaleString('en-US');
+  const grp = (n) => Math.round(num(n)).toLocaleString('en-US');
+  const mo = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 24 ? m + ' mo' : Math.floor(m / 12) + 'y ' + (m % 12) + 'm');
+  const mm = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m + ' mo'); /* credit-line timing: plain months */
+  const r = (n, d = 0) => (isFinite(n) ? String(+n.toFixed(d)) : '—');
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /* ---------- reusable bits ---------- */
+  const field = (label, p, val, o = {}) => `<label class="f ${o.calc ? 'calc' : ''}"><span class="lb">${label}${o.calc ? ' <i class="auto" title="calculated from your other numbers — tap to override">auto</i>' : ''}</span><span class="iw">${o.pre ? `<em>${o.pre}</em>` : ''}<input inputmode="decimal" data-p="${p}" data-k="${p}" aria-label="${esc(label)}" ${o.ro ? 'readonly tabindex="-1"' : ''} value="${val}">${o.suf ? `<em>${o.suf}</em>` : ''}</span></label>`;
+  const targetSel = (h) => `<select data-sel="${h.id}" aria-label="Line of credit on ${esc(h.addr)} funds">${'<option value="">Pick a house</option>' + S.houses.filter((x) => x.id !== h.id).map((x) => `<option value="${x.id}" ${h.target === x.id ? 'selected' : ''}>${esc(x.addr)}</option>`).join('')}</select>`;
+  const kpi = (id, label, val, sub, cls, sm) => `<div class="kpi ${sm ? 'sm' : ''}"><small>${label}</small><b class="${cls || ''}" data-testid="${id}" data-k="${id}">${val}</b>${sub ? `<span class="sub">${sub}</span>` : ''}</div>`;
+
+  const colSec = (id, title, sum, inner) => { const open = !UI.coll[id]; return `<div class="sec cs" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}"><span>${title}</span><span class="cx">${open ? 'Hide ▾' : esc(sum) + ' ▸'}</span></div>${open ? inner : ''}`; };
+  const confirmBox = (msg, yesAttr, yesLabel) => `<div class="confirm" role="alertdialog"><p>${msg}</p><button class="btn danger" ${yesAttr}>${yesLabel}</button><button class="btn plain" data-ask-cancel>Cancel</button></div>`;
+
+  /* ---------- plan visuals ---------- */
+  function timeline(pl) {
+    const steps = pl.rows;
+    if (!steps.length) return '<p class="note">Choose a funding target on a house to see the chain.</p>';
+    const fin = steps.filter((x) => x.ok).map((x) => x.end), max = Math.max(12, ...fin) * 1.06, pc = (m) => (m / max) * 100;
+    const ys = max <= 60 ? 1 : max <= 120 ? 2 : 5, tk = [];
+    for (let y = 0; y * 12 <= max; y += ys) tk.push(y);
+    const grid = tk.map((y) => `<i class="tk" style="left:${pc(y * 12)}%"><span>${y ? y + 'y' : 'Now'}</span></i>`).join('');
+    const rows = steps.map((x) => { const h = H(x.id), t = H(x.target), startOk = isFinite(x.start);
+      return `<div class="tr" data-go="h/${h.id}"><div class="tl">${esc(h.addr)} <b>→ ${esc(t.addr)}</b></div><div class="trk">${grid}${x.ok ? `<span class="seg2 ${h.status === 'planned' ? 'pl' : ''}" style="left:${pc(x.start)}%;width:${Math.max(1.5, pc(x.end - x.start))}%"></span><span class="dot" style="left:${pc(x.end)}%"></span>` : '<span class="nr">not reachable</span>'}</div>
+      <div class="tm">${x.ok ? `${x.start ? `starts ${mm(x.start)} · ` : ''}LOC ready <b>${mm(x.end)}</b>${x.funds ? '' : ' (not used — target bought sooner)'}` : startOk ? 'the debt cap leaves no room' : 'waiting on an earlier house'}</div></div>`; }).join('');
+    return `<div class="tlw" data-testid="timeline">${rows}</div><p class="note">Bar = paying down until the line of credit opens · ● = buy the next house. Tap a row to edit.</p>`;
+  }
+  function nwChart(pl) {
+    const T = Math.max(12, Math.min(pl.T, pl.lastBuy + 60)), s = pl.series.nw.slice(0, T + 1);
+    const W = 340, Hh = 150, pad = 6, min = Math.min(0, ...s), max = Math.max(1, ...s);
+    const x = (t) => pad + (t / T) * (W - 2 * pad), y = (v) => Hh - 22 - ((v - min) / (max - min || 1)) * (Hh - 40);
+    const step = Math.max(1, Math.ceil(T / 160)); let d = '';
+    for (let t = 0; t <= T; t += step) d += (d ? 'L' : 'M') + x(t).toFixed(1) + ' ' + y(s[t]).toFixed(1);
+    d += 'L' + x(T).toFixed(1) + ' ' + y(s[T]).toFixed(1);
+    const ys = T <= 60 ? 1 : T <= 120 ? 2 : T <= 240 ? 5 : 10; let ticks = '';
+    for (let yr = 0; yr * 12 <= T; yr += ys) ticks += `<text x="${x(yr * 12)}" y="${Hh - 6}" text-anchor="middle">${yr ? yr + 'y' : 'Now'}</text>`;
+    const buys = S.houses.filter((h) => isFinite(pl.purchase[h.id]) && pl.purchase[h.id] > 0 && pl.purchase[h.id] <= T).map((h) => `<circle cx="${x(pl.purchase[h.id])}" cy="${y(s[pl.purchase[h.id]])}" r="4.5"><title>${esc(h.addr)} bought ${mo(pl.purchase[h.id])}</title></circle>`).join('');
+    return `<svg class="nw" data-testid="networth-chart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Net worth over time, ${$f(s[0])} now to ${$f(s[T])} in ${mo(T)}"><line class="ax" x1="${pad}" x2="${W - pad}" y1="${y(0)}" y2="${y(0)}"/><path class="ar" d="${d}L${x(T)} ${y(0)}L${x(0)} ${y(0)}Z"/><path class="ln" d="${d}"/>${buys}${ticks}<text x="${pad}" y="12">${$f(max)}</text></svg><p class="note">Net worth = value − loans − other liens − lines of credit drawn. ● = a house is bought.</p>`;
+  }
+
+  /* ---------- main page ---------- */
+  function main() {
+    const pl = E.plan(S), t0 = pl.today, tf = pl.final, g = S.g, owned = S.houses.filter((h) => h.status === 'owned');
+    if (!S.houses.length) return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings">⚙</button></h1><div class="card empty"><p><b>No houses yet</b></p><p>Add your first house to see your plan.</p><button class="linkbtn" data-go="import/new">Or import one from a listing file</button><button class="btn" data-add data-testid="add-house" style="margin-top:8px">+ Add house</button></div>`;
+    const tot = S.houses.reduce((s, h) => s + E.view(S, h).X, 0);
+    const n = S.houses.length, sched = n - pl.unfunded.length;
+    const rows = S.houses.map((h) => {
+      const v = pl.V[h.id], a = E.afford(S, h, pl), t = H(h.target), p = pl.purchase[h.id];
+      const tag = h.status === 'owned' ? 'owned' : isFinite(p) ? 'buy ' + mo(p) : 'unfunded';
+      const loc = !t ? '' : !isFinite(p + v.locM) ? 'not reachable' : p + v.locM <= 0 ? 'opens now' : 'opens in ' + mm(p + v.locM);
+      const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
+      return `<div class="row" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span><span class="addr">${esc(h.addr)}</span><span class="tag">${tag}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}">${$f(v.payment)}/mo ${h.status === 'planned' ? 'when bought' : 'total'} ${hi}</div></span>
+        <span class="ex ${h.driver === 'months' ? 'calc' : ''}">Extra<span class="iw"><em>$</em><input inputmode="decimal" data-testid="extra-input" data-p="h.${h.id}.extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(v.X)}"></span></span></div>
+        <div class="r2"><span class="fund">Funds</span>${targetSel(h)}<span class="locline" data-testid="loc-line">${loc}</span><span class="st ${a.cls}" data-testid="afford-status" title="${esc(a.why || '')}">${a.cls === 'na' ? '' : a.txt}</span></div></div>`; }).join('');
+    const cmp = (label, a, b, f, cls) => `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td class="${cls || ''}" data-k="c-${label}-b"><b>${f(b)}</b></td></tr>`;
+    const warn = pl.unfunded.length ? `<div class="warnbox">⚠ ${pl.unfunded.length} planned house${pl.unfunded.length > 1 ? 's are' : ' is'} never funded under the current numbers.</div>` : '';
+    const health = pl.worst.dti > g.dti ? `<div class="warnbox">⚠ Debt-to-income peaks at ${r(pl.worst.dti)}% in ${mo(pl.worst.month)} (limit ${g.dti}%).</div>` : '';
+    const tab = UI.tab;
+    const nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0];
+    const headline = (nb ? `Next: buy <b>${esc(nb.addr)}</b> in <b>${mo(pl.purchase[nb.id])}</b>. ` : '') + (pl.unfunded.length ? `${pl.unfunded.length} not funded yet.` : `All ${n} house${n > 1 ? 's' : ''} by <b>${mo(pl.lastBuy)}</b>.`);
+    return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></h1>
+    ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
+    <section class="card" data-testid="summary"><div class="kg">
+      ${kpi('kpi-networth', 'Net worth', $f(t0.nw), `${owned.length} owned · ${$f(t0.value)} value`)}
+      ${kpi('kpi-monthly', 'Total monthly payments', $f(t0.monthly), `incl. ${$f(t0.extra)} extra now`)}
+      ${kpi('kpi-cashflow', 'Cash flow / mo', $s(t0.cf), `${$s(t0.cfx)} after extra`, t0.cf < 0 ? 'bad' : '', 1)}
+      ${kpi('kpi-dscr', 'DSCR', r(t0.dscr, 2), t0.dscr >= 1.2 ? 'healthy' : t0.dscr >= 1 ? 'thin' : 'below 1.0', t0.dscr && t0.dscr < 1 ? 'bad' : '', 1)}</div>
+      <div class="bar"><i class="${t0.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (t0.cltv / g.cap) * 100)}%"></i></div>
+      <div class="cap"><span data-k="cltv">Debt ${r(t0.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
+      <p class="plan-line" data-testid="plan-headline">${headline}</p></section>
+    <div class="sec">Extra payments &amp; credit lines<span class="tot" data-testid="total-extra" data-k="tot">${$f(tot)}/mo extra</span></div><section class="card" id="ledger" data-testid="ledger">${rows}<button class="addrow" data-add data-testid="add-house">+ Add house</button></section>
+    <button class="linkbtn" data-go="import/new" data-testid="import-link">Import a house from a listing file</button>
+    <section class="card" data-testid="plan-card"><b>Plan</b> <span class="note">${sched} of ${n} houses by ${mo(pl.lastBuy)}</span>
+      <table class="cmp"><thead><tr><th></th><th>Today</th><th>Plan complete</th></tr></thead><tbody>
+      ${cmp('Net worth', t0.nw, tf.nw, $f)}${cmp('Monthly payments', t0.monthly, tf.monthly, $f)}${cmp('Cash flow / mo', t0.cf, tf.cf, $s, tf.cf < 0 ? 'bad' : '')}${cmp('Debt', t0.debt, tf.debt, $f)}${cmp('Houses', t0.count, tf.count, (x) => x)}</tbody></table>
+      ${warn}${health}
+      <div class="seg" role="tablist"><button data-tab="timeline" class="${tab === 'timeline' && UI.open ? 'on' : ''}" data-testid="timeline-toggle">Timeline</button><button data-tab="nw" class="${tab === 'nw' && UI.open ? 'on' : ''}" data-testid="networth-toggle">Net worth</button><button data-tab="hide" class="${!UI.open ? 'on' : ''}">Hide</button></div>
+      ${UI.open ? (tab === 'nw' ? nwChart(pl) : timeline(pl)) : ''}</section>`;
+  }
+
+  /* ---------- house page ---------- */
+  function house(h) {
+    const pl = E.plan(S), v = pl.V[h.id], g = S.g, a = E.afford(S, h, pl), t = H(h.target), P = `h.${h.id}.`;
+    const wo = E.plan(E.without(S, h.id)), p0 = pl.purchase[h.id];
+    const sooner = t && isFinite(v.locM) ? v.locM - E.locMonths(S, h, v.X + 100) : 0;
+    const src = S.houses.filter((x) => x.target === h.id);
+    const heloc = pl.funds[h.id] ? v.D : 0;
+    const debt = v.debtNow, capPct = (debt / h.price) * 100;
+    const L = [['Net worth today', wo.today.nw, pl.today.nw, $f], ['Net worth, plan complete', wo.final.nw, pl.final.nw, $f], ['Monthly payments, plan complete', wo.final.monthly, pl.final.monthly, $f], ['Cash flow today', wo.today.cf, pl.today.cf, $s]];
+    const impactLines = L.filter((x) => Math.abs(x[1] - x[2]) > 0.5).map((x) => `<div class="f"><span class="lb">${x[0]}</span><span>${x[3](x[1])} → <b>${x[3](x[2])}</b></span></div>`);
+    const timing = h.status === 'planned'
+      ? (src.length ? `<p class="note">Bought when ${src.map((x) => esc(x.addr)).join(' or ')}'s line of credit opens — ${isFinite(p0) ? mo(p0) + ' from now' : 'not reachable'}.</p>` : field('Buy in (months)', P + 'buyIn', h.buyIn))
+      : field('Months already paid', P + 'paid', h.paid);
+    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Address" title="${esc(h.addr)}"></h2></div>
+    ${h.fresh ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
+    <section class="card"><div class="kg">${kpi('h-payment', 'Monthly payment', $f(v.payment), `P&amp;I ${$f(v.P)} + extra ${$f(v.X)} + escrow ${$f(v.escrow)}`)}${kpi('h-cf', 'Cash flow / mo', $s(v.cf), `${$s(v.cf - v.X)} after extra`, v.cf < 0 ? 'bad' : '')}</div>
+      <div class="seg"><button class="${h.status === 'owned' ? 'on' : ''}" data-status="owned">Owned</button><button class="${h.status === 'planned' ? 'on' : ''}" data-status="planned">Planned</button></div>${timing}</section>
+    ${UI.hideLegend && !h.listingUrl ? '' : `<p class="note" style="margin:10px 4px 0">${UI.hideLegend ? '' : '<i class="auto">auto</i> = calculated from your other numbers; tap to override. <button class="chip link" data-hidelegend>Got it</button> '}${h.listingUrl ? 'Imported from a listing' + (h.info && h.info.beds ? ' · ' + h.info.beds + ' bd / ' + h.info.baths + ' ba · ' + (h.info.sqft || '?') + ' sqft' : '') + '.' : ''}</p>`}
+    <div class="sec">Purchase</div><section class="card">${field('Price', P + 'price', grp(h.price), { pre: '$' })}${field('Down payment', P + 'dp', r(h.dp, 2), { suf: '%' })}${field('Down payment $', P + 'down', grp(v.down), { pre: '$', calc: 1 })}${field('Loan amount', P + 'loan', grp(v.L), { pre: '$', calc: 1, ro: 1 })}</section>
+    <div class="sec">Loan</div><section class="card">${field('Interest rate', P + 'rate', r(h.rate, 3), { suf: '%' })}${field('Term (years)', P + 'termY', h.term / 12)}${field('Extra / month', P + 'extra', grp(v.X), { pre: '$', calc: h.driver === 'months' })}${field('Paid off in (months)', P + 'payoff', isFinite(v.payoff) ? v.payoff : '', { calc: 1 })}${field('Other liens on this house', P + 'liens', grp(h.liens), { pre: '$' })}
+      <p class="note">${isFinite(v.payoff) ? `Paid off in ${mo(v.payoff)}. ` : 'Payment does not cover interest. '}Debt now: ${$f(debt)} (${r((debt / h.price) * 100)}% of value).${v.cltvAtLoc != null ? ` When its line of credit opens: ${r(v.cltvAtLoc)}% (cap ${g.cap}%).` : ''}</p>${v.cltvAtLoc != null && v.cltvAtLoc > g.cap + 0.01 ? '<span class="chip warnchip">Over the debt cap</span>' : ''}</section>
+    ${colSec('rent', 'Rent &amp; expenses', 'rent ' + $f(h.rent) + ' · costs ' + $f(h.tax + h.ins + h.hoa), `<section class="card">${field('Monthly rent', P + 'rent', grp(h.rent), { pre: '$' })}${field('Property tax / mo', P + 'tax', grp(h.tax), { pre: '$' })}${field('Insurance / mo', P + 'ins', grp(h.ins), { pre: '$' })}${field('HOA / mo', P + 'hoa', grp(h.hoa), { pre: '$' })}
+      <button class="chip link" data-go="settings">Vacancy ${g.vac}%</button><button class="chip link" data-go="settings">Mgmt ${g.mgmt}%</button><button class="chip link" data-go="settings">Repairs ${g.maint}%/yr</button>
+      <p class="note">Net operating income ${$f(v.noi)}/mo · after P&amp;I ${$s(v.cf)}/mo</p></section>`)}
+    <div class="sec">Line of credit strategy</div><section class="card"><div class="f"><span class="lb">Funds</span>${targetSel(h)}</div>
+      ${t ? `${field('Cash needed', P + 'need', grp(v.D), { pre: '$', calc: 1, ro: 1 })}${field('Months until LOC', P + 'wait', isFinite(v.locM) ? v.locM : '', { calc: h.driver === 'extra' })}
+      <div class="f"><span class="lb">Opens (from today)</span><b>${isFinite(p0 + v.locM) ? mo(p0 + v.locM) : 'never'}</b></div>
+      <div class="f"><span class="lb">Status</span><b class="st ${a.cls}">${a.txt}</b></div>
+      <p class="note">${v.infeasible ? '⚠ That wait is not reachable, even with the loan fully paid. ' : ''}${esc(a.why || '')}</p>${sooner > 0 ? `<span class="chip">+$100/mo → ${sooner} mo sooner</span>` : ''}` : '<p class="note">Pick the house this line of credit will fund.</p>'}</section>
+    ${colSec('impact', 'Impact on your plan', impactLines.length ? impactLines.length + ' changes' : 'no change', `<section class="card" data-testid="impact">${impactLines.length ? impactLines.join('') : '<p class="note" style="margin:0">Adding or removing this house does not change the numbers below.</p>'}<p class="note">Your plan without this house → with it.</p></section>`)}
+    ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? It is also cleared as a funding target.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="btn ghost" data-del="${h.id}" data-testid="h-delete">Remove house</button>`}`;
+  }
+
+  /* ---------- settings ---------- */
+  function settings() {
+    const g = S.g, F = (l, k, o) => field(l, 'g.' + k, o && o.pre === '$' ? grp(g[k]) : g[k], o);
+    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Assumptions</h2></div>
+    <div class="sec">Borrowing</div><section class="card">${F('Max debt on a house (cap)', 'cap', { suf: '%' })}${F('Lender appraisal haircut', 'haircut', { suf: '%' })}${F('Closing costs (of price)', 'closing', { suf: '%' })}${F('Line of credit rate', 'hrate', { suf: '%' })}</section>
+    <div class="sec">Co-signers &amp; qualifying</div><section class="card">${F('Parent 1 income / yr', 'p1', { pre: '$' })}${F('Parent 2 income / yr', 'p2', { pre: '$' })}${F('Debt-to-income limit', 'dti', { suf: '%' })}${F('Rent counted as income', 'rentCount', { suf: '%' })}${F('Other monthly debts', 'otherDebt', { pre: '$' })}</section>
+    <div class="sec">Operating costs</div><section class="card">${F('Vacancy', 'vac', { suf: '%' })}${F('Management (of rent)', 'mgmt', { suf: '%' })}${F('Repairs reserve (of value / yr)', 'maint', { suf: '%' })}${F('Appreciation / yr', 'appr', { suf: '%' })}</section>
+    <div class="sec">Data — stays on this device</div><section class="card">
+      ${notice ? `<div class="warnbox">${esc(notice)}</div>` : ''}
+      <button class="btn" data-export data-testid="export">${exportOpen ? 'Hide backup' : 'Show backup to copy'}</button>
+      ${exportOpen ? `<textarea readonly rows="5" id="bkout" aria-label="Backup data" data-testid="backup-text">${esc(JSON.stringify(S))}</textarea><button class="btn plain" data-copybackup>Copy backup</button><p class="note" id="cbm">Save this text somewhere safe, such as a note or file. Paste it below to restore.</p>` : ''}
+      <label class="btn plain filebtn">Restore from backup file<input type="file" accept="application/json,.json,text/plain" hidden id="imp" aria-label="Choose backup file" data-testid="import-file"></label>
+      <textarea rows="2" id="bkin" aria-label="Or paste backup text" placeholder="…or paste backup text here"></textarea><button class="btn plain" data-restore-text>Restore from pasted text</button>
+      ${pendingImport ? confirmBox('Replace all current data with this backup?', 'data-import-yes', 'Yes, replace') : ''}
+      ${ask === 'reset' ? confirmBox('Reset to the sample houses? This replaces your current houses.', 'data-reset-yes', 'Yes, reset') : '<button class="btn plain" data-reset>Reset to sample data</button>'}
+      <p class="note">${(() => { try { const t = localStorage.getItem('rep-v4-backup'); return t ? 'Backup last shown: ' + new Date(+t).toLocaleDateString() : 'No backup yet. Copy one regularly.'; } catch (e) { return ''; } })()}</p></section>`;
+  }
+
+  /* ---------- import from listing ---------- */
+  const PROMPT = `Here is a Zillow listing: <PASTE THE LINK HERE, or paste the listing text / attach screenshots>
+
+Create a file named house.json for my real estate portfolio app. Use only facts you can actually read from the listing. Do not guess. If a value is not shown, set it to null and mark its source "missing". If you can only estimate a value (for example insurance), mark its source "estimate" and say how in "note".
+
+Reply with JSON only, in exactly this format:
+
+{
+  "schema": "house-listing/1",
+  "listingUrl": "<url or null>",
+  "capturedOn": "YYYY-MM-DD",
+  "address": "street, city, state zip",
+  "price":       { "value": 0, "source": "listing" },
+  "rentMonthly": { "value": 0, "source": "listing|estimate|missing", "note": "" },
+  "taxAnnual":   { "value": 0, "source": "listing|estimate|missing" },
+  "insuranceAnnual": { "value": 0, "source": "listing|estimate|missing" },
+  "hoaMonthly":  { "value": 0, "source": "listing|missing" },
+  "info": { "beds": 0, "baths": 0, "sqft": 0, "yearBuilt": 0, "propertyType": "" }
+}
+
+Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR; rentMonthly and hoaMonthly are per MONTH. Do not include interest rate or down payment.`;
+  function importPage(id) {
+    const target = id === 'new' ? null : H(id), res = imp && imp.res;
+    const badge = (x) => `<span class="src ${x}">${x}</span>`;
+    const preview = !res ? '' : res.ok ? `<section class="card" data-testid="import-preview"><b>Preview</b><table class="cmp">${res.rows.map((x) => `<tr><td>${x[0]}</td><td>${esc(x[1])}</td><td>${badge(x[2])}</td></tr>`).join('')}</table>
+      ${res.rows.some((x) => x[2] === 'missing') ? '<p class="note">Missing values keep their defaults. You can edit everything afterward.</p>' : ''}${res.rows.some((x) => x[2] === 'estimate') ? '<p class="note">“estimate” means the listing page showed an estimate, not a fact. Double-check these.</p>' : ''}
+      <button class="btn" style="width:100%;margin-top:8px" data-apply-listing="${id}" data-testid="import-apply">${target ? 'Fill this house' : 'Add to portfolio'}</button></section>` : `<div class="warnbox" data-testid="import-error">⚠ ${esc(res.error)}</div>`;
+    return `<div class="top"><button class="ic" data-go="${target ? 'h/' + id : ''}" aria-label="Back">‹</button><h2>Import from listing</h2></div>${preview}
+    <section class="card"><ol class="steps"><li>Copy the prompt.</li><li>Paste it into a Claude chat with your Zillow link. If Claude cannot open the page, paste the listing text or screenshots instead.</li><li>Save Claude's reply as a <code>.json</code> file and choose it below.</li></ol>
+      <button class="btn plain" data-copyprompt data-testid="copy-prompt">Copy Claude prompt</button><p class="note" id="cpm"></p>
+      <details><summary class="note">Show the prompt</summary><pre class="pre">${esc(PROMPT)}</pre></details>
+      <label class="btn filebtn" style="margin-top:8px">Choose listing file<input type="file" accept=".json,application/json,text/plain" hidden data-listing-file data-testid="import-listing-file" aria-label="Choose listing file"></label>
+      <button class="linkbtn" data-togglepaste>${UI.paste ? 'Hide pasted text' : 'Or paste the file contents'}</button>
+      ${UI.paste ? `<textarea data-listing-text id="lt" rows="4" aria-label="Paste the listing file contents" placeholder="Paste the JSON Claude gave you"></textarea><button class="btn plain" data-read-listing>Read pasted text</button>` : ''}</section>`;
+  }
+  function readListing(text) {
+    let o = null; try { o = JSON.parse(text); } catch (e) { o = null; }
+    imp = { res: o === null ? { ok: false, error: 'That text is not valid JSON.' } : E.fromListing(o) }; render();
+  }
+  function applyListing(id) {
+    if (!imp || !imp.res || !imp.res.ok) return;
+    const x = imp.res, extra = { listingUrl: x.url || '', info: x.info || {}, fresh: false };
+    let h = id === 'new' ? null : H(id);
+    if (h) Object.assign(h, x.patch, extra); else { h = E.newHouse(Object.assign({}, x.patch, extra)); S.houses.push(h); }
+    imp = null; save(); goto('h/' + h.id);
+  }
+
+  function stageBackup(text) {
+    try { const d = JSON.parse(text); if (!d || !Array.isArray(d.houses) || !d.g) throw 0; pendingImport = d; notice = ''; }
+    catch (x) { pendingImport = null; notice = 'That is not a valid backup. Nothing was changed.'; }
+    render();
+  }
+  /* ---------- router + render ---------- */
+  let prev = {};
+  function render() {
+    const route = routeOf(), a = document.activeElement, id = a && a.dataset && (a.dataset.p || a.dataset.sel), typed = a && a.value, pos = a && a.selectionStart;
+    const app = document.getElementById('app');
+    app.innerHTML = route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
+    if (id) { const el = app.querySelector(`[data-p="${id}"],[data-sel="${id}"]`); if (el) { el.focus(); if (a.dataset.p && !el.readOnly && document.hasFocus()) { el.value = typed; try { el.setSelectionRange(pos, pos); } catch (e) {} } } }
+    const cur = {};
+    app.querySelectorAll('[data-k]').forEach((el) => { const k = el.dataset.k, v = el.tagName === 'INPUT' ? el.value : el.textContent; cur[k] = v;
+      if (k in prev && prev[k] !== v && el !== document.activeElement) (el.closest('label,.kpi,tr') || el).classList.add('flash'); });
+    prev = cur;
+  }
+  window.addEventListener('hashchange', () => { prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
+
+  /* ---------- editing: every field is an input; derived fields back-solve ---------- */
+  function setField(p, s) {
+    const [t, x, k] = p.split('.');
+    if (k === 'addr') { H(x).addr = s; return true; }
+    const n = parseFloat(String(s).replace(/,/g, '').replace(/[^0-9.\-eE+]/g, '')); if (isNaN(n)) return false;
+    if (t === 'g') { S.g[x] = n; return true; }
+    const h = H(x), v = E.view(S, h); h.fresh = false;
+    if (k === 'extra') { h.extra = Math.max(0, n); h.driver = 'extra'; }
+    else if (k === 'wait') { h.wait = Math.max(0, Math.round(n)); h.driver = 'months'; }
+    else if (k === 'down') { h.dp = Math.min(100, Math.max(0, (n / h.price) * 100)); }
+    else if (k === 'dp') { h.dp = Math.min(100, Math.max(0, n)); }
+    else if (k === 'termY') { h.term = Math.max(12, Math.round(n * 12)); }
+    else if (k === 'payoff') { const B0 = E.balToday(h), i = h.rate / 1200, m = Math.max(1, Math.round(n)); h.extra = Math.max(0, E.pmt(B0, i, m) - v.P); h.driver = 'extra'; }
+    else if (k === 'price') { h.price = Math.max(0, n); }
+    else if (k === 'rate') { h.rate = Math.min(30, Math.max(0, n)); }
+    else if (k === 'loan' || k === 'need') return false;
+    else h[k] = Math.max(0, n);
+    return true;
+  }
+  const app = document.getElementById('app');
+  app.addEventListener('input', (e) => { const p = e.target.dataset.p; if (p && setField(p, e.target.value)) { save(); render(); } });
+  app.addEventListener('focusout', (e) => { if (e.target.dataset && e.target.dataset.p && e.target.tagName === 'INPUT' && !e.relatedTarget) setTimeout(() => { const a = document.activeElement; if (!(a && a.dataset && (a.dataset.p || a.dataset.sel))) render(); }, 0); });
+  app.addEventListener('change', (e) => {
+    const sel = e.target.dataset.sel; if (sel) { H(sel).target = e.target.value; save(); render(); return; }
+    if (e.target.dataset.listingFile !== undefined && e.target.files[0]) { const rd = new FileReader(); rd.onload = () => readListing(String(rd.result)); rd.readAsText(e.target.files[0]); return; }
+    if (e.target.id === 'imp' && e.target.files[0]) { const rd = new FileReader(); rd.onload = () => stageBackup(String(rd.result)); rd.readAsText(e.target.files[0]); } });
+  app.addEventListener('click', (e) => {
+    const t = e.target;
+    if (t.closest('input,select,textarea,label.filebtn')) return;
+    if (t.dataset.copyprompt !== undefined) { const m = document.getElementById('cpm'); try { navigator.clipboard.writeText(PROMPT).then(() => { m.textContent = 'Copied. Paste it into a Claude chat.'; }, () => { m.textContent = 'Could not copy — open “Show the prompt” and copy it by hand.'; }); } catch (x) { m.textContent = 'Could not copy — open “Show the prompt” and copy it by hand.'; } return; }
+    if (t.dataset.readListing !== undefined) { const ta = document.querySelector('[data-listing-text]'); readListing(ta ? ta.value : ''); return; }
+    if (t.dataset.applyListing) { applyListing(t.dataset.applyListing); return; }
+    if (t.dataset.tab) { if (t.dataset.tab === 'hide') UI.open = false; else { UI.open = true; UI.tab = t.dataset.tab; } save(); render(); return; }
+    if (t.dataset.add !== undefined) { const h = E.newHouse({ fresh: true }); S.houses.push(h); save(); goto('h/' + h.id); return; }
+    if (t.dataset.del) { ask = 'del:' + t.dataset.del; render(); return; }
+    if (t.dataset.delYes) { S = E.without(S, t.dataset.delYes); ask = null; save(); goto(''); render(); return; }
+    if (t.dataset.askCancel !== undefined) { ask = null; pendingImport = null; render(); return; }
+    if (t.dataset.hidelegend !== undefined) { UI.hideLegend = true; save(); render(); return; }
+    if (t.dataset.togglepaste !== undefined) { UI.paste = !UI.paste; render(); return; }
+    const cs = t.closest('[data-coll]'); if (cs) { UI.coll[cs.dataset.coll] = !UI.coll[cs.dataset.coll]; save(); render(); return; }
+    if (t.dataset.status) { const h = H(routeOf().slice(2)); h.status = t.dataset.status; save(); render(); return; }
+    if (t.dataset.export !== undefined) { exportOpen = !exportOpen; if (exportOpen) { try { localStorage.setItem('rep-v4-backup', String(Date.now())); } catch (x) {} } render(); return; }
+    if (t.dataset.copybackup !== undefined) { const m = document.getElementById('cbm'), ta = document.getElementById('bkout'); const fail = () => { ta.focus(); ta.select(); m.textContent = 'Select the text above and copy it by hand.'; };
+      try { navigator.clipboard.writeText(ta.value).then(() => { m.textContent = 'Copied.'; }, fail); } catch (x) { fail(); } return; }
+    if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
+    if (t.dataset.importYes !== undefined) { S = E.normalize(pendingImport); pendingImport = null; notice = ''; save(); goto(''); render(); return; }
+    if (t.dataset.reset !== undefined) { ask = 'reset'; render(); return; }
+    if (t.dataset.resetYes !== undefined) { S = E.seed(); ask = null; save(); render(); return; }
+    const go = t.closest('[data-go]'); if (go) goto(go.dataset.go);
+  });
+  render();
+  /* local-first plumbing: ask the browser to keep our data, and cache the app for offline use */
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+  
+  window.__app = { get state() { return S; } };
+})();
+
+</script>
