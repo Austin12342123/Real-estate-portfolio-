@@ -7,7 +7,7 @@
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seed();
   E.normalize(S); S.v = DATA_V;
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
-  let storageOK = true, imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false;
+  let storageOK = true, imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, editList = false, undo = null;
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
@@ -89,7 +89,7 @@
   function main() {
     const pl = E.plan(S), t0 = pl.today, tf = pl.final, th = pl.horizon, g = S.g, yrs = g.planYears, owned = S.houses.filter((h) => h.status === 'owned');
     const sn = th, snapBy = {}; pl.snap.forEach((x) => (snapBy[x.id] = x));
-    if (!S.houses.length) return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings">⚙</button></h1><div class="card empty"><p><b>Nothing here yet</b></p><p>Add a home, a commercial property or a business to see your plan.</p><button class="btn" data-add data-testid="add-house" style="margin-top:8px">+ Add property or business</button><button class="linkbtn" data-go="import/new">Or import a home from a listing file</button></div>`;
+    if (!S.houses.length) return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings">⚙</button></h1>${undo ? `<div class="warnbox okbox" data-testid="undo-banner">Removed ${esc(undo.label)}. <button class="chip link" data-undo>Undo</button></div>` : ''}<div class="card empty"><p><b>Nothing here yet</b></p><p>Add a home, a commercial property or a business to see your plan.</p><button class="btn" data-add data-testid="add-house" style="margin-top:8px">+ Add property or business</button><button class="linkbtn" data-go="import/new">Or import a home from a listing file</button></div>`;
     const tot = S.houses.reduce((s, h) => s + E.view(S, h).X, 0);
     const n = S.houses.length, sched = n - pl.unfunded.length;
     const rowOf = (h) => {
@@ -102,7 +102,8 @@
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
       return `<div class="row" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span class="nm"><span class="addr">${esc(h.addr)}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}"><span class="tag">${tag}</span> ${soldBy ? 'sold' : sp ? $f(sp.payment) + '/mo' : $f(v.payment) + '/mo'} ${hi}${loses}</div>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (sp) parts.push('equity ' + $c(sp.equity)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<div class="exitline">${parts.join(' · ')}</div>` : ''; })()}</span>
         <span class="ex ${h.driver === 'months' ? 'calc' : ''}">Extra<span class="iw"><em>$</em><input inputmode="decimal" data-testid="extra-input" data-p="h.${h.id}.extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(v.X)}"></span></span></div>
-        <div class="r2"><div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div><span class="cfl ${(sp ? sp.cf : soldBy ? 0 : v.cf) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy ? '—' : $s(sp ? sp.cf : v.cf) + '/mo'}</b><small>${soldBy ? 'sold' : 'cash flow'}</small></span></div></div>`; };
+        <div class="r2"><div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div><span class="cfl ${(sp ? sp.cf : soldBy ? 0 : v.cf) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy ? '—' : $s(sp ? sp.cf : v.cf) + '/mo'}</b><small>${soldBy ? 'sold' : 'cash flow'}</small></span></div>
+        ${editList ? (ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? Anything it funds loses its credit-line source.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="rm" data-del="${h.id}" data-testid="row-remove" aria-label="Remove ${esc(h.addr)}">Remove</button>`) : ''}</div>`; };
     const rank = (h) => (isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9);
     const rows = [...S.houses].sort((a, b) => rank(a) - rank(b) || S.houses.indexOf(a) - S.houses.indexOf(b)).map(rowOf).join('');
     const c3 = (label, a, b, c, f, cls) => `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td data-k="c-${label}-b">${f(b)}</td><td class="${cls || ''}" data-k="c-${label}-c"><b>${f(c)}</b></td></tr>`;
@@ -123,6 +124,7 @@
     const drv = pl.assetsAt(pl.planM).sort((a, b) => b.equity - a.equity), drvOpen = !UI.coll.drivers;
     const drivers = `<button class="linkbtn leftbtn" data-coll="drivers" aria-expanded="${drvOpen}">What drives net worth ${drvOpen ? '▾' : '▸'}</button>${drvOpen ? `<div data-testid="drivers">${drv.slice(0, 6).map((d) => `<div class="drv"><span>${esc(d.addr)}</span><span><b>${$f(d.equity)}</b> <small>${th.nw > 0 ? r((d.equity / th.nw) * 100) : 0}%</small></span></div>`).join('')}<p class="note">Equity = value − loans − credit lines drawn. A sample like this leans on a few fast-growing businesses; check the growth rate on each.</p></div>` : ''}`;
     return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></h1>
+    ${undo ? `<div class="warnbox okbox" data-testid="undo-banner">Removed ${esc(undo.label)}. <button class="chip link" data-undo>Undo</button></div>` : ''}
     ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
     <section class="card" data-testid="summary"><div class="kg">
       ${kpi('kpi-networth', 'Net worth', $f(sn.nw), `${n} assets${sn.cash > 0.5 ? ' · incl. ' + $c(sn.cash) + ' from sales' : ''}`)}
@@ -133,7 +135,7 @@
       <div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
       <p class="note" style="margin:6px 0 0">Whole portfolio, projected ${yrs} years out, after every planned purchase, improvement and sale.</p>
       <p class="plan-line" data-testid="plan-headline">${headline}</p></section>
-    <div class="sec">Extra payments &amp; credit lines<span class="tot" data-testid="total-extra" data-k="tot">${$f(tot)}/mo extra</span></div><section class="card" id="ledger" data-testid="ledger">${rows}<button class="addrow" data-add data-testid="add-house">+ Add property or business</button></section>
+    <div class="sec"><span>Extra payments &amp; credit lines</span><span class="secr"><button class="editlink" data-edit data-testid="edit-list">${editList ? 'Done' : 'Edit'}</button><span class="tot" data-testid="total-extra" data-k="tot">${$f(tot)}/mo extra</span></span></div><section class="card" id="ledger" data-testid="ledger">${rows}<button class="addrow" data-add data-testid="add-house">+ Add property or business</button></section>
     <button class="linkbtn" data-go="import/new" data-testid="import-link">Import a home from a listing file</button>
     <section class="card" data-testid="plan-card"><b>Portfolio breakdown</b> <span class="note">${n} assets · last purchase ${mo(pl.lastBuy)}</span>
       ${breakdown}
@@ -289,6 +291,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
 
   /* ---------- editing: every field is an input; derived fields back-solve ---------- */
   function setField(p, s) {
+    undo = null;
     const [t, x, k] = p.split('.');
     if (k === 'addr') { H(x).addr = s; return true; }
     const n = parseFloat(String(s).replace(/,/g, '').replace(/[^0-9.\-eE+]/g, '')); if (isNaN(n)) return false;
@@ -334,7 +337,9 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const pk = t.closest('[data-pickloan]'); if (pk) { UI.addLoan = pk.dataset.pickloan; render(); return; }
     if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const h = E.newAsset(tp, lid, { fresh: true }); S.houses.push(h); save(); goto('h/' + h.id); return; }
     if (t.dataset.del) { ask = 'del:' + t.dataset.del; render(); return; }
-    if (t.dataset.delYes) { S = E.without(S, t.dataset.delYes); ask = null; save(); goto(''); render(); return; }
+    if (t.dataset.delYes) { const gone = H(t.dataset.delYes); undo = gone ? { label: gone.addr, snap: JSON.stringify(S) } : null; S = E.without(S, t.dataset.delYes); ask = null; save(); goto(''); render(); return; }
+    if (t.dataset.undo !== undefined) { if (undo) { S = E.normalize(JSON.parse(undo.snap)); S.v = DATA_V; undo = null; save(); render(); } return; }
+    if (t.dataset.edit !== undefined) { editList = !editList; ask = null; render(); return; }
     if (t.dataset.askCancel !== undefined) { ask = null; pendingImport = null; render(); return; }
     if (t.dataset.hidelegend !== undefined) { UI.hideLegend = true; save(); render(); return; }
     if (t.dataset.togglepaste !== undefined) { UI.paste = !UI.paste; render(); return; }
