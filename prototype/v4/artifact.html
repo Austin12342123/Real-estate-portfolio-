@@ -316,14 +316,17 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
     }
     const at = (t) => { t = Math.max(0, Math.min(T, Math.round(t))); const o = { month: t }; keys.forEach((k) => (o[k] = s[k][t]));
       o.cltv = o.value ? (o.debt / o.value) * 100 : 0; o.dscr = o.ds ? o.noi / o.ds : 0; return o; };
-    const assetsAt = (t) => { t = Math.min(T, Math.round(t)); const list = hs.map((h) => { if (!held(h, t)) return null; const a = st(h, t);
-      return a ? { id: h.id, addr: h.addr, type: h.type || 'house', equity: a.val - a.B - (h.liens || 0) - a.heloc, value: a.val } : null; }).filter(Boolean);
-      if (s.cash[t] > 0.5) list.push({ id: '__cash', addr: 'Cash from sales', type: 'cash', equity: s.cash[t], value: s.cash[t] }); return list; };
+    /* every asset's contribution to the portfolio totals at month t; the entries sum exactly to the series values */
+    const assetsAt = (t) => { t = Math.min(T, Math.round(t)); const list = hs.map((h) => { if (!held(h, t)) return null; const a = st(h, t); if (!a) return null;
+      const v = a.v, hi = (a.heloc * g.hrate) / 1200, sched = a.live ? v.P : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
+      return { id: h.id, addr: h.addr, type: h.type || 'house', equity: a.val - a.B - (h.liens || 0) - a.heloc, value: a.val, debt: a.B + (h.liens || 0) + a.heloc,
+        payment: sched + ex + v.escrow + hi, cf: inc - sched - hi, income: inc }; }).filter(Boolean);
+      if (s.cash[t] > 0.5) list.push({ id: '__cash', addr: 'Cash from sales', type: 'cash', equity: s.cash[t], value: s.cash[t], debt: 0, payment: 0, cf: 0, income: 0 }); return list; };
     const rows = hs.filter((h) => H(S, h.target)).map((h) => ({ id: h.id, target: h.target, start: P0[h.id], locM: V[h.id].locM,
       end: P0[h.id] + V[h.id].locM, ok: isFinite(P0[h.id] + V[h.id].locM), funds: funds[h.id] }));
     let worst = { dti: 0, month: 0 }; for (let t = 0; t <= T; t++) if (s.dti[t] > worst.dti) worst = { dti: s.dti[t], month: t };
     return { purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
-      at, assetsAt, rows, funds, fundedByLOC, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id) };
+      at, assetsAt, snap: assetsAt(Math.min(T, planM)), rows, funds, fundedByLOC, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id) };
   }
   function afford(S, h, pl) {
     pl = pl || plan(S);
@@ -406,7 +409,7 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
   let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan' };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  const DATA_V = 6; /* bump when the sample portfolio changes so old saved samples are replaced */
+  const DATA_V = 7; /* bump when the sample portfolio changes so old saved samples are replaced */
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seed();
   E.normalize(S); S.v = DATA_V;
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
@@ -491,6 +494,7 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
   /* ---------- main page ---------- */
   function main() {
     const pl = E.plan(S), t0 = pl.today, tf = pl.final, th = pl.horizon, g = S.g, yrs = g.planYears, owned = S.houses.filter((h) => h.status === 'owned');
+    const sn = th, snapBy = {}; pl.snap.forEach((x) => (snapBy[x.id] = x));
     if (!S.houses.length) return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings">⚙</button></h1><div class="card empty"><p><b>Nothing here yet</b></p><p>Add a home, a commercial property or a business to see your plan.</p><button class="btn" data-add data-testid="add-house" style="margin-top:8px">+ Add property or business</button><button class="linkbtn" data-go="import/new">Or import a home from a listing file</button></div>`;
     const tot = S.houses.reduce((s, h) => s + E.view(S, h).X, 0);
     const n = S.houses.length, sched = n - pl.unfunded.length;
@@ -498,41 +502,48 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
       const v = pl.V[h.id], t = H(h.target), p = pl.purchase[h.id], type = h.type || 'house';
       const tag = TS[type] + ' · ' + (h.status === 'owned' ? 'owned' : isFinite(p) ? 'buy ' + mm(p) : 'unfunded');
       const exitTxt = h.exit === 'sell' && isFinite(pl.sellAt[h.id]) ? `sells in ${mm(pl.sellAt[h.id])}` : h.exit === 'merge' && isFinite(pl.mergeAt[h.id]) ? `merges${H(h.mergeInto) ? ' into ' + esc(H(h.mergeInto).addr) : ''} in ${mm(pl.mergeAt[h.id])}` : '';
+      const sp = snapBy[h.id], soldBy = pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM;
       const loses = type === 'house' && v.cf < 0 ? '<span class="hi">home loses money</span>' : '';
       const loc = !t ? '' : !isFinite(p + v.locM) ? 'not reachable' : p + v.locM <= 0 ? 'opens now' : 'opens in ' + mm(p + v.locM);
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
-      return `<div class="row" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span class="nm"><span class="addr">${esc(h.addr)}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}"><span class="tag">${tag}</span> ${$f(v.payment)}/mo ${hi}${loses}</div>${exitTxt || h.capex ? `<div class="exitline">${h.capex ? 'improve ' + $c(h.capex) : ''}${h.capex && exitTxt ? ' · ' : ''}${exitTxt}</div>` : ''}</span>
+      return `<div class="row" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span class="nm"><span class="addr">${esc(h.addr)}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}"><span class="tag">${tag}</span> ${soldBy ? 'sold' : sp ? $f(sp.payment) + '/mo' : $f(v.payment) + '/mo'} ${hi}${loses}</div>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (sp) parts.push('equity ' + $c(sp.equity)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<div class="exitline">${parts.join(' · ')}</div>` : ''; })()}</span>
         <span class="ex ${h.driver === 'months' ? 'calc' : ''}">Extra<span class="iw"><em>$</em><input inputmode="decimal" data-testid="extra-input" data-p="h.${h.id}.extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(v.X)}"></span></span></div>
-        <div class="r2"><div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div><span class="cfl ${v.cf < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="Income minus expenses and the loan payment, before extra payments"><b data-k="cf-${h.id}">${$s(v.cf)}/mo</b><small>cash flow</small></span></div></div>`; };
+        <div class="r2"><div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div><span class="cfl ${(sp ? sp.cf : soldBy ? 0 : v.cf) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy ? '—' : $s(sp ? sp.cf : v.cf) + '/mo'}</b><small>${soldBy ? 'sold' : 'cash flow'}</small></span></div></div>`; };
     const rank = (h) => (isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9);
     const rows = [...S.houses].sort((a, b) => rank(a) - rank(b) || S.houses.indexOf(a) - S.houses.indexOf(b)).map(rowOf).join('');
     const c3 = (label, a, b, c, f, cls) => `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td data-k="c-${label}-b">${f(b)}</td><td class="${cls || ''}" data-k="c-${label}-c"><b>${f(c)}</b></td></tr>`;
+    const bt = (tp) => pl.snap.filter((x) => x.type === tp).reduce((a, x) => ({ n: a.n + 1, value: a.value + x.value, equity: a.equity + x.equity, cf: a.cf + x.cf }), { n: 0, value: 0, equity: 0, cf: 0 });
+    const bRow = (label, o, cls) => `<tr class="${cls || ''}"><td>${label}</td><td>${$c(o.value)}</td><td>${$c(o.equity)}</td><td class="${o.cf < 0 ? 'bad' : ''}">${$cs(o.cf)}</td></tr>`;
+    const soldN = S.houses.filter((h) => pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM).length;
+    const breakdown = `<table class="cmp" data-testid="breakdown"><thead><tr><th></th><th>Value</th><th>Net worth</th><th>Cash flow/mo</th></tr></thead><tbody>
+      ${['house', 'commercial', 'business'].map((tp) => { const o = bt(tp); return o.n ? bRow(TPL[tp] + ' (' + o.n + ')', o) : ''; }).join('')}
+      ${sn.cash > 0.5 ? bRow('Cash from selling' + (soldN ? ' (' + soldN + ' assets)' : ''), { value: sn.cash, equity: sn.cash, cf: 0 }) : ''}
+      ${bRow('Portfolio', { value: pl.snap.reduce((a, x) => a + x.value, 0), equity: sn.nw, cf: sn.cf }, 'tot')}</tbody></table>`;
     const warn = pl.unfunded.length ? `<div class="warnbox">⚠ ${pl.unfunded.length} planned asset${pl.unfunded.length > 1 ? 's are' : ' is'} never funded under the current numbers.</div>` : '';
     const health = pl.worst.dti > g.dti ? `<div class="warnbox">⚠ Debt-to-income peaks at ${r(pl.worst.dti)}% in ${mo(pl.worst.month)} (limit ${g.dti}%).</div>` : '';
     const outside = th.outside > 0 ? `<div class="warnbox" data-testid="outside-cash">Needs <b>${$f(th.outside)}</b> of outside cash for purchases a credit line doesn't fund (partners, investors, savings). The plan doesn't repay it.</div>` : '';
-    const plan20 = UI.view !== 'today', sn = plan20 ? th : t0, when = plan20 ? 'in ' + yrs + ' years' : 'today';
     const badHomes = S.houses.filter((h) => (h.type || 'house') === 'house' && pl.V[h.id].cf < 0);
     const homeWarn = badHomes.length ? `<div class="warnbox" data-testid="home-warning">⚠ Homes must cash flow positive. Losing money each month: ${badHomes.map((h) => esc(h.addr)).join(', ')}.</div>` : '';
     const tab = UI.tab, nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0];
-    const headline = (nb ? `Next: buy <b>${esc(nb.addr)}</b> in <b>${mm(pl.purchase[nb.id])}</b>. ` : '') + (pl.unfunded.length ? `${pl.unfunded.length} not funded yet. ` : `All ${n} assets by <b>${mo(pl.lastBuy)}</b>. `) + `In ${yrs} years: net worth <b>${$f(th.nw)}</b>, cash flow <b>${$s(th.cf)}/mo</b>.`;
+    const headline = (nb ? `Next: buy <b>${esc(nb.addr)}</b> in <b>${mm(pl.purchase[nb.id])}</b>. ` : '') + (pl.unfunded.length ? `${pl.unfunded.length} not funded yet. ` : `All ${n} assets by <b>${mo(pl.lastBuy)}</b>. `) + `${pl.snap.length > 1 ? '' : ''}`;
     const drv = pl.assetsAt(pl.planM).sort((a, b) => b.equity - a.equity), drvOpen = !UI.coll.drivers;
-    const drivers = `<button class="linkbtn leftbtn" data-coll="drivers" aria-expanded="${drvOpen}">What drives the ${yrs}-year number ${drvOpen ? '▾' : '▸'}</button>${drvOpen ? `<div data-testid="drivers">${drv.slice(0, 6).map((d) => `<div class="drv"><span>${esc(d.addr)}</span><span><b>${$f(d.equity)}</b> <small>${th.nw > 0 ? r((d.equity / th.nw) * 100) : 0}%</small></span></div>`).join('')}<p class="note">Equity = value − loans − credit lines drawn. A sample like this leans on a few fast-growing businesses; check the growth rate on each.</p></div>` : ''}`;
+    const drivers = `<button class="linkbtn leftbtn" data-coll="drivers" aria-expanded="${drvOpen}">What drives net worth ${drvOpen ? '▾' : '▸'}</button>${drvOpen ? `<div data-testid="drivers">${drv.slice(0, 6).map((d) => `<div class="drv"><span>${esc(d.addr)}</span><span><b>${$f(d.equity)}</b> <small>${th.nw > 0 ? r((d.equity / th.nw) * 100) : 0}%</small></span></div>`).join('')}<p class="note">Equity = value − loans − credit lines drawn. A sample like this leans on a few fast-growing businesses; check the growth rate on each.</p></div>` : ''}`;
     return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></h1>
     ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
-    <section class="card" data-testid="summary"><div class="seg" role="tablist" style="margin:0 0 10px"><button data-view="today" class="${!plan20 ? 'on' : ''}">Today</button><button data-view="plan" class="${plan20 ? 'on' : ''}" data-testid="view-plan">In ${yrs} years</button></div><div class="kg">
-      ${kpi('kpi-networth', 'Net worth ' + (plan20 ? 'in ' + yrs + ' yrs' : 'today'), $f(sn.nw), `${sn.count} assets${sn.cash > 0.5 ? ' · incl. ' + $c(sn.cash) + ' cash' : ' · ' + $c(sn.value) + ' value'}`)}
+    <section class="card" data-testid="summary"><div class="kg">
+      ${kpi('kpi-networth', 'Net worth', $f(sn.nw), `${n} assets${sn.cash > 0.5 ? ' · incl. ' + $c(sn.cash) + ' from sales' : ''}`)}
       ${kpi('kpi-monthly', 'Total monthly payments', $f(sn.monthly), `incl. ${$f(sn.extra)} extra`)}
       ${kpi('kpi-cashflow', 'Cash flow / mo', $s(sn.cf), `${$s(sn.cfx)} after extra`, sn.cf < 0 ? 'bad' : '', 1)}
       ${kpi('kpi-dscr', 'DSCR', r(sn.dscr, 2), sn.dscr >= 1.2 ? 'healthy' : sn.dscr >= 1 ? 'thin' : 'below 1.0', sn.dscr && sn.dscr < 1 ? 'bad' : '', 1)}</div>
       <div class="bar"><i class="${sn.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (sn.cltv / g.cap) * 100)}%"></i></div>
       <div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
+      <p class="note" style="margin:6px 0 0">Whole portfolio, projected ${yrs} years out, after every planned purchase, improvement and sale.</p>
       <p class="plan-line" data-testid="plan-headline">${headline}</p></section>
     <div class="sec">Extra payments &amp; credit lines<span class="tot" data-testid="total-extra" data-k="tot">${$f(tot)}/mo extra</span></div><section class="card" id="ledger" data-testid="ledger">${rows}<button class="addrow" data-add data-testid="add-house">+ Add property or business</button></section>
     <button class="linkbtn" data-go="import/new" data-testid="import-link">Import a home from a listing file</button>
-    <section class="card" data-testid="plan-card"><b>Plan</b> <span class="note">${sched} of ${n} assets bought by ${mo(pl.lastBuy)}</span>
-      <table class="cmp"><thead><tr><th></th><th>Today</th><th>Plan done</th><th>${yrs} yrs</th></tr></thead><tbody>
-      ${c3('Net worth', t0.nw, tf.nw, th.nw, $c)}${c3('Monthly payments', t0.monthly, tf.monthly, th.monthly, $c)}${c3('Cash flow / mo', t0.cf, tf.cf, th.cf, $cs, th.cf < 0 ? 'bad' : '')}${c3('Debt', t0.debt, tf.debt, th.debt, $c)}${c3('Cash on hand', t0.cash, tf.cash, th.cash, $c)}${c3('Assets', t0.count, tf.count, th.count, (x) => x)}${c3('Outside cash', t0.outside, tf.outside, th.outside, $c)}</tbody></table>
-      ${homeWarn}${outside}${warn}${health}${drivers}
+    <section class="card" data-testid="plan-card"><b>Portfolio breakdown</b> <span class="note">${n} assets · last purchase ${mo(pl.lastBuy)}</span>
+      ${breakdown}
+      ${homeWarn}${outside}${warn}${health}${sn.cash > 0.5 ? `<p class="note" data-testid="cash-note">Cash from selling = what you keep after a sale: the sale price, minus selling costs, minus the loan paid off. It counts toward net worth and pays for later purchases before outside money.</p>` : ''}${drivers}
       <div class="seg" role="tablist"><button data-tab="timeline" class="${tab === 'timeline' && UI.open ? 'on' : ''}" data-testid="timeline-toggle">Timeline</button><button data-tab="nw" class="${tab === 'nw' && UI.open ? 'on' : ''}" data-testid="networth-toggle">Net worth</button><button data-tab="hide" class="${!UI.open ? 'on' : ''}">Hide</button></div>
       ${UI.open ? (tab === 'nw' ? nwChart(pl) : timeline(pl)) : ''}</section>`;
   }
@@ -555,7 +566,7 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
       ${h.exit === 'merge' ? `${field('Merge in (months)', P + 'exitMonth', h.exitMonth)}<div class="f"><span class="lb">Merge into</span><select class="loansel" data-merge="${h.id}" aria-label="Merge into"><option value="">Choose…</option>${S.houses.filter((x) => x.id !== h.id).map((x) => `<option value="${x.id}" ${h.mergeInto === x.id ? 'selected' : ''}>${esc(x.addr)}</option>`).join('')}</select></div>${field('Synergy lift', P + 'exitLift', r(h.exitLift, 1), { suf: '%' })}<p class="note">When merged, value and income rise by the synergy lift. It stays in your totals.</p>` : ''}
       <p class="note">Improvements are paid from sale cash first, then outside money.</p></section>`);
     const homeLoses = type === 'house' && v.cf < 0 ? `<div class="warnbox" data-testid="home-loses">⚠ A home must cash flow positive. This one loses ${$f(-v.cf)} a month. Raise the rent, lower the price, or pick a loan with a smaller payment.</div>` : '';
-    const L = [['Net worth today', wo.today.nw, pl.today.nw, $f], [`Net worth, ${g.planYears} years`, wo.horizon.nw, pl.horizon.nw, $f], [`Monthly payments, ${g.planYears} years`, wo.horizon.monthly, pl.horizon.monthly, $f], ['Cash flow today', wo.today.cf, pl.today.cf, $s], [`Cash flow, ${g.planYears} years`, wo.horizon.cf, pl.horizon.cf, $s], ['Outside cash needed', wo.horizon.outside, pl.horizon.outside, $f]];
+    const L = [['Portfolio net worth', wo.horizon.nw, pl.horizon.nw, $f], ['Portfolio cash flow / mo', wo.horizon.cf, pl.horizon.cf, $s], ['Portfolio monthly payments', wo.horizon.monthly, pl.horizon.monthly, $f], ['Outside cash needed', wo.horizon.outside, pl.horizon.outside, $f]];
     const impactLines = L.filter((x) => Math.abs(x[1] - x[2]) > 0.5).map((x) => `<div class="f"><span class="lb">${x[0]}</span><span>${x[3](x[1])} → <b>${x[3](x[2])}</b></span></div>`);
     const timing = h.status === 'planned'
       ? (src.length ? `<p class="note">Bought when ${src.map((x) => esc(x.addr)).join(' or ')}'s line of credit opens — ${isFinite(p0) ? mo(p0) + ' from now' : 'not reachable'}.</p>` : field('Buy in (months)', P + 'buyIn', h.buyIn))
@@ -604,7 +615,7 @@ table.cmp{font-size:12.5px}table.cmp td,table.cmp th{padding-left:4px}table.cmp 
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Assumptions</h2></div>
     <div class="sec">Borrowing</div><section class="card">${F('Max debt on a house (cap)', 'cap', { suf: '%' })}${F('Lender appraisal haircut', 'haircut', { suf: '%' })}${F('Closing costs (of price)', 'closing', { suf: '%' })}${F('Line of credit rate', 'hrate', { suf: '%' })}</section>
     <div class="sec">Co-signers &amp; qualifying</div><section class="card">${F('Parent 1 income / yr', 'p1', { pre: '$' })}${F('Parent 2 income / yr', 'p2', { pre: '$' })}${F('Debt-to-income limit', 'dti', { suf: '%' })}${F('Rent counted as income', 'rentCount', { suf: '%' })}${F('Other monthly debts', 'otherDebt', { pre: '$' })}</section>
-    <div class="sec">Operating costs</div><section class="card">${F('Vacancy', 'vac', { suf: '%' })}${F('Management (of rent)', 'mgmt', { suf: '%' })}${F('Repairs reserve (of value / yr)', 'maint', { suf: '%' })}${F('Default growth / yr', 'appr', { suf: '%' })}${F('Plan horizon (years)', 'planYears', {})}</section>
+    <div class="sec">Operating costs</div><section class="card">${F('Vacancy', 'vac', { suf: '%' })}${F('Management (of rent)', 'mgmt', { suf: '%' })}${F('Repairs reserve (of value / yr)', 'maint', { suf: '%' })}${F('Default growth / yr', 'appr', { suf: '%' })}${F('Projection length (years)', 'planYears', {})}</section>
     <div class="sec">Data — stays on this device</div><section class="card">
       ${notice ? `<div class="warnbox">${esc(notice)}</div>` : ''}
       <button class="btn" data-export data-testid="export">${exportOpen ? 'Hide backup' : 'Show backup to copy'}</button>
