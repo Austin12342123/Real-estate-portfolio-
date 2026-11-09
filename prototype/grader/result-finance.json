@@ -1,6 +1,6 @@
 {
   "finance": {
-    "earned": 90,
+    "earned": 66,
     "max": 90,
     "checks": [
       {
@@ -23,18 +23,18 @@
         "ratio": 1,
         "detail": "17/17 sub-checks pass",
         "repro": "node: constructed states for yes / tight (5 causes) / no; fix amounts; apply the fix; monotonicity; stretch",
-        "seconds": 0.5
+        "seconds": 0.6
       },
       {
         "id": "F3",
         "category": "F",
         "name": "UI features",
         "points": 24,
-        "earned": 24,
-        "ratio": 1,
-        "detail": "89/89 sub-checks pass",
+        "earned": 0,
+        "ratio": 0,
+        "detail": "CRASH in check: page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-p=\"j.job1.raise\"]') to be visible\u001b[22m\n\n    at setVal (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:105:14)\n    at fin (/home/user/Real-estate-portfolio-/prototype/grader/finance-grade.js:252:4",
         "repro": "Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states",
-        "seconds": 7
+        "seconds": 4.9
       },
       {
         "id": "F4",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Playwright: edge inputs, names, tap targets, font size, overflow 320/390/430, chip contrast light+dark, typing, render storm, console errors",
-        "seconds": 17.2
+        "seconds": 15.6
       }
     ]
   }

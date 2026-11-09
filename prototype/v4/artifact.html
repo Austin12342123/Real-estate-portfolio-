@@ -167,6 +167,36 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
 .totrow .addr{font-weight:700}
 .share{margin:8px 0 0;color:var(--ink)}
 
+.info{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-13px -10px -13px 0;padding:0;border:0;background:none;vertical-align:middle;cursor:pointer;flex:none}
+.info span{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--acc);color:var(--acc);font:700 12px/1 Georgia,serif;font-style:italic}
+.lb{display:inline-flex;align-items:center;flex-wrap:wrap}
+.kpi small .info{width:32px;height:32px;margin:-9px -6px -9px 0}.kpi small .info span{width:16px;height:16px;font-size:10px}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;background:var(--card);color:var(--ink);border-radius:18px 18px 0 0;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 18px);z-index:51;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+.sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}.sheet h3{margin:0 0 6px;font-size:20px}.sheet p{margin:0 0 10px;font-size:16px;line-height:1.4}.sheet .eg{background:var(--field);border-radius:10px;padding:8px 12px;font-size:15px}.sheet .btn{width:100%}
+.loanrow{display:flex;align-items:stretch;gap:2px;margin:0 0 8px}.loanrow .loanopt{margin:0;flex:1}.loanrow .info{margin:0;align-self:center}
+.morebtn{margin:6px 0 2px}
+
+.loansel,.f select[data-sel]{max-width:230px}
+
+.row select[data-sel]{background:transparent;padding:0 2px;border-radius:0;font-weight:600;max-width:190px}
+.row select[data-sel].notarget{color:var(--mut);font-weight:500}
+.loanopt{position:relative;padding-right:34px}.loanopt.on::after{content:'✓';position:absolute;top:8px;right:12px;color:var(--acc);font-weight:700}
+.loanopt small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.src{font-size:12px;padding:2px 8px;font-weight:600}
+
+.row{padding:8px 0}
+.row .r1{align-items:flex-start}
+.row .pay{font-size:12px;line-height:1.25}
+.row .iw{min-height:44px}
+.row .r2{margin-top:2px}
+.row .exitline{margin-top:0}
+.row .cfl b{font-size:15px}
+.fund{font-size:12px;color:var(--mut)}
+.frow select[data-sel]{max-width:none;width:100%;font-size:16px}
+.fcol{gap:0}
+.fcol .locline{padding-left:2px;font-size:12px;margin-top:-6px}
+
 </style>
 <main id="app" aria-live="polite"></main>
 <script>
@@ -288,22 +318,33 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
 
   /* ---------- personal finances: your jobs, savings and expenses ---------- */
   const samplePersonal = () => ({ cash: 45000, cashApy: 3, living: 3600, inflation: 3, emergencyMonths: 6, portfolioTaxPct: 20, salesTaxPct: 25, operating: 1, gmMonthly: 8000, bizHours: 20,
-    jobs: [{ id: 'job1', name: 'Day job (salary)', gross: 96000, raise: 3, tax: 24, hours: 40, start: 0, end: null }], planned: [], capital: [] });
+    jobs: [{ id: 'job1', name: 'Day job (salary)', kind: 'salary', gross: 96000, raise: 3, tax: 24, hours: 40, start: 0, end: null }], planned: [], capital: [] });
+  /* Rough U.S. single-filer estimate: federal income tax after a standard deduction, plus payroll tax. No state tax. It is only a starting point; the person can type their own rate. */
+  function estTaxPct(gross) {
+    if (!(gross > 0)) return 0;
+    const taxable = Math.max(0, gross - 15000), br = [[11925, 0.10], [48475, 0.12], [103350, 0.22], [197300, 0.24], [250525, 0.32], [626350, 0.35], [Infinity, 0.37]];
+    let fed = 0, lo = 0; for (const [hi, r] of br) { if (taxable > lo) fed += (Math.min(taxable, hi) - lo) * r; lo = hi; }
+    const fica = Math.min(gross, 176100) * 0.062 + gross * 0.0145;
+    return Math.round(((fed + fica) / gross) * 1000) / 10;
+  }
   const num0 = (v, d) => (isFinite(+v) && v !== '' && v !== null ? +v : d);
   function normalizePersonal(p) {
     const d = samplePersonal(); p = Object.assign({}, d, p || {});
     ['cash', 'cashApy', 'living', 'inflation', 'emergencyMonths', 'portfolioTaxPct', 'salesTaxPct', 'operating', 'gmMonthly', 'bizHours'].forEach((k) => { p[k] = Math.max(0, num0(p[k], d[k])); });
     p.operating = Math.round(p.operating); p.bizHours = Math.min(168, p.bizHours); p.portfolioTaxPct = Math.min(70, p.portfolioTaxPct); p.salesTaxPct = Math.min(70, p.salesTaxPct); p.cashApy = Math.min(30, p.cashApy);
     let n = 0; const id = (x, pre) => (typeof x === 'string' && x ? x : pre + Date.now().toString(36) + (n++));
-    p.jobs = (Array.isArray(p.jobs) ? p.jobs : []).filter((j) => j && typeof j === 'object').map((j) => ({ id: id(j.id, 'job'), name: typeof j.name === 'string' ? j.name : 'Job',
-      gross: Math.max(0, num0(j.gross, 0)), raise: Math.min(50, Math.max(-50, num0(j.raise, 0))), tax: Math.min(70, Math.max(0, num0(j.tax, 25))), hours: Math.min(168, Math.max(0, num0(j.hours, 40))), start: Math.max(0, Math.round(num0(j.start, 0))),
-      end: j.end === null || j.end === '' || j.end === undefined || !isFinite(+j.end) ? null : Math.max(0, Math.round(+j.end)) }));
+    p.jobs = (Array.isArray(p.jobs) ? p.jobs : []).filter((j) => j && typeof j === 'object').map((j) => { const kind = j.kind === 'hourly' ? 'hourly' : 'salary', hours = Math.min(168, Math.max(0, num0(j.hours, 40))), wage = Math.max(0, num0(j.wage, 0)), tips = Math.max(0, num0(j.tips, 0)), weeks = Math.min(52, Math.max(0, num0(j.weeks, 50)));
+      return { id: id(j.id, 'job'), name: typeof j.name === 'string' ? j.name : 'Job', kind, wage, tips, weeks,
+      gross: kind === 'hourly' ? Math.round((wage + tips) * hours * weeks) : Math.max(0, num0(j.gross, 0)), raise: Math.min(50, Math.max(-50, num0(j.raise, 0))),
+      tax: j.tax === null || j.tax === '' || j.tax === undefined || !isFinite(+j.tax) ? null : Math.min(70, Math.max(0, +j.tax)), hours, start: Math.max(0, Math.round(num0(j.start, 0))),
+      end: j.end === null || j.end === '' || j.end === undefined || !isFinite(+j.end) ? null : Math.max(0, Math.round(+j.end)) }; });
     ['planned', 'capital'].forEach((k) => { p[k] = (Array.isArray(p[k]) ? p[k] : []).filter((x) => x && typeof x === 'object').map((x) => ({ id: id(x.id, k === 'planned' ? 'pl' : 'cap'), name: typeof x.name === 'string' ? x.name : '', amount: Math.max(0, num0(x.amount, 0)), month: Math.max(0, Math.round(num0(x.month, 0))) })); });
     return p;
   }
   const jobMonthly = (j, t) => (t < (j.start || 0) || (j.end !== null && j.end !== undefined && t >= j.end) ? 0 : (j.gross / 12) * Math.pow(1 + (j.raise || 0) / 100, Math.floor(Math.max(0, t - (j.start || 0)) / 12)));
   const jobsGross = (S, t) => (S.p ? S.p.jobs.reduce((a, j) => a + jobMonthly(j, t), 0) : 0);
-  const jobsNet = (S, t) => (S.p ? S.p.jobs.reduce((a, j) => a + jobMonthly(j, t) * (1 - (j.tax || 0) / 100), 0) : 0);
+  const taxPctFor = (j) => (j.tax === null || j.tax === undefined ? estTaxPct(j.gross) : j.tax);
+  const jobsNet = (S, t) => (S.p ? S.p.jobs.reduce((a, j) => a + jobMonthly(j, t) * (1 - taxPctFor(j) / 100), 0) : 0);
 
   /* The whole-portfolio plan: purchase months, sales, cash, month-by-month series, plan-level KPIs. */
   function plan(S) {
@@ -494,10 +535,10 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
     const patch = { price, addr: typeof o.address === 'string' && o.address.trim() ? o.address.trim().slice(0, 80) : 'Imported house' };
     if (rent !== null) patch.rent = rent; if (taxA !== null) patch.tax = Math.round(taxA / 12); if (insA !== null) patch.ins = Math.round(insA / 12); if (hoa !== null) patch.hoa = hoa;
     const rows = [['Address', patch.addr, 'listing'], ['Price', '$' + price.toLocaleString('en-US'), src(o.price, price)],
-      ['Monthly rent', rent === null ? 'keeps default' : '$' + rent.toLocaleString('en-US'), src(o.rentMonthly, rent)],
-      ['Property tax / mo', taxA === null ? 'keeps default' : '$' + Math.round(taxA / 12).toLocaleString('en-US'), src(o.taxAnnual, taxA)],
-      ['Insurance / mo', insA === null ? 'keeps default' : '$' + Math.round(insA / 12).toLocaleString('en-US'), src(o.insuranceAnnual, insA)],
-      ['HOA / mo', hoa === null ? 'keeps default' : '$' + hoa.toLocaleString('en-US'), src(o.hoaMonthly, hoa)]];
+      ['Monthly rent', rent === null ? 'default $' + DEFAULTS.house.rent.toLocaleString('en-US') : '$' + rent.toLocaleString('en-US'), src(o.rentMonthly, rent)],
+      ['Property tax / mo', taxA === null ? 'default $' + DEFAULTS.house.tax.toLocaleString('en-US') : '$' + Math.round(taxA / 12).toLocaleString('en-US'), src(o.taxAnnual, taxA)],
+      ['Insurance / mo', insA === null ? 'default $' + DEFAULTS.house.ins.toLocaleString('en-US') : '$' + Math.round(insA / 12).toLocaleString('en-US'), src(o.insuranceAnnual, insA)],
+      ['HOA / mo', hoa === null ? 'default $' + DEFAULTS.house.hoa.toLocaleString('en-US') : '$' + hoa.toLocaleString('en-US'), src(o.hoaMonthly, hoa)]];
     const info = o.info && typeof o.info === 'object' ? o.info : {};
     return { ok: true, patch, rows, info, url: typeof o.listingUrl === 'string' ? o.listingUrl : '' };
   }
@@ -545,8 +586,111 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
     A('business', 'sba7a', { id: 'freight', buyIn: 62, growth: 8, addr: 'Summit Freight & Logistics', price: 1800000, rent: 41650 }),
     A('house', 'dscr', { id: 'linden', buyIn: 84, growth: 3.5, addr: '2914 Linden Way', price: 175000, rent: 1850, tax: 195, ins: 85 }),
     A('commercial', undefined, { id: 'lake', buyIn: 100, loanId: 'custom', dp: 35, addr: 'Lakeview Medical Office', price: 1800000, rent: 17450, tax: 1000, ins: 800, hoa: 500 })] }); };
-  const E = { finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Plain-language definitions shown by the "i" buttons. t = title, b = what it means, e = a short example (optional).
+   Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
+(function (root) {
+  const INFO = {
+    liens: { t: 'Liens', b: 'A lien is a legal claim someone else has on the home because you owe them money. Common ones: a second mortgage, a home-equity loan or line of credit, unpaid property taxes, or a contractor who was not paid. If the home is sold, liens are paid back first, so they reduce how much of the home you really own.', e: 'A home worth $200,000 with a $140,000 mortgage and a $20,000 second loan leaves you $40,000 of real ownership. Enter 0 if nothing else is owed on the home.' },
+    downpayment: { t: 'Down payment', b: 'The cash you pay up front when you buy. The loan covers the rest of the price. A bigger down payment means a smaller loan and a smaller monthly payment.', e: '20% down on a $200,000 home is $40,000.' },
+    downamt: { t: 'Down payment in dollars', b: 'The down payment as a dollar amount: price × down payment %. Change either number and the other updates.' },
+    loanamount: { t: 'Loan amount', b: 'How much you borrow: the price minus your down payment. Some loans add fees to the loan (like FHA insurance), and a 203(k) also adds the repair money.' },
+    rate: { t: 'Interest rate', b: 'The yearly cost of borrowing, as a percent of what you owe. A higher rate means a bigger monthly payment. Use the rate from your loan quote.' },
+    term: { t: 'Term (years)', b: 'How long you have to repay the loan. A 30-year loan has a lower monthly payment. A 15-year loan costs more each month but saves a lot of interest.' },
+    closing: { t: 'Closing costs', b: 'One-time fees to finish the purchase: lender fees, title and legal work, the appraisal, and recording. Usually about 2% to 5% of the price.' },
+    extra: { t: 'Extra payment', b: 'Money you add each month on top of the required payment. All of it goes to the loan balance, so the loan is paid off sooner and you pay less interest.' },
+    payoff: { t: 'Paid off in', b: 'How many months until the loan balance reaches zero. Type a number and the app works out the extra payment needed to get there.' },
+    loanoption: { t: 'Loan option', b: 'A type of loan with its own typical down payment, rate, term and rules. Picking one fills in those numbers, and you can still edit them. "Custom terms" means you set them yourself.' },
+    dscr: { t: 'DSCR', b: 'Debt service coverage ratio: the income an asset earns after operating costs, divided by its loan payments. 1.0 means the income just covers the loan. Lenders usually want 1.2 or more.', e: 'Income of $1,300 a month against a $1,000 payment is a DSCR of 1.3.' },
+    dscrloan: { t: 'DSCR investor loan', b: 'A loan for rental properties that is approved mainly on the rent compared with the payment, not on your job income. It usually needs about 20% to 25% down.' },
+    coc: { t: 'Cash-on-cash return', b: 'One year of cash flow divided by the cash you put in (down payment plus closing costs). It shows how hard your own money is working.', e: '$2,400 a year of cash flow on $30,000 invested is 8%.' },
+    noi: { t: 'Net operating income (NOI)', b: 'The rent or profit an asset earns minus its operating costs (taxes, insurance, repairs, vacancy, management), before any loan payment.' },
+    caprate: { t: 'Cap rate', b: 'A year of net operating income divided by the price. It is a quick way to compare properties. A higher cap rate means more income for each dollar paid, usually with more risk.', e: '$80,000 of yearly income on a $1,000,000 property is an 8% cap rate.' },
+    multiple: { t: 'Price ÷ yearly profit', b: 'How many years of profit the price equals. Small businesses often sell for about 2 to 4 times their yearly profit.', e: 'A business that earns $100,000 a year and sells for $300,000 is 3×.' },
+    growth: { t: 'Growth per year', b: 'How fast you expect the value to rise each year, as a percent. Homes often rise a few percent a year. Businesses vary a lot. Small differences add up over 20 years, so be careful with big numbers.' },
+    arv: { t: 'New appraised value', b: 'What an appraiser says the asset will be worth once the work is finished (also called after-repair value). The app uses it as the new value and lets you borrow against it.' },
+    gain: { t: 'Value gained', b: 'The new appraised value minus (price + repair cost). It is the ownership value the work created. Type it and the new appraisal fills itself in.' },
+    capex: { t: 'Improvement budget', b: 'Money spent to renovate or improve the asset. You pay it from your cash, unless the loan finances it (like a 203(k) loan).' },
+    capexmonths: { t: 'Months to finish', b: 'How long the work takes. The new value and extra income start when the work is done.' },
+    liftincome: { t: 'Income lift', b: 'How much more rent or profit you expect after the improvement, as a percent.', e: '10% on $2,000 of rent means $2,200.' },
+    exit: { t: 'Hold, sell or merge', b: 'Hold keeps the asset. Sell turns it into cash (after selling costs and paying off the loan). Merge folds a business into another business you own for a boost in value and income.' },
+    sellcost: { t: 'Selling costs', b: 'Agent or broker fees and closing costs when you sell. Homes are often 5% to 7%. Commercial properties and businesses vary with the size of the sale.' },
+    merge: { t: 'Merge and synergy lift', b: 'Merging combines a business into another one you own. The synergy lift is the extra value and income you expect from running them together, as a percent.' },
+    proceeds: { t: 'Net proceeds', b: 'What you keep after a sale: the sale price, minus selling costs, minus the loan and any liens paid off.' },
+    creditline: { t: 'Line of credit', b: 'A loan you can borrow against the value you already own in an asset, usually up to 85% of its value minus what you owe (also called a HELOC for homes). The app uses it to pay for the next purchase.' },
+    debtcap: { t: 'Max debt on a house', b: 'Lenders limit total borrowing to a share of an asset’s value, often 80% to 85%. The loan, any liens and the line of credit together must stay under it.', e: 'At 85% on a $200,000 home, total debt can be up to $170,000.' },
+    locmonths: { t: 'Months until the credit line', b: 'How long until you have paid the loan down, and the value has grown, enough to borrow what the next purchase needs. Type a number to see how much extra you would need to pay.' },
+    cashneeded: { t: 'Cash needed', b: 'The down payment and closing costs for the asset this credit line will pay for.' },
+    dti: { t: 'Debt-to-income (DTI)', b: 'Your monthly debt payments divided by the monthly income a lender counts. Lenders usually want 43% or less.' },
+    qualifying: { t: 'Qualifying income', b: 'The income a lender counts to approve a loan: your jobs, a co-signer’s income, and part of rental income.' },
+    cosigner: { t: 'Co-signer', b: 'A person, like a parent, who promises to repay the loan if you cannot. Lenders count their income and credit too, which can help you qualify.' },
+    rentcount: { t: 'Rent counted as income', b: 'Lenders count only part of rent as income, often 75%, to allow for empty months and costs.' },
+    haircut: { t: 'Lender appraisal haircut', b: 'Lenders sometimes lend against a bit less than the appraised value. A 5% haircut means they count only 95% of it.' },
+    vacancy: { t: 'Vacancy', b: 'The share of the year a rental sits empty or rent goes unpaid. 5% is about 18 empty days a year.' },
+    mgmt: { t: 'Management fee', b: 'What a property manager charges, as a percent of the rent (often 8% to 10% for homes). Enter it even if you plan to manage it yourself, to stay safe.' },
+    repairs: { t: 'Repairs reserve', b: 'Money set aside each year for upkeep, as a percent of the value. 1% a year is a common rule of thumb.' },
+    ownerocc: { t: 'Owner-occupied', b: 'You must live in the home yourself, usually for at least a year. FHA and 203(k) loans require it, so they do not work for a pure rental.' },
+    fha: { t: 'FHA loan', b: 'A government-backed loan with a small down payment (3.5%) and mortgage insurance. For a home you will live in.' },
+    k203: { t: 'FHA 203(k) loan', b: 'One loan that covers the purchase and the repairs. You put down 3.5% of the price plus repairs, and the repair money is paid out as the work is done. The Limited version covers repairs up to $75,000. Bigger jobs need a Standard 203(k) with a HUD consultant. You must live in the home.' },
+    mip: { t: 'Mortgage insurance (MIP)', b: 'FHA charges about 1.75% of the loan up front (added to the loan) and about 0.55% a year (paid monthly). These are typical figures.' },
+    interestonly: { t: 'Interest-only', b: 'You pay only the interest each month, so the balance does not go down. Extra payments still reduce it. Common on short bridge loans.' },
+    bridge: { t: 'Bridge loan', b: 'A short, higher-rate loan that covers the gap until you refinance or sell. Usually interest-only.' },
+    sba: { t: 'SBA loan', b: 'A bank loan partly guaranteed by the U.S. Small Business Administration. The 7(a) loan is common for buying a business (up to $5 million). The 504 loan is for real estate and big equipment (up to $5.5 million) and usually needs you to operate in the building.' },
+    sellerfin: { t: 'Seller financing', b: 'The seller lends you part of the price, so you pay them over time instead of a bank. Terms vary a lot.' },
+    conv: { t: 'Conventional loan', b: 'A standard mortgage that is not government-backed. For investment homes it usually needs 15% to 25% down.' },
+    cashbuy: { t: 'Cash purchase', b: 'You pay the full price yourself with no loan. No monthly loan payment, but it uses a lot of cash.' },
+    bankloan: { t: 'Bank loan', b: 'A regular loan from a bank, with a set rate and term. Banks usually want a strong income cushion (a DSCR of 1.25 or more) and 25% or more down.' },
+    buyin: { t: 'Buy in (months)', b: 'How many months from today you plan to buy this, when a credit line is not paying for it.' },
+    paid: { t: 'Months already paid', b: 'How many monthly payments you have already made on a loan you own now. It sets today’s balance.' },
+    networth: { t: 'Net worth', b: 'What you own (asset values plus cash) minus what you owe (loans, liens and credit lines).' },
+    equity: { t: 'Equity', b: 'What an asset is worth minus what you owe on it. It is the part you really own.' },
+    cashflow: { t: 'Cash flow', b: 'The money left each month after the loan payment and costs. Positive means the asset pays for itself.' },
+    outsidecash: { t: 'Outside cash', b: 'Money the plan needs that is not from a credit line or sale proceeds, like a down payment from savings, partners or investors.' },
+    cashfromselling: { t: 'Cash from selling', b: 'What you keep after a sale: the price, minus selling costs, minus the loan paid off. It counts toward net worth and pays for later purchases first.' },
+    projection: { t: 'Projection length', b: 'How many years ahead the plan looks. The Portfolio totals show where you would stand at the end of this period.' },
+    emergency: { t: 'Emergency reserve', b: 'Cash you want to keep in case your income stops or a repair hits, counted as months of living costs plus debts. Many people aim for 3 to 6 months.' },
+    liquid: { t: 'Liquid cash', b: 'Money you can use right away, like savings and checking. Not retirement accounts or the value of a home.' },
+    cashapy: { t: 'Interest earned on cash', b: 'The yearly percent your savings earn. High-yield savings accounts pay a few percent. Enter 0 if unsure.' },
+    living: { t: 'Living costs', b: 'What you spend each month on your own life: rent, food, car, phone, insurance, fun.' },
+    inflation: { t: 'Cost increases per year', b: 'How much your living costs go up each year. 3% is a common planning number.' },
+    otherdebts: { t: 'Other monthly debts', b: 'Payments like a car loan, student loans or credit cards. Lenders count them when approving loans.' },
+    portfoliotax: { t: 'Tax on portfolio income', b: 'A rough share of your rental and business profit that goes to income tax. 20% is a placeholder. Use your own number if you know it.' },
+    salestax: { t: 'Tax on gains when you sell', b: 'The tax owed on the profit from a sale. Profit on something held under a year is usually taxed like regular income.' },
+    operating: { t: 'Businesses you run yourself', b: 'How many of your businesses you personally work in. The rest need a paid manager, which costs money.' },
+    bizhours: { t: 'Hours each business takes', b: 'How many hours a week one business needs from you when you run it yourself.' },
+    gmpay: { t: 'Manager pay', b: 'What you would pay a general manager to run a business for you, per month. Business profit figures usually assume the owner does the work.' },
+    planned: { t: 'Planned expenses', b: 'One-time costs coming up, like a wedding, a car or tuition. They come out of your cash in the month you pick.' },
+    capital: { t: 'Outside capital', b: 'Money that partners, investors or family will put in. It is added to your cash in the month you pick.' },
+    wage: { t: 'Hourly wage', b: 'What you earn per hour before taxes. The app multiplies it by your hours and weeks to get a yearly total. For a server, this is the base wage, not including tips.' },
+    tips: { t: 'Tips per hour', b: 'Extra money per hour worked that customers give you, like at a restaurant. Enter an average. Tips count as income and are taxed. Leave 0 if the job has no tips.' },
+    hours: { t: 'Hours per week', b: 'How many hours you work in a week. It sets the pay on hourly jobs and checks that your plan fits in a week.' },
+    weeks: { t: 'Weeks per year', b: 'How many weeks a year you actually work. 50 allows for two weeks off.' },
+    taxrate: { t: 'Tax rate', b: 'The share of your pay that goes to taxes. Leave it blank and the app estimates it from your income (a rough U.S. estimate with no state tax). Type a number to use your own.' },
+    raise: { t: 'Yearly raise', b: 'How much your pay goes up each year, as a percent. Leave 0 if you do not expect one.' },
+    jobend: { t: 'How long you will do this job', b: 'Enter how many months from today the job ends. Leave it blank if there is no end date. This is useful for a temporary or seasonal job.' },
+    jobstart: { t: 'When the job starts', b: 'Months from today. 0 means you already have the job.' },
+    grosspay: { t: 'Gross pay', b: 'Your pay for the year before any taxes are taken out.' }
+  };
+  const LABEL = {
+    'Other liens': 'liens', 'Down payment': 'downpayment', 'Down payment $': 'downamt', 'Loan amount': 'loanamount', 'Interest rate': 'rate', 'Term (years)': 'term', 'Closing costs': 'closing', 'Extra / month': 'extra',
+    'Paid off in (months)': 'payoff', 'Appreciation / yr': 'growth', 'Value growth / yr': 'growth', 'Business growth / yr': 'growth', 'Default growth / yr': 'growth', 'Cap rate': 'caprate', 'Price ÷ yearly profit': 'multiple',
+    'Improvement budget': 'capex', 'Months to finish': 'capexmonths', 'New appraised value': 'arv', 'Value gained (vs price + rehab)': 'gain', 'Income lift': 'liftincome', 'Selling costs': 'sellcost', 'Net proceeds': 'proceeds',
+    'Synergy lift': 'merge', 'Months already paid': 'paid', 'Buy in (months)': 'buyin', 'Cash needed': 'cashneeded', 'Months until LOC': 'locmonths', 'Max debt on a house (cap)': 'debtcap', 'Lender appraisal haircut': 'haircut',
+    'Closing costs (of price)': 'closing', 'Line of credit rate': 'creditline', 'Parent 1 income / yr': 'cosigner', 'Parent 2 income / yr': 'cosigner', 'Debt-to-income limit': 'dti', 'Rent counted as income': 'rentcount',
+    'Other monthly debts': 'otherdebts', 'Other monthly debts (car, loans)': 'otherdebts', 'Vacancy': 'vacancy', 'Management (of rent)': 'mgmt', 'Repairs reserve (of value / yr)': 'repairs', 'Projection length (years)': 'projection',
+    'Liquid cash you have': 'liquid', 'Interest earned on cash': 'cashapy', 'Emergency reserve (months)': 'emergency', 'Living costs / month': 'living', 'Cost increases / year': 'inflation', 'Tax on portfolio income': 'portfoliotax',
+    'Tax on gains when you sell': 'salestax', 'Businesses you run yourself': 'operating', 'Hours / week each takes': 'bizhours', 'Manager pay per other business / mo': 'gmpay', 'Hourly wage': 'wage', 'Tips per hour (optional)': 'tips',
+    'Hours / week': 'hours', 'Weeks worked / year': 'weeks', 'Tax rate (blank = estimate)': 'taxrate', 'Yearly raise': 'raise', 'Ends in (months; blank = no end)': 'jobend', 'Starts in (months)': 'jobstart', 'Gross pay / year': 'grosspay',
+    'DSCR': 'dscr', 'DSCR now': 'dscr', 'Cash-on-cash now': 'coc', 'Net worth': 'networth', 'Cash flow / mo': 'cashflow', 'Cash flow now': 'cashflow', 'Loan option': 'loanoption', 'Funds': 'creditline'
+  };
+  const LOAN = { conv30: 'conv', conv15: 'conv', fha: 'fha', k203: 'k203', dscr: 'dscrloan', cashh: 'cashbuy', cashb: 'cashbuy', comm25: 'bankloan', sba504: 'sba', bridge: 'bridge', sellerc: 'sellerfin', sba7a: 'sba', bankbiz: 'bankloan', sellerb: 'sellerfin' };
+  const api = { INFO, LABEL, LOAN };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Info = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -581,14 +725,19 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
   const mo = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 24 ? m + ' mo' : Math.floor(m / 12) + 'y ' + (m % 12) + 'm');
   const mm = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m + ' mo'); /* credit-line timing: plain months */
   const r = (n, d = 0) => (isFinite(n) ? String(+n.toFixed(d)) : '—');
+  const GL = (window.Info && window.Info) || { INFO: {}, LABEL: {}, LOAN: {} }, INFO = GL.INFO;
+  const infoBtn = (k) => (INFO[k] ? `<button type="button" class="info" data-info="${k}" aria-label="What does ${(INFO[k].t || '').replace(/"/g, '')} mean?"><span aria-hidden="true">i</span></button>` : '');
+  let infoKey = null;
+  const sheetHtml = () => { const d = INFO[infoKey]; return d ? `<div class="sheet-bg" data-info-close></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="infot" data-testid="info-sheet"><div class="grab"></div><h3 id="infot">${esc(d.t)}</h3><p>${esc(d.b)}</p>${d.e ? `<p class="eg"><b>Example:</b> ${esc(d.e)}</p>` : ''}<button class="btn" data-info-close data-testid="info-close">Got it</button></div>` : ''; };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   /* ---------- reusable bits ---------- */
-  const field = (label, p, val, o = {}) => `<label class="f ${o.calc ? 'calc' : ''}"><span class="lb">${label}${o.calc ? ' <i class="auto" title="calculated from your other numbers — tap to override">auto</i>' : ''}</span><span class="iw">${o.pre ? `<em>${o.pre}</em>` : ''}<input inputmode="decimal" data-p="${p}" data-k="${p}" aria-label="${esc(label)}" ${o.ro ? 'readonly tabindex="-1"' : ''} value="${val}">${o.suf ? `<em>${o.suf}</em>` : ''}</span></label>`;
-  const targetSel = (h) => `<select data-sel="${h.id}" aria-label="Line of credit on ${esc(h.addr)} funds">${'<option value="">Pick a house</option>' + S.houses.filter((x) => x.id !== h.id).map((x) => `<option value="${x.id}" ${h.target === x.id ? 'selected' : ''}>${esc(x.addr)}</option>`).join('')}</select>`;
-  const kpi = (id, label, val, sub, cls, sm) => `<div class="kpi ${sm ? 'sm' : ''}"><small>${label}</small><b class="${cls || ''}" data-testid="${id}" data-k="${id}">${val}</b>${sub ? `<span class="sub">${sub}</span>` : ''}</div>`;
+  const field = (label, p, val, o = {}) => `<label class="f ${o.calc ? 'calc' : ''}"><span class="lb">${label}${infoBtn(o.info || GL.LABEL[label])}${o.calc ? ' <i class="auto" title="calculated from your other numbers — tap to override">auto</i>' : ''}</span><span class="iw">${o.pre ? `<em>${o.pre}</em>` : ''}<input inputmode="decimal" data-p="${p}" data-k="${p}" aria-label="${esc(label)}" ${o.ro ? 'readonly tabindex="-1"' : ''} ${o.ph ? 'placeholder="' + esc(o.ph) + '"' : ''} value="${val}">${o.suf ? `<em>${o.suf}</em>` : ''}</span></label>`;
+  const targetSel = (h) => `<select data-sel="${h.id}" class="${h.target ? '' : 'notarget'}" aria-label="Line of credit on ${esc(h.addr)} funds">${'<option value="">Pick a house</option>' + S.houses.filter((x) => x.id !== h.id).map((x) => `<option value="${x.id}" ${h.target === x.id ? 'selected' : ''}>${esc(x.addr)}</option>`).join('')}</select>`;
+  const kpi = (id, label, val, sub, cls, sm) => `<div class="kpi ${sm ? 'sm' : ''}"><small>${label}${infoBtn(GL.LABEL[label])}</small><b class="${cls || ''}" data-testid="${id}" data-k="${id}">${val}</b>${sub ? `<span class="sub">${sub}</span>` : ''}</div>`;
 
-  const colSec = (id, title, sum, inner) => { const open = !UI.coll[id]; return `<div class="sec cs" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}"><span>${title}</span><span class="cx">${open ? 'Hide ▾' : esc(sum) + ' ▸'}</span></div>${open ? inner : ''}`; };
+  const CDEF = {};
+  const colSec = (id, title, sum, inner, defCollapsed) => { CDEF[id] = !!defCollapsed; const open = !(UI.coll[id] === undefined ? !!defCollapsed : UI.coll[id]); return `<div class="sec cs" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}"><span>${title}</span><span class="cx">${open ? 'Hide ▾' : esc(sum) + ' ▸'}</span></div>${open ? inner : ''}`; };
   const confirmBox = (msg, yesAttr, yesLabel) => `<div class="confirm" role="alertdialog"><p>${msg}</p><button class="btn danger" ${yesAttr}>${yesLabel}</button><button class="btn plain" data-ask-cancel>Cancel</button></div>`;
 
   /* ---------- plan visuals ---------- */
@@ -655,7 +804,7 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
       const loses = type === 'house' && v.cf < 0 ? '<span class="hi">loses money at today\'s terms</span>' : '';
       const loc = !t ? '' : !isFinite(p + v.locM) ? 'not reachable' : p + v.locM <= 0 ? 'opens now' : 'opens in ' + mm(p + v.locM);
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
-      return `<div class="row" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span class="nm"><span class="addr">${esc(h.addr)}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}"><span class="tag">${tag}</span> ${soldBy ? 'sold' : sp ? $f(sp.payment) + '/mo' : 'not in the totals yet'} ${hi}${loses}</div>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (sp) parts.push('equity ' + $c(sp.equity)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<div class="exitline">${parts.join(' · ')}</div>` : ''; })()}</span>
+      return `<div class="row" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span class="nm"><span class="addr">${esc(h.addr)}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}"><span class="tag">${tag}</span> ${soldBy ? 'sold' : sp ? $f(sp.payment) + '/mo · equity ' + $c(sp.equity) : 'not in the totals yet'} ${hi}${loses}</div>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<div class="exitline">${parts.join(' · ')}</div>` : ''; })()}</span>
         <span class="ex ${h.driver === 'months' && H(h.target) ? 'calc' : ''}">Extra<span class="iw"><em>$</em><input inputmode="decimal" data-testid="extra-input" data-p="h.${h.id}.extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(v.X)}"></span></span></div>
         <div class="r2">${soldBy ? `<div class="fcol"><span class="locline" data-testid="loc-line">Sold in ${mm(pl.sellAt[h.id])} for ${$c(pl.exits[h.id].proceeds)}, kept as cash</span></div>` : `<div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div>`}<span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy || !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'sold' : !sp ? 'not counted' : 'cash flow'}</small></span></div>
         ${editList ? (ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? Anything it funds loses its credit-line source.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="rm" data-del="${h.id}" data-testid="row-remove" aria-label="Remove ${esc(h.addr)}">Remove</button>`) : ''}</div>`; };
@@ -710,16 +859,16 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
     const LB = { house: { rent: 'Monthly rent', sec: 'Rent & expenses', growth: 'Appreciation / yr', price: 'Price' }, commercial: { rent: 'Monthly rent (all tenants)', sec: 'Rent & operating costs', growth: 'Value growth / yr', price: 'Purchase price' }, business: { rent: 'Monthly owner profit', sec: 'Profit', growth: 'Business growth / yr', price: 'Purchase price' } }[type];
     const invested = v.invested, coc = invested > 0 ? ((v.cf * 12) / invested) * 100 : NaN, dscrH = v.P > 0 ? v.noi / v.P : NaN;
     const lo = E.LOANS.find((l) => l.id === h.loanId);
-    const loanSel = `<div class="f"><span class="lb">Loan option</span><select class="loansel" data-loan="${h.id}" aria-label="Loan option">${E.loansFor(type).map((l) => `<option value="${l.id}" ${h.loanId === l.id ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}<option value="custom" ${lo ? '' : 'selected'}>Custom terms</option></select></div>`;
+    const loanSel = `<div class="f"><span class="lb">Loan option${infoBtn('loanoption')}</span><select class="loansel" data-loan="${h.id}" aria-label="Loan option">${E.loansFor(type).map((l) => `<option value="${l.id}" ${h.loanId === l.id ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}<option value="custom" ${lo ? '' : 'selected'}>Custom terms</option></select></div>`;
     const ex = pl.exits[h.id];
     const exitSec = colSec('exit', 'Value-add & exit', h.exit === 'sell' && isFinite(pl.sellAt[h.id]) ? 'sell in ' + mm(pl.sellAt[h.id]) : h.exit === 'merge' && isFinite(pl.mergeAt[h.id]) ? 'merge in ' + mm(pl.mergeAt[h.id]) : h.capex ? 'improve ' + $c(h.capex) : 'hold', `<section class="card" data-testid="exit-section">
       ${field('Improvement budget', P + 'capex', grp(h.capex), { pre: '$' })}${h.finCapex ? '<p class="note" data-testid="rehab-financed">Financed in your loan, so nothing extra is due at closing.</p>' : ''}${field('Months to finish', P + 'capexMonths', h.capexMonths)}${field('New appraised value', P + 'arv', grp(h.arv), { pre: '$' })}${field('Value gained (vs price + rehab)', P + 'gain', h.arv > 0 ? grp(v.valueGain) : '', { pre: '$', calc: 1 })}<p class="note">Type the new appraisal, or type how much value you expect to gain and the appraisal fills in. No appraisal means the value does not change.</p>${h.arv > 0 && h.arv < h.price + (h.capex || 0) ? '<p class="note" data-testid="arv-low">⚠ That appraisal is below price + rehab, so the work loses money.</p>' : ''}${field('Income lift', P + 'liftIncome', r(h.liftIncome, 1), { suf: '%' })}
-      <div class="seg" style="margin-top:8px" role="tablist"><button data-exit="hold" class="${h.exit === 'hold' ? 'on' : ''}">Hold</button><button data-exit="sell" class="${h.exit === 'sell' ? 'on' : ''}" data-testid="exit-sell">Sell</button><button data-exit="merge" class="${h.exit === 'merge' ? 'on' : ''}">Merge</button></div>
+      <div class="f" style="border-top:0"><span class="lb">What will you do with it?${infoBtn('exit')}</span></div><div class="seg" style="margin-top:0" role="tablist"><button data-exit="hold" class="${h.exit === 'hold' ? 'on' : ''}">Hold</button><button data-exit="sell" class="${h.exit === 'sell' ? 'on' : ''}" data-testid="exit-sell">Sell</button><button data-exit="merge" class="${h.exit === 'merge' ? 'on' : ''}">Merge</button></div>
       ${h.exit === 'sell' ? `${field('Sell in (months)', P + 'exitMonth', h.exitMonth)}${field('Selling costs', P + 'sellCost', r(h.sellCost, 1), { suf: '%' })}${ex ? field('Net proceeds', P + 'proceeds', grp(ex.proceeds), { pre: '$', calc: 1, ro: 1 }) : ''}<p class="note">Proceeds go to cash and count in net worth. Later purchases use that cash before outside money.</p>` : ''}
       ${h.exit === 'merge' ? `${field('Merge in (months)', P + 'exitMonth', h.exitMonth)}<div class="f"><span class="lb">Merge into</span><select class="loansel" data-merge="${h.id}" aria-label="Merge into"><option value="">Choose…</option>${S.houses.filter((x) => x.id !== h.id).map((x) => `<option value="${x.id}" ${h.mergeInto === x.id ? 'selected' : ''}>${esc(x.addr)}</option>`).join('')}</select></div>${field('Synergy lift', P + 'exitLift', r(h.exitLift, 1), { suf: '%' })}<p class="note">When merged, value and income rise by the synergy lift. It stays in your totals.</p>` : ''}
-      <p class="note">Improvements are paid from sale cash first, then outside money.</p></section>`);
+      <p class="note">Improvements are paid from sale cash first, then outside money.</p></section>`, !(h.capex > 0 || h.arv > 0 || h.exit !== 'hold'));
     const homeLoses = type === 'house' && v.cf < 0 ? `<div class="warnbox" data-testid="home-loses">⚠ A home must cash flow positive. This one loses ${$f(-v.cf)} a month. Raise the rent, lower the price, or pick a loan with a smaller payment.</div>` : '';
-    const L = [['Portfolio net worth', wo.horizon.nw, pl.horizon.nw, $f], ['Portfolio cash flow / mo', wo.horizon.cf, pl.horizon.cf, $s], ['Portfolio monthly payments', wo.horizon.monthly, pl.horizon.monthly, $f], ['Outside cash needed', wo.outsideTotal, pl.outsideTotal, $f]];
+    const L = [['Net worth', wo.horizon.nw, pl.horizon.nw, $f], ['Cash flow / mo', wo.horizon.cf, pl.horizon.cf, $s], ['Payments / mo', wo.horizon.monthly, pl.horizon.monthly, $f], ['Outside cash', wo.outsideTotal, pl.outsideTotal, $f]];
     const impactLines = L.filter((x) => Math.abs(x[1] - x[2]) > 0.5).map((x) => `<div class="f"><span class="lb">${x[0]}</span><span>${x[3](x[1])} → <b>${x[3](x[2])}</b></span></div>`);
     const timing = h.status === 'planned'
       ? (src.length ? `<p class="note">Bought when ${src.map((x) => esc(x.addr)).join(' or ')}'s line of credit opens — ${isFinite(p0) ? mo(p0) + ' from now' : 'not reachable'}.</p>` : field('Buy in (months)', P + 'buyIn', h.buyIn))
@@ -736,19 +885,19 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
       ${kpi('h-dscr', 'DSCR now', r(dscrH, 2), isFinite(dscrH) ? (dscrH >= 1.2 ? 'income covers the loan' : dscrH >= 1 ? 'thin cushion' : 'below 1.0') : 'no loan payment', isFinite(dscrH) && dscrH < 1 ? 'bad' : '', 1)}${kpi('h-coc', 'Cash-on-cash now', isFinite(coc) ? r(coc, 1) + '%' : '—', 'yearly cash flow ÷ cash invested', coc < 0 ? 'bad' : '', 1)}</div>
       <p class="note share" data-testid="asset-share">${(() => { const sp = pl.snap.find((x) => x.id === h.id), ex = pl.exits[h.id]; if (ex && pl.sellAt[h.id] <= pl.planM) return 'In your portfolio total: sold in ' + mm(pl.sellAt[h.id]) + ' for ' + $c(ex.proceeds) + ', counted as cash.'; if (!sp) return 'In your portfolio total: not bought in this plan yet.'; return 'In your portfolio total: ' + $f(sp.payment) + '/mo payment · ' + $s(sp.cf) + '/mo cash flow · ' + $c(sp.equity) + ' equity (the same numbers as its row on the Portfolio page).'; })()}</p>
       <div class="seg"><button class="${h.status === 'owned' ? 'on' : ''}" data-status="owned">Owned</button><button class="${h.status === 'planned' ? 'on' : ''}" data-status="planned">Planned</button></div>${timing}</section>
-    ${UI.hideLegend && !h.listingUrl ? '' : `<p class="note" style="margin:10px 4px 0">${UI.hideLegend ? '' : '<i class="auto">auto</i> = calculated from your other numbers; tap to override. <button class="chip link" data-hidelegend>Got it</button> '}${h.listingUrl ? 'Imported from a listing' + (h.info && h.info.beds ? ' · ' + h.info.beds + ' bd / ' + h.info.baths + ' ba · ' + (h.info.sqft || '?') + ' sqft' : '') + '.' : ''}</p>`}
+    ${(UI.hideLegend || UI.seenLegend) && !h.listingUrl ? '' : `<p class="note" style="margin:10px 4px 0">${UI.hideLegend ? '' : '<i class="auto">auto</i> = calculated from your other numbers; tap to override. <button class="chip link" data-hidelegend>Got it</button> '}${h.listingUrl ? 'Imported from a listing' + (h.info && h.info.beds ? ' · ' + h.info.beds + ' bd / ' + h.info.baths + ' ba · ' + (h.info.sqft || '?') + ' sqft' : '') + '.' : ''}</p>`}
     <div class="sec">Purchase</div><section class="card">${field(LB.price, P + 'price', grp(h.price), { pre: '$' })}${field('Down payment', P + 'dp', r(h.dp, 2), { suf: '%' })}${field('Down payment $', P + 'down', grp(v.down), { pre: '$', calc: 1 })}${field('Loan amount', P + 'loan', grp(v.L), { pre: '$', calc: 1, ro: 1 })}${field(LB.growth, P + 'growth', r(v.growth, 2), { suf: '%' })}
       ${type === 'commercial' ? field('Cap rate', P + 'caprate', r(v.capRate, 1), { suf: '%', calc: 1, ro: 1 }) : ''}${type === 'business' ? field('Price ÷ yearly profit', P + 'mult', r(v.multiple, 1), { suf: '×', calc: 1, ro: 1 }) : ''}</section>
     <div class="sec">Loan</div><section class="card">${loanSel}${lo || h.io ? `<p class="note">${lo ? esc(lo.note) + ' ' : ''}${h.io ? 'Interest-only: extra payments reduce the balance. Balloon at maturity is not modeled.' : ''}</p>` : '<p class="note">Custom terms. Pick a loan option to auto-fill them.</p>'}${h.ownerOcc ? '<span class="chip warnchip" data-testid="owner-occ">You must live here (owner-occupied)</span>' : ''}${h.loanId === 'k203' && h.capex > 75000 ? '<p class="note" data-testid="k203-cap">⚠ Over the $75,000 Limited 203(k) cap. This rehab needs a Standard 203(k) with a HUD consultant.</p>' : ''}
       ${field('Interest rate', P + 'rate', r(h.rate, 3), { suf: '%' })}${field('Term (years)', P + 'termY', r(h.term / 12, 2))}${field('Closing costs', P + 'closingPct', r(h.closingPct == null ? g.closing : h.closingPct, 2), { suf: '%' })}${field('Extra / month', P + 'extra', grp(v.X), { pre: '$', calc: h.driver === 'months' && !!t })}${field('Paid off in (months)', P + 'payoff', isFinite(v.payoff) ? v.payoff : '', { calc: 1 })}${field('Other liens', P + 'liens', grp(h.liens), { pre: '$' })}
       <p class="note">${isFinite(v.payoff) ? `Paid off in ${mo(v.payoff)}. ` : h.io ? 'Not paid off until you refinance or sell. ' : 'Payment does not cover interest. '}${v.mip > 0 ? 'Includes ' + $f(v.mip) + '/mo mortgage insurance. ' : ''}Debt now: ${$f(debt)} (${r((debt / (v.valueNow || h.price)) * 100)}% of today's value).${v.cltvAtLoc != null ? ` When its line of credit opens: ${r(v.cltvAtLoc)}% (cap ${g.cap}%).` : ''}</p>${v.cltvAtLoc != null && v.cltvAtLoc > g.cap + 0.01 ? '<span class="chip warnchip">Over the debt cap</span>' : ''}</section>
     ${colSec('rent', LB.sec, type === 'business' ? 'profit ' + $f(h.rent) : 'rent ' + $f(h.rent) + ' · costs ' + $f(h.tax + h.ins + h.hoa), `<section class="card">${income}</section>`)}
-    <div class="sec">Line of credit strategy</div><section class="card"><div class="f"><span class="lb">Funds</span>${targetSel(h)}</div>
+    ${colSec('loc', 'Line of credit strategy', t ? 'funds ' + t.addr + ' · opens ' + (isFinite(p0 + v.locM) ? mm(p0 + v.locM) : 'never') : 'not set', `<section class="card"><div class="f"><span class="lb">Funds</span>${targetSel(h)}</div>
       ${t ? `${field('Cash needed', P + 'need', grp(v.D), { pre: '$', calc: 1, ro: 1 })}${field('Months until LOC', P + 'wait', isFinite(v.locM) ? v.locM : '', { calc: h.driver === 'extra' })}
       <div class="f"><span class="lb">Opens (from today)</span><b>${isFinite(p0 + v.locM) ? mm(p0 + v.locM) : 'never'}</b></div>
-      ${v.infeasible ? '<p class="note">⚠ That wait is not reachable, even with the loan fully paid.</p>' : ''}${a.cls === 'warn' || a.cls === 'bad' ? `<span class="chip warnchip" title="${esc(a.why || '')}">Debt-to-income ${a.cls === 'bad' ? 'over' : 'near'} your limit when ${esc(t.addr)} closes</span>` : ''}${sooner > 0 ? `<span class="chip">+$100/mo → ${sooner} mo sooner</span>` : ''}` : '<p class="note">Pick the asset this line of credit will fund.</p>'}</section>
+      ${v.infeasible ? '<p class="note">⚠ That wait is not reachable, even with the loan fully paid.</p>' : ''}${a.cls === 'warn' || a.cls === 'bad' ? `<span class="chip warnchip" title="${esc(a.why || '')}">Debt-to-income ${a.cls === 'bad' ? 'over' : 'near'} your limit when ${esc(t.addr)} closes</span>` : ''}${sooner > 0 ? `<span class="chip">+$100/mo → ${sooner} mo sooner</span>` : ''}` : '<p class="note">Pick the asset this line of credit will fund.</p>'}</section>`, !t)}
     ${exitSec}
-    ${colSec('impact', 'Impact on your plan', impactLines.length ? impactLines.length + ' changes' : 'no change', `<section class="card" data-testid="impact">${impactLines.length ? impactLines.join('') : '<p class="note" style="margin:0">Adding or removing this does not change the numbers below.</p>'}<p class="note">Your plan without this asset → with it.</p></section>`)}
+    ${colSec('impact', 'Impact on your plan', impactLines.length ? impactLines.length + ' changes' : 'no change', `<section class="card" data-testid="impact">${impactLines.length ? impactLines.join('') : '<p class="note" style="margin:0">Adding or removing this does not change the numbers below.</p>'}<p class="note">Portfolio totals without this asset → with it.</p></section>`, true)}
     ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? It is also cleared as a funding target.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="btn ghost" data-del="${h.id}" data-testid="h-delete">Remove</button>`}`;
   }
 
@@ -773,10 +922,15 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
     const listRow = (kind, it, label) => `<div class="lr" data-testid="${kind}-row"><input class="t2" data-p="${kind === 'pl' ? 'o' : 'c'}.${it.id}.name" type="text" value="${esc(it.name)}" aria-label="${label} name">
       ${field('Amount', (kind === 'pl' ? 'o' : 'c') + '.' + it.id + '.amount', grp(it.amount), { pre: '$' })}${field('Happens in (months)', (kind === 'pl' ? 'o' : 'c') + '.' + it.id + '.month', it.month)}
       ${ask === 'dp:' + kind + ':' + it.id ? confirmBox('Remove ' + esc(it.name || label) + '?', 'data-dp-yes="' + kind + ':' + it.id + '"', 'Yes, remove') : `<button class="rm" data-dp="${kind}:${it.id}" aria-label="Remove ${esc(it.name || label)}">Remove</button>`}</div>`;
-    const jobs = p.jobs.map((j) => `<section class="card" data-testid="job-card"><input class="t2" data-p="j.${j.id}.name" type="text" value="${esc(j.name)}" aria-label="Job name">
-      ${field('Gross pay / year', `j.${j.id}.gross`, grp(j.gross), { pre: '$' })}${field('Yearly raise', `j.${j.id}.raise`, r(j.raise, 1), { suf: '%' })}${field('Tax on this pay', `j.${j.id}.tax`, r(j.tax, 1), { suf: '%' })}${field('Hours / week', `j.${j.id}.hours`, r(j.hours, 0))}${field('Starts in (months)', `j.${j.id}.start`, j.start)}${field('Ends in (months; blank = keeps going)', `j.${j.id}.end`, j.end === null ? '' : j.end)}
-      <p class="note">Take-home ${$f(E.jobMonthly(j, 0) * (1 - j.tax / 100))}/mo now. Months count from today, so 0 means now.</p>
-      ${ask === 'dp:job:' + j.id ? confirmBox('Remove ' + esc(j.name) + '?', 'data-dp-yes="job:' + j.id + '"', 'Yes, remove') : `<button class="rm" data-dp="job:${j.id}" aria-label="Remove ${esc(j.name)}">Remove job</button>`}</section>`).join('');
+    const jobs = p.jobs.map((j) => { const tp = E.taxPctFor(j), take = E.jobMonthly(j, 0) * (1 - tp / 100), more = UI.coll['jmo:' + j.id] === true, hourly = j.kind === 'hourly';
+      return `<section class="card" data-testid="job-card"><input class="t2" data-p="j.${j.id}.name" type="text" value="${esc(j.name)}" aria-label="Job name">
+      <div class="seg" role="tablist" aria-label="How you are paid"><button data-jobkind="${j.id}:salary" class="${!hourly ? 'on' : ''}">Salary</button><button data-jobkind="${j.id}:hourly" class="${hourly ? 'on' : ''}" data-testid="kind-hourly">Hourly</button></div>
+      ${hourly ? `${field('Hourly wage', `j.${j.id}.wage`, r(j.wage, 2), { pre: '$' })}${field('Hours / week', `j.${j.id}.hours`, r(j.hours, 0))}${field('Tips per hour (optional)', `j.${j.id}.tips`, r(j.tips, 2), { pre: '$' })}` : `${field('Gross pay / year', `j.${j.id}.gross`, grp(j.gross), { pre: '$' })}${field('Hours / week', `j.${j.id}.hours`, r(j.hours, 0))}`}
+      ${field('Ends in (months; blank = no end)', `j.${j.id}.end`, j.end === null ? '' : j.end, { ph: 'no end' })}
+      <p class="note" data-testid="job-take">About ${$f(take)}/mo take-home${hourly ? ' (' + $f(j.gross) + '/yr before tax)' : ''}. Tax ${j.tax === null ? 'estimated at ' + r(tp, 1) + '%' : 'set to ' + r(j.tax, 1) + '%'}.</p>
+      <button class="chip link morebtn" data-coll="jmo:${j.id}" aria-expanded="${more}">${more ? 'Fewer details ▾' : 'More details (optional) ▸'}</button>
+      ${more ? `${hourly ? field('Weeks worked / year', `j.${j.id}.weeks`, r(j.weeks, 0)) : ''}${field('Yearly raise', `j.${j.id}.raise`, r(j.raise, 1), { suf: '%' })}${field('Tax rate (blank = estimate)', `j.${j.id}.tax`, j.tax === null ? '' : r(j.tax, 1), { suf: '%', ph: 'auto ' + r(tp, 1) })}${field('Starts in (months)', `j.${j.id}.start`, j.start)}` : ''}
+      ${ask === 'dp:job:' + j.id ? confirmBox('Remove ' + esc(j.name) + '?', 'data-dp-yes="job:' + j.id + '"', 'Yes, remove') : `<button class="rm" data-dp="job:${j.id}" aria-label="Remove ${esc(j.name)}">Remove job</button>`}</section>`; }).join('');
     const row = (label, v, cls, bold) => `<tr class="${bold ? 'tot' : ''}"><td>${label}</td><td class="${cls || ''}">${bold ? '<b>' + $s(v) + '</b>' : $s(v)}</td></tr>`;
     const picture = `<table class="cmp" data-testid="monthly-picture"><tbody>
       ${row('Your take-home pay', k.takeHome)}${row('Portfolio cash flow (after tax)', k.portfolioAfterTax, k.portfolioAfterTax < 0 ? 'bad' : '')}${row('Managers for businesses you do not run', -k.managerCost0)}${row('Extra loan payments now', -k.extra)}${row('Living costs', -k.living)}${row('Other monthly debts', -k.debts)}${row('Left over each month', k.net0, k.net0 < 0 ? 'bad' : '', true)}</tbody></table>`;
@@ -785,6 +939,8 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
     <section class="card vcard ${f.status}" data-testid="verdict-card"><div class="vrow" style="cursor:default"><span class="vchip ${f.status}" data-testid="verdict-chip">${VL[f.status]}</span><b data-testid="verdict-headline">${esc(f.headline)}</b></div>
       ${f.reasons.map((x) => `<div class="rsn ${x.sev}"><span aria-hidden="true">${icon[x.sev]}</span><span>${esc(x.text)}</span></div>`).join('')}
       ${f.fixes.length ? `<div class="fixes" data-testid="fixes"><b>What would fix it</b><ul>${f.fixes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}</section>
+    <div class="sec">Your income</div>${jobs}<button class="addrow cardbtn" data-addjob="salary" data-testid="add-job">+ Add a salaried job</button><button class="addrow cardbtn" data-addjob="hourly" data-testid="add-hourly-job">+ Add an hourly job (wage and tips)</button>
+    <div class="sec">Your cash and expenses</div><section class="card">${field('Liquid cash you have', 'p.cash', grp(p.cash), { pre: '$' })}${field('Interest earned on cash', 'p.cashApy', r(p.cashApy, 2), { suf: '%' })}${field('Emergency reserve (months)', 'p.emergencyMonths', r(p.emergencyMonths, 1))}${field('Living costs / month', 'p.living', grp(p.living), { pre: '$' })}${field('Cost increases / year', 'p.inflation', r(p.inflation, 1), { suf: '%' })}${field('Other monthly debts (car, loans)', 'g.otherDebt', grp(g.otherDebt), { pre: '$' })}</section>
     <div class="sec">Your month right now</div><section class="card">${picture}</section>
     ${(() => { const later = pl.extraLater, pe = k.planEnd; return `${later > 0.5 ? `<p class="note" style="margin:-6px 4px 10px">Plus ${$f(later)}/mo of extra payments on assets you have not bought yet.</p>` : ''}
     <section class="card" data-testid="finances-sync"><b>Matches your Portfolio page</b><div class="f"><span class="lb">Portfolio cash flow at plan end (before tax)</span><b data-testid="sync-cf">${$s(pe.cfBefore)}</b></div><div class="f"><span class="lb">After tax on portfolio income</span><b>${$s(pe.cfAfter)}</b></div><div class="f"><span class="lb">Left over each month at plan end</span><b>${$s(pe.net)}</b></div>
@@ -794,10 +950,8 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
       <div class="f"><span class="lb">Months you could last without a paycheck</span><b>${isFinite(k.minRunway) ? r(k.minRunway, 1) : 'Portfolio income covers it'}</b></div>
       <p class="note" data-testid="funding-line">The plan needs ${$f(pl.outsideTotal)} of outside cash over time. Partners and investors cover ${$f(Math.min(k.totalOutside, k.capitalTotal))}; the rest comes out of your savings and monthly income.</p>
       ${calls ? `<p class="note" style="margin-top:8px">Biggest cash calls</p>${calls}` : ''}</section>
-    <div class="sec">Your income</div>${jobs}<button class="addrow cardbtn" data-addjob data-testid="add-job">+ Add a job</button>
-    <div class="sec">Your cash and expenses</div><section class="card">${field('Liquid cash you have', 'p.cash', grp(p.cash), { pre: '$' })}${field('Interest earned on cash', 'p.cashApy', r(p.cashApy, 2), { suf: '%' })}${field('Emergency reserve (months)', 'p.emergencyMonths', r(p.emergencyMonths, 1))}${field('Living costs / month', 'p.living', grp(p.living), { pre: '$' })}${field('Cost increases / year', 'p.inflation', r(p.inflation, 1), { suf: '%' })}${field('Other monthly debts (car, loans)', 'g.otherDebt', grp(g.otherDebt), { pre: '$' })}</section>
-    <div class="sec">Taxes</div><section class="card">${field('Tax on portfolio income', 'p.portfolioTaxPct', r(p.portfolioTaxPct, 1), { suf: '%' })}${field('Tax on gains when you sell', 'p.salesTaxPct', r(p.salesTaxPct, 1), { suf: '%' })}<p class="note">Rough effective rates. Short-term gains from flips are taxed like ordinary income.</p></section>
-    <div class="sec">Time and managers</div><section class="card">${field('Businesses you run yourself', 'p.operating', p.operating)}${field('Hours / week each takes', 'p.bizHours', r(p.bizHours, 0))}${field('Manager pay per other business / mo', 'p.gmMonthly', grp(p.gmMonthly), { pre: '$' })}<p class="note">A business profit figure assumes the owner does the work. Businesses beyond the ones you run need a paid manager.</p></section>
+    ${colSec('fin-tax', 'Taxes', p.portfolioTaxPct + '% / ' + p.salesTaxPct + '%', `<section class="card">${field('Tax on portfolio income', 'p.portfolioTaxPct', r(p.portfolioTaxPct, 1), { suf: '%' })}${field('Tax on gains when you sell', 'p.salesTaxPct', r(p.salesTaxPct, 1), { suf: '%' })}<p class="note">Rough effective rates. Short-term gains from flips are taxed like ordinary income.</p></section>`, true)}
+    ${colSec('fin-time', 'Time and managers', p.operating + ' run by you · ' + $f(p.gmMonthly) + '/mo manager', `<section class="card">${field('Businesses you run yourself', 'p.operating', p.operating)}${field('Hours / week each takes', 'p.bizHours', r(p.bizHours, 0))}${field('Manager pay per other business / mo', 'p.gmMonthly', grp(p.gmMonthly), { pre: '$' })}<p class="note">A business profit figure assumes the owner does the work. Businesses beyond the ones you run need a paid manager.</p></section>`, true)}
     <div class="sec">Planned one-time expenses</div><section class="card">${p.planned.length ? p.planned.map((it) => listRow('pl', it, 'Expense')).join('') : '<p class="note" style="margin:0">Things like a wedding, a car or tuition. They come out of your cash.</p>'}<button class="addrow" data-addplanned data-testid="add-planned">+ Add an expense</button></section>
     <div class="sec">Outside capital you have lined up</div><section class="card">${p.capital.length ? p.capital.map((it) => listRow('cap', it, 'Capital')).join('') : '<p class="note" style="margin:0">Partners, investors or family who will put money in. It is added to your cash that month.</p>'}<button class="addrow" data-addcap data-testid="add-capital">+ Add capital</button></section>`;
   }
@@ -806,11 +960,10 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
   function addPage() {
     const tp = E.TYPES[UI.addType] ? UI.addType : 'house', list = E.loansFor(tp), sel = list.find((l) => l.id === UI.addLoan) ? UI.addLoan : list[0].id;
     const blurb = { house: 'A single-family rental or primary home.', commercial: 'Retail, office, storage or industrial. Valued on rent and cap rate.', business: 'An operating business you buy. Valued on owner profit and growth.' }[tp];
-    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Add to portfolio</h2></div>
-    <section class="card"><div class="seg" role="tablist">${['house', 'commercial', 'business'].map((x) => `<button data-addtype="${x}" class="${x === tp ? 'on' : ''}">${TL[x]}</button>`).join('')}</div><p class="note">${blurb}</p></section>
-    <div class="sec">Loan option</div><section class="card" data-testid="loan-options">${list.map((l) => `<button class="loanopt ${l.id === sel ? 'on' : ''}" data-pickloan="${l.id}" aria-pressed="${l.id === sel}"><b>${esc(l.name)}</b><span>${l.dp}% down · ${l.rate}% · ${l.io ? 'interest-only, ' : ''}${r(l.term / 12, 1)} yr${l.finRehab ? ' · rehab financed' : ''}${l.ownerOcc ? ' · you live there' : ''}</span><small>${esc(l.note)}</small></button>`).join('')}</section>
-    <button class="btn" style="width:100%" data-confirm-add="${tp}|${sel}" data-testid="confirm-add">Add ${TL[tp].toLowerCase()}</button>
-    ${tp === 'house' ? '<button class="linkbtn" data-go="import/new">Or import a home from a listing file</button>' : ''}`;
+    return `<div class="top"><button class="ic" data-go="" aria-label="Cancel and go back">‹</button><h2>Add to portfolio</h2></div>
+    <section class="card"><div class="seg" role="tablist">${['house', 'commercial', 'business'].map((x) => `<button data-addtype="${x}" class="${x === tp ? 'on' : ''}">${TL[x]}</button>`).join('')}</div><p class="note">${blurb} You will set the price and income on the next screen.</p>${tp === 'house' ? '<button class="linkbtn" data-go="import/new">Have a Zillow listing? Import it from a file</button>' : ''}</section>
+    <div class="sec">1. Pick a loan option</div><section class="card" data-testid="loan-options">${list.map((l) => `<div class="loanrow"><button class="loanopt ${l.id === sel ? 'on' : ''}" data-pickloan="${l.id}" aria-pressed="${l.id === sel}"><b>${esc(l.name)}</b><span>${l.dp}% down · ${l.rate}% · ${l.io ? 'interest-only, ' : ''}${r(l.term / 12, 1)} yr${l.finRehab ? ' · rehab financed' : ''}${l.ownerOcc ? ' · you live there' : ''}</span><small>${esc(l.note)}</small></button>${infoBtn(GL.LOAN[l.id])}</div>`).join('')}${tp === 'house' ? '<p class="note">FHA and 203(k) loans are only for a home you will live in.</p>' : ''}</section>
+    <button class="btn" style="width:100%" data-confirm-add="${tp}|${sel}" data-testid="confirm-add">2. Add ${TL[tp].toLowerCase()}</button>`;
   }
 
   /* ---------- settings ---------- */
@@ -818,7 +971,7 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
     const g = S.g, F = (l, k, o) => field(l, 'g.' + k, o && o.pre === '$' ? grp(g[k]) : g[k], o);
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Assumptions</h2></div>
     <div class="sec">Borrowing</div><section class="card">${F('Max debt on a house (cap)', 'cap', { suf: '%' })}${F('Lender appraisal haircut', 'haircut', { suf: '%' })}${F('Closing costs (of price)', 'closing', { suf: '%' })}${F('Line of credit rate', 'hrate', { suf: '%' })}</section>
-    <div class="sec">Co-signers &amp; qualifying</div><section class="card">${F('Parent 1 income / yr', 'p1', { pre: '$' })}${F('Parent 2 income / yr', 'p2', { pre: '$' })}${F('Debt-to-income limit', 'dti', { suf: '%' })}${F('Rent counted as income', 'rentCount', { suf: '%' })}${F('Other monthly debts', 'otherDebt', { pre: '$' })}</section>
+    <div class="sec">Who helps you qualify</div><section class="card">${F('Parent 1 income / yr', 'p1', { pre: '$' })}${F('Parent 2 income / yr', 'p2', { pre: '$' })}<p class="note">Co-signers help you qualify for loans. Their income counts toward the lender's limit.</p>${F('Debt-to-income limit', 'dti', { suf: '%' })}${F('Rent counted as income', 'rentCount', { suf: '%' })}${F('Other monthly debts', 'otherDebt', { pre: '$' })}</section>
     <div class="sec">Operating costs</div><section class="card">${F('Vacancy', 'vac', { suf: '%' })}${F('Management (of rent)', 'mgmt', { suf: '%' })}${F('Repairs reserve (of value / yr)', 'maint', { suf: '%' })}${F('Default growth / yr', 'appr', { suf: '%' })}${F('Projection length (years)', 'planYears', {})}</section>
     <div class="sec">Data — stays on this device</div><section class="card">
       ${notice ? `<div class="warnbox">${esc(notice)}</div>` : ''}
@@ -827,10 +980,10 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
       <label class="btn plain filebtn">Restore from backup file<input type="file" accept="application/json,.json,text/plain" hidden id="imp" aria-label="Choose backup file" data-testid="import-file"></label>
       <textarea rows="2" id="bkin" aria-label="Or paste backup text" placeholder="…or paste backup text here"></textarea><button class="btn plain" data-restore-text>Restore from pasted text</button>
       ${pendingImport ? confirmBox('Replace all current data with this backup?', 'data-import-yes', 'Yes, replace') : ''}
-      ${ask === 'reset' ? confirmBox('Replace your assets with the realistic sample?', 'data-reset-yes', 'Yes, replace') : '<button class="btn plain" data-reset data-testid="load-realistic">Load realistic sample</button>'}
+      <p class="note">${(() => { try { const t = localStorage.getItem('rep-v4-backup'); return t ? 'Backup last shown: ' + new Date(+t).toLocaleDateString() : 'No backup yet. Copy one regularly.'; } catch (e) { return ''; } })()}</p></section>
+    ${colSec('samples', 'Sample portfolios', 'replace your assets', `<section class="card">${ask === 'reset' ? confirmBox('Replace your assets with the realistic sample?', 'data-reset-yes', 'Yes, replace') : '<button class="btn plain" data-reset data-testid="load-realistic">Load realistic sample</button>'}
       ${ask === 'stretch' ? confirmBox('Replace your assets with the $540M stretch scenario?', 'data-stretch-yes', 'Yes, load it') : '<button class="btn plain" data-stretch data-testid="load-stretch">Load $540M stretch scenario</button>'}
-      <p class="note">The realistic sample uses market-checked prices, loans and growth. The stretch scenario reaches about $540M and +$1.4M a month, but needs 21-25% yearly business growth for nearly 20 years and about $21M of outside cash.</p>
-      <p class="note">${(() => { try { const t = localStorage.getItem('rep-v4-backup'); return t ? 'Backup last shown: ' + new Date(+t).toLocaleDateString() : 'No backup yet. Copy one regularly.'; } catch (e) { return ''; } })()}</p></section>`;
+      <p class="note">These replace your current assets. The realistic sample uses market-checked prices, loans and growth. The stretch scenario reaches about $540M and +$1.4M a month, but needs 21-25% yearly business growth for nearly 20 years and about $21M of outside cash.</p></section>`, true)}`;
   }
 
   /* ---------- import from listing ---------- */
@@ -860,13 +1013,13 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const preview = !res ? '' : res.ok ? `<section class="card" data-testid="import-preview"><b>Preview</b><table class="cmp">${res.rows.map((x) => `<tr><td>${x[0]}</td><td>${esc(x[1])}</td><td>${badge(x[2])}</td></tr>`).join('')}</table>
       ${res.rows.some((x) => x[2] === 'missing') ? '<p class="note">Missing values keep their defaults. You can edit everything afterward.</p>' : ''}${res.rows.some((x) => x[2] === 'estimate') ? '<p class="note">“estimate” means the listing page showed an estimate, not a fact. Double-check these.</p>' : ''}
       <button class="btn" style="width:100%;margin-top:8px" data-apply-listing="${id}" data-testid="import-apply">${target ? 'Fill this house' : 'Add to portfolio'}</button></section>` : `<div class="warnbox" data-testid="import-error">⚠ ${esc(res.error)}</div>`;
-    return `<div class="top"><button class="ic" data-go="${target ? 'h/' + id : ''}" aria-label="Back">‹</button><h2>Import from listing</h2></div>${preview}
+    return `<div class="top"><button class="ic" data-go="${target ? 'h/' + id : ''}" aria-label="Back">‹</button><h2>Import from listing</h2></div>
     <section class="card"><ol class="steps"><li>Copy the prompt.</li><li>Paste it into a Claude chat with your Zillow link. If Claude cannot open the page, paste the listing text or screenshots instead.</li><li>Save Claude's reply as a <code>.json</code> file and choose it below.</li></ol>
       <button class="btn plain" data-copyprompt data-testid="copy-prompt">Copy Claude prompt</button><p class="note" id="cpm"></p>
       <details><summary class="note">Show the prompt</summary><pre class="pre">${esc(PROMPT)}</pre></details>
       <label class="btn filebtn" style="margin-top:8px">Choose listing file<input type="file" accept=".json,application/json,text/plain" hidden data-listing-file data-testid="import-listing-file" aria-label="Choose listing file"></label>
       <button class="linkbtn" data-togglepaste>${UI.paste ? 'Hide pasted text' : 'Or paste the file contents'}</button>
-      ${UI.paste ? `<textarea data-listing-text id="lt" rows="4" aria-label="Paste the listing file contents" placeholder="Paste the JSON Claude gave you"></textarea><button class="btn plain" data-read-listing>Read pasted text</button>` : ''}</section>`;
+      ${UI.paste ? `<textarea data-listing-text id="lt" rows="4" aria-label="Paste the listing file contents" placeholder="Paste the JSON Claude gave you"></textarea><button class="btn plain" data-read-listing>Read pasted text</button>` : ''}</section>${preview}`;
   }
   function readListing(text) {
     let o = null; try { o = JSON.parse(text); } catch (e) { o = null; }
@@ -890,14 +1043,19 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   function render() {
     const route = routeOf(), a = document.activeElement, id = a && a.dataset && (a.dataset.p || a.dataset.sel), typed = a && a.value, pos = a && a.selectionStart;
     const app = document.getElementById('app');
+    app.innerHTML = '';
     app.innerHTML = route === 'finances' ? finances() : route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
+    app.insertAdjacentHTML('beforeend', sheetHtml());
+    if (route.startsWith('h/') && !UI.seenLegend) { UI.seenLegend = true; save(); }
+    if (infoKey) { const cb = app.querySelector('[data-info-close].btn'); if (cb) cb.focus(); }
     if (id) { const el = app.querySelector(`[data-p="${id}"],[data-sel="${id}"]`); if (el) { el.focus(); if (a.dataset.p && !el.readOnly && document.hasFocus()) { el.value = typed; try { el.setSelectionRange(pos, pos); } catch (e) {} } } }
     const cur = {};
     app.querySelectorAll('[data-k]').forEach((el) => { const k = el.dataset.k, v = el.tagName === 'INPUT' ? el.value : el.textContent; cur[k] = v;
       if (k in prev && prev[k] !== v && el !== document.activeElement) (el.closest('label,.kpi,tr') || el).classList.add('flash'); });
     prev = cur;
   }
-  window.addEventListener('hashchange', () => { prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && infoKey) { infoKey = null; render(); } });
+  window.addEventListener('hashchange', () => { infoKey = null; prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
 
   /* ---------- editing: every field is an input; derived fields back-solve ---------- */
   function setField(p, s) {
@@ -906,7 +1064,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (k === 'addr') { H(x).addr = s; return true; }
     const list = { j: 'jobs', o: 'planned', c: 'capital' }[t];
     if (list && k === 'name') { const it = S.p[list].find((q) => q.id === x); if (it) it.name = s; return true; }
-    if (t === 'j' && k === 'end' && String(s).trim() === '') { const jb = S.p.jobs.find((q) => q.id === x); if (jb) jb.end = null; return true; }
+    if (t === 'j' && (k === 'end' || k === 'tax') && String(s).trim() === '') { const jb = S.p.jobs.find((q) => q.id === x); if (jb) jb[k] = null; S.p = E.normalizePersonal(S.p); return true; }
     const n = parseFloat(String(s).replace(/,/g, '').replace(/[^0-9.\-eE+]/g, '')); if (isNaN(n)) return false;
     if (t === 'g') { S.g[x] = n; return true; }
     if (t === 'p') { S.p[x] = n; S.p = E.normalizePersonal(S.p); return true; }
@@ -951,7 +1109,10 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const vw = t.closest('[data-view]'); if (vw) { UI.view = vw.dataset.view; prev = {}; save(); render(); return; }
     const ex = t.closest('[data-exit]'); if (ex) { const hh = H(routeOf().slice(2)); if (hh) { hh.exit = ex.dataset.exit; save(); render(); } return; }
     if (t.dataset.tab) { if (t.dataset.tab === 'hide') UI.open = false; else { UI.open = true; UI.tab = t.dataset.tab; } save(); render(); return; }
-    if (t.dataset.addjob !== undefined) { S.p.jobs.push({ id: 'job' + Date.now().toString(36), name: 'New job', gross: 60000, raise: 3, tax: 22, hours: 40, start: 0, end: null }); save(); render(); return; }
+    const ib = t.closest('[data-info]'); if (ib) { infoKey = ib.dataset.info; render(); return; }
+    if (t.closest('[data-info-close]')) { infoKey = null; render(); return; }
+    if (t.dataset.addjob !== undefined) { const hourly = t.dataset.addjob === 'hourly'; S.p.jobs.push(hourly ? { id: 'job' + Date.now().toString(36), name: 'Hourly job', kind: 'hourly', wage: 15, tips: 0, weeks: 50, hours: 25, raise: 0, tax: null, start: 0, end: null } : { id: 'job' + Date.now().toString(36), name: 'New job', kind: 'salary', gross: 60000, raise: 0, tax: null, hours: 40, start: 0, end: null }); S.p = E.normalizePersonal(S.p); save(); render(); return; }
+    const jk = t.closest('[data-jobkind]'); if (jk) { const [jid, kind] = jk.dataset.jobkind.split(':'), jb = S.p.jobs.find((q) => q.id === jid); if (jb) { jb.kind = kind; if (kind === 'hourly' && !(jb.wage > 0)) { jb.wage = 15; jb.hours = Math.min(jb.hours || 25, 40); } S.p = E.normalizePersonal(S.p); save(); render(); } return; }
     if (t.dataset.addplanned !== undefined) { S.p.planned.push({ id: 'pl' + Date.now().toString(36), name: 'New expense', amount: 10000, month: 12 }); save(); render(); return; }
     if (t.dataset.addcap !== undefined) { S.p.capital.push({ id: 'cap' + Date.now().toString(36), name: 'Partner or investor', amount: 100000, month: 12 }); save(); render(); return; }
     if (t.dataset.dp) { ask = 'dp:' + t.dataset.dp; render(); return; }
@@ -967,7 +1128,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.askCancel !== undefined) { ask = null; pendingImport = null; render(); return; }
     if (t.dataset.hidelegend !== undefined) { UI.hideLegend = true; save(); render(); return; }
     if (t.dataset.togglepaste !== undefined) { UI.paste = !UI.paste; render(); return; }
-    const cs = t.closest('[data-coll]'); if (cs) { UI.coll[cs.dataset.coll] = !UI.coll[cs.dataset.coll]; save(); render(); return; }
+    const cs = t.closest('[data-coll]'); if (cs) { const id = cs.dataset.coll, cur = UI.coll[id] === undefined ? !!CDEF[id] : UI.coll[id]; UI.coll[id] = !cur; save(); render(); return; }
     if (t.dataset.status) { const h = H(routeOf().slice(2)); h.status = t.dataset.status; save(); render(); return; }
     if (t.dataset.export !== undefined) { exportOpen = !exportOpen; if (exportOpen) { try { localStorage.setItem('rep-v4-backup', String(Date.now())); } catch (x) {} } render(); return; }
     if (t.dataset.copybackup !== undefined) { const m = document.getElementById('cbm'), ta = document.getElementById('bkout'); const fail = () => { ta.focus(); ta.select(); m.textContent = 'Select the text above and copy it by hand.'; };

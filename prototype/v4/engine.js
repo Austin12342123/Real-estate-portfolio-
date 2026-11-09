@@ -116,22 +116,33 @@
 
   /* ---------- personal finances: your jobs, savings and expenses ---------- */
   const samplePersonal = () => ({ cash: 45000, cashApy: 3, living: 3600, inflation: 3, emergencyMonths: 6, portfolioTaxPct: 20, salesTaxPct: 25, operating: 1, gmMonthly: 8000, bizHours: 20,
-    jobs: [{ id: 'job1', name: 'Day job (salary)', gross: 96000, raise: 3, tax: 24, hours: 40, start: 0, end: null }], planned: [], capital: [] });
+    jobs: [{ id: 'job1', name: 'Day job (salary)', kind: 'salary', gross: 96000, raise: 3, tax: 24, hours: 40, start: 0, end: null }], planned: [], capital: [] });
+  /* Rough U.S. single-filer estimate: federal income tax after a standard deduction, plus payroll tax. No state tax. It is only a starting point; the person can type their own rate. */
+  function estTaxPct(gross) {
+    if (!(gross > 0)) return 0;
+    const taxable = Math.max(0, gross - 15000), br = [[11925, 0.10], [48475, 0.12], [103350, 0.22], [197300, 0.24], [250525, 0.32], [626350, 0.35], [Infinity, 0.37]];
+    let fed = 0, lo = 0; for (const [hi, r] of br) { if (taxable > lo) fed += (Math.min(taxable, hi) - lo) * r; lo = hi; }
+    const fica = Math.min(gross, 176100) * 0.062 + gross * 0.0145;
+    return Math.round(((fed + fica) / gross) * 1000) / 10;
+  }
   const num0 = (v, d) => (isFinite(+v) && v !== '' && v !== null ? +v : d);
   function normalizePersonal(p) {
     const d = samplePersonal(); p = Object.assign({}, d, p || {});
     ['cash', 'cashApy', 'living', 'inflation', 'emergencyMonths', 'portfolioTaxPct', 'salesTaxPct', 'operating', 'gmMonthly', 'bizHours'].forEach((k) => { p[k] = Math.max(0, num0(p[k], d[k])); });
     p.operating = Math.round(p.operating); p.bizHours = Math.min(168, p.bizHours); p.portfolioTaxPct = Math.min(70, p.portfolioTaxPct); p.salesTaxPct = Math.min(70, p.salesTaxPct); p.cashApy = Math.min(30, p.cashApy);
     let n = 0; const id = (x, pre) => (typeof x === 'string' && x ? x : pre + Date.now().toString(36) + (n++));
-    p.jobs = (Array.isArray(p.jobs) ? p.jobs : []).filter((j) => j && typeof j === 'object').map((j) => ({ id: id(j.id, 'job'), name: typeof j.name === 'string' ? j.name : 'Job',
-      gross: Math.max(0, num0(j.gross, 0)), raise: Math.min(50, Math.max(-50, num0(j.raise, 0))), tax: Math.min(70, Math.max(0, num0(j.tax, 25))), hours: Math.min(168, Math.max(0, num0(j.hours, 40))), start: Math.max(0, Math.round(num0(j.start, 0))),
-      end: j.end === null || j.end === '' || j.end === undefined || !isFinite(+j.end) ? null : Math.max(0, Math.round(+j.end)) }));
+    p.jobs = (Array.isArray(p.jobs) ? p.jobs : []).filter((j) => j && typeof j === 'object').map((j) => { const kind = j.kind === 'hourly' ? 'hourly' : 'salary', hours = Math.min(168, Math.max(0, num0(j.hours, 40))), wage = Math.max(0, num0(j.wage, 0)), tips = Math.max(0, num0(j.tips, 0)), weeks = Math.min(52, Math.max(0, num0(j.weeks, 50)));
+      return { id: id(j.id, 'job'), name: typeof j.name === 'string' ? j.name : 'Job', kind, wage, tips, weeks,
+      gross: kind === 'hourly' ? Math.round((wage + tips) * hours * weeks) : Math.max(0, num0(j.gross, 0)), raise: Math.min(50, Math.max(-50, num0(j.raise, 0))),
+      tax: j.tax === null || j.tax === '' || j.tax === undefined || !isFinite(+j.tax) ? null : Math.min(70, Math.max(0, +j.tax)), hours, start: Math.max(0, Math.round(num0(j.start, 0))),
+      end: j.end === null || j.end === '' || j.end === undefined || !isFinite(+j.end) ? null : Math.max(0, Math.round(+j.end)) }; });
     ['planned', 'capital'].forEach((k) => { p[k] = (Array.isArray(p[k]) ? p[k] : []).filter((x) => x && typeof x === 'object').map((x) => ({ id: id(x.id, k === 'planned' ? 'pl' : 'cap'), name: typeof x.name === 'string' ? x.name : '', amount: Math.max(0, num0(x.amount, 0)), month: Math.max(0, Math.round(num0(x.month, 0))) })); });
     return p;
   }
   const jobMonthly = (j, t) => (t < (j.start || 0) || (j.end !== null && j.end !== undefined && t >= j.end) ? 0 : (j.gross / 12) * Math.pow(1 + (j.raise || 0) / 100, Math.floor(Math.max(0, t - (j.start || 0)) / 12)));
   const jobsGross = (S, t) => (S.p ? S.p.jobs.reduce((a, j) => a + jobMonthly(j, t), 0) : 0);
-  const jobsNet = (S, t) => (S.p ? S.p.jobs.reduce((a, j) => a + jobMonthly(j, t) * (1 - (j.tax || 0) / 100), 0) : 0);
+  const taxPctFor = (j) => (j.tax === null || j.tax === undefined ? estTaxPct(j.gross) : j.tax);
+  const jobsNet = (S, t) => (S.p ? S.p.jobs.reduce((a, j) => a + jobMonthly(j, t) * (1 - taxPctFor(j) / 100), 0) : 0);
 
   /* The whole-portfolio plan: purchase months, sales, cash, month-by-month series, plan-level KPIs. */
   function plan(S) {
@@ -322,10 +333,10 @@
     const patch = { price, addr: typeof o.address === 'string' && o.address.trim() ? o.address.trim().slice(0, 80) : 'Imported house' };
     if (rent !== null) patch.rent = rent; if (taxA !== null) patch.tax = Math.round(taxA / 12); if (insA !== null) patch.ins = Math.round(insA / 12); if (hoa !== null) patch.hoa = hoa;
     const rows = [['Address', patch.addr, 'listing'], ['Price', '$' + price.toLocaleString('en-US'), src(o.price, price)],
-      ['Monthly rent', rent === null ? 'keeps default' : '$' + rent.toLocaleString('en-US'), src(o.rentMonthly, rent)],
-      ['Property tax / mo', taxA === null ? 'keeps default' : '$' + Math.round(taxA / 12).toLocaleString('en-US'), src(o.taxAnnual, taxA)],
-      ['Insurance / mo', insA === null ? 'keeps default' : '$' + Math.round(insA / 12).toLocaleString('en-US'), src(o.insuranceAnnual, insA)],
-      ['HOA / mo', hoa === null ? 'keeps default' : '$' + hoa.toLocaleString('en-US'), src(o.hoaMonthly, hoa)]];
+      ['Monthly rent', rent === null ? 'default $' + DEFAULTS.house.rent.toLocaleString('en-US') : '$' + rent.toLocaleString('en-US'), src(o.rentMonthly, rent)],
+      ['Property tax / mo', taxA === null ? 'default $' + DEFAULTS.house.tax.toLocaleString('en-US') : '$' + Math.round(taxA / 12).toLocaleString('en-US'), src(o.taxAnnual, taxA)],
+      ['Insurance / mo', insA === null ? 'default $' + DEFAULTS.house.ins.toLocaleString('en-US') : '$' + Math.round(insA / 12).toLocaleString('en-US'), src(o.insuranceAnnual, insA)],
+      ['HOA / mo', hoa === null ? 'default $' + DEFAULTS.house.hoa.toLocaleString('en-US') : '$' + hoa.toLocaleString('en-US'), src(o.hoaMonthly, hoa)]];
     const info = o.info && typeof o.info === 'object' ? o.info : {};
     return { ok: true, patch, rows, info, url: typeof o.listingUrl === 'string' ? o.listingUrl : '' };
   }
@@ -373,6 +384,6 @@
     A('business', 'sba7a', { id: 'freight', buyIn: 62, growth: 8, addr: 'Summit Freight & Logistics', price: 1800000, rent: 41650 }),
     A('house', 'dscr', { id: 'linden', buyIn: 84, growth: 3.5, addr: '2914 Linden Way', price: 175000, rent: 1850, tax: 195, ins: 85 }),
     A('commercial', undefined, { id: 'lake', buyIn: 100, loanId: 'custom', dp: 35, addr: 'Lakeview Medical Office', price: 1800000, rent: 17450, tax: 1000, ins: 800, hoa: 500 })] }); };
-  const E = { finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

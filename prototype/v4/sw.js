@@ -1,6 +1,6 @@
 /* Offline-first service worker: caches the whole app shell; no network needed after first load. */
-const CACHE = 'portfolio-v3-2';
-const FILES = ['./', './index.html', './style.css', './engine.js', './app.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
+const CACHE = 'portfolio-v4-info-1';
+const FILES = ['./', './index.html', './style.css', './engine.js', './info.js', './app.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
