@@ -208,3 +208,9 @@ table.cmp td:first-child{white-space:nowrap}
 .loanopt small{-webkit-line-clamp:1}
 [data-testid=confirm-add]{position:sticky;bottom:12px;z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .sec.cs .cx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+
+.src.missing{color:var(--ink);opacity:.75}
+.row .pay{font-size:12px}.row .pay .tag{font-size:10px;margin-left:0;margin-right:4px}
+table.cmp td:first-child{white-space:normal;width:44%}
+select.notarget{max-width:9em}
+.lst .loanopt{padding-bottom:12px}[data-testid=loan-options]{padding-bottom:16px}
