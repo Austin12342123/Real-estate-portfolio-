@@ -193,3 +193,6 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
 .frow select[data-sel]{max-width:none;width:100%;font-size:16px}
 .fcol{gap:0}
 .fcol .locline{padding-left:2px;font-size:12px;margin-top:-6px}
+
+.row.sold{opacity:.62}
+.f.stack{flex-direction:column;align-items:stretch;gap:2px;padding:6px 0}.f.stack select,.f.stack b{width:100%;max-width:none;text-align:left}
