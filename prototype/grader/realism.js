@@ -93,10 +93,10 @@ exports.run = async function ({ E, check, Parts, benchDir }) {
   await check('R08', 'R', '[secondary] Flips and improvements have believable economics (ATTOM: ~21.5% gross margin on flips); lifts are bounded', 1.5, 'Flip gross margin = (sale price - purchase - rehab) / sale price must be 5-30%; commercial/business value lift <= 25% and income lift <= value lift', () => {
     const p = new Parts();
     S.houses.forEach((h) => {
-      if (!(h.capex > 0 || h.liftValue > 0)) return;
+      if (!(h.capex > 0 || h.arv > 0)) return;
       const ex = pl.exits[h.id];
       if (h.type === 'house' && ex) { const m = (ex.price - h.price - h.capex) / ex.price; p.t(m >= 0.05 && m <= 0.30, name(h) + ' flip gross margin ' + (m * 100).toFixed(0) + '%', 1, (m * 100).toFixed(1)); }
-      else if (h.type !== 'house') p.t(h.liftValue <= 25 && h.liftIncome <= h.liftValue, name(h) + ' lift value ' + h.liftValue + '% / income ' + h.liftIncome + '%', 1);
+      else if (h.type !== 'house') { const lv = h.arv > 0 ? (h.arv / h.price - 1) * 100 : 0; p.t(lv <= 25 && h.liftIncome <= Math.max(lv, 0.0001), name(h) + ' new appraisal is ' + lv.toFixed(0) + '% above the purchase price / income lift ' + h.liftIncome + '%', 1); }
     });
     p.t(true, 'evaluated', 0.001);
     return p;

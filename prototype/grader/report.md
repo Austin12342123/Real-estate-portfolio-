@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-09T03:51:36.561Z  |  75s
+Target: `prototype/v4`  |  Run: 2026-11-09T03:59:33.973Z  |  76s
 
 ## Automated score: **85.00 / 84.99900000000001** (a separate design review adds 15)
 
@@ -42,11 +42,11 @@ Target: `prototype/v4`  |  Run: 2026-11-09T03:51:36.561Z  |  75s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok Infinity,Infinity/0/0,49,98/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 3.5ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 2.7ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: every credit-line funder stays within cap (loan + liens + drawn LOC) when its target closes | 0.48 | 0.48 | 3/3 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |
-| B17 | Improvements raise value/income only after capexMonths; capex is paid from cash/outside money | 0.64 | 0.64 | 4/4 sub-checks pass |
+| B17 | Improvements raise value/income only after capexMonths; capex is paid from cash/outside money | 0.64 | 0.64 | 6/6 sub-checks pass |
 | B18 | Sale: proceeds = value*(1-cost) - balance - liens - LOC; asset and its cash flow vanish; cash counts in net worth | 0.96 | 0.96 | 6/6 sub-checks pass |
 | B19 | Sale cash funds a later purchase before outside cash; outside cash only for the shortfall | 0.64 | 0.64 | 5/5 sub-checks pass |
 | B20 | Merge applies exitLift to value and income at exitMonth; asset stays held | 0.48 | 0.48 | 3/3 sub-checks pass |
@@ -61,7 +61,7 @@ Target: `prototype/v4`  |  Run: 2026-11-09T03:51:36.561Z  |  75s
 | C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 68/68 ok  |
 | C06 | Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps | 1.33 | 1.33 | 3/3 sub-checks pass |
 | C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 133px x 14, page 3037px |
-| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 809/809 text elements pass (light 401/401, dark 408/408).  |
+| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 813/813 text elements pass (light 403/403, dark 410/410).  |
 | C09 | Summary-first: one concise summary card (single snapshot, short text), plan card collapsible | 1.00 | 1.00 | 3/3 sub-checks pass |
 | D01 | Manifest valid; icons load with true declared dimensions | 1.14 | 1.14 | 8/8 sub-checks pass |
 | D02 | Service worker (index.html) registers, activates, controls page after reload; precache complete | 1.14 | 1.14 | 3/3 sub-checks pass |
@@ -74,7 +74,7 @@ Target: `prototype/v4`  |  Run: 2026-11-09T03:51:36.561Z  |  75s
 | E01 | Edge inputs (60 cases + compound: zero, 100% down, blanks, garbage, negatives, 1e12, caps, sale/merge/improvement fields) leave no NaN/Infinity/undefined in any page or crash | 1.91 | 1.91 | 65/65 sub-checks pass |
 | E02 | Remove all assets (main page) -> clean empty state with add action; can add again | 0.96 | 0.96 | 3/3 sub-checks pass |
 | E03 | Deleting a funding target clears references (select, storage, plan, merge-into) | 0.96 | 0.96 | 5/5 sub-checks pass |
-| E04 | Every input/select/button has an accessible name (main, asset, assumptions, add, import) | 0.64 | 0.64 | 190/190 named. unnamed:  |
+| E04 | Every input/select/button has an accessible name (main, asset, assumptions, add, import) | 0.64 | 0.64 | 191/191 named. unnamed:  |
 | E05 | Typing 5 digits sequentially keeps focus + full value (re-render safe) on main, asset, assumptions, text field | 0.64 | 0.64 | 5/5 sub-checks pass |
 | E06 | No layout shift while navigating and editing (CLS <= 0.05) | 0.32 | 0.32 | CLS 0.0000 |
 | E07 | No console errors or page errors during all flows | 0.96 | 0.96 | 0 errors:  |

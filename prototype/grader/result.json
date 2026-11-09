@@ -311,7 +311,7 @@
       "rawPoints": 0.5,
       "earned": 0.16,
       "ratio": 1,
-      "detail": "median 3.5ms",
+      "detail": "median 2.7ms",
       "repro": "node timing"
     },
     {
@@ -355,8 +355,8 @@
       "rawPoints": 2,
       "earned": 0.64,
       "ratio": 1,
-      "detail": "4/4 sub-checks pass",
-      "repro": "node: plan with capex 20000, lift 10/10, capexMonths 6"
+      "detail": "6/6 sub-checks pass",
+      "repro": "node: plan with capex 20000, new appraisal 330000, income lift 10, capexMonths 6"
     },
     {
       "id": "B18",
@@ -520,7 +520,7 @@
       "rawPoints": 2,
       "earned": 1.333,
       "ratio": 1,
-      "detail": "809/809 text elements pass (light 401/401, dark 408/408). ",
+      "detail": "813/813 text elements pass (light 403/403, dark 410/410). ",
       "repro": "emulate prefers-color-scheme; compute WCAG ratio for every text element"
     },
     {
@@ -663,7 +663,7 @@
       "rawPoints": 1,
       "earned": 0.636,
       "ratio": 1,
-      "detail": "190/190 named. unnamed: ",
+      "detail": "191/191 named. unnamed: ",
       "repro": "aria-label / label / text on all pages"
     },
     {

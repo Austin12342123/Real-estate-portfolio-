@@ -11,7 +11,7 @@
     { id: 'conv30', types: ['house'], name: 'Conventional 30-year', dp: 20, rate: 7.5, term: 360, io: false, closing: 3, note: 'Standard investor mortgage. Priced above the Freddie Mac average.' },
     { id: 'conv15', types: ['house'], name: 'Conventional 15-year', dp: 20, rate: 7.0, term: 180, io: false, closing: 3, note: 'Higher payment, builds equity fast.' },
     { id: 'fha', types: ['house'], name: 'FHA 30-year (you live there)', dp: 3.5, rate: 6.9, term: 360, io: false, closing: 4, upfrontMip: 1.75, annualMip: 0.55, ownerOcc: true, note: 'Low down payment plus FHA mortgage insurance (1.75% upfront, 0.55%/yr, typical). Owner-occupied only.' },
-    { id: 'k203', types: ['house'], name: 'FHA 203(k) rehab loan (you live there)', dp: 3.5, rate: 7.15, term: 360, io: false, closing: 5, upfrontMip: 1.75, annualMip: 0.55, ownerOcc: true, finRehab: true, rehabDefaults: { capex: 40000, capexMonths: 6, liftValue: 22, liftIncome: 8 }, note: 'Buy and renovate with one loan. The rehab budget is financed with the purchase (3.5% down on price + rehab). Limited 203(k): rehab up to $75,000, no consultant. Larger rehabs need a Standard 203(k) with a HUD consultant. You must live in it.' },
+    { id: 'k203', types: ['house'], name: 'FHA 203(k) rehab loan (you live there)', dp: 3.5, rate: 7.15, term: 360, io: false, closing: 5, upfrontMip: 1.75, annualMip: 0.55, ownerOcc: true, finRehab: true, rehabDefaults: { capex: 40000, capexMonths: 6, liftIncome: 8 }, note: 'Buy and renovate with one loan. The rehab budget is financed with the purchase (3.5% down on price + rehab). Limited 203(k): rehab up to $75,000, no consultant. Larger rehabs need a Standard 203(k) with a HUD consultant. You must live in it.' },
     { id: 'dscr', types: ['house'], name: 'DSCR investor loan', dp: 25, rate: 7.75, term: 360, io: false, closing: 4, note: 'Qualifies on the rent, not your income.' },
     { id: 'cashh', types: ['house'], name: 'Cash purchase', dp: 100, rate: 0, term: 360, io: false, closing: 2, note: 'No loan.' },
     { id: 'comm25', types: ['commercial'], name: 'Commercial bank, 25-year', dp: 25, rate: 7.25, term: 300, io: false, closing: 3, note: 'Typical bank loan on income property.' },
@@ -33,16 +33,18 @@
     if (!lo) { h.loanId = 'custom'; return h; }
     h.dp = lo.dp; h.rate = lo.rate; h.term = lo.term; h.io = !!lo.io; h.closingPct = lo.closing; h.loanId = lo.id;
     h.finCapex = !!lo.finRehab; h.mipUp = lo.upfrontMip || 0; h.mipAnn = lo.annualMip || 0; h.ownerOcc = !!lo.ownerOcc;
-    if (lo.finRehab && lo.rehabDefaults && !(+h.capex > 0)) Object.assign(h, lo.rehabDefaults); /* auto-fill a typical rehab only if none is set */
+    if (lo.finRehab && lo.rehabDefaults && !(+h.capex > 0)) { Object.assign(h, lo.rehabDefaults); if (!(+h.arv > 0)) h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; } /* auto-fill a typical rehab and a new appraisal 15% above total cost, only if none is set */
     return h;
   }
   function newAsset(type, loanId, o) {
     type = TYPES[type] ? type : 'house';
     const h = Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), type, status: 'planned', extra: 0, driver: 'extra', wait: 24, liens: 0, paid: 0, buyIn: 12,
       target: '', growth: null, io: false, closingPct: null, loanId: '', dp: 20, rate: 6.75, term: 360,
-      capex: 0, capexMonths: 6, liftValue: 0, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false }, DEFAULTS[type]);
+      capex: 0, capexMonths: 6, arv: 0, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false }, DEFAULTS[type]);
     applyLoan(h, loanId || loansFor(type)[0].id);
-    return Object.assign(h, o || {});
+    Object.assign(h, o || {});
+    if (h.finCapex && !(o && +o.arv > 0)) h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; /* default new appraisal from the FINAL price + rehab */
+    return h;
   }
   const newHouse = (o) => newAsset((o && o.type) || 'house', o && o.loanId, o);
 
@@ -65,6 +67,9 @@
   }
   const balK = (B0, i, A, k) => Math.max(0, i ? B0 * Math.pow(1 + i, k) - A * (Math.pow(1 + i, k) - 1) / i : B0 - A * k);
   const valK = (S, h, k) => h.price * Math.pow(1 + gr(S, h) / 100, (age0(h) + k) / 12);
+  /* value k months after the asset's start. After the improvement finishes, the value IS the new appraisal (arv), then it keeps growing from there. */
+  const valAt = (S, h, k) => { const cm = Math.max(0, h.capexMonths || 0);
+    return +h.arv > 0 && k >= cm ? h.arv * Math.pow(1 + gr(S, h) / 100, (k - cm) / 12) : valK(S, h, k); };
   const need = (S, h) => { const t = H(S, h.target); return t ? downAmt(t) + (t.price * clPct(S, t)) / 100 : 0; };
 
   function payoffN(h, X) {
@@ -78,7 +83,7 @@
     if (!H(S, h.target)) return Infinity;
     const D = need(S, h), B0 = balToday(h), i = mi(h), A = payment(h) + X, g = S.g;
     for (let k = 0; k <= 600; k++) {
-      const head = g.cap / 100 * valK(S, h, k) - balK(B0, i, A, k) - (h.liens || 0);
+      const head = g.cap / 100 * valAt(S, h, k) - balK(B0, i, A, k) - (h.liens || 0);
       if (Math.max(0, head) * (1 - g.haircut / 100) >= D) return k;
     }
     return Infinity;
@@ -101,12 +106,12 @@
       noi = egi - (escrow + (g.maint / 100) * h.price / 12 + (g.mgmt / 100) * egi);
     }
     const lm = locMonths(S, h, X), A = P + X;
-    const cltvAtLoc = H(S, h.target) && isFinite(lm) ? ((balK(B0, i, A, lm) + (h.liens || 0) + need(S, h)) / valK(S, h, lm)) * 100 : null;
+    const cltvAtLoc = H(S, h.target) && isFinite(lm) ? ((balK(B0, i, A, lm) + (h.liens || 0) + need(S, h)) / valAt(S, h, lm)) * 100 : null;
     const down = downAmt(h), closingCost = (h.price * clPct(S, h)) / 100, mip = mipMonthly(h);
     return { cltvAtLoc, L, B0, P, mip, X, infeasible, egi, noi, cf: noi - P - mip, escrow, pitia: P + escrow + mip, payment: P + X + escrow + mip,
       D: need(S, h), down, closingCost, invested: down + closingCost, payoff: payoffN(h, X), locM: lm,
       head0: Math.max(0, g.cap / 100 * h.price - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
-      capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
+      valueGain: +h.arv > 0 ? h.arv - h.price - (h.capex || 0) : 0, capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
   }
 
   /* The whole-portfolio plan: purchase months, sales, cash, month-by-month series, plan-level KPIs. */
@@ -147,10 +152,10 @@
       const p = P0[h.id]; if (!isFinite(p) || t < p) return null;
       const v = V[h.id], age = t - p, i = mi(h), live = age < v.payoff;
       const B = live ? balK(v.B0, i, v.P + v.X, age) : 0;
-      const improved = (h.liftValue || h.liftIncome) && age >= Math.max(0, h.capexMonths || 0), merged = t >= mergeAt[h.id];
-      const fv = (improved ? 1 + (h.liftValue || 0) / 100 : 1) * (merged ? 1 + (h.exitLift || 0) / 100 : 1);
+      const improved = (+h.arv > 0 || h.liftIncome) && age >= Math.max(0, h.capexMonths || 0), merged = t >= mergeAt[h.id];
+      const fv = merged ? 1 + (h.exitLift || 0) / 100 : 1;
       const fi = (improved ? 1 + (h.liftIncome || 0) / 100 : 1) * (merged ? 1 + (h.exitLift || 0) / 100 : 1);
-      const val = valK(S, h, age) * fv, heloc = funds[h.id] && age >= v.locM ? v.D : 0;
+      const val = valAt(S, h, age) * fv, heloc = funds[h.id] && age >= v.locM ? v.D : 0;
       return { v, age, live, B, val, heloc, gfi: (h.price > 0 ? valK(S, h, age) / h.price : 1) * fi };
     }
     const held = (h, t) => t < sellAt[h.id];
@@ -213,7 +218,10 @@
     S.g = Object.assign({}, GDEF, S.g || {});
     S.houses = (S.houses || []).filter((h) => h && h.id).map((h) => { const type = TYPES[h.type] ? h.type : 'house'; return Object.assign(newAsset(type, undefined, { id: h.id }), h, { type }); });
     S.houses.forEach((h) => {
-      ['price', 'dp', 'rate', 'term', 'extra', 'rent', 'tax', 'ins', 'hoa', 'liens', 'paid', 'buyIn', 'wait', 'capex', 'capexMonths', 'liftValue', 'liftIncome', 'exitMonth', 'exitLift', 'sellCost'].forEach((k) => { if (!isFinite(+h[k])) h[k] = newAsset(h.type, undefined)[k]; else h[k] = +h[k]; });
+      ['price', 'dp', 'rate', 'term', 'extra', 'rent', 'tax', 'ins', 'hoa', 'liens', 'paid', 'buyIn', 'wait', 'capex', 'capexMonths', 'arv', 'liftIncome', 'exitMonth', 'exitLift', 'sellCost'].forEach((k) => { if (!isFinite(+h[k])) h[k] = newAsset(h.type, undefined)[k]; else h[k] = +h[k]; });
+      if (+h.liftValue > 0 && !(+h.arv > 0)) { /* old data stored a % lift: convert it to a dollar appraisal at completion */
+        const gv = h.growth == null || !isFinite(+h.growth) ? S.g.appr : +h.growth; h.arv = Math.round(h.price * Math.pow(1 + gv / 100, (h.capexMonths || 0) / 12) * (1 + h.liftValue / 100)); }
+      delete h.liftValue; if (!(h.arv > 0)) h.arv = 0;
       ['mipUp', 'mipAnn'].forEach((k) => { h[k] = isFinite(+h[k]) ? Math.max(0, +h[k]) : 0; }); h.finCapex = !!h.finCapex; h.ownerOcc = !!h.ownerOcc;
       if (h.term < 12 && !h.io) h.term = 360; h.io = !!h.io;
       if (h.growth != null && !isFinite(+h.growth)) h.growth = null;

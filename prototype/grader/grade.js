@@ -151,7 +151,7 @@ function SB() {
     A('house', 'conv30', { id: 'b', addr: 'Bravo House', price: 250000, rent: 2600, tax: 220, ins: 90, growth: null, target: 'c' }),
     A('commercial', 'comm25', { id: 'c', addr: 'Charlie Plaza', price: 800000, rent: 8500, tax: 400, ins: 300, hoa: 200, growth: null }),
     A('business', 'sba7a', { id: 'd', addr: 'Delta Biz', price: 400000, rent: 9000, buyIn: 24, growth: 6, exit: 'sell', exitMonth: 100, sellCost: 8 }),
-    A('house', 'conv30', { id: 'e', addr: 'Echo House', price: 200000, rent: 2300, tax: 200, ins: 80, buyIn: 6, growth: 3, capex: 15000, capexMonths: 4, liftValue: 10, liftIncome: 8, exit: 'merge', exitMonth: 80, exitLift: 10, mergeInto: 'a' })]);
+    A('house', 'conv30', { id: 'e', addr: 'Echo House', price: 200000, rent: 2300, tax: 200, ins: 80, buyIn: 6, growth: 3, capex: 15000, capexMonths: 4, arv: 220000, liftIncome: 8, exit: 'merge', exitMonth: 80, exitLift: 10, mergeInto: 'a' })]);
 }
 
 /* independent simulations */
@@ -201,7 +201,7 @@ async function engineChecks() {
     P.t(pl.funds.a && pl.funds.b && pl.funds.c && !pl.funds.d, 'funds flags along chain', 0.5);
     const S2 = mk({ closing: 3 }, hs.map((h) => (h.id === 'b' ? Object.assign({}, h, { liens: 60000 }) : h))); P.t(E.plan(S2).purchase.c > p.c, 'liens on B delay C (and D)', 1); return P; });
   const scen = [['price0', { price: 0 }], ['dp100', { dp: 100 }], ['rate0', { rate: 0 }], ['term12', { term: 12 }], ['huge price', { price: 1e12 }], ['huge extra', { extra: 1e12 }], ['neg price', { price: -1000 }], ['cap0', null, { cap: 0 }], ['cap1000', null, { cap: 1000 }], ['zero income', null, { p1: 0, p2: 0, rentCount: 0 }], ['rent0 zero income', { rent: 0 }, { p1: 0, p2: 0, rentCount: 0 }], ['dp>100', { dp: 150 }], ['closing 100', null, { closing: 100 }], ['driver months wait0', { driver: 'months', wait: 0 }], ['driver months infeasible', { driver: 'months', wait: 1 }, { cap: 10 }],
-    ['io rate0', { io: true, rate: 0 }], ['capex huge', { capex: 1e10, liftValue: 50 }], ['sell month 0', { exit: 'sell', exitMonth: 0 }], ['sell neg month + 100% cost', { exit: 'sell', exitMonth: -5, sellCost: 100 }], ['merge nonexistent', { exit: 'merge', mergeInto: 'ghost', exitLift: 500 }], ['lift -100', { liftValue: -100, liftIncome: -100, capexMonths: -3 }], ['growth -90', { growth: -90 }], ['growth huge', { growth: 1e4 }]];
+    ['io rate0', { io: true, rate: 0 }], ['capex huge', { capex: 1e10, arv: 1e10 }], ['sell month 0', { exit: 'sell', exitMonth: 0 }], ['sell neg month + 100% cost', { exit: 'sell', exitMonth: -5, sellCost: 100 }], ['merge nonexistent', { exit: 'merge', mergeInto: 'ghost', exitLift: 500 }], ['lift -100', { arv: -100, liftIncome: -100, capexMonths: -3 }], ['growth -90', { growth: -90 }], ['growth huge', { growth: 1e4 }]];
   await check('B10', 'B', 'No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios)', 2, 'node: Engine.plan on edge states; scan series/today/final/horizon', () => {
     const P = new Parts();
     scen.forEach(([n, h, g]) => { const S = E.seed(); Object.assign(S.g, g || {}); if (h) Object.assign(S.houses[0], h); let bad = null;
@@ -248,12 +248,15 @@ async function engineChecks() {
     P.t(ok, 'newAsset(type, loanId) applies every option', 1, bad);
     const h = E.newAsset('house', 'conv30', { price: 300000 }), p1 = E.payment(h); E.applyLoan(h, 'conv15'); P.t(h.term === 180 && E.payment(h) > p1, 'applyLoan(conv15) shortens term and raises payment', 0.5);
     E.applyLoan(h, 'cashh'); P.t(E.payment(h) === 0 && E.loan(h) === 0, 'cash purchase has no loan payment', 0.5); return P; });
-  await check('B17', 'B', 'Improvements raise value/income only after capexMonths; capex is paid from cash/outside money', 2, 'node: plan with capex 20000, lift 10/10, capexMonths 6', () => {
-    const P = new Parts(), base = SRC({ target: '', status: 'owned', rent: 3000, tax: 200, ins: 100 }), imp = Object.assign({}, base, { capex: 20000, capexMonths: 6, liftValue: 10, liftIncome: 10 });
+  await check('B17', 'B', 'Improvements raise value/income only after capexMonths; capex is paid from cash/outside money', 2, 'node: plan with capex 20000, new appraisal 330000, income lift 10, capexMonths 6', () => {
+    const P = new Parts(), base = SRC({ target: '', status: 'owned', rent: 3000, tax: 200, ins: 100 }), imp = Object.assign({}, base, { capex: 20000, capexMonths: 6, arv: 330000, liftIncome: 10 });
     const b = E.plan(mk({}, [base])), i = E.plan(mk({}, [imp]));
     const va = (pl, t) => pl.assetsAt(t)[0];
     P.t(near(va(i, 5).value, va(b, 5).value, 0.01) && near(va(i, 5).income, va(b, 5).income, 0.01), 'no change before capexMonths (month 5)', 1);
-    P.t(near(va(i, 6).value, va(b, 6).value * 1.1, 0.5) && near(va(i, 6).income, va(b, 6).income * 1.1, 0.5), 'value and income +10% from month 6', 1, va(i, 6).value + ' vs ' + va(b, 6).value);
+    P.t(near(va(i, 6).value, 330000, 0.5) && near(va(i, 6).income, va(b, 6).income * 1.1, 0.5), 'value becomes the new appraisal ($330,000) and income +10% from month 6', 1, va(i, 6).value + ' vs ' + va(b, 6).value);
+    P.t(near(va(i, 18).value / va(i, 6).value, va(b, 18).value / va(b, 6).value, 1e-6), 'after the appraisal, value keeps growing at the asset growth rate', 0.5);
+    const br = (arv) => mk({}, [SRC({ target: 'b', status: 'owned', rent: 3000, tax: 200, ins: 100, growth: 0, capex: 20000, capexMonths: 6, arv }), SRC({ id: 'b', target: '', status: 'planned', buyIn: 200, growth: 0 })]);
+    P.t(E.plan(br(330000)).V.a.locM < E.plan(br(0)).V.a.locM, 'a higher appraisal lets the credit line open sooner (value borrowed against)', 0.5, E.plan(br(330000)).V.a.locM + ' vs ' + E.plan(br(0)).V.a.locM);
     P.t(i.horizon.nw > b.horizon.nw - 20001 && i.horizon.outside >= 20000 - 0.5, 'capex counted as outside cash needed (20000)', 1, 'outside ' + i.horizon.outside);
     P.t(i.horizon.cf > b.horizon.cf, 'cash flow higher at horizon', 0.5); return P; });
   const sellS = (extra) => mk({}, [SRC({ target: '', status: 'owned', growth: 3, paid: 0, extra: 0, exit: 'sell', exitMonth: 60, sellCost: 6, liens: 5000, rent: 3000, tax: 200, ins: 100 }), ...(extra || [])]);
@@ -300,12 +303,12 @@ async function engineChecks() {
     const P = new Parts(), lo = E.LOANS.find((l) => l.id === 'k203'); P.t(!!lo && lo.finRehab && lo.ownerOcc && lo.dp === 3.5, 'k203 option: finRehab, ownerOcc, 3.5% down', 0.3);
     if (!lo) return P;
     const S = mkS({ closing: 3 }, [E.newAsset('house', 'k203', { id: 'k', price: 150000, rent: 1900, tax: 170, ins: 80, growth: 0, buyIn: 12 })]), h = S.houses[0], v = E.view(S, h);
-    P.t(h.capex > 0 && h.liftValue > 0 && h.finCapex === true && h.ownerOcc === true, 'choosing the loan auto-fills a typical rehab and sets financed/owner-occupied flags', 0.4, h.capex + '/' + h.liftValue);
+    P.t(h.capex > 0 && h.arv > 0 && h.finCapex === true && h.ownerOcc === true, 'choosing the loan auto-fills a typical rehab and sets financed/owner-occupied flags', 0.4, h.capex + '/' + h.liftValue);
     const L = (150000 + h.capex) * (1 - 0.035) * 1.0175; P.t(near(v.L, L, 1), 'loan = (price + rehab) x 96.5% x 1.0175 = ' + Math.round(L), 0.5, Math.round(v.L));
     P.t(near(v.down, (150000 + h.capex) * 0.035, 0.5), 'down payment = 3.5% of price + rehab', 0.3, Math.round(v.down));
     const mip = (v.L * 0.55) / 100 / 12; P.t(near(v.mip, mip, 0.5) && near(v.cf, v.noi - v.P - v.mip, 0.5), 'monthly MIP (0.55%/yr of loan) is deducted from cash flow', 0.4, v.mip.toFixed(1));
     const pl = E.plan(S), cash = (150000 * (h.closingPct / 100)) + v.down; P.t(near(pl.horizon.outside, cash, 1), 'cash at closing = down + closing costs only (rehab is financed)', 0.5, Math.round(pl.horizon.outside) + ' vs ' + Math.round(cash));
-    const C = mkS({ closing: 3 }, [E.newAsset('house', 'conv30', { id: 'c', price: 150000, rent: 1900, tax: 170, ins: 80, growth: 0, buyIn: 12, capex: h.capex, capexMonths: h.capexMonths, liftValue: h.liftValue })]);
+    const C = mkS({ closing: 3 }, [E.newAsset('house', 'conv30', { id: 'c', price: 150000, rent: 1900, tax: 170, ins: 80, growth: 0, buyIn: 12, capex: h.capex, capexMonths: h.capexMonths, arv: h.arv })]);
     P.t(E.plan(C).horizon.outside > pl.horizon.outside + h.capex * 0.9, 'same house on a conventional loan needs far more cash (rehab paid in cash)', 0.3);
     const f = E.newAsset('house', 'fha', { id: 'f', price: 150000 }); P.t(f.mipUp === 1.75 && f.mipAnn === 0.55 && f.ownerOcc === true && f.finCapex === false, 'FHA now carries mortgage insurance and the owner-occupied flag but does not finance rehab', 0.3);
     return P; });
@@ -363,7 +366,7 @@ async function reqChecks(page) {
   const setIn = (S, p, v) => { const [t, x, k] = p.split('.'); if (t === 'g') { S.g[x] = v; return; } const h = E.H(S, x); if (k === 'termY') h.term = Math.round(v * 12); else h[k] = v; h.loanId = ['dp', 'rate', 'termY'].includes(k) ? 'custom' : h.loanId; };
   const M = [['h.a.price', 400000], ['h.a.dp', 35], ['h.a.rate', 8], ['h.a.termY', 15], ['h.a.extra', 900], ['h.a.rent', 3600], ['h.a.tax', 500], ['h.a.ins', 200], ['h.a.hoa', 150], ['h.a.liens', 40000], ['h.a.paid', 60], ['h.a.growth', 6], ['h.a.closingPct', 5],
     ['h.b.price', 320000], ['h.b.dp', 30], ['h.c.price', 1200000], ['h.c.rent', 12000], ['h.d.price', 600000], ['h.d.rent', 14000], ['h.d.buyIn', 48], ['h.d.sellCost', 15], ['h.d.exitMonth', 150], ['h.d.growth', 12],
-    ['h.e.capex', 40000], ['h.e.capexMonths', 12], ['h.e.liftValue', 20], ['h.e.liftIncome', 15], ['h.e.exitLift', 30], ['h.e.exitMonth', 120], ['h.e.buyIn', 30],
+    ['h.e.capex', 40000], ['h.e.capexMonths', 12], ['h.e.arv', 260000], ['h.e.liftIncome', 15], ['h.e.exitLift', 30], ['h.e.exitMonth', 120], ['h.e.buyIn', 30],
     ['g.cap', 60], ['g.vac', 20], ['g.mgmt', 20], ['g.maint', 3], ['g.closing', 10], ['g.haircut', 20], ['g.hrate', 15], ['g.appr', 3], ['g.planYears', 10], ['g.rentCount', 50], ['g.p1', 0], ['g.dti', 5], ['g.otherDebt', 20000]];
   await check('A13', 'A', 'FHA 203(k) through the UI: add flow auto-fills rehab + terms, owner-occupied notice, financed-rehab note, Limited cap warning, switching loan option resets', 2, 'Add page > Home > FHA 203(k)', async () => {
     const P = new Parts(); await reset(page); await goHash(page, '#add'); await page.click('[data-addtype=house]'); await page.waitForTimeout(40);
@@ -371,7 +374,7 @@ async function reqChecks(page) {
     P.t((await page.locator('[data-pickloan=k203]').innerText()).toLowerCase().includes('rehab') && (await page.locator('[data-pickloan=k203]').innerText()).toLowerCase().includes('live'), 'card says rehab financed / you live there', 0.3);
     await page.click('[data-pickloan=k203]'); await page.click('[data-testid=confirm-add]'); await page.waitForSelector('[data-testid=h-payment]');
     const g = (k) => page.inputValue('[data-p$=".' + k + '"]'); const num = (t) => parseFloat(String(t).replace(/[^0-9.\-]/g, ''));
-    P.t(num(await g('dp')) === 3.5 && num(await g('rate')) === 7.15 && num(await g('capex')) === 40000 && num(await g('liftValue')) > 0, 'dp 3.5, rate 7.15, rehab 40,000 and a value lift are auto-filled', 0.5, [await g('dp'), await g('rate'), await g('capex')].join('/'));
+    P.t(num(await g('dp')) === 3.5 && num(await g('rate')) === 7.15 && num(await g('capex')) === 40000 && num(await g('arv')) > 0, 'dp 3.5, rate 7.15, rehab 40,000 and a new appraised value are auto-filled', 0.5, [await g('dp'), await g('rate'), await g('capex')].join('/'));
     P.t((await page.locator('[data-testid=owner-occ]').count()) === 1 && (await page.locator('[data-testid=rehab-financed]').count()) === 1, 'owner-occupied notice and "rehab financed" note shown', 0.4);
     await setVal(page, '[data-p$=".capex"]', '90000'); P.t((await page.locator('[data-testid=k203-cap]').count()) === 1, 'rehab over $75,000 shows the Limited 203(k) cap warning', 0.3);
     await setVal(page, '[data-p$=".capex"]', '40000'); await page.locator('[data-loan]').selectOption('conv30'); await page.waitForTimeout(60);
@@ -465,7 +468,7 @@ async function reqChecks(page) {
     await goHash(page, '#house-a'); await page.click('[data-exit=merge]'); await page.waitForTimeout(50); E.H(S, 'a').exit = 'merge'; await page.selectOption('[data-merge=a]', 'e'); E.H(S, 'a').mergeInto = 'e'; await setVal(page, '[data-p="h.a.exitLift"]', '25'); E.H(S, 'a').exitLift = 25; await setVal(page, '[data-p="h.a.exitMonth"]', '90'); E.H(S, 'a').exitMonth = 90;
     const s2 = await snap(page), pl2 = E.plan(S); P.t(nearRel(s2.nw, pl2.horizon.nw) && nearRel(s2.cf, pl2.horizon.cf) && /merges into Echo House/.test(s2.row('a').exitline), 'merge: KPIs follow engine, row shows "merges into"', 0.8, s2.row('a').exitline);
     await goHash(page, '#house-a'); await page.click('[data-exit=hold]'); E.H(S, 'a').exit = 'hold'; const s3 = await snap(page); P.t(nearRel(s3.nw, E.plan(S).horizon.nw), 'back to Hold restores numbers', 0.3);
-    await goHash(page, '#house-c'); await setVal(page, '[data-p="h.c.capex"]', '50000'); await setVal(page, '[data-p="h.c.liftValue"]', '20'); await setVal(page, '[data-p="h.c.capexMonths"]', '3'); const hc = E.H(S, 'c'); hc.capex = 50000; hc.liftValue = 20; hc.capexMonths = 3;
+    await goHash(page, '#house-c'); await setVal(page, '[data-p="h.c.capex"]', '50000'); await setVal(page, '[data-p="h.c.arv"]', '400000'); await setVal(page, '[data-p="h.c.capexMonths"]', '3'); const hc = E.H(S, 'c'); hc.capex = 50000; hc.arv = 400000; hc.capexMonths = 3;
     const s4 = await snap(page); P.t(nearRel(s4.nw, E.plan(S).horizon.nw) && /improve/.test(s4.row('c').exitline), 'improvement budget/lift propagate and show on the row', 0.8, s4.row('c').exitline); return P; });
   await check('A11', 'A', 'Sample portfolio on screen: all rows, three types, sane finite headline, no unfunded warning, no DTI warning', 2, 'Fresh load', async () => {
     await reset(page); const P = new Parts(); const s = await snap(page);
@@ -605,7 +608,7 @@ async function robustChecks(page) {
   const cases = [['h.maple.price', '0'], ['h.maple.dp', '100'], ['h.maple.dp', '150'], ['h.maple.dp', '-20'], ['h.maple.rate', '0'], ['h.maple.rate', '1000'], ['h.maple.termY', '0'], ['h.maple.price', ''], ['h.maple.price', 'abc'], ['h.maple.price', '-500'], ['h.maple.price', '1e12'], ['h.maple.price', '1000000000000'],
     ['h.maple.extra', '1000000000000'], ['h.maple.rent', '1000000000000'], ['h.maple.tax', '-100'], ['h.maple.wait', '0'], ['h.maple.wait', '-5'], ['h.maple.wait', '999999'], ['h.maple.payoff', '0'], ['h.maple.payoff', '1'], ['h.maple.payoff', '9999'], ['h.maple.down', '0'], ['h.maple.down', '99999999'],
     ['h.maple.paid', '5000'], ['h.maple.liens', '99999999999'], ['h.maple.growth', '1000'], ['h.maple.growth', '-100'], ['h.maple.closingPct', '1000'],
-    ['h.ridge.capex', '1000000000000'], ['h.ridge.capexMonths', '-5'], ['h.ridge.capexMonths', '99999'], ['h.ridge.liftValue', '1000'], ['h.ridge.liftValue', '-100'], ['h.ridge.liftIncome', '-1000'], ['h.ridge.exitMonth', '0'], ['h.ridge.exitMonth', '-9'], ['h.ridge.exitMonth', '99999'], ['h.ridge.sellCost', '100'], ['h.ridge.sellCost', '1000'],
+    ['h.ridge.capex', '1000000000000'], ['h.ridge.capexMonths', '-5'], ['h.ridge.capexMonths', '99999'], ['h.ridge.arv', '1000000000000'], ['h.ridge.arv', '-100'], ['h.ridge.liftIncome', '-1000'], ['h.ridge.exitMonth', '0'], ['h.ridge.exitMonth', '-9'], ['h.ridge.exitMonth', '99999'], ['h.ridge.sellCost', '100'], ['h.ridge.sellCost', '1000'],
     ['h.keystone.exitLift', '10000'], ['h.keystone.exitLift', '-50'], ['h.keystone.exitMonth', '1'],
     ['g.cap', '0'], ['g.cap', '100'], ['g.cap', '1000'], ['g.dti', '0'], ['g.hrate', '0'], ['g.closing', '1000'], ['g.vac', '100'], ['g.vac', '1000'], ['g.mgmt', '1000'], ['g.appr', '1000'], ['g.appr', '-50'], ['g.haircut', '100'], ['g.haircut', '1000'], ['g.p1', '0'], ['g.rentCount', '1000'], ['g.planYears', '0'], ['g.planYears', '1000'], ['g.planYears', '-4']];
   await check('E01', 'E', 'Edge inputs (' + cases.length + ' cases + compound: zero, 100% down, blanks, garbage, negatives, 1e12, caps, sale/merge/improvement fields) leave no NaN/Infinity/undefined in any page or crash', 3, 'Type each value into the field; scan text + input values on all pages', async () => {
