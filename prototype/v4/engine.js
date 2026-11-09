@@ -33,17 +33,17 @@
     if (!lo) { h.loanId = 'custom'; return h; }
     h.dp = lo.dp; h.rate = lo.rate; h.term = lo.term; h.io = !!lo.io; h.closingPct = lo.closing; h.loanId = lo.id;
     h.finCapex = !!lo.finRehab; h.mipUp = lo.upfrontMip || 0; h.mipAnn = lo.annualMip || 0; h.ownerOcc = !!lo.ownerOcc;
-    if (lo.finRehab && lo.rehabDefaults && !(+h.capex > 0)) { Object.assign(h, lo.rehabDefaults); if (!(+h.arv > 0)) h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; } /* auto-fill a typical rehab and a new appraisal 15% above total cost, only if none is set */
+    if (lo.finRehab && lo.rehabDefaults && !(+h.capex > 0)) { Object.assign(h, lo.rehabDefaults); if (!(+h.arv > 0)) { h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; h.arvAuto = true; } } /* auto-fill a typical rehab and a new appraisal 15% above total cost, only if none is set */
     return h;
   }
   function newAsset(type, loanId, o) {
     type = TYPES[type] ? type : 'house';
     const h = Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), type, status: 'planned', extra: 0, driver: 'extra', wait: 24, liens: 0, paid: 0, buyIn: 12,
       target: '', growth: null, io: false, closingPct: null, loanId: '', dp: 20, rate: 6.75, term: 360,
-      capex: 0, capexMonths: 6, arv: 0, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false }, DEFAULTS[type]);
+      capex: 0, capexMonths: 6, arv: 0, arvAuto: false, gain: null, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false }, DEFAULTS[type]);
     applyLoan(h, loanId || loansFor(type)[0].id);
     Object.assign(h, o || {});
-    if (h.finCapex && !(o && +o.arv > 0)) h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; /* default new appraisal from the FINAL price + rehab */
+    if (h.finCapex && !(o && +o.arv > 0)) { h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; h.arvAuto = true; } /* default appraisal from the FINAL price + rehab; it follows price/rehab until you type your own appraisal or gain */
     return h;
   }
   const newHouse = (o) => newAsset((o && o.type) || 'house', o && o.loanId, o);
@@ -222,6 +222,8 @@
       if (+h.liftValue > 0 && !(+h.arv > 0)) { /* old data stored a % lift: convert it to a dollar appraisal at completion */
         const gv = h.growth == null || !isFinite(+h.growth) ? S.g.appr : +h.growth; h.arv = Math.round(h.price * Math.pow(1 + gv / 100, (h.capexMonths || 0) / 12) * (1 + h.liftValue / 100)); }
       delete h.liftValue; if (!(h.arv > 0)) h.arv = 0;
+      h.arvAuto = !!h.arvAuto && +h.arv > 0;
+      h.gain = h.gain !== null && h.gain !== '' && h.gain !== undefined && isFinite(+h.gain) ? +h.gain : null; /* if set, the appraisal follows price + rehab + gain */
       ['mipUp', 'mipAnn'].forEach((k) => { h[k] = isFinite(+h[k]) ? Math.max(0, +h[k]) : 0; }); h.finCapex = !!h.finCapex; h.ownerOcc = !!h.ownerOcc;
       if (h.term < 12 && !h.io) h.term = 360; h.io = !!h.io;
       if (h.growth != null && !isFinite(+h.growth)) h.growth = null;

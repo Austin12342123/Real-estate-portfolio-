@@ -376,6 +376,13 @@ async function reqChecks(page) {
     const g = (k) => page.inputValue('[data-p$=".' + k + '"]'); const num = (t) => parseFloat(String(t).replace(/[^0-9.\-]/g, ''));
     P.t(num(await g('dp')) === 3.5 && num(await g('rate')) === 7.15 && num(await g('capex')) === 40000 && num(await g('arv')) > 0, 'dp 3.5, rate 7.15, rehab 40,000 and a new appraised value are auto-filled', 0.5, [await g('dp'), await g('rate'), await g('capex')].join('/'));
     P.t((await page.locator('[data-testid=owner-occ]').count()) === 1 && (await page.locator('[data-testid=rehab-financed]').count()) === 1, 'owner-occupied notice and "rehab financed" note shown', 0.4);
+    await setVal(page, '[data-p$=".price"]', '200000'); await setVal(page, '[data-p$=".capex"]', '40000'); const arv0 = num(await g('arv'));
+    P.t(near(arv0, 276000, 1) && num(await g('gain')) === arv0 - 240000, 'auto-filled appraisal follows price + rehab (200,000 + 40,000 -> 276,000) and shows the value gained', 0.4, arv0 + '/' + await g('gain'));
+    await setVal(page, '[data-p$=".gain"]', '70000'); P.t(num(await g('arv')) === 310000, 'typing a value gain of 70,000 sets the appraisal to price + rehab + gain = 310,000', 0.5, await g('arv'));
+    await setVal(page, '[data-p$=".capex"]', '50000'); P.t(num(await g('arv')) === 320000 && num(await g('gain')) === 70000, 'the typed gain holds when the rehab changes (appraisal 320,000)', 0.4, await g('arv') + '/' + await g('gain'));
+    await setVal(page, '[data-p$=".arv"]', '300000'); P.t(num(await g('gain')) === 300000 - 200000 - 50000, 'typing the appraisal updates the value gained (50,000)', 0.4, await g('gain'));
+    await setVal(page, '[data-p$=".gain"]', '-15000'); P.t(num(await g('arv')) === 235000 && (await page.locator('[data-testid=arv-low]').count()) === 1, 'a negative gain gives an appraisal below cost and shows the warning', 0.3, await g('arv'));
+    await setVal(page, '[data-p$=".gain"]', '70000'); await setVal(page, '[data-p$=".capex"]', '40000');
     await setVal(page, '[data-p$=".capex"]', '90000'); P.t((await page.locator('[data-testid=k203-cap]').count()) === 1, 'rehab over $75,000 shows the Limited 203(k) cap warning', 0.3);
     await setVal(page, '[data-p$=".capex"]', '40000'); await page.locator('[data-loan]').selectOption('conv30'); await page.waitForTimeout(60);
     P.t(num(await g('dp')) === 20 && (await page.locator('[data-testid=owner-occ]').count()) === 0 && (await page.locator('[data-testid=rehab-financed]').count()) === 0, 'switching to Conventional resets terms and removes the 203(k) notices', 0.4);

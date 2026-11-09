@@ -180,17 +180,17 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
     if (!lo) { h.loanId = 'custom'; return h; }
     h.dp = lo.dp; h.rate = lo.rate; h.term = lo.term; h.io = !!lo.io; h.closingPct = lo.closing; h.loanId = lo.id;
     h.finCapex = !!lo.finRehab; h.mipUp = lo.upfrontMip || 0; h.mipAnn = lo.annualMip || 0; h.ownerOcc = !!lo.ownerOcc;
-    if (lo.finRehab && lo.rehabDefaults && !(+h.capex > 0)) { Object.assign(h, lo.rehabDefaults); if (!(+h.arv > 0)) h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; } /* auto-fill a typical rehab and a new appraisal 15% above total cost, only if none is set */
+    if (lo.finRehab && lo.rehabDefaults && !(+h.capex > 0)) { Object.assign(h, lo.rehabDefaults); if (!(+h.arv > 0)) { h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; h.arvAuto = true; } } /* auto-fill a typical rehab and a new appraisal 15% above total cost, only if none is set */
     return h;
   }
   function newAsset(type, loanId, o) {
     type = TYPES[type] ? type : 'house';
     const h = Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), type, status: 'planned', extra: 0, driver: 'extra', wait: 24, liens: 0, paid: 0, buyIn: 12,
       target: '', growth: null, io: false, closingPct: null, loanId: '', dp: 20, rate: 6.75, term: 360,
-      capex: 0, capexMonths: 6, arv: 0, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false }, DEFAULTS[type]);
+      capex: 0, capexMonths: 6, arv: 0, arvAuto: false, gain: null, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false }, DEFAULTS[type]);
     applyLoan(h, loanId || loansFor(type)[0].id);
     Object.assign(h, o || {});
-    if (h.finCapex && !(o && +o.arv > 0)) h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; /* default new appraisal from the FINAL price + rehab */
+    if (h.finCapex && !(o && +o.arv > 0)) { h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; h.arvAuto = true; } /* default appraisal from the FINAL price + rehab; it follows price/rehab until you type your own appraisal or gain */
     return h;
   }
   const newHouse = (o) => newAsset((o && o.type) || 'house', o && o.loanId, o);
@@ -369,6 +369,8 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
       if (+h.liftValue > 0 && !(+h.arv > 0)) { /* old data stored a % lift: convert it to a dollar appraisal at completion */
         const gv = h.growth == null || !isFinite(+h.growth) ? S.g.appr : +h.growth; h.arv = Math.round(h.price * Math.pow(1 + gv / 100, (h.capexMonths || 0) / 12) * (1 + h.liftValue / 100)); }
       delete h.liftValue; if (!(h.arv > 0)) h.arv = 0;
+      h.arvAuto = !!h.arvAuto && +h.arv > 0;
+      h.gain = h.gain !== null && h.gain !== '' && h.gain !== undefined && isFinite(+h.gain) ? +h.gain : null; /* if set, the appraisal follows price + rehab + gain */
       ['mipUp', 'mipAnn'].forEach((k) => { h[k] = isFinite(+h[k]) ? Math.max(0, +h[k]) : 0; }); h.finCapex = !!h.finCapex; h.ownerOcc = !!h.ownerOcc;
       if (h.term < 12 && !h.io) h.term = 360; h.io = !!h.io;
       if (h.growth != null && !isFinite(+h.growth)) h.growth = null;
@@ -605,7 +607,7 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
     const loanSel = `<div class="f"><span class="lb">Loan option</span><select class="loansel" data-loan="${h.id}" aria-label="Loan option">${E.loansFor(type).map((l) => `<option value="${l.id}" ${h.loanId === l.id ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}<option value="custom" ${lo ? '' : 'selected'}>Custom terms</option></select></div>`;
     const ex = pl.exits[h.id];
     const exitSec = colSec('exit', 'Value-add & exit', h.exit === 'sell' && isFinite(pl.sellAt[h.id]) ? 'sell in ' + mm(pl.sellAt[h.id]) : h.exit === 'merge' && isFinite(pl.mergeAt[h.id]) ? 'merge in ' + mm(pl.mergeAt[h.id]) : h.capex ? 'improve ' + $c(h.capex) : 'hold', `<section class="card" data-testid="exit-section">
-      ${field('Improvement budget', P + 'capex', grp(h.capex), { pre: '$' })}${h.finCapex ? '<p class="note" data-testid="rehab-financed">Financed in your loan, so nothing extra is due at closing.</p>' : ''}${field('Months to finish', P + 'capexMonths', h.capexMonths)}${field('New appraised value', P + 'arv', grp(h.arv), { pre: '$' })}${h.arv > 0 ? field('Value gained (vs price + rehab)', P + 'gain', grp(v.valueGain), { pre: '$', calc: 1, ro: 1 }) : '<p class="note">Enter the appraisal you expect after the work. 0 means the value does not change.</p>'}${h.arv > 0 && h.arv < h.price + (h.capex || 0) ? '<p class="note" data-testid="arv-low">⚠ That appraisal is below price + rehab, so the work loses money.</p>' : ''}${field('Income lift', P + 'liftIncome', r(h.liftIncome, 1), { suf: '%' })}
+      ${field('Improvement budget', P + 'capex', grp(h.capex), { pre: '$' })}${h.finCapex ? '<p class="note" data-testid="rehab-financed">Financed in your loan, so nothing extra is due at closing.</p>' : ''}${field('Months to finish', P + 'capexMonths', h.capexMonths)}${field('New appraised value', P + 'arv', grp(h.arv), { pre: '$' })}${field('Value gained (vs price + rehab)', P + 'gain', h.arv > 0 ? grp(v.valueGain) : '', { pre: '$', calc: 1 })}<p class="note">Type the new appraisal, or type how much value you expect to gain and the appraisal fills in. No appraisal means the value does not change.</p>${h.arv > 0 && h.arv < h.price + (h.capex || 0) ? '<p class="note" data-testid="arv-low">⚠ That appraisal is below price + rehab, so the work loses money.</p>' : ''}${field('Income lift', P + 'liftIncome', r(h.liftIncome, 1), { suf: '%' })}
       <div class="seg" style="margin-top:8px" role="tablist"><button data-exit="hold" class="${h.exit === 'hold' ? 'on' : ''}">Hold</button><button data-exit="sell" class="${h.exit === 'sell' ? 'on' : ''}" data-testid="exit-sell">Sell</button><button data-exit="merge" class="${h.exit === 'merge' ? 'on' : ''}">Merge</button></div>
       ${h.exit === 'sell' ? `${field('Sell in (months)', P + 'exitMonth', h.exitMonth)}${field('Selling costs', P + 'sellCost', r(h.sellCost, 1), { suf: '%' })}${ex ? field('Net proceeds', P + 'proceeds', grp(ex.proceeds), { pre: '$', calc: 1, ro: 1 }) : ''}<p class="note">Proceeds go to cash and count in net worth. Later purchases use that cash before outside money.</p>` : ''}
       ${h.exit === 'merge' ? `${field('Merge in (months)', P + 'exitMonth', h.exitMonth)}<div class="f"><span class="lb">Merge into</span><select class="loansel" data-merge="${h.id}" aria-label="Merge into"><option value="">Choose…</option>${S.houses.filter((x) => x.id !== h.id).map((x) => `<option value="${x.id}" ${h.mergeInto === x.id ? 'selected' : ''}>${esc(x.addr)}</option>`).join('')}</select></div>${field('Synergy lift', P + 'exitLift', r(h.exitLift, 1), { suf: '%' })}<p class="note">When merged, value and income rise by the synergy lift. It stays in your totals.</p>` : ''}
@@ -755,11 +757,15 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     else if (k === 'termY') { h.term = Math.max(12, Math.round(n * 12)); }
     else if (k === 'payoff') { const B0 = E.balToday(h), i = h.rate / 1200, m = Math.max(1, Math.round(n)); h.extra = Math.max(0, E.pmt(B0, i, m) - v.P + 0.02); h.driver = 'extra'; /* +2 cents so rounding up never lands one month late */ }
     else if (k === 'price') { h.price = Math.max(0, n); }
+    else if (k === 'arv') { h.arv = Math.max(0, n); h.gain = null; h.arvAuto = false; }
+    else if (k === 'gain') { h.gain = n; h.arvAuto = false; h.arv = Math.max(0, Math.round(h.price + (h.capex || 0) + n)); }
     else if (k === 'rate') { h.rate = Math.min(30, Math.max(0, n)); }
-    else if (k === 'loan' || k === 'need' || k === 'caprate' || k === 'mult' || k === 'proceeds' || k === 'gain') return false;
+    else if (k === 'loan' || k === 'need' || k === 'caprate' || k === 'mult' || k === 'proceeds') return false;
     else if (k === 'growth') h.growth = Math.min(100, Math.max(-50, n));
     else if (k === 'closingPct') h.closingPct = Math.min(20, Math.max(0, n));
     else h[k] = Math.max(0, n);
+    if ((k === 'price' || k === 'capex') && h.arvAuto) h.arv = Math.round(((h.price + (h.capex || 0)) * 1.15) / 1000) * 1000; /* an auto-filled appraisal keeps its 15% margin */
+    else if ((k === 'price' || k === 'capex') && h.gain !== null && isFinite(h.gain)) h.arv = Math.max(0, Math.round(h.price + (h.capex || 0) + h.gain)); /* a typed gain keeps the appraisal in step */
     if (['dp', 'down', 'rate', 'termY'].indexOf(k) >= 0) h.loanId = 'custom';
     return true;
   }
