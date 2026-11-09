@@ -10,7 +10,8 @@
   const LOANS = [
     { id: 'conv30', types: ['house'], name: 'Conventional 30-year', dp: 20, rate: 7.5, term: 360, io: false, closing: 3, note: 'Standard investor mortgage. Priced above the Freddie Mac average.' },
     { id: 'conv15', types: ['house'], name: 'Conventional 15-year', dp: 20, rate: 7.0, term: 180, io: false, closing: 3, note: 'Higher payment, builds equity fast.' },
-    { id: 'fha', types: ['house'], name: 'FHA 30-year (you live there)', dp: 3.5, rate: 6.9, term: 360, io: false, closing: 4, note: 'Low down payment. Owner-occupied only.' },
+    { id: 'fha', types: ['house'], name: 'FHA 30-year (you live there)', dp: 3.5, rate: 6.9, term: 360, io: false, closing: 4, upfrontMip: 1.75, annualMip: 0.55, ownerOcc: true, note: 'Low down payment plus FHA mortgage insurance (1.75% upfront, 0.55%/yr, typical). Owner-occupied only.' },
+    { id: 'k203', types: ['house'], name: 'FHA 203(k) rehab loan (you live there)', dp: 3.5, rate: 7.15, term: 360, io: false, closing: 5, upfrontMip: 1.75, annualMip: 0.55, ownerOcc: true, finRehab: true, rehabDefaults: { capex: 40000, capexMonths: 6, liftValue: 22, liftIncome: 8 }, note: 'Buy and renovate with one loan. The rehab budget is financed with the purchase (3.5% down on price + rehab). Limited 203(k): rehab up to $75,000, no consultant. Larger rehabs need a Standard 203(k) with a HUD consultant. You must live in it.' },
     { id: 'dscr', types: ['house'], name: 'DSCR investor loan', dp: 25, rate: 7.75, term: 360, io: false, closing: 4, note: 'Qualifies on the rent, not your income.' },
     { id: 'cashh', types: ['house'], name: 'Cash purchase', dp: 100, rate: 0, term: 360, io: false, closing: 2, note: 'No loan.' },
     { id: 'comm25', types: ['commercial'], name: 'Commercial bank, 25-year', dp: 25, rate: 7.25, term: 300, io: false, closing: 3, note: 'Typical bank loan on income property.' },
@@ -31,13 +32,15 @@
     const lo = LOANS.find((l) => l.id === id);
     if (!lo) { h.loanId = 'custom'; return h; }
     h.dp = lo.dp; h.rate = lo.rate; h.term = lo.term; h.io = !!lo.io; h.closingPct = lo.closing; h.loanId = lo.id;
+    h.finCapex = !!lo.finRehab; h.mipUp = lo.upfrontMip || 0; h.mipAnn = lo.annualMip || 0; h.ownerOcc = !!lo.ownerOcc;
+    if (lo.finRehab && lo.rehabDefaults && !(+h.capex > 0)) Object.assign(h, lo.rehabDefaults); /* auto-fill a typical rehab only if none is set */
     return h;
   }
   function newAsset(type, loanId, o) {
     type = TYPES[type] ? type : 'house';
     const h = Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), type, status: 'planned', extra: 0, driver: 'extra', wait: 24, liens: 0, paid: 0, buyIn: 12,
       target: '', growth: null, io: false, closingPct: null, loanId: '', dp: 20, rate: 6.75, term: 360,
-      capex: 0, capexMonths: 6, liftValue: 0, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '' }, DEFAULTS[type]);
+      capex: 0, capexMonths: 6, liftValue: 0, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false }, DEFAULTS[type]);
     applyLoan(h, loanId || loansFor(type)[0].id);
     return Object.assign(h, o || {});
   }
@@ -45,7 +48,10 @@
 
   const H = (S, id) => S.houses.find((h) => h.id === id);
   const mi = (h) => h.rate / 1200;
-  const loan = (h) => h.price * (1 - h.dp / 100);
+  const baseAmt = (h) => h.price + (h.finCapex ? Math.max(0, h.capex || 0) : 0);          /* price + a rehab financed in the same loan (203(k)) */
+  const downAmt = (h) => (baseAmt(h) * h.dp) / 100;
+  const loan = (h) => Math.max(0, baseAmt(h) - downAmt(h)) * (1 + (h.mipUp || 0) / 100);  /* upfront mortgage insurance is financed */
+  const mipMonthly = (h) => ((h.mipAnn || 0) > 0 ? (loan(h) * h.mipAnn) / 100 / 12 : 0);
   const amort = (L, i, n) => (L <= 0 ? 0 : i ? (L * i) / (1 - Math.pow(1 + i, -n)) : L / n);
   const pmt = amort; /* kept for callers that back-solve a payoff */
   const payment = (h) => { const L = loan(h), i = mi(h); return L <= 0 ? 0 : h.io ? L * i : amort(L, i, h.term); };
@@ -59,7 +65,7 @@
   }
   const balK = (B0, i, A, k) => Math.max(0, i ? B0 * Math.pow(1 + i, k) - A * (Math.pow(1 + i, k) - 1) / i : B0 - A * k);
   const valK = (S, h, k) => h.price * Math.pow(1 + gr(S, h) / 100, (age0(h) + k) / 12);
-  const need = (S, h) => { const t = H(S, h.target); return t ? t.price * (t.dp / 100 + clPct(S, t) / 100) : 0; };
+  const need = (S, h) => { const t = H(S, h.target); return t ? downAmt(t) + (t.price * clPct(S, t)) / 100 : 0; };
 
   function payoffN(h, X) {
     const B0 = balToday(h), i = mi(h), A = payment(h) + X;
@@ -96,8 +102,8 @@
     }
     const lm = locMonths(S, h, X), A = P + X;
     const cltvAtLoc = H(S, h.target) && isFinite(lm) ? ((balK(B0, i, A, lm) + (h.liens || 0) + need(S, h)) / valK(S, h, lm)) * 100 : null;
-    const down = (h.price * h.dp) / 100, closingCost = (h.price * clPct(S, h)) / 100;
-    return { cltvAtLoc, L, B0, P, X, infeasible, egi, noi, cf: noi - P, escrow, pitia: P + escrow, payment: P + X + escrow,
+    const down = downAmt(h), closingCost = (h.price * clPct(S, h)) / 100, mip = mipMonthly(h);
+    return { cltvAtLoc, L, B0, P, mip, X, infeasible, egi, noi, cf: noi - P - mip, escrow, pitia: P + escrow + mip, payment: P + X + escrow + mip,
       D: need(S, h), down, closingCost, invested: down + closingCost, payoff: payoffN(h, X), locM: lm,
       head0: Math.max(0, g.cap / 100 * h.price - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
       capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
@@ -159,14 +165,14 @@
       }
       /* 2) purchases and improvements use cash first, then outside money */
       for (const h of hs) if (P0[h.id] === t) {
-        const need = (t > 0 && !fundedByLOC[h.id] ? (h.price * (h.dp + clPct(S, h))) / 100 : 0) + (h.capex || 0);
+        const need = (t > 0 && !fundedByLOC[h.id] ? downAmt(h) + (h.price * clPct(S, h)) / 100 : 0) + (h.finCapex ? 0 : h.capex || 0);
         const use = Math.min(cashBal, need); cashBal -= use; outsideCum += need - use;
       }
       /* 3) sum what is held this month */
       let incAdd = 0, debtAdd = 0;
       for (const h of hs) {
         if (!held(h, t)) continue; const a = st(h, t); if (!a) continue;
-        const { v } = a, hi = (a.heloc * g.hrate) / 1200, sched = a.live ? v.P : 0, ex = a.live ? v.X : 0, rentG = h.rent * a.gfi;
+        const { v } = a, hi = (a.heloc * g.hrate) / 1200, sched = a.live ? v.P + v.mip : 0, ex = a.live ? v.X : 0, rentG = h.rent * a.gfi;
         s.count[t]++; s.value[t] += a.val; s.debt[t] += a.B + (h.liens || 0) + a.heloc; s.nw[t] += a.val - a.B - (h.liens || 0) - a.heloc;
         s.noi[t] += v.noi * a.gfi; s.ds[t] += sched + hi; s.extra[t] += ex; s.rent[t] += rentG;
         s.monthly[t] += sched + ex + v.escrow + hi; s.dsti[t] += sched + v.escrow + hi;
@@ -182,7 +188,7 @@
       o.cltv = o.value ? (o.debt / o.value) * 100 : 0; o.dscr = o.ds ? o.noi / o.ds : 0; return o; };
     /* every asset's contribution to the portfolio totals at month t; the entries sum exactly to the series values */
     const assetsAt = (t) => { t = Math.min(T, Math.round(t)); const list = hs.map((h) => { if (!held(h, t)) return null; const a = st(h, t); if (!a) return null;
-      const v = a.v, hi = (a.heloc * g.hrate) / 1200, sched = a.live ? v.P : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
+      const v = a.v, hi = (a.heloc * g.hrate) / 1200, sched = a.live ? v.P + v.mip : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
       return { id: h.id, addr: h.addr, type: h.type || 'house', equity: a.val - a.B - (h.liens || 0) - a.heloc, value: a.val, debt: a.B + (h.liens || 0) + a.heloc,
         payment: sched + ex + v.escrow + hi, cf: inc - sched - hi, income: inc }; }).filter(Boolean);
       if (s.cash[t] > 0.5) list.push({ id: '__cash', addr: 'Cash from sales', type: 'cash', equity: s.cash[t], value: s.cash[t], debt: 0, payment: 0, cf: 0, income: 0 }); return list; };
@@ -208,6 +214,7 @@
     S.houses = (S.houses || []).filter((h) => h && h.id).map((h) => { const type = TYPES[h.type] ? h.type : 'house'; return Object.assign(newAsset(type, undefined, { id: h.id }), h, { type }); });
     S.houses.forEach((h) => {
       ['price', 'dp', 'rate', 'term', 'extra', 'rent', 'tax', 'ins', 'hoa', 'liens', 'paid', 'buyIn', 'wait', 'capex', 'capexMonths', 'liftValue', 'liftIncome', 'exitMonth', 'exitLift', 'sellCost'].forEach((k) => { if (!isFinite(+h[k])) h[k] = newAsset(h.type, undefined)[k]; else h[k] = +h[k]; });
+      ['mipUp', 'mipAnn'].forEach((k) => { h[k] = isFinite(+h[k]) ? Math.max(0, +h[k]) : 0; }); h.finCapex = !!h.finCapex; h.ownerOcc = !!h.ownerOcc;
       if (h.term < 12 && !h.io) h.term = 360; h.io = !!h.io;
       if (h.growth != null && !isFinite(+h.growth)) h.growth = null;
       if (h.closingPct != null && !isFinite(+h.closingPct)) h.closingPct = null;
@@ -279,6 +286,6 @@
     A('business', 'sba7a', { id: 'freight', buyIn: 62, growth: 8, addr: 'Summit Freight & Logistics', price: 1800000, rent: 41650 }),
     A('house', 'dscr', { id: 'linden', buyIn: 84, growth: 3.5, addr: '2914 Linden Way', price: 175000, rent: 1850, tax: 195, ins: 85 }),
     A('commercial', undefined, { id: 'lake', buyIn: 100, loanId: 'custom', dp: 35, addr: 'Lakeview Medical Office', price: 1800000, rent: 17450, tax: 1000, ins: 800, hoa: 500 })] }); };
-  const E = { GDEF, TYPES, LOANS, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

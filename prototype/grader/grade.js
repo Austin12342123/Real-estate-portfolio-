@@ -241,9 +241,9 @@ async function engineChecks() {
     P.t(pl.funds.maple && pl.funds.cedar, 'sample funding flags maple and cedar', 0.5);
     P.t(pl.snap.every((x) => x.equity === x.value - x.debt), 'equity = value - debt per asset', 0.5); return P; });
   /* ---- v4 features ---- */
-  await check('B16', 'B', 'Loan options: 13 options, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows', 2, 'node: Engine.LOANS, loansFor, applyLoan, newAsset', () => {
-    const P = new Parts(); P.t(E.LOANS.length === 13, '13 loan options', 0.5, E.LOANS.length);
-    P.t(E.loansFor('house').length === 5 && E.loansFor('commercial').length === 4 && E.loansFor('business').length === 4, 'house 5 / commercial 4 / business 4', 0.5);
+  await check('B16', 'B', 'Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows', 2, 'node: Engine.LOANS, loansFor, applyLoan, newAsset', () => {
+    const P = new Parts(); P.t(E.LOANS.length >= 13 && E.LOANS.some((l) => l.id === 'k203'), E.LOANS.length + ' loan options including FHA 203(k)', 0.5, E.LOANS.length);
+    P.t(['house', 'commercial', 'business'].every((t) => E.loansFor(t).length === E.LOANS.filter((l) => l.types.indexOf(t) >= 0).length && E.loansFor(t).length >= 4) && E.loansFor('house').some((l) => l.id === 'k203'), 'every type lists its own options (homes include the FHA 203(k))', 0.5);
     let ok = true, bad = ''; E.LOANS.forEach((l) => { const tp = l.types[0], a = E.newAsset(tp, l.id); if (!(a.dp === l.dp && a.rate === l.rate && a.term === l.term && !!a.io === !!l.io && a.closingPct === l.closing && a.loanId === l.id)) { ok = false; bad += l.id + ' '; } });
     P.t(ok, 'newAsset(type, loanId) applies every option', 1, bad);
     const h = E.newAsset('house', 'conv30', { price: 300000 }), p1 = E.payment(h); E.applyLoan(h, 'conv15'); P.t(h.term === 180 && E.payment(h) > p1, 'applyLoan(conv15) shortens term and raises payment', 0.5);
@@ -296,6 +296,19 @@ async function engineChecks() {
         pairs.forEach(([a, b]) => { worst = Math.max(worst, Math.abs(a - b) / (1 + Math.abs(b) * 1e-9)); }); });
       const sn = pl.snap, h = pl.horizon; P.t(worst < 0.5, n + ': assetsAt(t) sums = series at 11 months', 0.8, 'worst diff ' + worst.toFixed(3));
       P.t(near(sn.reduce((a, x) => a + x.equity, 0), h.nw, 0.5) && near(sn.reduce((a, x) => a + x.cf, 0), h.cf, 0.5) && near(sn.reduce((a, x) => a + x.payment, 0), h.monthly, 0.5) && near(sn.reduce((a, x) => a + x.debt, 0), h.debt, 0.5), n + ': snap sums = horizon nw/cf/monthly/debt', 1.2); }); return P; });
+  await check('B24', 'B', 'FHA 203(k): rehab is financed in the loan (down payment on price + rehab), upfront MIP financed, monthly MIP in cash flow, owner-occupied flag, closing cash excludes rehab', 2, 'node: newAsset(house,k203) vs hand calculation', () => {
+    const P = new Parts(), lo = E.LOANS.find((l) => l.id === 'k203'); P.t(!!lo && lo.finRehab && lo.ownerOcc && lo.dp === 3.5, 'k203 option: finRehab, ownerOcc, 3.5% down', 0.3);
+    if (!lo) return P;
+    const S = mkS({ closing: 3 }, [E.newAsset('house', 'k203', { id: 'k', price: 150000, rent: 1900, tax: 170, ins: 80, growth: 0, buyIn: 12 })]), h = S.houses[0], v = E.view(S, h);
+    P.t(h.capex > 0 && h.liftValue > 0 && h.finCapex === true && h.ownerOcc === true, 'choosing the loan auto-fills a typical rehab and sets financed/owner-occupied flags', 0.4, h.capex + '/' + h.liftValue);
+    const L = (150000 + h.capex) * (1 - 0.035) * 1.0175; P.t(near(v.L, L, 1), 'loan = (price + rehab) x 96.5% x 1.0175 = ' + Math.round(L), 0.5, Math.round(v.L));
+    P.t(near(v.down, (150000 + h.capex) * 0.035, 0.5), 'down payment = 3.5% of price + rehab', 0.3, Math.round(v.down));
+    const mip = (v.L * 0.55) / 100 / 12; P.t(near(v.mip, mip, 0.5) && near(v.cf, v.noi - v.P - v.mip, 0.5), 'monthly MIP (0.55%/yr of loan) is deducted from cash flow', 0.4, v.mip.toFixed(1));
+    const pl = E.plan(S), cash = (150000 * (h.closingPct / 100)) + v.down; P.t(near(pl.horizon.outside, cash, 1), 'cash at closing = down + closing costs only (rehab is financed)', 0.5, Math.round(pl.horizon.outside) + ' vs ' + Math.round(cash));
+    const C = mkS({ closing: 3 }, [E.newAsset('house', 'conv30', { id: 'c', price: 150000, rent: 1900, tax: 170, ins: 80, growth: 0, buyIn: 12, capex: h.capex, capexMonths: h.capexMonths, liftValue: h.liftValue })]);
+    P.t(E.plan(C).horizon.outside > pl.horizon.outside + h.capex * 0.9, 'same house on a conventional loan needs far more cash (rehab paid in cash)', 0.3);
+    const f = E.newAsset('house', 'fha', { id: 'f', price: 150000 }); P.t(f.mipUp === 1.75 && f.mipAnn === 0.55 && f.ownerOcc === true && f.finCapex === false, 'FHA now carries mortgage insurance and the owner-occupied flag but does not finance rehab', 0.3);
+    return P; });
   await check('B23', 'B', 'Sample portfolio: finite plan, none unfunded, DTI peak below limit, homes cash-flow positive, 20-year numbers sane', 2, 'node: Engine.seed() + plan', () => {
     const P = new Parts(), S = E.seed(), pl = E.plan(S); const ids = E.seed().houses.map((h) => h.id);
     P.t(S.houses.length === NSEED && ids.every((i) => E.H(S, i)), NSEED + ' assets with the documented ids', 0.4, S.houses.map((h) => h.id).join(','));
@@ -352,6 +365,18 @@ async function reqChecks(page) {
     ['h.b.price', 320000], ['h.b.dp', 30], ['h.c.price', 1200000], ['h.c.rent', 12000], ['h.d.price', 600000], ['h.d.rent', 14000], ['h.d.buyIn', 48], ['h.d.sellCost', 15], ['h.d.exitMonth', 150], ['h.d.growth', 12],
     ['h.e.capex', 40000], ['h.e.capexMonths', 12], ['h.e.liftValue', 20], ['h.e.liftIncome', 15], ['h.e.exitLift', 30], ['h.e.exitMonth', 120], ['h.e.buyIn', 30],
     ['g.cap', 60], ['g.vac', 20], ['g.mgmt', 20], ['g.maint', 3], ['g.closing', 10], ['g.haircut', 20], ['g.hrate', 15], ['g.appr', 3], ['g.planYears', 10], ['g.rentCount', 50], ['g.p1', 0], ['g.dti', 5], ['g.otherDebt', 20000]];
+  await check('A13', 'A', 'FHA 203(k) through the UI: add flow auto-fills rehab + terms, owner-occupied notice, financed-rehab note, Limited cap warning, switching loan option resets', 2, 'Add page > Home > FHA 203(k)', async () => {
+    const P = new Parts(); await reset(page); await goHash(page, '#add'); await page.click('[data-addtype=house]'); await page.waitForTimeout(40);
+    P.t((await page.locator('[data-pickloan=k203]').count()) === 1, 'add page lists the 203(k) option for homes', 0.3);
+    P.t((await page.locator('[data-pickloan=k203]').innerText()).toLowerCase().includes('rehab') && (await page.locator('[data-pickloan=k203]').innerText()).toLowerCase().includes('live'), 'card says rehab financed / you live there', 0.3);
+    await page.click('[data-pickloan=k203]'); await page.click('[data-testid=confirm-add]'); await page.waitForSelector('[data-testid=h-payment]');
+    const g = (k) => page.inputValue('[data-p$=".' + k + '"]'); const num = (t) => parseFloat(String(t).replace(/[^0-9.\-]/g, ''));
+    P.t(num(await g('dp')) === 3.5 && num(await g('rate')) === 7.15 && num(await g('capex')) === 40000 && num(await g('liftValue')) > 0, 'dp 3.5, rate 7.15, rehab 40,000 and a value lift are auto-filled', 0.5, [await g('dp'), await g('rate'), await g('capex')].join('/'));
+    P.t((await page.locator('[data-testid=owner-occ]').count()) === 1 && (await page.locator('[data-testid=rehab-financed]').count()) === 1, 'owner-occupied notice and "rehab financed" note shown', 0.4);
+    await setVal(page, '[data-p$=".capex"]', '90000'); P.t((await page.locator('[data-testid=k203-cap]').count()) === 1, 'rehab over $75,000 shows the Limited 203(k) cap warning', 0.3);
+    await setVal(page, '[data-p$=".capex"]', '40000'); await page.locator('[data-loan]').selectOption('conv30'); await page.waitForTimeout(60);
+    P.t(num(await g('dp')) === 20 && (await page.locator('[data-testid=owner-occ]').count()) === 0 && (await page.locator('[data-testid=rehab-financed]').count()) === 0, 'switching to Conventional resets terms and removes the 203(k) notices', 0.4);
+    return P; });
   await check('A03', 'A', 'Edit matrix: every input (' + M.length + ' edits incl. improvements/exit/loan/assumptions) moves the main-page KPIs exactly as the engine says', 6, 'Edit field on asset/assumptions page; compare main KPIs with Engine.plan(S).horizon on the edited state', async () => {
     const P = new Parts(); const baseS = SB(), base = E.plan(baseS).horizon; let changing = 0;
     for (const [p, v] of M) {

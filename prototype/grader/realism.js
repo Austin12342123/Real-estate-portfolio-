@@ -27,6 +27,7 @@ exports.run = async function ({ E, check, Parts, benchDir }) {
     p.t(L.conv15.rate >= PMMS15 && L.conv15.rate <= PMMS15 + 1.5, 'Conventional 15-yr rate >= PMMS 15-yr', 1, L.conv15.rate);
     p.t(L.fha.rate >= PMMS30 - 1.0 && L.fha.rate <= PMMS30 + 0.5, 'FHA rate within about -1.0 to +0.5 of PMMS 30-yr', 1, L.fha.rate);
     p.t(L.dscr.rate >= PMMS30 && L.dscr.rate <= 8.75, 'DSCR investor loan rate >= PMMS 30-yr and within the quoted 6.0-8.75 range', 1, L.dscr.rate);
+    p.t(L.k203.rate >= PMMS30 - 1.0 && L.k203.rate <= PMMS30 + 1.5, 'FHA 203(k) rate near FHA/conventional (blog estimate 7.0-7.75%, unverified)', 0.5, L.k203.rate);
     return p;
   });
 
@@ -69,7 +70,7 @@ exports.run = async function ({ E, check, Parts, benchDir }) {
     const p = new Parts();
     S.houses.forEach((h) => {
       const l = h.loanId;
-      if (l === 'fha') p.t(false, name(h) + ' uses FHA, which requires owner-occupancy', 1);
+      if (l === 'fha' || l === 'k203' || h.ownerOcc) p.t(false, name(h) + ' uses an owner-occupied-only loan (FHA / 203(k)) on an investment home', 1);
       if (l === 'comm25' || l === 'bridge') p.t(100 - h.dp <= 75, name(h) + ' LTV ' + (100 - h.dp) + '% <= 75%', 1, 100 - h.dp);
       if (l === 'dscr') p.t(h.dp >= 20, name(h) + ' DSCR loan down payment ' + h.dp + '% >= 20%', 1, h.dp);
       if (l === 'sba7a' || l === 'sba504') p.t(h.dp >= 10, name(h) + ' SBA equity ' + h.dp + '% >= 10%', 1, h.dp);
