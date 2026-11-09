@@ -270,7 +270,8 @@
     if (pl.worst.dti > g.dti) { if (status === 'yes') status = 'tight'; reasons.push({ sev: 'warn', text: 'Lenders may decline: debt-to-income peaks at ' + Math.round(pl.worst.dti) + '% in month ' + pl.worst.month + ' (limit ' + g.dti + '%).' }); fixes.push('Raise qualifying income, add a co-signer, or lower the loan sizes that close around month ' + pl.worst.month + '.'); }
     else reasons.push({ sev: 'ok', text: 'Qualifying income covers the loans (debt-to-income peaks at ' + Math.round(pl.worst.dti) + '%, limit ' + g.dti + '%).' });
     if (isFinite(minRun) && minRun < 3 && short <= 0.5) { if (status === 'yes') status = 'tight'; reasons.push({ sev: 'warn', text: 'If your job income stopped in month ' + minRunM + ', your cash would last only ' + minRun.toFixed(1) + ' months.' }); fixes.push('Build cash or portfolio income so you could last at least 3 months without a paycheck.'); }
-    const headline = status === 'yes' ? 'Yes. You can carry this plan.' : status === 'tight' ? 'Tight. It works, but with thin margins.' : 'Not yet. You run short of cash in month ' + firstShort + '.';
+    const firstWarn = reasons.find((x) => x.sev === 'warn');
+    const headline = status === 'yes' ? 'Yes. You can carry this plan.' : status === 'tight' ? 'Tight. ' + (firstWarn ? firstWarn.text : 'It works, but with thin margins.') : 'Not yet. You run short of cash in month ' + firstShort + '.';
     const totalOutside = s.outside[T], capitalTotal = p.capital.reduce((a, x) => a + x.amount, 0);
     return { series: R, T, status, headline, reasons, fixes, calls: callsAll,
       kpis: { peakHours: peakH, peakHoursMonth: peakHM, managerCost0: R.gm[0], managerCostMax: gmMax, peakBusinesses: peakBiz, takeHome: R.income[0], portfolioAfterTax: R.portfolio[0] - R.portTax[0], extra: R.extra[0], living: R.living[0], debts: R.debts[0], net0: R.net[0], worstNet, cash0: p.cash, reserveMonths0: R.living[0] + R.debts[0] > 0 ? p.cash / (R.living[0] + R.debts[0]) : Infinity,

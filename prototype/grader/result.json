@@ -311,7 +311,7 @@
       "rawPoints": 0.5,
       "earned": 0.16,
       "ratio": 1,
-      "detail": "median 2.8ms",
+      "detail": "median 4.4ms",
       "repro": "node timing"
     },
     {
@@ -476,7 +476,7 @@
       "rawPoints": 2,
       "earned": 1.333,
       "ratio": 1,
-      "detail": "121/121 targets >=44px. Small: ",
+      "detail": "122/122 targets >=44px. Small: ",
       "repro": "Measure interactive elements on main/asset/assumptions/add"
     },
     {
@@ -509,7 +509,7 @@
       "rawPoints": 1,
       "earned": 0.667,
       "ratio": 1,
-      "detail": "avg row 133px x 14, page 3037px",
+      "detail": "avg row 133px x 14, page 3117px",
       "repro": "Measure ledger rows"
     },
     {
@@ -520,7 +520,7 @@
       "rawPoints": 2,
       "earned": 1.333,
       "ratio": 1,
-      "detail": "815/815 text elements pass (light 404/404, dark 411/411). ",
+      "detail": "837/837 text elements pass (light 415/415, dark 422/422). ",
       "repro": "emulate prefers-color-scheme; compute WCAG ratio for every text element"
     },
     {
@@ -663,7 +663,7 @@
       "rawPoints": 1,
       "earned": 0.636,
       "ratio": 1,
-      "detail": "193/193 named. unnamed: ",
+      "detail": "194/194 named. unnamed: ",
       "repro": "aria-label / label / text on all pages"
     },
     {
@@ -820,5 +820,66 @@
       "detail": "7/7 sub-checks pass",
       "repro": "Lenders often want net worth >= loan size (secondary); co-signer allowance $2M and outside-cash cap $1.5M are stated judgments; <= 4 commercial/business closings per 12 months (secondary: small teams close a few deals a year)"
     }
-  ]
+  ],
+  "finance": {
+    "earned": 90,
+    "max": 90,
+    "checks": [
+      {
+        "id": "F1",
+        "category": "F",
+        "name": "Engine correctness: independent month-by-month simulation + hand cases + edge values",
+        "points": 26,
+        "earned": 26,
+        "ratio": 1,
+        "detail": "16/16 sub-checks pass",
+        "repro": "node: simulate from the definitions, compare E.finance on 80 random states; hand-calculated cases; NaN scan",
+        "seconds": 0.2
+      },
+      {
+        "id": "F2",
+        "category": "F",
+        "name": "Verdict logic and advice",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "17/17 sub-checks pass",
+        "repro": "node: constructed states for yes / tight (5 causes) / no; fix amounts; apply the fix; monotonicity; stretch",
+        "seconds": 0.4
+      },
+      {
+        "id": "F3",
+        "category": "F",
+        "name": "UI features",
+        "points": 24,
+        "earned": 24,
+        "ratio": 1,
+        "detail": "89/89 sub-checks pass",
+        "repro": "Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states",
+        "seconds": 6.9
+      },
+      {
+        "id": "F4",
+        "category": "F",
+        "name": "Factor coverage: every input moves the answer in the right direction",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "23/23 sub-checks pass",
+        "repro": "node: perturb one factor at a time on the sample",
+        "seconds": 0.1
+      },
+      {
+        "id": "F5",
+        "category": "F",
+        "name": "Robustness and accessibility",
+        "points": 10,
+        "earned": 10,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
+        "repro": "Playwright: edge inputs, names, tap targets, font size, overflow 320/390/430, chip contrast light+dark, typing, render storm, console errors",
+        "seconds": 17.2
+      }
+    ]
+  }
 }

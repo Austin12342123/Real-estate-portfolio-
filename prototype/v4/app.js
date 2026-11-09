@@ -138,7 +138,7 @@
       <div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
       <p class="note" style="margin:6px 0 0">Whole portfolio, projected ${yrs} years out, after every planned purchase, improvement and sale.</p>
       <p class="plan-line" data-testid="plan-headline">${headline}</p>
-      ${fin ? `<div class="vrow" data-go="finances" data-testid="afford-line" role="link"><span>Can I afford this?</span><span><span class="vchip ${fin.status}" data-testid="afford-chip">${VL[fin.status]}</span> ›</span></div>` : ''}</section>
+      ${fin ? `<div class="vrow big ${fin.status}" data-go="finances" data-testid="afford-line" role="link"><span class="vq"><b>Can I afford this?</b><span class="note">${esc(fin.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, ''))}</span></span><span class="vgo"><span class="vchip ${fin.status}" data-testid="afford-chip">${VL[fin.status]}</span> ›</span></div>` : ''}</section>
     <div class="sec"><span>Extra payments &amp; credit lines</span><span class="secr"><button class="editlink" data-edit data-testid="edit-list">${editList ? 'Done' : 'Edit'}</button><span class="tot" data-testid="total-extra" data-k="tot">${$f(tot)}/mo extra</span></span></div><section class="card" id="ledger" data-testid="ledger">${rows}<button class="addrow" data-add data-testid="add-house">+ Add property or business</button></section>
     <button class="linkbtn" data-go="import/new" data-testid="import-link">Import a home from a listing file</button>
     <section class="card" data-testid="plan-card"><b>Portfolio breakdown</b> <span class="note">${n} assets · last purchase ${mo(pl.lastBuy)}</span>
@@ -217,11 +217,11 @@
     const pl = E.plan(S), f = E.finance(S, pl), p = S.p, g = S.g, k = f.kpis, R = f.series;
     const icon = { ok: '✓', warn: '△', bad: '✗' };
     const listRow = (kind, it, label) => `<div class="lr" data-testid="${kind}-row"><input class="t2" data-p="${kind === 'pl' ? 'o' : 'c'}.${it.id}.name" type="text" value="${esc(it.name)}" aria-label="${label} name">
-      ${field('Amount', (kind === 'pl' ? 'o' : 'c') + '.' + it.id + '.amount', grp(it.amount), { pre: '$' })}${field('In month', (kind === 'pl' ? 'o' : 'c') + '.' + it.id + '.month', it.month)}
+      ${field('Amount', (kind === 'pl' ? 'o' : 'c') + '.' + it.id + '.amount', grp(it.amount), { pre: '$' })}${field('Happens in (months)', (kind === 'pl' ? 'o' : 'c') + '.' + it.id + '.month', it.month)}
       ${ask === 'dp:' + kind + ':' + it.id ? confirmBox('Remove ' + esc(it.name || label) + '?', 'data-dp-yes="' + kind + ':' + it.id + '"', 'Yes, remove') : `<button class="rm" data-dp="${kind}:${it.id}" aria-label="Remove ${esc(it.name || label)}">Remove</button>`}</div>`;
     const jobs = p.jobs.map((j) => `<section class="card" data-testid="job-card"><input class="t2" data-p="j.${j.id}.name" type="text" value="${esc(j.name)}" aria-label="Job name">
-      ${field('Gross pay / year', `j.${j.id}.gross`, grp(j.gross), { pre: '$' })}${field('Yearly raise', `j.${j.id}.raise`, r(j.raise, 1), { suf: '%' })}${field('Tax on this pay', `j.${j.id}.tax`, r(j.tax, 1), { suf: '%' })}${field('Hours / week', `j.${j.id}.hours`, r(j.hours, 0))}${field('Starts (month)', `j.${j.id}.start`, j.start)}${field('Ends (month; blank = ongoing)', `j.${j.id}.end`, j.end === null ? '' : j.end)}
-      <p class="note">Take-home ${$f(E.jobMonthly(j, 0) * (1 - j.tax / 100))}/mo now.</p>
+      ${field('Gross pay / year', `j.${j.id}.gross`, grp(j.gross), { pre: '$' })}${field('Yearly raise', `j.${j.id}.raise`, r(j.raise, 1), { suf: '%' })}${field('Tax on this pay', `j.${j.id}.tax`, r(j.tax, 1), { suf: '%' })}${field('Hours / week', `j.${j.id}.hours`, r(j.hours, 0))}${field('Starts in (months)', `j.${j.id}.start`, j.start)}${field('Ends in (months; blank = keeps going)', `j.${j.id}.end`, j.end === null ? '' : j.end)}
+      <p class="note">Take-home ${$f(E.jobMonthly(j, 0) * (1 - j.tax / 100))}/mo now. Months count from today, so 0 means now.</p>
       ${ask === 'dp:job:' + j.id ? confirmBox('Remove ' + esc(j.name) + '?', 'data-dp-yes="job:' + j.id + '"', 'Yes, remove') : `<button class="rm" data-dp="job:${j.id}" aria-label="Remove ${esc(j.name)}">Remove job</button>`}</section>`).join('');
     const row = (label, v, cls, bold) => `<tr class="${bold ? 'tot' : ''}"><td>${label}</td><td class="${cls || ''}">${bold ? '<b>' + $s(v) + '</b>' : $s(v)}</td></tr>`;
     const picture = `<table class="cmp" data-testid="monthly-picture"><tbody>
@@ -234,9 +234,8 @@
     <div class="sec">Your month right now</div><section class="card">${picture}</section>
     <div class="sec">Cash over time</div><section class="card" data-testid="cash-card">${finChart(f)}
       <div class="f"><span class="lb">Lowest cash</span><b data-testid="lowest-cash">${$f(k.minLiquid)} · month ${k.minLiquidMonth}</b></div>
-      <div class="f"><span class="lb">Outside cash the plan needs</span><b>${$f(k.totalOutside)}</b></div>
-      <div class="f"><span class="lb">Covered by your savings + partners</span><b>${$f(Math.min(k.totalOutside, k.cash0 + k.capitalTotal))}</b></div>
-      <div class="f"><span class="lb">Months you could last without a paycheck</span><b>${isFinite(k.minRunway) ? r(k.minRunway, 1) : 'no limit'}</b></div>
+      <div class="f"><span class="lb">Months you could last without a paycheck</span><b>${isFinite(k.minRunway) ? r(k.minRunway, 1) : 'Portfolio income covers it'}</b></div>
+      <p class="note" data-testid="funding-line">The plan needs ${$f(k.totalOutside)} of outside cash over time. Partners and investors cover ${$f(Math.min(k.totalOutside, k.capitalTotal))}; the rest comes out of your savings and monthly income.</p>
       ${calls ? `<p class="note" style="margin-top:8px">Biggest cash calls</p>${calls}` : ''}</section>
     <div class="sec">Your income</div>${jobs}<button class="addrow cardbtn" data-addjob data-testid="add-job">+ Add a job</button>
     <div class="sec">Your cash and expenses</div><section class="card">${field('Liquid cash you have', 'p.cash', grp(p.cash), { pre: '$' })}${field('Interest earned on cash', 'p.cashApy', r(p.cashApy, 2), { suf: '%' })}${field('Emergency reserve (months)', 'p.emergencyMonths', r(p.emergencyMonths, 1))}${field('Living costs / month', 'p.living', grp(p.living), { pre: '$' })}${field('Cost increases / year', 'p.inflation', r(p.inflation, 1), { suf: '%' })}${field('Other monthly debts (car, loans)', 'g.otherDebt', grp(g.otherDebt), { pre: '$' })}</section>

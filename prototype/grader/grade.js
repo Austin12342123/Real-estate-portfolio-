@@ -13,6 +13,7 @@ const results = [];
 const cats = { A: 'Requirement / propagation', B: 'Engine correctness', C: 'UX conciseness & usability', D: 'PWA / local-first', E: 'Robustness & accessibility', R: 'Realism & market accuracy' };
 const CATMAX = { A: 18, B: 12, C: 10, D: 8, E: 7, R: 30 };
 const KEY = 'rep-v4', DATA_V = +((/const DATA_V = (\d+)/.exec(fs.readFileSync(path.resolve(__dirname, '../v4/app.js'), 'utf8')) || [0, 0])[1]);
+const FIN_ONLY = process.env.FINANCE_ONLY === '1';
 const NSEED = E.seed().houses.length; /* derived from the app, never hard-coded */
 
 /* ---------------------------------------------------------------- helpers */
@@ -669,7 +670,9 @@ async function robustChecks(page) {
   const t0 = Date.now(); const { srv, port } = await startServer(); BASE = 'http://127.0.0.1:' + port;
   console.log('Serving', V4, 'on', BASE);
   browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+  let finance = null;
   try {
+    if (!FIN_ONLY) {
     await engineChecks();
     const ctx = await mkCtx(); const page = await mkPage(ctx, 'main');
     await reqChecks(page); await uxChecks(page); await robustChecks(page);
@@ -680,8 +683,22 @@ async function robustChecks(page) {
     /* Category R: realism & market accuracy, written separately */
     try { const R = require('./realism.js'); await R.run({ E, check, Parts, results, benchDir: path.join(__dirname, 'benchmarks'), appDir: V4 }); }
     catch (e) { results.push({ id: 'R00', category: 'R', name: 'Realism module failed to run', points: 30, rawPoints: 30, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.message || e), repro: 'node -e "require(\'./realism.js\')"' }); console.log('  [0.00/30] R00 realism module error: ' + (e && e.message)); }
+    }
+    /* Category F: personal finances, scored separately on its own 90-point scale (does not touch the A-E + R total) */
+    console.log('F. Personal finances');
+    try { finance = await require('./finance-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect }); }
+    catch (e) { finance = { earned: 0, max: 90, checks: [{ id: 'F00', category: 'F', name: 'Finance module failed to run', points: 90, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./finance-grade.js\')"' }] }; console.log('  [0.00/90] F00 finance module error: ' + (e && e.message)); }
   } finally { await browser.close(); srv.close(); }
 
+  const fmt2 = (n) => (Math.round(n * 100) / 100).toFixed(2);
+  const finMd = () => { if (!finance) return ''; let m = `\n## F. Personal finances: **${fmt2(finance.earned)} / ${finance.max}** (separate scale; a design review adds 10 later; not included in the A-E + R total)\n\n| ID | Check | Pts | Earned | Detail |\n|---|---|---|---|---|\n`;
+    finance.checks.forEach((r) => (m += `| ${r.id} | ${r.name} | ${fmt2(r.points)} | ${fmt2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 900)} |\n`));
+    const ff = finance.checks.filter((r) => r.earned < r.points - 0.001); m += `\n### F failures\n\n`; if (!ff.length) m += 'None.\n'; ff.forEach((r) => (m += `- **${r.id} ${r.name}** (-${fmt2(r.points - r.earned)}): ${String(r.detail).slice(0, 900)}\n  - Reproduce: ${r.repro}\n`)); return m; };
+  if (FIN_ONLY) {
+    fs.writeFileSync(path.join(__dirname, 'report-finance.md'), `# Finance grader (FINANCE_ONLY)\n\nRun: ${new Date().toISOString()}  |  ${((Date.now() - t0) / 1000).toFixed(0)}s\n` + finMd());
+    fs.writeFileSync(path.join(__dirname, 'result-finance.json'), JSON.stringify({ finance }, null, 2));
+    console.log(`\nF Personal finances: ${fmt2(finance.earned)}/${finance.max}  (${((Date.now() - t0) / 1000).toFixed(0)}s)`); return;
+  }
   /* ---- rescale A-E raw weights proportionally to their category maxima (R keeps its own weights) ---- */
   const rawSum = {}; results.forEach((r) => { rawSum[r.category] = (rawSum[r.category] || 0) + (r.rawPoints != null ? r.rawPoints : r.points); });
   results.forEach((r) => { if (r.category === 'R' || !CATMAX[r.category]) return; const k = CATMAX[r.category] / rawSum[r.category]; r.points = Math.round(r.rawPoints * k * 1000) / 1000; r.earned = Math.round(r.points * (r.ratio != null ? r.ratio : r.earned / r.points) * 1000) / 1000; });
@@ -697,8 +714,10 @@ async function robustChecks(page) {
   results.forEach((r) => (md += `| ${r.id} | ${r.name} | ${f2(r.points)} | ${f2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 400)} |\n`));
   const fails = results.filter((r) => r.earned < r.points - 0.001).sort((a, b) => (b.points - b.earned) - (a.points - a.earned));
   md += `\n## Top failures\n\n`; if (!fails.length) md += 'None.\n'; fails.slice(0, 15).forEach((r, i) => (md += `${i + 1}. **${r.id} ${r.name}** (-${f2(r.points - r.earned)})\n   - Detail: ${String(r.detail).slice(0, 500)}\n   - Reproduce: ${r.repro}\n`));
+  md += finMd();
   fs.writeFileSync(path.join(__dirname, 'report.md'), md);
-  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results }, null, 2));
+  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results, finance }, null, 2));
   console.log('\nCategory scores:'); Object.keys(cats).forEach((c) => console.log(`  ${c}  ${f2(per[c].earned)} / ${f2(per[c].max)}  ${cats[c]}`));
   console.log(`\nTOTAL ${f2(total)} / ${max}`);
+  if (finance) console.log(`\nF Personal finances: ${fmt2(finance.earned)}/${finance.max}`);
 })().catch((e) => { console.error('GRADER CRASH', e); process.exit(2); });
