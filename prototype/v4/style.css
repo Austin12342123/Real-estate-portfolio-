@@ -159,3 +159,7 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
 .vrow.big{margin-top:10px;padding:8px 10px;border-radius:12px;align-items:center}
 .vrow.big.yes{background:color-mix(in srgb,var(--ok) 7%,var(--card))}.vrow.big.tight{background:color-mix(in srgb,var(--warn) 7%,var(--card))}.vrow.big.no{background:color-mix(in srgb,var(--bad) 7%,var(--card))}
 .vq{display:flex;flex-direction:column;min-width:0}.vq .note{margin:2px 0 0;line-height:1.25}.vgo{white-space:nowrap}
+
+.totrow{background:var(--field);border-radius:10px;padding:8px 10px;margin-bottom:4px;cursor:default;border-top:0!important}
+.totrow .addr{font-weight:700}
+.share{margin:8px 0 0;color:var(--ink)}
