@@ -8,7 +8,7 @@
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seed();
   E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
-  let storageOK = true, imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, editList = false, undo = null;
+  let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, editList = false, undo = null;
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
@@ -36,7 +36,7 @@
 
   /* ---------- reusable bits ---------- */
   const field = (label, p, val, o = {}) => `<label class="f ${o.calc ? 'calc' : ''}"><span class="lb">${label}${infoBtn(o.info || GL.LABEL[label])}${o.calc ? ' <i class="auto" title="calculated from your other numbers — tap to override">auto</i>' : ''}</span><span class="iw">${o.pre ? `<em>${o.pre}</em>` : ''}<input inputmode="decimal" data-p="${p}" data-k="${p}" aria-label="${esc(label)}" ${o.ro ? 'readonly tabindex="-1"' : ''} ${o.ph ? 'placeholder="' + esc(o.ph) + '"' : ''} value="${val}">${o.suf ? `<em>${o.suf}</em>` : ''}</span></label>`;
-  const targetSel = (h) => `<select data-sel="${h.id}" class="${h.target ? '' : 'notarget'}" aria-label="Line of credit on ${esc(h.addr)} funds">${'<option value="">Pick a house</option>' + S.houses.filter((x) => x.id !== h.id).map((x) => `<option value="${x.id}" ${h.target === x.id ? 'selected' : ''}>${esc(x.addr)}</option>`).join('')}</select>`;
+  const targetSel = (h) => `<select data-sel="${h.id}" class="${h.target ? '' : 'notarget'}" aria-label="Line of credit on ${esc(h.addr)} funds">${'<option value="">None · tap to choose</option>' + S.houses.filter((x) => x.id !== h.id).map((x) => `<option value="${x.id}" ${h.target === x.id ? 'selected' : ''}>${esc(x.addr)}</option>`).join('')}</select>`;
   const kpi = (id, label, val, sub, cls, sm) => `<div class="kpi ${sm ? 'sm' : ''}"><small>${label}${infoBtn(GL.LABEL[label])}</small><b class="${cls || ''}" data-testid="${id}" data-k="${id}">${val}</b>${sub ? `<span class="sub">${sub}</span>` : ''}</div>`;
 
   const CDEF = {};
@@ -109,7 +109,7 @@
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
       return `<div class="row${soldBy ? ' sold' : ''}" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span class="nm"><span class="addr">${esc(h.addr)}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}"><span class="tag">${tag}</span> ${soldBy ? 'sold' : sp ? (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : 'no loan') + ' · equity ' + $c(sp.equity) : 'not in the totals yet'} ${hi}${loses}</div>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<div class="exitline">${parts.join(' · ')}</div>` : ''; })()}</span>
         ${soldBy ? '' : `<span class="ex ${h.driver === 'months' && H(h.target) ? 'calc' : ''}">Extra<span class="iw"><em>$</em><input inputmode="decimal" data-testid="extra-input" data-p="h.${h.id}.extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(v.X)}"></span></span>`}</div>
-        <div class="r2">${soldBy ? `<div class="fcol"><span class="locline" data-testid="loc-line">Kept as cash</span></div>` : `<div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div>`}<span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy || !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'sold' : !sp ? 'not counted' : 'cash flow'}</small></span></div>
+        <div class="r2">${soldBy ? `<div class="fcol"><span class="locline" data-testid="loc-line"></span></div>` : `<div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div>`}<span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy ? '+' + $c(pl.exits[h.id].proceeds) : !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'cash from sale' : !sp ? 'not counted' : 'cash flow'}</small></span></div>
         ${editList ? (ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? Anything it funds loses its credit-line source.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="rm" data-del="${h.id}" data-testid="row-remove" aria-label="Remove ${esc(h.addr)}">Remove</button>`) : ''}</div>`; };
     const rank = (h) => (isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9);
     const rows = [...S.houses].sort((a, b) => rank(a) - rank(b) || S.houses.indexOf(a) - S.houses.indexOf(b)).map(rowOf).join('');
@@ -137,7 +137,7 @@
     <section class="card" data-testid="summary"><div class="kg">
       ${kpi('kpi-networth', 'Net worth', $f(sn.nw), `${n} assets · projected ${yrs} yr out${sn.cash > 0.5 ? ' · incl. ' + $c(sn.cash) + ' from sales' : ''}`)}
       ${kpi('kpi-monthly', 'Total monthly payments', $f(sn.monthly), sn.extra > 0.5 ? `incl. ${$f(sn.extra)} extra` : 'at plan end · sum of the rows below')}
-      ${kpi('kpi-cashflow', 'Cash flow / mo', $s(sn.cf), sn.extra > 0.5 ? `${$s(sn.cfx)} after extra` : 'before tax · see Finances', sn.cf < 0 ? 'bad' : '', 1)}
+      ${kpi('kpi-cashflow', 'Cash flow / mo', $s(sn.cf), sn.extra > 0.5 ? `${$s(sn.cfx)} after extra` : 'before tax · at plan end', sn.cf < 0 ? 'bad' : '', 1)}
       ${kpi('kpi-dscr', 'DSCR', r(sn.dscr, 2), sn.dscr >= 1.25 ? 'income ÷ loan payments (1.25+ is healthy)' : sn.dscr >= 1 ? 'thin (1.25+ is healthy)' : 'below 1.0', sn.dscr && sn.dscr < 1 ? 'bad' : '', 1)}</div>
       <div class="bar"><i class="${sn.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (sn.cltv / g.cap) * 100)}%"></i></div>
       <div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
@@ -189,16 +189,16 @@
       <div class="f" style="border-top:0;min-height:36px"><span class="lb">Plan for this asset${infoBtn('exit')}</span></div><div class="seg" style="margin-top:0" role="tablist"><button data-exit="hold" class="${h.exit === 'hold' ? 'on' : ''}">Hold</button><button data-exit="sell" class="${h.exit === 'sell' ? 'on' : ''}" data-testid="exit-sell">Sell</button><button data-exit="merge" class="${h.exit === 'merge' ? 'on' : ''}">Merge</button></div>
       <div class="f" style="border-top:0;min-height:30px"><span class="lb">Status</span></div><div class="seg" style="margin-top:0"><button class="${h.status === 'owned' ? 'on' : ''}" data-status="owned">Owned</button><button class="${h.status === 'planned' ? 'on' : ''}" data-status="planned">Planned</button></div>${timing}</section>
     ${h.listingUrl ? `<p class="note" style="margin:10px 4px 0">Imported from a listing${h.info && h.info.beds ? ' · ' + h.info.beds + ' bd / ' + h.info.baths + ' ba · ' + (h.info.sqft || '?') + ' sqft' : ''}.</p>` : ''}
-    <div class="sec"><span>Purchase <i class="auto">auto</i>${infoBtn('auto')}</span></div><section class="card">${field(LB.price, P + 'price', grp(h.price), { pre: '$' })}${field('Down payment', P + 'dp', r(h.dp, 2), { suf: '%' })}${field('Down payment $', P + 'down', grp(v.down), { pre: '$', calc: 1 })}${field('Loan amount', P + 'loan', grp(v.L), { pre: '$', calc: 1, ro: 1 })}${field(LB.growth, P + 'growth', r(v.growth, 2), { suf: '%' })}
+    <div class="sec"><span>Purchase · <i class="auto">auto</i> = calculated${infoBtn('auto')}</span></div><section class="card">${field(LB.price, P + 'price', grp(h.price), { pre: '$' })}${field('Down payment', P + 'dp', r(h.dp, 2), { suf: '%' })}${field('Down payment $', P + 'down', grp(v.down), { pre: '$', calc: 1 })}${field('Loan amount', P + 'loan', grp(v.L), { pre: '$', calc: 1, ro: 1 })}${field(LB.growth, P + 'growth', r(v.growth, 2), { suf: '%' })}
       ${type === 'commercial' ? field('Cap rate', P + 'caprate', r(v.capRate, 1), { suf: '%', calc: 1, ro: 1 }) : ''}${type === 'business' ? field('Price ÷ yearly profit', P + 'mult', r(v.multiple, 1), { suf: '×', calc: 1, ro: 1 }) : ''}</section>
-    ${colSec('loan', 'Loan', (lo ? lo.name + ' · ' : '') + r(h.rate, 2) + '% · ' + r(h.term / 12, 1) + ' yr · ' + $f(v.P) + '/mo', `<section class="card">${loanSel}${lo || h.io ? `<p class="note">${lo ? esc(lo.note) + ' ' : ''}${h.io ? 'Interest-only: extra payments reduce the balance. Balloon at maturity is not modeled.' : ''}</p>` : '<p class="note">Custom terms. Pick a loan option to auto-fill them.</p>'}${h.ownerOcc ? '<span class="chip warnchip" data-testid="owner-occ">You must live here (owner-occupied)</span>' : ''}${h.loanId === 'k203' && h.capex > 75000 ? '<p class="note" data-testid="k203-cap">⚠ Over the $75,000 Limited 203(k) cap. This rehab needs a Standard 203(k) with a HUD consultant.</p>' : ''}
+    ${colSec('loan', 'Loan', (lo ? lo.name.replace(/\s*\(.*\)/, '') : 'Custom') + ' · ' + r(h.rate, 2) + '%', `<section class="card">${loanSel}${lo || h.io ? `<p class="note">${lo ? esc(lo.note) + ' ' : ''}${h.io ? 'Interest-only: extra payments reduce the balance. Balloon at maturity is not modeled.' : ''}</p>` : '<p class="note">Custom terms. Pick a loan option to auto-fill them.</p>'}${h.ownerOcc ? '<span class="chip warnchip" data-testid="owner-occ">You must live here (owner-occupied)</span>' : ''}${h.loanId === 'k203' && h.capex > 75000 ? '<p class="note" data-testid="k203-cap">⚠ Over the $75,000 Limited 203(k) cap. This rehab needs a Standard 203(k) with a HUD consultant.</p>' : ''}
       ${field('Interest rate', P + 'rate', r(h.rate, 3), { suf: '%' })}${field('Term (years)', P + 'termY', r(h.term / 12, 2))}${field('Closing costs', P + 'closingPct', r(h.closingPct == null ? g.closing : h.closingPct, 2), { suf: '%' })}${field('Extra / month', P + 'extra', grp(v.X), { pre: '$', calc: h.driver === 'months' && !!t })}${field('Paid off in (months)', P + 'payoff', isFinite(v.payoff) ? v.payoff : '', { calc: 1 })}${field('Other liens', P + 'liens', grp(h.liens), { pre: '$' })}
       <p class="note">${isFinite(v.payoff) ? `Paid off in ${mo(v.payoff)}. ` : h.io ? 'Not paid off until you refinance or sell. ' : 'Payment does not cover interest. '}${v.mip > 0 ? 'Includes ' + $f(v.mip) + '/mo mortgage insurance. ' : ''}Debt now: ${$f(debt)} (${r((debt / (v.valueNow || h.price)) * 100)}% of today's value).${v.cltvAtLoc != null ? ` When its line of credit opens: ${r(v.cltvAtLoc)}% (cap ${g.cap}%).` : ''}</p>${v.cltvAtLoc != null && v.cltvAtLoc > g.cap + 0.01 ? '<span class="chip warnchip">Over the debt cap</span>' : ''}</section>`, true)}
     ${colSec('rent', LB.sec, type === 'business' ? 'profit ' + $f(h.rent) : 'rent ' + $f(h.rent) + ' · costs ' + $f(h.tax + h.ins + h.hoa), `<section class="card">${income}</section>`, true)}
     ${colSec('loc', 'Line of credit strategy', t ? 'funds ' + t.addr + ' · opens ' + (isFinite(p0 + v.locM) ? mm(p0 + v.locM) : 'never') : 'not set', `<section class="card"><div class="f stack"><span class="lb">Funds</span>${targetSel(h)}</div>
       ${t ? `${field('Cash needed', P + 'need', grp(v.D), { pre: '$', calc: 1, ro: 1 })}${field('Months until LOC', P + 'wait', isFinite(v.locM) ? v.locM : '', { calc: h.driver === 'extra' })}
       <div class="f"><span class="lb">Opens (from today)</span><b>${isFinite(p0 + v.locM) ? mm(p0 + v.locM) : 'never'}</b></div>
-      ${v.infeasible ? '<p class="note">⚠ That wait is not reachable, even with the loan fully paid.</p>' : ''}${a.cls === 'warn' || a.cls === 'bad' ? `<span class="chip warnchip" title="${esc(a.why || '')}">Debt-to-income ${a.cls === 'bad' ? 'over' : 'near'} your limit when ${esc(t.addr)} closes</span>` : ''}${sooner > 0 ? `<span class="chip">+$100/mo → ${sooner} mo sooner</span>` : ''}` : '<p class="note">Pick the asset this line of credit will fund.</p>'}</section>`, !t)}
+      ${v.infeasible ? '<p class="note">⚠ That wait is not reachable, even with the loan fully paid.</p>' : ''}${a.cls === 'warn' || a.cls === 'bad' ? `<span class="chip warnchip" title="${esc(a.why || '')}">Debt-to-income ${a.cls === 'bad' ? 'over' : 'near'} your limit when ${esc(t.addr)} closes</span>` : ''}${sooner > 0 ? `<span class="chip">+$100/mo → ${sooner} mo sooner</span>` : ''}` : '<p class="note">Pick the asset this line of credit will fund.</p>'}</section>`, true)}
     ${exitSec}
     ${colSec('impact', 'Impact on your plan', impactLines.length ? impactLines.length + ' changes' : 'no change', `<section class="card" data-testid="impact">${impactLines.length ? impactLines.join('') : '<p class="note" style="margin:0">Adding or removing this does not change the numbers below.</p>'}<p class="note">Portfolio totals without this asset → with it.</p></section>`, true)}
     ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? It is also cleared as a funding target.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="btn ghost" data-del="${h.id}" data-testid="h-delete">Remove</button>`}`;
@@ -237,7 +237,7 @@
     const row = (label, v, cls, bold) => `<tr class="${bold ? 'tot' : ''}"><td>${label}</td><td class="${cls || ''}">${bold ? '<b>' + $s(v) + '</b>' : $s(v)}</td></tr>`;
     const picture = `<table class="cmp" data-testid="monthly-picture"><tbody>
       ${row('Your take-home pay', k.takeHome)}${row('Portfolio cash flow (after tax)', k.portfolioAfterTax, k.portfolioAfterTax < 0 ? 'bad' : '')}${row('Managers (not you)', -k.managerCost0)}${row('Extra payments', -k.extra)}${row('Living costs', -k.living)}${row('Other debts', -k.debts)}${row('Left over each month', k.net0, k.net0 < 0 ? 'bad' : '', true)}</tbody></table>`;
-    const calls = f.calls.slice(0, 4).map((c) => `<div class="drv"><span>Month ${c.month}${c.assets.length ? ' · ' + esc(c.assets.join(', ')) : ''}</span><span><b>${$f(c.amount)}</b></span></div>`).join('');
+    const calls = f.calls.slice(0, 3).map((c) => `<div class="drv"><span>Month ${c.month}${c.assets.length ? ' · ' + esc(c.assets.join(', ')) : ''}</span><span><b>${$f(c.amount)}</b></span></div>`).join('');
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Finances</h2></div>
     <section class="card vcard ${f.status}" data-testid="verdict-card"><div class="vrow" style="cursor:default"><span class="vchip ${f.status}" data-testid="verdict-chip">${VL[f.status]}</span><b data-testid="verdict-headline">${esc(f.headline)}</b></div>
       ${f.reasons.filter((x) => x.sev !== 'ok').map((x) => `<div class="rsn ${x.sev}"><span aria-hidden="true">${icon[x.sev]}</span><span>${esc(x.text)}</span></div>`).join('')}
@@ -274,10 +274,11 @@
   function settings() {
     const g = S.g, F = (l, k, o) => field(l, 'g.' + k, o && o.pre === '$' ? grp(g[k]) : g[k], o);
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Assumptions</h2></div>
+    <p class="note" style="margin:0 4px 6px">Defaults work for most people. Change them when you know your lender.</p>
     <div class="sec">Borrowing</div><section class="card">${F('Max loan vs value', 'cap', { suf: '%' })}${F('Appraisal cut', 'haircut', { suf: '%' })}${F('Closing costs', 'closing', { suf: '%' })}${F('Line of credit rate', 'hrate', { suf: '%' })}</section>
     <div class="sec">Who helps you qualify</div><section class="card">${F('Co-signer 1 / yr', 'p1', { pre: '$' })}${F('Co-signer 2 / yr', 'p2', { pre: '$' })}<p class="note">Co-signers help you qualify for loans. Their income counts toward the lender's limit.</p>${F('Debt-to-income limit', 'dti', { suf: '%' })}${F('Rent counted', 'rentCount', { suf: '%' })}${F('Other monthly debts', 'otherDebt', { pre: '$' })}</section>
     <div class="sec">Operating costs</div><section class="card">${F('Vacancy', 'vac', { suf: '%' })}${F('Management (of rent)', 'mgmt', { suf: '%' })}${F('Repairs / yr', 'maint', { suf: '%' })}${F('Growth / yr', 'appr', { suf: '%' })}${F('Projection length (years)', 'planYears', {})}</section>
-    ${colSec('backup', 'Backup and restore', 'your data stays on this device', `<section class="card">
+    ${colSec('backup', 'Backup and restore', 'on this device', `<section class="card">
       ${notice ? `<div class="warnbox">${esc(notice)}</div>` : ''}
       <button class="btn" data-export data-testid="export">${exportOpen ? 'Hide backup' : 'Show backup to copy'}</button>
       ${exportOpen ? `<textarea readonly rows="5" id="bkout" aria-label="Backup data" data-testid="backup-text">${esc(JSON.stringify(S))}</textarea><button class="btn plain" data-copybackup>Copy backup</button><p class="note" id="cbm">Save this text somewhere safe, such as a note or file. Paste it below to restore.</p>` : ''}
@@ -285,8 +286,8 @@
       <textarea rows="2" id="bkin" aria-label="Or paste backup text" placeholder="…or paste backup text here"></textarea><button class="btn plain" data-restore-text>Restore from pasted text</button>
       ${pendingImport ? confirmBox('Replace all current data with this backup?', 'data-import-yes', 'Yes, replace') : ''}
       <p class="note">${(() => { try { const t = localStorage.getItem('rep-v4-backup'); return t ? 'Backup last shown: ' + new Date(+t).toLocaleDateString() : 'No backup yet. Copy one regularly.'; } catch (e) { return ''; } })()}</p></section>`, true)}
-    ${colSec('samples', 'Sample portfolios', 'replace your assets', `<section class="card">${ask === 'reset' ? confirmBox('Replace your assets with the realistic sample?', 'data-reset-yes', 'Yes, replace') : '<button class="btn plain" data-reset data-testid="load-realistic">Load realistic sample</button>'}
-      ${ask === 'stretch' ? confirmBox('Replace your assets with the $540M stretch scenario?', 'data-stretch-yes', 'Yes, load it') : '<button class="btn plain" data-stretch data-testid="load-stretch">Load $540M stretch scenario</button>'}
+    ${colSec('samples', 'Sample portfolios', 'replace your assets', `<section class="card">${ask === 'reset' ? confirmBox('Replace your assets with the realistic sample?', 'data-reset-yes', 'Yes, replace') : '<button class="btn plain" style="color:var(--bad)" data-reset data-testid="load-realistic">Load realistic sample</button>'}
+      ${ask === 'stretch' ? confirmBox('Replace your assets with the $540M stretch scenario?', 'data-stretch-yes', 'Yes, load it') : '<button class="btn plain" style="color:var(--bad)" data-stretch data-testid="load-stretch">Load $540M stretch scenario</button>'}
       <p class="note">These replace your current assets. The realistic sample uses market-checked prices, loans and growth. The stretch scenario reaches about $540M and +$1.4M a month, but needs 21-25% yearly business growth for nearly 20 years and about $21M of outside cash.</p></section>`, true)}`;
   }
 
@@ -314,8 +315,8 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   function importPage(id) {
     const target = id === 'new' ? null : H(id), res = imp && imp.res;
     const badge = (x) => `<span class="src ${x}">${x}</span>`;
-    const preview = !res ? '' : res.ok ? `<section class="card" data-testid="import-preview"><b>Preview</b><br><span class="note">listing = from the page · estimate = a guess · missing = default used</span><table class="cmp">${res.rows.map((x) => `<tr><td>${x[0]}</td><td>${esc(x[1])}</td><td>${badge(x[2])}</td></tr>`).join('')}</table>
-      ${res.rows.some((x) => x[2] === 'missing') ? '<p class="note">Missing values keep their defaults. You can edit everything afterward.</p>' : ''}
+    const preview = !res ? '' : res.ok ? `<section class="card" data-testid="import-preview"><b>Preview of ${esc((imp && imp.name) || 'your file')}</b><br><span class="note">listing = from the page · estimate = a guess</span><table class="cmp">${res.rows.map((x) => `<tr><td>${x[0]}</td><td>${esc(x[1])}</td><td>${badge(x[2])}</td></tr>`).join('')}</table>
+      ${res.rows.some((x) => x[2] === 'missing') ? '<p class="note">Anything missing keeps a default; edit it afterward.</p>' : ''}
       <button class="btn" style="width:100%;margin-top:8px" data-apply-listing="${id}" data-testid="import-apply">${target ? 'Fill this house' : 'Add it, then review'}</button></section>` : `<div class="warnbox" data-testid="import-error">⚠ ${esc(res.error)}</div>`;
     return `<div class="top"><button class="ic" data-go="${target ? 'h/' + id : ''}" aria-label="Back">‹</button><h2>Import from listing</h2></div>
     <section class="card"><p class="note" style="margin:0 0 6px">Takes about a minute. Claude reads the listing for you.</p><ol class="steps"><li>Copy the prompt.</li><li>Paste it into a Claude chat with your Zillow link. If Claude cannot open the page, paste the listing text or screenshots instead.</li><li>Save Claude's reply as a <code>.json</code> file and choose it below.</li></ol>
@@ -327,7 +328,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   }
   function readListing(text) {
     let o = null; try { o = JSON.parse(text); } catch (e) { o = null; }
-    imp = { res: o === null ? { ok: false, error: 'That text is not valid JSON.' } : E.fromListing(o) }; render();
+    imp = { name: impName, res: o === null ? { ok: false, error: 'That text is not valid JSON.' } : E.fromListing(o) }; render();
   }
   function applyListing(id) {
     if (!imp || !imp.res || !imp.res.ok) return;
@@ -402,7 +403,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const ln = e.target.dataset.loan; if (ln) { const h = H(ln); if (e.target.value === 'custom') h.loanId = 'custom'; else E.applyLoan(h, e.target.value); save(); render(); return; }
     const mg = e.target.dataset.merge; if (mg) { H(mg).mergeInto = e.target.value; save(); render(); return; }
     const sel = e.target.dataset.sel; if (sel) { H(sel).target = e.target.value; save(); render(); return; }
-    if (e.target.dataset.listingFile !== undefined && e.target.files[0]) { const rd = new FileReader(); rd.onload = () => readListing(String(rd.result)); rd.readAsText(e.target.files[0]); return; }
+    if (e.target.dataset.listingFile !== undefined && e.target.files[0]) { impName = e.target.files[0].name; const rd = new FileReader(); rd.onload = () => readListing(String(rd.result)); rd.readAsText(e.target.files[0]); return; }
     if (e.target.id === 'imp' && e.target.files[0]) { const rd = new FileReader(); rd.onload = () => stageBackup(String(rd.result)); rd.readAsText(e.target.files[0]); } });
   app.addEventListener('click', (e) => {
     const t = e.target;

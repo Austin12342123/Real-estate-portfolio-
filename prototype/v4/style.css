@@ -202,3 +202,9 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
 .f .lb{min-width:0}
 
 .sec.cs{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0;text-transform:none;letter-spacing:0;font-size:15px;color:var(--ink);font-weight:600}
+
+.rsn.ok{color:var(--ink)}.rsn.ok span:first-child{color:var(--ok)}
+table.cmp td:first-child{white-space:nowrap}
+.loanopt small{-webkit-line-clamp:1}
+[data-testid=confirm-add]{position:sticky;bottom:12px;z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.sec.cs .cx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
