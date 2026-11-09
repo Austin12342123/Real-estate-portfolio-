@@ -2,6 +2,7 @@
    Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
 (function (root) {
   const INFO = {
+    auto: { t: 'Auto numbers', b: 'A dashed box marked auto is worked out from your other numbers (for example the loan amount from price and down payment). Type in it to set your own value; clear it to go back to automatic.', e: '' },
     liens: { t: 'Liens', b: 'A lien is a legal claim someone else has on the home because you owe them money. Common ones: a second mortgage, a home-equity loan or line of credit, unpaid property taxes, or a contractor who was not paid. If the home is sold, liens are paid back first, so they reduce how much of the home you really own.', e: 'A home worth $200,000 with a $140,000 mortgage and a $20,000 second loan leaves you $40,000 of real ownership. Enter 0 if nothing else is owed on the home.' },
     downpayment: { t: 'Down payment', b: 'The cash you pay up front when you buy. The loan covers the rest of the price. A bigger down payment means a smaller loan and a smaller monthly payment.', e: '20% down on a $200,000 home is $40,000.' },
     downamt: { t: 'Down payment in dollars', b: 'The down payment as a dollar amount: price × down payment %. Change either number and the other updates.' },
@@ -35,8 +36,8 @@
     dti: { t: 'Debt-to-income (DTI)', b: 'Your monthly debt payments divided by the monthly income a lender counts. Lenders usually want 43% or less.' },
     qualifying: { t: 'Qualifying income', b: 'The income a lender counts to approve a loan: your jobs, a co-signer’s income, and part of rental income.' },
     cosigner: { t: 'Co-signer', b: 'A person, like a parent, who promises to repay the loan if you cannot. Lenders count their income and credit too, which can help you qualify.' },
-    rentcount: { t: 'Rent counted as income', b: 'Lenders count only part of rent as income, often 75%, to allow for empty months and costs.' },
-    haircut: { t: 'Lender appraisal haircut', b: 'Lenders sometimes lend against a bit less than the appraised value. A 5% haircut means they count only 95% of it.' },
+    rentcount: { t: 'Rent counted', b: 'Lenders count only part of rent as income, often 75%, to allow for empty months and costs.' },
+    haircut: { t: 'Appraisal cut', b: 'Lenders sometimes lend against a bit less than the appraised value. A 5% haircut means they count only 95% of it.' },
     vacancy: { t: 'Vacancy', b: 'The share of the year a rental sits empty or rent goes unpaid. 5% is about 18 empty days a year.' },
     mgmt: { t: 'Management fee', b: 'What a property manager charges, as a percent of the rent (often 8% to 10% for homes). Enter it even if you plan to manage it yourself, to stay safe.' },
     repairs: { t: 'Repairs reserve', b: 'Money set aside each year for upkeep, as a percent of the value. 1% a year is a common rule of thumb.' },
@@ -61,7 +62,7 @@
     projection: { t: 'Projection length', b: 'How many years ahead the plan looks. The Portfolio totals show where you would stand at the end of this period.' },
     emergency: { t: 'Emergency reserve', b: 'Cash you want to keep in case your income stops or a repair hits, counted as months of living costs plus debts. Many people aim for 3 to 6 months.' },
     liquid: { t: 'Liquid cash', b: 'Money you can use right away, like savings and checking. Not retirement accounts or the value of a home.' },
-    cashapy: { t: 'Interest earned on cash', b: 'The yearly percent your savings earn. High-yield savings accounts pay a few percent. Enter 0 if unsure.' },
+    cashapy: { t: 'Cash interest', b: 'The yearly percent your savings earn. High-yield savings accounts pay a few percent. Enter 0 if unsure.' },
     living: { t: 'Living costs', b: 'What you spend each month on your own life: rent, food, car, phone, insurance, fun.' },
     inflation: { t: 'Cost increases per year', b: 'How much your living costs go up each year. 3% is a common planning number.' },
     otherdebts: { t: 'Other monthly debts', b: 'Payments like a car loan, student loans or credit cards. Lenders count them when approving loans.' },
@@ -84,14 +85,14 @@
   };
   const LABEL = {
     'Other liens': 'liens', 'Down payment': 'downpayment', 'Down payment $': 'downamt', 'Loan amount': 'loanamount', 'Interest rate': 'rate', 'Term (years)': 'term', 'Closing costs': 'closing', 'Extra / month': 'extra',
-    'Paid off in (months)': 'payoff', 'Appreciation / yr': 'growth', 'Value growth / yr': 'growth', 'Business growth / yr': 'growth', 'Default growth / yr': 'growth', 'Cap rate': 'caprate', 'Price ÷ yearly profit': 'multiple',
+    'Paid off in (months)': 'payoff', 'Appreciation / yr': 'growth', 'Value growth / yr': 'growth', 'Business growth / yr': 'growth', 'Growth / yr': 'growth', 'Cap rate': 'caprate', 'Price ÷ yearly profit': 'multiple',
     'Improvement budget': 'capex', 'Months to finish': 'capexmonths', 'New appraised value': 'arv', 'Value gained (vs price + rehab)': 'gain', 'Income lift': 'liftincome', 'Selling costs': 'sellcost', 'Net proceeds': 'proceeds',
-    'Synergy lift': 'merge', 'Months already paid': 'paid', 'Buy in (months)': 'buyin', 'Cash needed': 'cashneeded', 'Months until LOC': 'locmonths', 'Max debt on a house (cap)': 'debtcap', 'Lender appraisal haircut': 'haircut',
-    'Closing costs (of price)': 'closing', 'Line of credit rate': 'creditline', 'Parent 1 income / yr': 'cosigner', 'Parent 2 income / yr': 'cosigner', 'Debt-to-income limit': 'dti', 'Rent counted as income': 'rentcount',
-    'Other monthly debts': 'otherdebts', 'Other monthly debts (car, loans)': 'otherdebts', 'Vacancy': 'vacancy', 'Management (of rent)': 'mgmt', 'Repairs reserve (of value / yr)': 'repairs', 'Projection length (years)': 'projection',
-    'Liquid cash you have': 'liquid', 'Interest earned on cash': 'cashapy', 'Emergency reserve (months)': 'emergency', 'Living costs / month': 'living', 'Cost increases / year': 'inflation', 'Tax on portfolio income': 'portfoliotax',
+    'Synergy lift': 'merge', 'Months already paid': 'paid', 'Buy in (months)': 'buyin', 'Cash needed': 'cashneeded', 'Months until LOC': 'locmonths', 'Max loan vs value': 'debtcap', 'Appraisal cut': 'haircut',
+    'Closing costs (of price)': 'closing', 'Line of credit rate': 'creditline', 'Co-signer 1 income / yr': 'cosigner', 'Co-signer 2 income / yr': 'cosigner', 'Debt-to-income limit': 'dti', 'Rent counted': 'rentcount',
+    'Other monthly debts': 'otherdebts', 'Other monthly debts (car, loans)': 'otherdebts', 'Vacancy': 'vacancy', 'Management (of rent)': 'mgmt', 'Repairs / yr': 'repairs', 'Projection length (years)': 'projection',
+    'Liquid cash you have': 'liquid', 'Cash interest': 'cashapy', 'Reserve (months)': 'emergency', 'Living costs / month': 'living', 'Cost increases / year': 'inflation', 'Tax on portfolio income': 'portfoliotax',
     'Tax on gains when you sell': 'salestax', 'Businesses you run yourself': 'operating', 'Hours / week each takes': 'bizhours', 'Manager pay per other business / mo': 'gmpay', 'Hourly wage': 'wage', 'Tips per hour (optional)': 'tips',
-    'Hours / week': 'hours', 'Weeks worked / year': 'weeks', 'Tax rate (blank = estimate)': 'taxrate', 'Yearly raise': 'raise', 'Ends in (months; blank = no end)': 'jobend', 'Starts in (months)': 'jobstart', 'Gross pay / year': 'grosspay',
+    'Hours / week': 'hours', 'Weeks worked / year': 'weeks', 'Tax rate (blank = estimate)': 'taxrate', 'Yearly raise': 'raise', 'Ends in (months)': 'jobend', 'Starts in (months)': 'jobstart', 'Gross pay / year': 'grosspay',
     'DSCR': 'dscr', 'DSCR now': 'dscr', 'Cash-on-cash now': 'coc', 'Net worth': 'networth', 'Cash flow / mo': 'cashflow', 'Cash flow now': 'cashflow', 'Loan option': 'loanoption', 'Funds': 'creditline'
   };
   const LOAN = { conv30: 'conv', conv15: 'conv', fha: 'fha', k203: 'k203', dscr: 'dscrloan', cashh: 'cashbuy', cashb: 'cashbuy', comm25: 'bankloan', sba504: 'sba', bridge: 'bridge', sellerc: 'sellerfin', sba7a: 'sba', bankbiz: 'bankloan', sellerb: 'sellerfin' };

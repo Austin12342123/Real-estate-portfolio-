@@ -196,3 +196,7 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
 
 .row.sold{opacity:.62}
 .f.stack{flex-direction:column;align-items:stretch;gap:2px;padding:6px 0}.f.stack select,.f.stack b{width:100%;max-width:none;text-align:left}
+
+.loanopt small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.row .addr{white-space:normal!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:clip}
+.f .lb{min-width:0}
