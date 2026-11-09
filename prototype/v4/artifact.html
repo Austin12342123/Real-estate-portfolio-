@@ -142,6 +142,22 @@ table.cmp td:first-child,table.cmp th:first-child{width:34%;white-space:normal}
 table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
 .linkbtn{min-height:44px}
 
+.hb{display:flex;align-items:center;gap:2px}
+.txtbtn{background:none;border:0;color:var(--acc);font-size:16px;font-weight:600;min-height:44px;padding:0 10px}
+.vrow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;cursor:pointer}
+.vchip{display:inline-block;font-size:13px;font-weight:700;border-radius:12px;padding:2px 10px;white-space:nowrap}
+.vchip.yes{background:color-mix(in srgb,var(--ok) 16%,var(--card));color:var(--ok)}
+.vchip.tight{background:color-mix(in srgb,var(--warn) 16%,var(--card));color:var(--warn)}
+.vchip.no{background:color-mix(in srgb,var(--bad) 16%,var(--card));color:var(--bad)}
+.rsn{display:flex;gap:8px;font-size:14px;padding:6px 0;border-top:1px solid var(--line)}.rsn span:first-child{width:16px;flex:none;font-weight:700}
+.rsn.ok span:first-child{color:var(--ok)}.rsn.warn span:first-child{color:var(--warn)}.rsn.bad span:first-child{color:var(--bad)}
+.fixes{margin-top:8px;font-size:14px;background:var(--field);border-radius:10px;padding:8px 12px}.fixes ul{margin:4px 0 0;padding-left:18px}.fixes li{margin:3px 0}
+input.t2{font-weight:700;font-size:16px;width:100%;min-height:44px;border-bottom:1px solid var(--line)}
+.lr{padding:6px 0;border-top:1px solid var(--line)}.lr:first-child{border-top:0}
+.cardbtn{background:var(--card);border-radius:14px;margin:0 0 12px;border-top:0}
+svg.nw path.rs{fill:none;stroke:var(--mut);stroke-width:1.5;stroke-dasharray:4 3}svg.nw circle.lowpt{fill:var(--bad);stroke:var(--card);stroke-width:2}
+table.cmp tr.tot td{border-top:2px solid var(--line)}
+
 </style>
 <main id="app" aria-live="polite"></main>
 <script>
@@ -261,6 +277,25 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
       valueGain: +h.arv > 0 ? h.arv - h.price - (h.capex || 0) : 0, capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
   }
 
+  /* ---------- personal finances: your jobs, savings and expenses ---------- */
+  const samplePersonal = () => ({ cash: 45000, cashApy: 3, living: 3600, inflation: 3, emergencyMonths: 6, portfolioTaxPct: 20, salesTaxPct: 25, operating: 1, gmMonthly: 8000, bizHours: 20,
+    jobs: [{ id: 'job1', name: 'Day job (salary)', gross: 96000, raise: 3, tax: 24, hours: 40, start: 0, end: null }], planned: [], capital: [] });
+  const num0 = (v, d) => (isFinite(+v) && v !== '' && v !== null ? +v : d);
+  function normalizePersonal(p) {
+    const d = samplePersonal(); p = Object.assign({}, d, p || {});
+    ['cash', 'cashApy', 'living', 'inflation', 'emergencyMonths', 'portfolioTaxPct', 'salesTaxPct', 'operating', 'gmMonthly', 'bizHours'].forEach((k) => { p[k] = Math.max(0, num0(p[k], d[k])); });
+    p.operating = Math.round(p.operating); p.bizHours = Math.min(168, p.bizHours); p.portfolioTaxPct = Math.min(70, p.portfolioTaxPct); p.salesTaxPct = Math.min(70, p.salesTaxPct); p.cashApy = Math.min(30, p.cashApy);
+    let n = 0; const id = (x, pre) => (typeof x === 'string' && x ? x : pre + Date.now().toString(36) + (n++));
+    p.jobs = (Array.isArray(p.jobs) ? p.jobs : []).filter((j) => j && typeof j === 'object').map((j) => ({ id: id(j.id, 'job'), name: typeof j.name === 'string' ? j.name : 'Job',
+      gross: Math.max(0, num0(j.gross, 0)), raise: Math.min(50, Math.max(-50, num0(j.raise, 0))), tax: Math.min(70, Math.max(0, num0(j.tax, 25))), hours: Math.min(168, Math.max(0, num0(j.hours, 40))), start: Math.max(0, Math.round(num0(j.start, 0))),
+      end: j.end === null || j.end === '' || j.end === undefined || !isFinite(+j.end) ? null : Math.max(0, Math.round(+j.end)) }));
+    ['planned', 'capital'].forEach((k) => { p[k] = (Array.isArray(p[k]) ? p[k] : []).filter((x) => x && typeof x === 'object').map((x) => ({ id: id(x.id, k === 'planned' ? 'pl' : 'cap'), name: typeof x.name === 'string' ? x.name : '', amount: Math.max(0, num0(x.amount, 0)), month: Math.max(0, Math.round(num0(x.month, 0))) })); });
+    return p;
+  }
+  const jobMonthly = (j, t) => (t < (j.start || 0) || (j.end !== null && j.end !== undefined && t >= j.end) ? 0 : (j.gross / 12) * Math.pow(1 + (j.raise || 0) / 100, Math.floor(Math.max(0, t - (j.start || 0)) / 12)));
+  const jobsGross = (S, t) => (S.p ? S.p.jobs.reduce((a, j) => a + jobMonthly(j, t), 0) : 0);
+  const jobsNet = (S, t) => (S.p ? S.p.jobs.reduce((a, j) => a + jobMonthly(j, t) * (1 - (j.tax || 0) / 100), 0) : 0);
+
   /* The whole-portfolio plan: purchase months, sales, cash, month-by-month series, plan-level KPIs. */
   function plan(S) {
     const hs = S.houses, g = S.g, V = {};
@@ -333,7 +368,7 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
       }
       s.nw[t] += cashBal; s.cash[t] = cashBal; s.outside[t] = outsideCum;
       s.cf[t] = s.noi[t] - s.ds[t]; s.cfx[t] = s.cf[t] - s.extra[t];
-      const inc = (g.p1 + g.p2) / 12 + incAdd, debts = g.otherDebt + debtAdd;
+      const inc = (g.p1 + g.p2) / 12 + jobsGross(S, t) + incAdd, debts = g.otherDebt + debtAdd;
       s.dti[t] = inc > 0 ? Math.min(999, (debts / inc) * 100) : debts > 0 ? 999 : 0;
     }
     const at = (t) => { t = Math.max(0, Math.min(T, Math.round(t))); const o = { month: t }; keys.forEach((k) => (o[k] = s[k][t]));
@@ -350,6 +385,61 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
     return { purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
       at, assetsAt, snap: assetsAt(Math.min(T, planM)), rows, funds, fundedByLOC, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id) };
   }
+
+  /* Can you afford the plan? Rolls your personal cash forward month by month on top of the portfolio plan. */
+  function finance(S, pl) {
+    const p = S.p; if (!p) return null; pl = pl || plan(S);
+    const g = S.g, s = pl.series, T = pl.T, infl = (p.inflation || 0) / 100, apy = (p.cashApy || 0) / 1200;
+    const N = (n) => new Array(n + 1).fill(0);
+    const R = { gm: N(T), hours: N(T), nBiz: N(T), income: N(T), portfolio: N(T), portTax: N(T), extra: N(T), living: N(T), debts: N(T), oneTime: N(T), capitalIn: N(T), outsideCall: N(T), saleTax: N(T), interest: N(T), net: N(T), liquid: N(T), total: N(T), reserve: N(T), burn: N(T), runway: N(T) };
+    S.houses.forEach((h) => { const ex = pl.exits[h.id]; if (ex && ex.month <= T) { const gain = ex.price * (1 - (h.sellCost || 0) / 100) - h.price - (h.capex || 0); R.saleTax[ex.month] += (Math.max(0, gain) * (p.salesTaxPct || 0)) / 100; } });
+    p.planned.forEach((x) => { if (x.month <= T) R.oneTime[x.month] += x.amount; }); p.capital.forEach((x) => { if (x.month <= T) R.capitalIn[x.month] += x.amount; });
+    S.houses.filter((h) => h.type === 'business').forEach((h) => { const a = pl.purchase[h.id], b = Math.min(T + 1, pl.sellAt[h.id]); if (isFinite(a)) for (let t = a; t < b && t <= T; t++) R.nBiz[t]++; });
+    let liq = p.cash || 0;
+    for (let t = 0; t <= T; t++) {
+      const mgr = Math.max(0, R.nBiz[t] - (p.operating || 0)); R.gm[t] = mgr * (p.gmMonthly || 0) * Math.pow(1 + infl, t / 12);
+      R.hours[t] = p.jobs.reduce((a, j) => a + (jobMonthly(j, t) > 0 ? j.hours || 0 : 0), 0) + Math.min(p.operating || 0, R.nBiz[t]) * (p.bizHours || 0);
+      R.income[t] = jobsNet(S, t); R.portfolio[t] = s.cf[t]; R.portTax[t] = (Math.max(0, s.cf[t]) * (p.portfolioTaxPct || 0)) / 100; R.extra[t] = s.extra[t];
+      R.living[t] = (p.living || 0) * Math.pow(1 + infl, t / 12); R.debts[t] = g.otherDebt || 0;
+      R.outsideCall[t] = t === 0 ? s.outside[0] : s.outside[t] - s.outside[t - 1];
+      R.net[t] = R.income[t] + R.portfolio[t] - R.portTax[t] - R.gm[t] - R.extra[t] - R.living[t] - R.debts[t];
+      R.interest[t] = t > 0 ? Math.max(0, liq + s.cash[t - 1]) * apy : 0;
+      liq += R.net[t] + R.interest[t] + R.capitalIn[t] - R.outsideCall[t] - R.oneTime[t] - R.saleTax[t];
+      R.liquid[t] = liq; R.total[t] = liq + s.cash[t];
+      R.reserve[t] = (p.emergencyMonths || 0) * (R.living[t] + R.debts[t]);
+      R.burn[t] = R.living[t] + R.debts[t] + R.extra[t] + R.gm[t] - Math.max(0, R.portfolio[t] - R.portTax[t]);
+      R.runway[t] = R.burn[t] > 0.5 ? Math.max(0, R.total[t]) / R.burn[t] : Infinity;
+    }
+    let minT = Infinity, minM = 0, gapM = -Infinity, gapAt = 0, minRun = Infinity, minRunM = 0, firstShort = -1;
+    for (let t = 0; t <= T; t++) { if (R.total[t] < minT) { minT = R.total[t]; minM = t; } const gp = R.reserve[t] - R.total[t]; if (gp > gapM) { gapM = gp; gapAt = t; }
+      if (R.runway[t] < minRun) { minRun = R.runway[t]; minRunM = t; } if (firstShort < 0 && R.total[t] < 0) firstShort = t; }
+    const worstNet = Math.min.apply(null, R.net), callsAll = [];
+    for (let t = 0; t <= T; t++) if (R.outsideCall[t] > 0.5) callsAll.push({ month: t, amount: R.outsideCall[t], assets: S.houses.filter((h) => pl.purchase[h.id] === t || (h.capex > 0 && h.status === 'owned' && t === 0)).map((h) => h.addr) });
+    const reasons = [], fixes = [], money = (n) => '$' + Math.round(Math.abs(n)).toLocaleString('en-US');
+    let status = 'yes';
+    const short = Math.max(0, -minT);
+    if (short > 0.5) { status = 'no'; const c = callsAll.filter((x) => x.month <= firstShort).slice(-1)[0];
+      reasons.push({ sev: 'bad', text: 'You run out of cash in month ' + firstShort + ' and would be about ' + money(short) + ' short at the lowest point (month ' + minM + ').' });
+      fixes.push('Line up at least ' + money(short) + ' more (partners, investors, family) before month ' + firstShort + (c && c.assets.length ? ', when ' + c.assets.join(' and ') + ' closes' : '') + ', or push those purchases later.'); }
+    if (R.net[0] < -0.5) { if (status === 'yes') status = 'tight'; reasons.push({ sev: 'warn', text: 'You spend ' + money(-R.net[0]) + ' a month more than you bring in right now.' }); fixes.push('Close the ' + money(-R.net[0]) + '/mo gap: raise income, cut living costs, or trim extra payments (' + money(R.extra[0]) + '/mo now).'); }
+    else reasons.push({ sev: 'ok', text: 'You save about ' + money(R.net[0]) + ' a month after living costs, debts and extra payments.' });
+    let peakH = 0, peakHM = 0; for (let t = 0; t <= T; t++) if (R.hours[t] > peakH) { peakH = R.hours[t]; peakHM = t; }
+    const peakBiz = Math.max.apply(null, R.nBiz), gmMax = Math.max.apply(null, R.gm);
+    if (peakH > 70) { if (status === 'yes') status = 'tight'; reasons.push({ sev: 'warn', text: 'At the busiest point (month ' + peakHM + ') you would work about ' + Math.round(peakH) + ' hours a week between your job and running ' + Math.min(p.operating, peakBiz) + ' business(es) yourself.' }); fixes.push('Hire a general manager for a business, drop a job, or sell a business sooner. Each manager costs about ' + money(p.gmMonthly) + '/mo.'); }
+    else if (peakBiz > 0) reasons.push({ sev: 'ok', text: 'About ' + Math.round(peakH) + ' hours a week at the busiest point' + (gmMax > 0 ? ', with ' + money(gmMax) + '/mo of manager pay for businesses you do not run' : '') + '.' });
+    const reserveGap = Math.max(0, gapM);
+    if (short <= 0.5 && reserveGap > 0.5) { if (status === 'yes') status = 'tight'; reasons.push({ sev: 'warn', text: 'Your cash falls ' + money(reserveGap) + ' below a ' + p.emergencyMonths + '-month emergency reserve (month ' + gapAt + ').' }); fixes.push('Hold about ' + money(reserveGap) + ' more cash to keep ' + p.emergencyMonths + ' months of expenses at all times.'); }
+    else if (short <= 0.5) reasons.push({ sev: 'ok', text: 'Your cash never drops below a ' + p.emergencyMonths + '-month emergency reserve.' });
+    if (pl.worst.dti > g.dti) { if (status === 'yes') status = 'tight'; reasons.push({ sev: 'warn', text: 'Lenders may decline: debt-to-income peaks at ' + Math.round(pl.worst.dti) + '% in month ' + pl.worst.month + ' (limit ' + g.dti + '%).' }); fixes.push('Raise qualifying income, add a co-signer, or lower the loan sizes that close around month ' + pl.worst.month + '.'); }
+    else reasons.push({ sev: 'ok', text: 'Qualifying income covers the loans (debt-to-income peaks at ' + Math.round(pl.worst.dti) + '%, limit ' + g.dti + '%).' });
+    if (isFinite(minRun) && minRun < 3 && short <= 0.5) { if (status === 'yes') status = 'tight'; reasons.push({ sev: 'warn', text: 'If your job income stopped in month ' + minRunM + ', your cash would last only ' + minRun.toFixed(1) + ' months.' }); fixes.push('Build cash or portfolio income so you could last at least 3 months without a paycheck.'); }
+    const headline = status === 'yes' ? 'Yes. You can carry this plan.' : status === 'tight' ? 'Tight. It works, but with thin margins.' : 'Not yet. You run short of cash in month ' + firstShort + '.';
+    const totalOutside = s.outside[T], capitalTotal = p.capital.reduce((a, x) => a + x.amount, 0);
+    return { series: R, T, status, headline, reasons, fixes, calls: callsAll,
+      kpis: { peakHours: peakH, peakHoursMonth: peakHM, managerCost0: R.gm[0], managerCostMax: gmMax, peakBusinesses: peakBiz, takeHome: R.income[0], portfolioAfterTax: R.portfolio[0] - R.portTax[0], extra: R.extra[0], living: R.living[0], debts: R.debts[0], net0: R.net[0], worstNet, cash0: p.cash, reserveMonths0: R.living[0] + R.debts[0] > 0 ? p.cash / (R.living[0] + R.debts[0]) : Infinity,
+        minLiquid: minT, minLiquidMonth: minM, shortAmount: short, firstShortMonth: firstShort, reserveTarget0: R.reserve[0], reserveGap, runway0: R.runway[0], minRunway: minRun, totalOutside, capitalTotal, savingsUsed: Math.min(p.cash, totalOutside), gap: Math.max(0, totalOutside - p.cash - capitalTotal), dtiPeak: pl.worst.dti } };
+  }
+
   function afford(S, h, pl) {
     pl = pl || plan(S);
     const t = H(S, h.target);
@@ -363,6 +453,7 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
   }
   function normalize(S) {
     S.g = Object.assign({}, GDEF, S.g || {});
+    if (S.p) S.p = normalizePersonal(S.p);
     S.houses = (S.houses || []).filter((h) => h && h.id).map((h) => { const type = TYPES[h.type] ? h.type : 'house'; return Object.assign(newAsset(type, undefined, { id: h.id }), h, { type }); });
     S.houses.forEach((h) => {
       ['price', 'dp', 'rate', 'term', 'extra', 'rent', 'tax', 'ins', 'hoa', 'liens', 'paid', 'buyIn', 'wait', 'capex', 'capexMonths', 'arv', 'liftIncome', 'exitMonth', 'exitLift', 'sellCost'].forEach((k) => { if (!isFinite(+h[k])) h[k] = newAsset(h.type, undefined)[k]; else h[k] = +h[k]; });
@@ -406,7 +497,7 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
   }
   /* STRETCH scenario (listed in the order the assets are bought): tuned so the plan reaches about $540M of net worth and +$1.4M/mo of cash flow
      after 20 years. It leans on two large business exits at 21-25%/yr growth. Not a forecast. */
-  const seedStretch = () => { const A = newAsset; return normalize({ g: Object.assign({}, GDEF), houses: [
+  const seedStretch = () => { const A = newAsset; return normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: samplePersonal(), houses: [
     A('house', 'conv30', { id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4, target: 'birch' }),
     A('house', 'conv30', { id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4, target: 'willow' }),
     A('business', 'sba7a', { id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 9 }),
@@ -428,7 +519,7 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
     A('commercial', 'comm25', { id: 'west', addr: 'Westfield Office Park', price: 11000000, rent: 112000, tax: 4200, ins: 3300, hoa: 2400, growth: 5, buyIn: 120 })] }); };
   /* DEFAULT sample (listed in the order the assets are bought). Every loan, price, cap rate, multiple and growth rate is checked against
      the grader's benchmark file (prototype/grader). Homes cash flow positive. Recycles sale cash; needs about $1.3M of outside cash. */
-  const seed = () => { const A = newAsset; return normalize({ g: Object.assign({}, GDEF), houses: [
+  const seed = () => { const A = newAsset; return normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: samplePersonal(), houses: [
     A('house', undefined, { id: 'maple', status: 'owned', extra: 600, paid: 18, target: 'birch', growth: 3.5, loanId: 'custom', rate: 6.5, addr: '1412 Maple Ridge Dr', price: 185000, rent: 1900, tax: 215, ins: 90 }),
     A('house', undefined, { id: 'cedar', status: 'owned', extra: 400, paid: 30, target: 'willow', growth: 3.5, loanId: 'custom', rate: 6.75, addr: '2207 Cedar Hollow Ln', price: 165000, rent: 1750, tax: 180, ins: 85 }),
     A('business', undefined, { id: 'auto', status: 'owned', paid: 12, growth: 5, loanId: 'custom', rate: 9.5, addr: 'Precision Auto Care', price: 1100000, rent: 33950 }),
@@ -443,7 +534,7 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
     A('business', 'sba7a', { id: 'freight', buyIn: 62, growth: 8, addr: 'Summit Freight & Logistics', price: 1800000, rent: 41650 }),
     A('house', 'dscr', { id: 'linden', buyIn: 84, growth: 3.5, addr: '2914 Linden Way', price: 175000, rent: 1850, tax: 195, ins: 85 }),
     A('commercial', undefined, { id: 'lake', buyIn: 100, loanId: 'custom', dp: 35, addr: 'Lakeview Medical Office', price: 1800000, rent: 17450, tax: 1000, ins: 800, hoa: 500 })] }); };
-  const E = { GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -454,16 +545,17 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
   let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan' };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  const DATA_V = 8; /* bump when the sample portfolio changes so old saved samples are replaced */
+  const DATA_V = 9; /* bump when the sample portfolio changes so old saved samples are replaced */
+  if (S && Array.isArray(S.houses) && S.g && S.v === 8) { S.p = S.p || E.samplePersonal(); S.v = DATA_V; } /* v8 saves keep their assets and gain a finance profile */
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seed();
-  E.normalize(S); S.v = DATA_V;
+  E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
   let storageOK = true, imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, editList = false, undo = null;
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
-  const hashOf = (p) => (!p ? '#' : p === 'settings' ? '#assumptions' : p.startsWith('h/') ? '#house-' + p.slice(2) : p.startsWith('import/') ? '#import-' + p.slice(7) : p === 'add' ? '#add' : '#');
-  const routeOf = () => { const h = location.hash.slice(1); return h === 'assumptions' ? 'settings' : h.startsWith('house-') ? 'h/' + h.slice(6) : h.startsWith('import-') ? 'import/' + h.slice(7) : h === 'add' ? 'add' : ''; };
+  const hashOf = (p) => (!p ? '#' : p === 'settings' ? '#assumptions' : p.startsWith('h/') ? '#house-' + p.slice(2) : p.startsWith('import/') ? '#import-' + p.slice(7) : p === 'add' ? '#add' : p === 'finances' ? '#finances' : '#');
+  const routeOf = () => { const h = location.hash.slice(1); return h === 'assumptions' ? 'settings' : h.startsWith('house-') ? 'h/' + h.slice(6) : h.startsWith('import-') ? 'import/' + h.slice(7) : h === 'add' ? 'add' : h === 'finances' ? 'finances' : ''; };
   const goto = (p) => { location.hash = hashOf(p); };
 
   /* ---------- formatting ---------- */
@@ -472,6 +564,7 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
   const $s = (n) => (n < -0.5 ? '−' : '+') + $f(Math.abs(n));
   const $c = (n) => { const a = Math.abs(num(n)); return a >= 1e9 ? $f(n) : a >= 1e7 ? (n < 0 ? '−' : '') + '$' + (a / 1e6).toFixed(1) + 'M' : a >= 1e6 ? (n < 0 ? '−' : '') + '$' + (a / 1e6).toFixed(2) + 'M' : $f(n); };
   const $cs = (n) => (n < -0.5 ? '−' : '+') + $c(Math.abs(n));
+  const VL = { yes: 'Yes', tight: 'Tight', no: 'Not yet' };
   const TS = { house: 'Home', commercial: 'Comm.', business: 'Biz' }, TL = { house: 'Home', commercial: 'Commercial', business: 'Business' }, TPL = { house: 'Single-family homes', commercial: 'Commercial properties', business: 'Businesses' };
   const grp = (n) => Math.round(num(n)).toLocaleString('en-US');
   const mo = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 24 ? m + ' mo' : Math.floor(m / 12) + 'y ' + (m % 12) + 'm');
@@ -570,11 +663,12 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
     const outside = th.outside > 0 ? `<div class="warnbox" data-testid="outside-cash">Needs <b>${$f(th.outside)}</b> of outside cash for purchases a credit line doesn't fund (partners, investors, savings). The plan doesn't repay it.</div>` : '';
     const badHomes = S.houses.filter((h) => (h.type || 'house') === 'house' && pl.V[h.id].cf < 0);
     const homeWarn = badHomes.length ? `<div class="warnbox" data-testid="home-warning">⚠ Homes must cash flow positive. Losing money each month: ${badHomes.map((h) => esc(h.addr)).join(', ')}.</div>` : '';
+    const fin = S.p ? E.finance(S, pl) : null;
     const tab = UI.tab, nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0];
     const headline = (nb ? `Next: buy <b>${esc(nb.addr)}</b> in <b>${mm(pl.purchase[nb.id])}</b>. ` : '') + (pl.unfunded.length ? `${pl.unfunded.length} not funded yet. ` : `All ${n} assets by <b>${mo(pl.lastBuy)}</b>. `) + `${pl.snap.length > 1 ? '' : ''}`;
     const drv = pl.assetsAt(pl.planM).sort((a, b) => b.equity - a.equity), drvOpen = !UI.coll.drivers;
     const drivers = `<button class="linkbtn leftbtn" data-coll="drivers" aria-expanded="${drvOpen}">What drives net worth ${drvOpen ? '▾' : '▸'}</button>${drvOpen ? `<div data-testid="drivers">${drv.slice(0, 6).map((d) => `<div class="drv"><span>${esc(d.addr)}</span><span><b>${$f(d.equity)}</b> <small>${th.nw > 0 ? r((d.equity / th.nw) * 100) : 0}%</small></span></div>`).join('')}<p class="note">Equity = value − loans − credit lines drawn. A sample like this leans on a few fast-growing businesses; check the growth rate on each.</p></div>` : ''}`;
-    return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></h1>
+    return `<h1>Portfolio <span class="hb"><button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>
     ${undo ? `<div class="warnbox okbox" data-testid="undo-banner">Removed ${esc(undo.label)}. <button class="chip link" data-undo>Undo</button></div>` : ''}
     ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
     <section class="card" data-testid="summary"><div class="kg">
@@ -585,7 +679,8 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
       <div class="bar"><i class="${sn.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (sn.cltv / g.cap) * 100)}%"></i></div>
       <div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
       <p class="note" style="margin:6px 0 0">Whole portfolio, projected ${yrs} years out, after every planned purchase, improvement and sale.</p>
-      <p class="plan-line" data-testid="plan-headline">${headline}</p></section>
+      <p class="plan-line" data-testid="plan-headline">${headline}</p>
+      ${fin ? `<div class="vrow" data-go="finances" data-testid="afford-line" role="link"><span>Can I afford this?</span><span><span class="vchip ${fin.status}" data-testid="afford-chip">${VL[fin.status]}</span> ›</span></div>` : ''}</section>
     <div class="sec"><span>Extra payments &amp; credit lines</span><span class="secr"><button class="editlink" data-edit data-testid="edit-list">${editList ? 'Done' : 'Edit'}</button><span class="tot" data-testid="total-extra" data-k="tot">${$f(tot)}/mo extra</span></span></div><section class="card" id="ledger" data-testid="ledger">${rows}<button class="addrow" data-add data-testid="add-house">+ Add property or business</button></section>
     <button class="linkbtn" data-go="import/new" data-testid="import-link">Import a home from a listing file</button>
     <section class="card" data-testid="plan-card"><b>Portfolio breakdown</b> <span class="note">${n} assets · last purchase ${mo(pl.lastBuy)}</span>
@@ -643,6 +738,54 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
     ${exitSec}
     ${colSec('impact', 'Impact on your plan', impactLines.length ? impactLines.length + ' changes' : 'no change', `<section class="card" data-testid="impact">${impactLines.length ? impactLines.join('') : '<p class="note" style="margin:0">Adding or removing this does not change the numbers below.</p>'}<p class="note">Your plan without this asset → with it.</p></section>`)}
     ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? It is also cleared as a funding target.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="btn ghost" data-del="${h.id}" data-testid="h-delete">Remove</button>`}`;
+  }
+
+  /* ---------- finances page: your jobs, cash and expenses, and whether the plan is affordable ---------- */
+  function finChart(f) {
+    const T = Math.min(f.T, 240), tot = f.series.total.slice(0, T + 1), rsv = f.series.reserve.slice(0, T + 1);
+    const W = 340, Hh = 170, pad = 10, min = Math.min(0, ...tot, ...rsv), max = Math.max(1, ...tot, ...rsv);
+    const x = (t) => pad + (t / T) * (W - 2 * pad), y = (v) => Hh - 24 - ((v - min) / (max - min || 1)) * (Hh - 44);
+    const path = (arr) => { let d = ''; const st = Math.max(1, Math.ceil(T / 160)); for (let t = 0; t <= T; t += st) d += (d ? 'L' : 'M') + x(t).toFixed(1) + ' ' + y(arr[t]).toFixed(1); return d + 'L' + x(T).toFixed(1) + ' ' + y(arr[T]).toFixed(1); };
+    const ys = T <= 60 ? 1 : T <= 120 ? 2 : 5; let ticks = ''; for (let yr = 0; yr * 12 <= T; yr += ys) ticks += `<text x="${x(yr * 12)}" y="${Hh - 8}" text-anchor="${yr === 0 ? 'start' : 'middle'}">${yr ? yr + 'y' : 'Now'}</text>`;
+    const mm0 = f.kpis.minLiquidMonth <= T ? `<circle class="lowpt" cx="${x(f.kpis.minLiquidMonth)}" cy="${y(tot[f.kpis.minLiquidMonth])}" r="5"><title>Lowest cash: month ${f.kpis.minLiquidMonth}</title></circle>` : '';
+    return `<div class="chartwrap"><svg class="nw" data-testid="cash-chart" viewBox="0 0 ${W} ${Hh}" data-w="${W}" data-h="${Hh}" data-pad="${pad}" data-t="${T}" data-min="${min}" data-max="${max}" data-nw="${tot.map((v) => Math.round(v)).join(',')}" data-ev="" role="img" aria-label="Your cash over time. Lowest point ${$f(f.kpis.minLiquid)} in month ${f.kpis.minLiquidMonth}. Hover or drag to read values.">
+      <line class="ax" x1="${pad}" x2="${W - pad}" y1="${y(0)}" y2="${y(0)}"/><path class="rs" d="${path(rsv)}"/><path class="ln" d="${path(tot)}"/>${mm0}${ticks}
+      <text x="${pad}" y="12">${$f(max)}</text>${min < 0 ? `<text x="${pad}" y="${y(min) - 4}">${$f(min)}</text>` : ''}
+      <line class="xh" id="nwx" y1="14" y2="${Hh - 24}" x1="0" x2="0" visibility="hidden"/><circle class="hv" id="nwd" r="5.5" cx="0" cy="0" visibility="hidden"/><rect class="hit" x="0" y="0" width="${W}" height="${Hh}"/></svg>
+      <div class="tip" id="nwtip" hidden></div></div><p class="note">Solid line = your cash (savings plus cash from sales). Dashed line = the emergency reserve you want to keep. Hover or drag to read it.</p>`;
+  }
+  function finances() {
+    if (!S.p) S.p = E.samplePersonal();
+    const pl = E.plan(S), f = E.finance(S, pl), p = S.p, g = S.g, k = f.kpis, R = f.series;
+    const icon = { ok: '✓', warn: '△', bad: '✗' };
+    const listRow = (kind, it, label) => `<div class="lr" data-testid="${kind}-row"><input class="t2" data-p="${kind === 'pl' ? 'o' : 'c'}.${it.id}.name" type="text" value="${esc(it.name)}" aria-label="${label} name">
+      ${field('Amount', (kind === 'pl' ? 'o' : 'c') + '.' + it.id + '.amount', grp(it.amount), { pre: '$' })}${field('In month', (kind === 'pl' ? 'o' : 'c') + '.' + it.id + '.month', it.month)}
+      ${ask === 'dp:' + kind + ':' + it.id ? confirmBox('Remove ' + esc(it.name || label) + '?', 'data-dp-yes="' + kind + ':' + it.id + '"', 'Yes, remove') : `<button class="rm" data-dp="${kind}:${it.id}" aria-label="Remove ${esc(it.name || label)}">Remove</button>`}</div>`;
+    const jobs = p.jobs.map((j) => `<section class="card" data-testid="job-card"><input class="t2" data-p="j.${j.id}.name" type="text" value="${esc(j.name)}" aria-label="Job name">
+      ${field('Gross pay / year', `j.${j.id}.gross`, grp(j.gross), { pre: '$' })}${field('Yearly raise', `j.${j.id}.raise`, r(j.raise, 1), { suf: '%' })}${field('Tax on this pay', `j.${j.id}.tax`, r(j.tax, 1), { suf: '%' })}${field('Hours / week', `j.${j.id}.hours`, r(j.hours, 0))}${field('Starts (month)', `j.${j.id}.start`, j.start)}${field('Ends (month; blank = ongoing)', `j.${j.id}.end`, j.end === null ? '' : j.end)}
+      <p class="note">Take-home ${$f(E.jobMonthly(j, 0) * (1 - j.tax / 100))}/mo now.</p>
+      ${ask === 'dp:job:' + j.id ? confirmBox('Remove ' + esc(j.name) + '?', 'data-dp-yes="job:' + j.id + '"', 'Yes, remove') : `<button class="rm" data-dp="job:${j.id}" aria-label="Remove ${esc(j.name)}">Remove job</button>`}</section>`).join('');
+    const row = (label, v, cls, bold) => `<tr class="${bold ? 'tot' : ''}"><td>${label}</td><td class="${cls || ''}">${bold ? '<b>' + $s(v) + '</b>' : $s(v)}</td></tr>`;
+    const picture = `<table class="cmp" data-testid="monthly-picture"><tbody>
+      ${row('Your take-home pay', k.takeHome)}${row('Portfolio cash flow (after tax)', k.portfolioAfterTax, k.portfolioAfterTax < 0 ? 'bad' : '')}${row('Managers for businesses you do not run', -k.managerCost0)}${row('Extra loan payments', -k.extra)}${row('Living costs', -k.living)}${row('Other monthly debts', -k.debts)}${row('Left over each month', k.net0, k.net0 < 0 ? 'bad' : '', true)}</tbody></table>`;
+    const calls = f.calls.slice(0, 4).map((c) => `<div class="drv"><span>Month ${c.month}${c.assets.length ? ' · ' + esc(c.assets.join(', ')) : ''}</span><span><b>${$f(c.amount)}</b></span></div>`).join('');
+    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Finances</h2></div>
+    <section class="card vcard ${f.status}" data-testid="verdict-card"><div class="vrow" style="cursor:default"><span class="vchip ${f.status}" data-testid="verdict-chip">${VL[f.status]}</span><b data-testid="verdict-headline">${esc(f.headline)}</b></div>
+      ${f.reasons.map((x) => `<div class="rsn ${x.sev}"><span aria-hidden="true">${icon[x.sev]}</span><span>${esc(x.text)}</span></div>`).join('')}
+      ${f.fixes.length ? `<div class="fixes" data-testid="fixes"><b>What would fix it</b><ul>${f.fixes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}</section>
+    <div class="sec">Your month right now</div><section class="card">${picture}</section>
+    <div class="sec">Cash over time</div><section class="card" data-testid="cash-card">${finChart(f)}
+      <div class="f"><span class="lb">Lowest cash</span><b data-testid="lowest-cash">${$f(k.minLiquid)} · month ${k.minLiquidMonth}</b></div>
+      <div class="f"><span class="lb">Outside cash the plan needs</span><b>${$f(k.totalOutside)}</b></div>
+      <div class="f"><span class="lb">Covered by your savings + partners</span><b>${$f(Math.min(k.totalOutside, k.cash0 + k.capitalTotal))}</b></div>
+      <div class="f"><span class="lb">Months you could last without a paycheck</span><b>${isFinite(k.minRunway) ? r(k.minRunway, 1) : 'no limit'}</b></div>
+      ${calls ? `<p class="note" style="margin-top:8px">Biggest cash calls</p>${calls}` : ''}</section>
+    <div class="sec">Your income</div>${jobs}<button class="addrow cardbtn" data-addjob data-testid="add-job">+ Add a job</button>
+    <div class="sec">Your cash and expenses</div><section class="card">${field('Liquid cash you have', 'p.cash', grp(p.cash), { pre: '$' })}${field('Interest earned on cash', 'p.cashApy', r(p.cashApy, 2), { suf: '%' })}${field('Emergency reserve (months)', 'p.emergencyMonths', r(p.emergencyMonths, 1))}${field('Living costs / month', 'p.living', grp(p.living), { pre: '$' })}${field('Cost increases / year', 'p.inflation', r(p.inflation, 1), { suf: '%' })}${field('Other monthly debts (car, loans)', 'g.otherDebt', grp(g.otherDebt), { pre: '$' })}</section>
+    <div class="sec">Taxes</div><section class="card">${field('Tax on portfolio income', 'p.portfolioTaxPct', r(p.portfolioTaxPct, 1), { suf: '%' })}${field('Tax on gains when you sell', 'p.salesTaxPct', r(p.salesTaxPct, 1), { suf: '%' })}<p class="note">Rough effective rates. Short-term gains from flips are taxed like ordinary income.</p></section>
+    <div class="sec">Time and managers</div><section class="card">${field('Businesses you run yourself', 'p.operating', p.operating)}${field('Hours / week each takes', 'p.bizHours', r(p.bizHours, 0))}${field('Manager pay per other business / mo', 'p.gmMonthly', grp(p.gmMonthly), { pre: '$' })}<p class="note">A business profit figure assumes the owner does the work. Businesses beyond the ones you run need a paid manager.</p></section>
+    <div class="sec">Planned one-time expenses</div><section class="card">${p.planned.length ? p.planned.map((it) => listRow('pl', it, 'Expense')).join('') : '<p class="note" style="margin:0">Things like a wedding, a car or tuition. They come out of your cash.</p>'}<button class="addrow" data-addplanned data-testid="add-planned">+ Add an expense</button></section>
+    <div class="sec">Outside capital you have lined up</div><section class="card">${p.capital.length ? p.capital.map((it) => listRow('cap', it, 'Capital')).join('') : '<p class="note" style="margin:0">Partners, investors or family who will put money in. It is added to your cash that month.</p>'}<button class="addrow" data-addcap data-testid="add-capital">+ Add capital</button></section>`;
   }
 
   /* ---------- add page: pick a type, then a loan option that auto-fills the terms ---------- */
@@ -733,7 +876,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   function render() {
     const route = routeOf(), a = document.activeElement, id = a && a.dataset && (a.dataset.p || a.dataset.sel), typed = a && a.value, pos = a && a.selectionStart;
     const app = document.getElementById('app');
-    app.innerHTML = route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
+    app.innerHTML = route === 'finances' ? finances() : route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
     if (id) { const el = app.querySelector(`[data-p="${id}"],[data-sel="${id}"]`); if (el) { el.focus(); if (a.dataset.p && !el.readOnly && document.hasFocus()) { el.value = typed; try { el.setSelectionRange(pos, pos); } catch (e) {} } } }
     const cur = {};
     app.querySelectorAll('[data-k]').forEach((el) => { const k = el.dataset.k, v = el.tagName === 'INPUT' ? el.value : el.textContent; cur[k] = v;
@@ -747,8 +890,13 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     undo = null;
     const [t, x, k] = p.split('.');
     if (k === 'addr') { H(x).addr = s; return true; }
+    const list = { j: 'jobs', o: 'planned', c: 'capital' }[t];
+    if (list && k === 'name') { const it = S.p[list].find((q) => q.id === x); if (it) it.name = s; return true; }
+    if (t === 'j' && k === 'end' && String(s).trim() === '') { const jb = S.p.jobs.find((q) => q.id === x); if (jb) jb.end = null; return true; }
     const n = parseFloat(String(s).replace(/,/g, '').replace(/[^0-9.\-eE+]/g, '')); if (isNaN(n)) return false;
     if (t === 'g') { S.g[x] = n; return true; }
+    if (t === 'p') { S.p[x] = n; S.p = E.normalizePersonal(S.p); return true; }
+    if (list) { const it = S.p[list].find((q) => q.id === x); if (!it) return false; it[k] = n; S.p = E.normalizePersonal(S.p); return true; }
     const h = H(x), v = E.view(S, h); h.fresh = false;
     if (k === 'extra') { h.extra = Math.max(0, n); h.driver = 'extra'; }
     else if (k === 'wait') { h.wait = Math.max(0, Math.round(n)); h.driver = 'months'; }
@@ -789,6 +937,11 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const vw = t.closest('[data-view]'); if (vw) { UI.view = vw.dataset.view; prev = {}; save(); render(); return; }
     const ex = t.closest('[data-exit]'); if (ex) { const hh = H(routeOf().slice(2)); if (hh) { hh.exit = ex.dataset.exit; save(); render(); } return; }
     if (t.dataset.tab) { if (t.dataset.tab === 'hide') UI.open = false; else { UI.open = true; UI.tab = t.dataset.tab; } save(); render(); return; }
+    if (t.dataset.addjob !== undefined) { S.p.jobs.push({ id: 'job' + Date.now().toString(36), name: 'New job', gross: 60000, raise: 3, tax: 22, hours: 40, start: 0, end: null }); save(); render(); return; }
+    if (t.dataset.addplanned !== undefined) { S.p.planned.push({ id: 'pl' + Date.now().toString(36), name: 'New expense', amount: 10000, month: 12 }); save(); render(); return; }
+    if (t.dataset.addcap !== undefined) { S.p.capital.push({ id: 'cap' + Date.now().toString(36), name: 'Partner or investor', amount: 100000, month: 12 }); save(); render(); return; }
+    if (t.dataset.dp) { ask = 'dp:' + t.dataset.dp; render(); return; }
+    if (t.dataset.dpYes) { const [kind, id] = t.dataset.dpYes.split(':'), key = { job: 'jobs', pl: 'planned', cap: 'capital' }[kind]; if (key) S.p[key] = S.p[key].filter((q) => q.id !== id); ask = null; save(); render(); return; }
     if (t.dataset.add !== undefined) { goto('add'); return; }
     const at = t.closest('[data-addtype]'); if (at) { UI.addType = at.dataset.addtype; UI.addLoan = ''; render(); return; }
     const pk = t.closest('[data-pickloan]'); if (pk) { UI.addLoan = pk.dataset.pickloan; render(); return; }
@@ -806,7 +959,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.copybackup !== undefined) { const m = document.getElementById('cbm'), ta = document.getElementById('bkout'); const fail = () => { ta.focus(); ta.select(); m.textContent = 'Select the text above and copy it by hand.'; };
       try { navigator.clipboard.writeText(ta.value).then(() => { m.textContent = 'Copied.'; }, fail); } catch (x) { fail(); } return; }
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
-    if (t.dataset.importYes !== undefined) { S = E.normalize(pendingImport); S.v = DATA_V; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
+    if (t.dataset.importYes !== undefined) { S = E.normalize(pendingImport); if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     if (t.dataset.reset !== undefined) { ask = 'reset'; render(); return; }
     if (t.dataset.stretch !== undefined) { ask = 'stretch'; render(); return; }
     if (t.dataset.stretchYes !== undefined) { S = E.seedStretch(); S.v = DATA_V; ask = null; save(); render(); return; }
