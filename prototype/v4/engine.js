@@ -76,7 +76,7 @@
     const B0 = balToday(h), i = mi(h), A = payment(h) + X;
     if (B0 <= 0.005) return 0;
     if (A <= i * B0 + 1e-9) return Infinity;
-    return Math.ceil(i ? -Math.log(1 - (i * B0) / A) / Math.log(1 + i) : B0 / A);
+    return Math.ceil((i ? -Math.log(1 - (i * B0) / A) / Math.log(1 + i) : B0 / A) - 1e-7);
   }
   /* months (from the asset's own start) until cap*value - balance - other liens >= cash needed for its target */
   function locMonths(S, h, X) {
@@ -111,7 +111,7 @@
     return { cltvAtLoc, L, B0, P, mip, X, infeasible, egi, noi, cf: noi - P - mip, escrow, pitia: P + escrow + mip, payment: P + X + escrow + mip,
       D: need(S, h), down, closingCost, invested: down + closingCost, payoff: payoffN(h, X), locM: lm,
       head0: Math.max(0, g.cap / 100 * h.price - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
-      valueGain: +h.arv > 0 ? h.arv - h.price - (h.capex || 0) : 0, capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
+      valueNow: valAt(S, h, 0), valueGain: +h.arv > 0 ? h.arv - h.price - (h.capex || 0) : 0, capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
   }
 
   /* ---------- personal finances: your jobs, savings and expenses ---------- */
@@ -219,7 +219,8 @@
     const rows = hs.filter((h) => H(S, h.target)).map((h) => ({ id: h.id, target: h.target, start: P0[h.id], locM: V[h.id].locM,
       end: P0[h.id] + V[h.id].locM, ok: isFinite(P0[h.id] + V[h.id].locM), funds: funds[h.id] }));
     let worst = { dti: 0, month: 0 }; for (let t = 0; t <= T; t++) if (s.dti[t] > worst.dti) worst = { dti: s.dti[t], month: t };
-    return { outsideTotal: s.outside[T], purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
+    let extraLater = 0; hs.forEach((h) => { const v = V[h.id]; if (isFinite(P0[h.id]) && P0[h.id] > 0 && v.L > 0 && v.payoff > 0) extraLater += v.X; });
+    return { outsideTotal: s.outside[T], extraNow: s.extra[0], extraLater, purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
       at, assetsAt, snap: assetsAt(Math.min(T, planM)), rows, funds, fundedByLOC, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id) };
   }
 

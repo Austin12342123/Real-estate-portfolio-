@@ -1,0 +1,96 @@
+{
+  "sync": {
+    "earned": 99.03,
+    "max": 100,
+    "checks": [
+      {
+        "id": "G1",
+        "category": "G",
+        "name": "Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine)",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "40/40 sub-checks pass",
+        "repro": "Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)",
+        "seconds": 0.3
+      },
+      {
+        "id": "G2",
+        "category": "G",
+        "name": "Asset page <-> Portfolio sync (share line, hero, impact, edits propagate)",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "72/72 sub-checks pass",
+        "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
+        "seconds": 5.9
+      },
+      {
+        "id": "G3",
+        "category": "G",
+        "name": "Portfolio <-> Finances sync (cash flow, funding, extra scope, verdict, edge cases)",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "32/32 sub-checks pass",
+        "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
+        "seconds": 2.4
+      },
+      {
+        "id": "G4",
+        "category": "G",
+        "name": "Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences)",
+        "points": 18,
+        "earned": 17.48,
+        "ratio": 0.9708737864077669,
+        "detail": "34/35 sub-checks pass. FAIL: NOI note = independent NOI and cash flow (0/280 ok) [seq0 step0: ridge exit=merge -> Net operating income $808/mo: rent minus operating costs, before the loan. vs $808 / $808 || seq0 step1: birch down=115050 -> Net operating income $1,319/mo: rent minus operating costs, before the loan. vs $1,319 / $746 || seq0 step2: birch growth=7.0 -> Net operating income $1,319/mo: rent minus operating costs, before the loan. vs $1,319 / $746]",
+        "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, wait, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status, target); every dependent field is re-derived independently after each edit",
+        "seconds": 30.5
+      },
+      {
+        "id": "G5",
+        "category": "G",
+        "name": "Add page <-> created asset (loan option cards, option switching, 203(k) defaults)",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
+        "seconds": 3.3
+      },
+      {
+        "id": "G6",
+        "category": "G",
+        "name": "Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light)",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
+        "seconds": 9
+      },
+      {
+        "id": "G7",
+        "category": "G",
+        "name": "Shared settings (g.* and p.*) propagate to every dependent display",
+        "points": 10,
+        "earned": 9.55,
+        "ratio": 0.9545875810936052,
+        "detail": "138/142 sub-checks pass. FAIL: asset page: NOI note = independent NOI and cash flow (0/15 ok) [after g.cap=70 a -> Net operating income $1,672/mo: rent minus operating costs, before the loan. vs $1,672 / −$6 || after g.dti=25 a -> Net operating income $1,672/mo: rent minus operating costs, before the loan. vs $1,672 / −$6 || after g.closing=5 a -> Net operating income $1,672/mo: rent minus operating costs, before the loan. vs $1,672 / −$6]; vac edit re-derives NOI / cap rate on commercial and home pages (0/1 ok) [chips Vacancy 12% Mgmt 8% Repairs 1%/yr +$100/mo → 5 mo sooner]; mgmt edit re-derives NOI / cap rate on commercial and home pages (0/1 ok) [chips Vacancy 12% Mgmt 15% Repairs 1%/yr +$100/mo → 5 mo sooner]; maint edit re-derives NOI / cap rate on commercial and home pages (0/1 ok) [chips Vacancy 12% Mgmt 15% Repairs 2.5%/yr +$100/mo → 5 mo sooner]",
+        "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
+        "seconds": 6
+      },
+      {
+        "id": "G8",
+        "category": "G",
+        "name": "No stale / duplicate / contradictory numbers",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
+        "repro": "Scan every page for repeated labels with different values, missing bases, redundant repeated numbers, subtext that restates the main value, and numbers that contradict adjacent statements",
+        "seconds": 0
+      }
+    ]
+  }
+}
