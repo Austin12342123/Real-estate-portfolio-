@@ -291,6 +291,8 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
 .row .r2{align-items:flex-start;flex-wrap:nowrap}
 .row .xtog{flex:none;margin:0}
 
+.bn{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;margin-right:6px;border-radius:11px;background:var(--acc);color:#fff;font-size:12px;font-weight:700;vertical-align:2px}
+
 </style>
 <main id="app" aria-live="polite"></main>
 <script>
@@ -710,6 +712,23 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     A('commercial', 'bridge', {id: 'river', addr: 'Riverside Flex Industrial', price: 14640000, rent: 148047, tax: 5307, ins: 4118, hoa: 2288, growth: 5, buyIn: 96, capex: 1200000, capexMonths: 12, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 160}),
     A('commercial', 'comm25', {id: 'west', addr: 'Westfield Office Park', price: 10065000, rent: 102480, tax: 3843, ins: 3020, hoa: 2196, growth: 5, buyIn: 120}),
     A('house', 'cashh', {id: 'stradella', addr: '900 Stradella Rd residence', price: 38731700, rent: 150000, tax: 35500, ins: 11000, growth: 3.5, buyIn: 200})] }); };
+  /* $125M plan (the default portfolio): about $125M of net worth at the end of the 20-year plan, bought in the numbered order. Creative financing: seller financing, SBA 504 and 7(a), bridge, DSCR, bank term loans, seller notes, a credit-line chain and partner capital. */
+  const seedPlan = () => { const A = newAsset; const p = samplePersonal(); p.capital = [{ id: 'cap0', name: 'Family and friends', month: 14, amount: 30000 }, { id: 'cap1', name: 'Seed partners', month: 17, amount: 4170000 }, { id: 'cap2', name: 'Growth partners', month: 47, amount: 4230000 }]; return normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p, houses: [
+    A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4, target: 'birch'}),
+    A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4, target: 'willow'}),
+    A('business', 'sba7a', {id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 9}),
+    A('commercial', 'sellerc', {id: 'north', addr: 'Northgate Retail Strip', price: 1159000, rent: 11712, tax: 549, ins: 427, hoa: 305, growth: 5, buyIn: 18}),
+    A('house', 'conv30', {id: 'birch', addr: '908 Birchwood Ct', price: 195000, rent: 2000, tax: 220, ins: 90, growth: 4, capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8, exit: 'sell', exitMonth: 56}),
+    A('business', 'bankbiz', {id: 'bridgeway', addr: 'Bridgeway Software', price: 8235000, rent: 109800, growth: 8, buyIn: 24, exit: 'sell', exitMonth: 228}),
+    A('business', 'bankbiz', {id: 'freight', addr: 'Summit Freight & Logistics', price: 4758000, rent: 86925, growth: 6.33, buyIn: 30, target: 'keystone'}),
+    A('house', 'dscr', {id: 'willow', addr: '3350 Willow Bend Rd', price: 210000, rent: 2125, tax: 235, ins: 95, growth: 4, target: 'linden'}),
+    A('commercial', 'sba504', {id: 'harbor', addr: 'Harbor St Self-Storage', price: 3843000, rent: 38338, tax: 1647, ins: 1372, hoa: 824, growth: 5, buyIn: 36}),
+    A('business', 'sba7a', {id: 'keystone', addr: 'Keystone HVAC Services', price: 1342000, rent: 28060, growth: 10, buyIn: 36, exit: 'merge', exitMonth: 72, exitLift: 15, mergeInto: 'auto'}),
+    A('business', 'sellerb', {id: 'apex', addr: 'Apex Property Services', price: 2562000, rent: 53070, growth: 12, buyIn: 48, exit: 'merge', exitMonth: 84, exitLift: 20, mergeInto: 'freight'}),
+    A('commercial', 'comm25', {id: 'lake', addr: 'Lakeview Medical Office', price: 7778000, rent: 76677, tax: 2928, ins: 2379, hoa: 1647, growth: 5, buyIn: 60, target: 'west'}),
+    A('business', 'sellerb', {id: 'meridian', addr: 'Meridian Staffing Group', price: 5948000, rent: 96075, growth: 8, buyIn: 60, capex: 300000, capexMonths: 9, liftValue: 25, liftIncome: 15, exit: 'sell', exitMonth: 204}),
+    A('house', 'conv30', {id: 'linden', addr: '2914 Linden Way', price: 175000, buyIn: 90, rent: 1825, tax: 195, ins: 85, growth: 4}),
+    A('commercial', 'comm25', {id: 'west', addr: 'Westfield Office Park', price: 10065000, rent: 102480, tax: 3843, ins: 3020, hoa: 2196, growth: 5, buyIn: 120})] }); };
   /* DEFAULT sample (listed in the order the assets are bought). Every loan, price, cap rate, multiple and growth rate is checked against
      the grader's benchmark file (prototype/grader). Homes cash flow positive. Recycles sale cash; needs about $1.3M of outside cash. */
   const seed = () => { const A = newAsset; return normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: samplePersonal(), houses: [
@@ -758,7 +777,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const cur = slots.map((i) => S.houses[i].id); if (cur.join() === ids.join()) return false;
     const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); relink(S); return true;
   }
-  const E = { seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -874,16 +893,20 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
   let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan' };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  const DATA_V = 9; /* bump when the sample portfolio changes so old saved samples are replaced */
+  const DATA_V = 10; /* bump when the sample portfolio changes so old saved samples are replaced */
   if (S && Array.isArray(S.houses) && S.g && S.v === 8) { S.p = S.p || E.samplePersonal(); S.v = DATA_V; } /* v8 saves keep their assets and gain a finance profile */
-  if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seed();
+  let switched = null;
+  if (S && Array.isArray(S.houses) && S.g && S.v === 9) { switched = JSON.stringify(S); const keepP = S.p, plan = E.seedPlan(); if (keepP) plan.p = Object.assign({}, keepP, { capital: plan.p.capital }); S = plan; S.v = DATA_V; } /* v9 saves switch to the $125M plan once; Undo brings the old one back */
+  if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seedPlan();
   E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
   /* a new asset is funded by the asset right before it in its category: only that one link is added; every other link stays as it was */
   const linkNew = (h) => { const cat = E.catOf(h), i = S.houses.indexOf(h), pl0 = E.plan(S), sold0 = (x) => !!(pl0.exits[x.id] && pl0.sellAt[x.id] <= pl0.planM); let prev = null; for (let k = i - 1; k >= 0; k--) { const x = S.houses[k]; if (E.catOf(x) === cat && !sold0(x)) { prev = x; break; } } if (prev && prev.id !== h.id && h.status === 'planned') { S.houses.forEach((x) => { if (x.target === h.id) x.target = ''; }); prev.target = h.id; } };
+  const buyOrder = (pl) => { const no = {}; S.houses.map((h, i) => [h, i]).sort((a, b) => (isFinite(pl.purchase[a[0].id]) ? pl.purchase[a[0].id] : 1e9) - (isFinite(pl.purchase[b[0].id]) ? pl.purchase[b[0].id] : 1e9) || a[1] - b[1]).forEach(([h], k) => { no[h.id] = k + 1; }); return no; };
   const fixOrder = (s) => { s.seq = +s.seq || 0; s.houses.forEach((h) => { if (!h.created) h.created = Date.now(); }); if (s.orderV !== 1) E.orderByBuy(s); return s; }; /* list order = buy order, sorted once; after that the saved order is the truth */
   fixOrder(S);
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
   let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
+  if (switched) undo = { text: 'Switched to the $125M plan.', label: 'old portfolio', snap: switched };
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
@@ -1009,17 +1032,22 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const waitOf = (h) => {
       const cat = E.catOf(h), same = S.houses.filter((x) => E.catOf(x) === cat && !isSold(x)), i = same.indexOf(h);
       const funder = S.houses.find((x) => x.target === h.id && !isSold(x)) || (i > 0 ? same[i - 1] : null);
+      const buy = pl.purchase[h.id], real = funder && funder.target === h.id && pl.funds[funder.id];
+      const m = funder ? (pl.purchase[funder.id] || 0) + E.locMonths(S, Object.assign({}, funder, { target: h.id }), pl.V[funder.id].X) : Infinity;
+      if (real) return { funder, text: `Credit line opens in ${mm(m)} · down payment from ${esc(funder.addr)}` };
+      /* bought on a set month with cash on hand (savings, sale cash or partner capital), not with a credit line */
+      if (h.status === 'planned' && isFinite(buy)) return { funder, text: `Bought in ${mm(buy)} with cash on hand` + (funder ? ` · credit line from ${esc(funder.addr)} alone: ${isFinite(m) ? mm(m) : 'not reachable'}` : '') };
       if (!funder) return null;
-      const m = (pl.purchase[funder.id] || 0) + E.locMonths(S, Object.assign({}, funder, { target: h.id }), pl.V[funder.id].X);
       return { funder, text: isFinite(m) ? `Credit line opens in ${mm(m)} · down payment from ${esc(funder.addr)}` : `Credit line not reachable from ${esc(funder.addr)}` };
     };
+    const bno = buyOrder(pl);
     const rowOf = (h, vis, ci) => {
       const v = pl.V[h.id], type = h.type || 'house', sel = selId === h.id;
       const exitTxt = h.exit === 'sell' && isFinite(pl.sellAt[h.id]) ? `sells in ${mm(pl.sellAt[h.id])}` : h.exit === 'merge' && isFinite(pl.mergeAt[h.id]) ? `merges${H(h.mergeInto) ? ' into ' + esc(H(h.mergeInto).addr) : ''} in ${mm(pl.mergeAt[h.id])}` : '';
       const sp = snapBy[h.id], soldBy = isSold(h);
       const loses = type === 'house' && v.cf < 0 ? '<span class="hi">loses money at today\'s terms</span>' : '';
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
-      return `<div class="rw" data-rw="${h.id}"><div class="row${soldBy ? ' sold' : ''}${sel ? ' sel' : ''}" data-row="${h.id}" data-testid="ledger-row"${soldBy ? ' data-nodrag' : ''}><div class="r1"><span class="nm"><button type="button" class="addrbtn" aria-expanded="${sel}" data-testid="row-toggle"><span class="addr" data-go="h/${h.id}" data-testid="row-edit" title="Edit ${esc(h.addr)}">${esc(h.addr)} <i class="ed" aria-hidden="true">edit ›</i></span><span class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}">${soldBy ? 'sold' : sp ? (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : v.payment > 0.5 ? 'paid off by then' : 'no loan') + ' · equity ' + $k(sp.equity) : 'not in the totals yet'} ${hi}${loses}</span>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<span class="exitline">${parts.join(' · ')}</span>` : ''; })()}</button></span>
+      return `<div class="rw" data-rw="${h.id}"><div class="row${soldBy ? ' sold' : ''}${sel ? ' sel' : ''}" data-row="${h.id}" data-testid="ledger-row"${soldBy ? ' data-nodrag' : ''}><div class="r1"><span class="nm"><button type="button" class="addrbtn" aria-expanded="${sel}" data-testid="row-toggle"><span class="addr" data-go="h/${h.id}" data-testid="row-edit" title="Edit ${esc(h.addr)}"><b class="bn" data-testid="buy-no" aria-label="Buy number ${bno[h.id]}">${bno[h.id]}</b>${esc(h.addr)} <i class="ed" aria-hidden="true">edit ›</i></span><span class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}">${soldBy ? 'sold' : sp ? (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : v.payment > 0.5 ? 'paid off by then' : 'no loan') + ' · equity ' + $k(sp.equity) : 'not in the totals yet'} ${hi}${loses}</span>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<span class="exitline">${parts.join(' · ')}</span>` : ''; })()}</button></span>
         <span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy ? '+' + $c(pl.exits[h.id].proceeds) : !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'cash from sale' : !sp ? 'not counted' : 'cash flow'}</small></span></div>
         <div class="r2">${soldBy ? `<div class="fcol"><span class="locline" data-testid="loc-line"></span></div>` : `<div class="fcol">${(() => { const w = waitOf(h); return w ? `<span class="locline" data-testid="dp-line">${w.text}</span>` : ''; })()}</div>`}${soldBy ? '' : `<button type="button" class="xtog" data-panel="${h.id}" aria-expanded="${sel}" data-testid="row-extra-toggle" aria-label="Extra payment">Extra ${sel ? '▴' : '▾'}</button>`}</div></div>${sel ? panelOf(h, soldBy, vis, ci) : ''}</div>`; };
     const NOUN = { house: ['home', 'homes'], commercial: ['commercial property', 'commercial properties'], business: ['business', 'businesses'] }, ADD = { house: 'home', commercial: 'commercial property', business: 'business' };
@@ -1067,7 +1095,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const drv = pl.assetsAt(pl.planM).sort((a, b) => b.equity - a.equity), drvOpen = !UI.coll.drivers;
     const drivers = `<button class="linkbtn leftbtn" data-coll="drivers" aria-expanded="${drvOpen}">What drives net worth ${drvOpen ? '▾' : '▸'}</button>${drvOpen ? `<div data-testid="drivers">${drv.slice(0, 6).map((d) => `<div class="drv"><span>${esc(d.addr)}</span><span><b>${$f(d.equity)}</b> <small>${th.nw > 0 ? r((d.equity / th.nw) * 100) : 0}%</small></span></div>`).join('')}<p class="note">Equity = value − loans − credit lines drawn. A sample like this leans on a few fast-growing businesses; check the growth rate on each.</p></div>` : ''}`;
     return `<h1>Portfolio <span class="hb"><button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>
-    ${undo ? `<div class="warnbox okbox" data-testid="undo-banner">Removed ${esc(undo.label)}. <button class="chip link" data-undo>Undo</button></div>` : ''}
+    ${undo ? `<div class="warnbox okbox" data-testid="undo-banner">${undo.text ? esc(undo.text) : 'Removed ' + esc(undo.label) + '.'} <button class="chip link" data-undo>Undo</button></div>` : ''}
     ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
     <section class="card" data-testid="summary"><div class="kg">
       ${kpi('kpi-networth', 'Net worth', $f(sn.nw), `${n} assets · ${yrs}-yr plan`)}
@@ -1122,7 +1150,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       <div class="f totl"><span class="lb">Cash flow after the loan</span><b data-testid="rent-cf" data-k="rent-cf" class="${v.cf < 0 ? 'bad' : ''}">${$s(v.cf)}</b></div>
       ${v.X > 0.5 ? `<div class="f"><span class="lb">After the extra payment too</span><b data-testid="rent-cf-x" data-k="rent-cf-x">${$s(v.cf - v.X)}</b></div>` : ''}
       <p class="note">Rent and costs alone are not what you keep: the loan payment comes out of them. These match Payment now and Cash flow now at the top of this page.</p></div>`;
-    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Name or address" title="${esc(h.addr)}"></h2><span class="tag" style="margin:0">${TL[type]}</span></div>
+    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Name or address" title="${esc(h.addr)}"></h2><span class="tag" style="margin:0" data-testid="asset-buy-no">#${buyOrder(pl)[h.id]} · ${TL[type]}</span></div>
     ${homeLoses}
     ${h.fresh && type === 'house' ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
     <section class="card"><div class="kg">${kpi('h-payment', 'Payment now', $f(v.payment), (() => { const parts = []; if (v.P > 0) parts.push((h.io ? 'interest ' : 'P&amp;I ') + $f(v.P)); if (v.X > 0.5) parts.push('extra ' + $f(v.X)); if (v.escrow > 0) parts.push('costs ' + $f(v.escrow)); if (v.mip > 0) parts.push('insurance ' + $f(v.mip)); return parts.length > 1 ? parts.join(' + ') : ''; })())}${kpi('h-cf', 'Cash flow now', $s(v.cf), v.X > 0.5 ? `${$s(v.cf - v.X)} after extra` : '', v.cf < 0 ? 'bad' : '')}

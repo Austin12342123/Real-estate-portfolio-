@@ -414,6 +414,23 @@
     A('commercial', 'bridge', {id: 'river', addr: 'Riverside Flex Industrial', price: 14640000, rent: 148047, tax: 5307, ins: 4118, hoa: 2288, growth: 5, buyIn: 96, capex: 1200000, capexMonths: 12, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 160}),
     A('commercial', 'comm25', {id: 'west', addr: 'Westfield Office Park', price: 10065000, rent: 102480, tax: 3843, ins: 3020, hoa: 2196, growth: 5, buyIn: 120}),
     A('house', 'cashh', {id: 'stradella', addr: '900 Stradella Rd residence', price: 38731700, rent: 150000, tax: 35500, ins: 11000, growth: 3.5, buyIn: 200})] }); };
+  /* $125M plan (the default portfolio): about $125M of net worth at the end of the 20-year plan, bought in the numbered order. Creative financing: seller financing, SBA 504 and 7(a), bridge, DSCR, bank term loans, seller notes, a credit-line chain and partner capital. */
+  const seedPlan = () => { const A = newAsset; const p = samplePersonal(); p.capital = [{ id: 'cap0', name: 'Family and friends', month: 14, amount: 30000 }, { id: 'cap1', name: 'Seed partners', month: 17, amount: 4170000 }, { id: 'cap2', name: 'Growth partners', month: 47, amount: 4230000 }]; return normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p, houses: [
+    A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4, target: 'birch'}),
+    A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4, target: 'willow'}),
+    A('business', 'sba7a', {id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 9}),
+    A('commercial', 'sellerc', {id: 'north', addr: 'Northgate Retail Strip', price: 1159000, rent: 11712, tax: 549, ins: 427, hoa: 305, growth: 5, buyIn: 18}),
+    A('house', 'conv30', {id: 'birch', addr: '908 Birchwood Ct', price: 195000, rent: 2000, tax: 220, ins: 90, growth: 4, capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8, exit: 'sell', exitMonth: 56}),
+    A('business', 'bankbiz', {id: 'bridgeway', addr: 'Bridgeway Software', price: 8235000, rent: 109800, growth: 8, buyIn: 24, exit: 'sell', exitMonth: 228}),
+    A('business', 'bankbiz', {id: 'freight', addr: 'Summit Freight & Logistics', price: 4758000, rent: 86925, growth: 6.33, buyIn: 30, target: 'keystone'}),
+    A('house', 'dscr', {id: 'willow', addr: '3350 Willow Bend Rd', price: 210000, rent: 2125, tax: 235, ins: 95, growth: 4, target: 'linden'}),
+    A('commercial', 'sba504', {id: 'harbor', addr: 'Harbor St Self-Storage', price: 3843000, rent: 38338, tax: 1647, ins: 1372, hoa: 824, growth: 5, buyIn: 36}),
+    A('business', 'sba7a', {id: 'keystone', addr: 'Keystone HVAC Services', price: 1342000, rent: 28060, growth: 10, buyIn: 36, exit: 'merge', exitMonth: 72, exitLift: 15, mergeInto: 'auto'}),
+    A('business', 'sellerb', {id: 'apex', addr: 'Apex Property Services', price: 2562000, rent: 53070, growth: 12, buyIn: 48, exit: 'merge', exitMonth: 84, exitLift: 20, mergeInto: 'freight'}),
+    A('commercial', 'comm25', {id: 'lake', addr: 'Lakeview Medical Office', price: 7778000, rent: 76677, tax: 2928, ins: 2379, hoa: 1647, growth: 5, buyIn: 60, target: 'west'}),
+    A('business', 'sellerb', {id: 'meridian', addr: 'Meridian Staffing Group', price: 5948000, rent: 96075, growth: 8, buyIn: 60, capex: 300000, capexMonths: 9, liftValue: 25, liftIncome: 15, exit: 'sell', exitMonth: 204}),
+    A('house', 'conv30', {id: 'linden', addr: '2914 Linden Way', price: 175000, buyIn: 90, rent: 1825, tax: 195, ins: 85, growth: 4}),
+    A('commercial', 'comm25', {id: 'west', addr: 'Westfield Office Park', price: 10065000, rent: 102480, tax: 3843, ins: 3020, hoa: 2196, growth: 5, buyIn: 120})] }); };
   /* DEFAULT sample (listed in the order the assets are bought). Every loan, price, cap rate, multiple and growth rate is checked against
      the grader's benchmark file (prototype/grader). Homes cash flow positive. Recycles sale cash; needs about $1.3M of outside cash. */
   const seed = () => { const A = newAsset; return normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: samplePersonal(), houses: [
@@ -462,6 +479,6 @@
     const cur = slots.map((i) => S.houses[i].id); if (cur.join() === ids.join()) return false;
     const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); relink(S); return true;
   }
-  const E = { seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);
