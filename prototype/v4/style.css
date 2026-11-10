@@ -264,3 +264,5 @@ select.notarget{max-width:9em}
 .addrbtn .pay,.addrbtn .exitline,.addrbtn .addr{display:block}
 .addrbtn{width:100%;min-height:44px}
 .row .addrbtn .addr{font-weight:600}
+select.notarget{color:var(--mut);font-weight:400;font-size:14px}
+.row .locline{color:var(--mut)}
