@@ -311,7 +311,7 @@
       "rawPoints": 0.5,
       "earned": 0.16,
       "ratio": 1,
-      "detail": "median 10.1ms",
+      "detail": "median 6.7ms",
       "repro": "node timing"
     },
     {
@@ -834,7 +834,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "node: simulate from the definitions, compare E.finance on 80 random states; hand-calculated cases; NaN scan",
-        "seconds": 0.4
+        "seconds": 0.3
       },
       {
         "id": "F2",
@@ -856,7 +856,7 @@
         "ratio": 1,
         "detail": "89/89 sub-checks pass",
         "repro": "Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states",
-        "seconds": 9
+        "seconds": 8.6
       },
       {
         "id": "F4",
@@ -878,7 +878,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Playwright: edge inputs, names, tap targets, font size, overflow 320/390/430, chip contrast light+dark, typing, render storm, console errors",
-        "seconds": 20.9
+        "seconds": 20.1
       }
     ]
   },
@@ -906,7 +906,7 @@
         "ratio": 1,
         "detail": "72/72 sub-checks pass",
         "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
-        "seconds": 7.9
+        "seconds": 7.2
       },
       {
         "id": "G3",
@@ -917,7 +917,7 @@
         "ratio": 1,
         "detail": "35/35 sub-checks pass",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 3.1
+        "seconds": 2.8
       },
       {
         "id": "G4",
@@ -928,7 +928,7 @@
         "ratio": 1,
         "detail": "33/33 sub-checks pass",
         "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit",
-        "seconds": 44
+        "seconds": 40.2
       },
       {
         "id": "G5",
@@ -939,7 +939,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
-        "seconds": 4.1
+        "seconds": 3.9
       },
       {
         "id": "G6",
@@ -950,7 +950,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 9.9
+        "seconds": 9.8
       },
       {
         "id": "G7",
@@ -961,7 +961,7 @@
         "ratio": 1,
         "detail": "149/149 sub-checks pass",
         "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
-        "seconds": 6.6
+        "seconds": 6.5
       },
       {
         "id": "G8",
@@ -1000,7 +1000,7 @@
         "ratio": 1,
         "detail": "86/86 sub-checks pass",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 4.4
+        "seconds": 4
       },
       {
         "id": "H3",
@@ -1011,7 +1011,7 @@
         "ratio": 1,
         "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 9.7
+        "seconds": 9
       },
       {
         "id": "H4",
@@ -1033,7 +1033,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 2.8
+        "seconds": 2.7
       },
       {
         "id": "H6",
@@ -1044,7 +1044,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 4.1
+        "seconds": 3.9
       },
       {
         "id": "H7",
@@ -1055,7 +1055,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Load crafted localStorage states; pasted old backup restore",
-        "seconds": 1
+        "seconds": 0.9
       },
       {
         "id": "H8",
@@ -1077,7 +1077,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 2.2
+        "seconds": 1.9
       },
       {
         "id": "H10",
@@ -1093,7 +1093,7 @@
     ]
   },
   "gest": {
-    "earned": 97.5,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
@@ -1105,7 +1105,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
-        "seconds": 4.7
+        "seconds": 4.6
       },
       {
         "id": "I2",
@@ -1138,16 +1138,16 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Reorder with Move buttons; read wait lines + saved state + plan",
-        "seconds": 1.8
+        "seconds": 1.9
       },
       {
         "id": "I5",
         "category": "I",
         "name": "Duplicate: from the row panel and the asset page; copy sits right after the original, named \"(copy)\", planned, funded by the trust like any later asset",
         "points": 10,
-        "earned": 7.5,
-        "ratio": 0.75,
-        "detail": "5/6 sub-checks pass. FAIL: no links to relink: the copy shows its own trust wait line (planned, funded by everything before it); the numbers are copied [18 mo after #1 (1412 Maple Ridge Dr) was bought · Funded now by the trust: all earlier assets (cash flow $16,595/mo + borrowing room $44,649) · pool of 3 assets]",
+        "earned": 10,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
         "repro": "Panel > Duplicate; asset page > Duplicate",
         "seconds": 0.9
       },
@@ -1160,7 +1160,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Headers, subtitles, collapse state, empty portfolio",
-        "seconds": 1.2
+        "seconds": 1.1
       },
       {
         "id": "I7",
@@ -1193,7 +1193,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Focus the extra field, swipe",
-        "seconds": 2.1
+        "seconds": 2
       },
       {
         "id": "I10",

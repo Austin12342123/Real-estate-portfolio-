@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-10T21:23:43.018Z  |  262s
+Target: `prototype/v4`  |  Run: 2026-11-10T21:28:12.732Z  |  250s
 
 ## Automated score: **84.74 / 84.99900000000001** (a separate design review adds 15)
 
@@ -42,7 +42,7 @@ Target: `prototype/v4`  |  Run: 2026-11-10T21:23:43.018Z  |  262s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 10.1ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 6.7ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.48 | 0.48 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |
@@ -149,7 +149,7 @@ None.
 
 None.
 
-## I. Portfolio sections, gestures and funding order: **97.50 / 100** (separate scale; not included in A-E + R, F, G or H)
+## I. Portfolio sections, gestures and funding order: **100.00 / 100** (separate scale; not included in A-E + R, F, G or H)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -157,7 +157,7 @@ None.
 | I2 | Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel | 14.00 | 14.00 | 13/13 sub-checks pass |
 | I3 | Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open | 8.00 | 8.00 | 7/7 sub-checks pass |
 | I4 | Funding follows the list order by itself: the trust funds each asset from everything before it (1,2,3 and 1,3,2), the wait lines and purchase months re-work after each move, nothing is stored per asset, no per-asset Funds picker, no re-link on plain load | 16.00 | 16.00 | 10/10 sub-checks pass |
-| I5 | Duplicate: from the row panel and the asset page; copy sits right after the original, named "(copy)", planned, funded by the trust like any later asset | 10.00 | 7.50 | 5/6 sub-checks pass. FAIL: no links to relink: the copy shows its own trust wait line (planned, funded by everything before it); the numbers are copied [18 mo after #1 (1412 Maple Ridge Dr) was bought · Funded now by the trust: all earlier assets (cash flow $16,595/mo + borrowing room $44,649) · pool of 3 assets] |
+| I5 | Duplicate: from the row panel and the asset page; copy sits right after the original, named "(copy)", planned, funded by the trust like any later asset | 10.00 | 10.00 | 6/6 sub-checks pass |
 | I6 | Portfolio = total row + Homes / Commercial / Businesses dropdowns (name left, chevron right, stat strip: count, before/after loan, worth, DSCR, lasts), empty sections, Sold section only when something sold | 12.00 | 12.00 | 12/12 sub-checks pass |
 | I7 | Selecting a row opens a nested panel with the extra payment and live effects: loan term, monthly payment, next down payment (with cash flow); all match the engine and the asset page | 12.00 | 12.00 | 24/24 sub-checks pass |
 | I8 | Rent & expenses shows the loan payment (P&I + mortgage insurance, extra) and the cash flow after the loan, in sync with Payment now / Cash flow now | 6.00 | 6.00 | 6/6 sub-checks pass |
@@ -166,5 +166,4 @@ None.
 
 ### I failures
 
-- **I5 Duplicate: from the row panel and the asset page; copy sits right after the original, named "(copy)", planned, funded by the trust like any later asset** (-2.50): 5/6 sub-checks pass. FAIL: no links to relink: the copy shows its own trust wait line (planned, funded by everything before it); the numbers are copied [18 mo after #1 (1412 Maple Ridge Dr) was bought · Funded now by the trust: all earlier assets (cash flow $16,595/mo + borrowing room $44,649) · pool of 3 assets]
-  - Reproduce: Panel > Duplicate; asset page > Duplicate
+None.

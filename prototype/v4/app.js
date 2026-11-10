@@ -146,7 +146,7 @@
       /* time frame from the asset before it in the list: months between the two purchases (owned assets were bought 'paid' months ago) */
       const at = (x) => (x.status === 'owned' ? -(+x.paid || 0) : pl.purchase[x.id]), ix = S.houses.indexOf(h), pv = ix > 0 ? S.houses[ix - 1] : null, pvNo = pv ? bnoLate()[pv.id] : 0;
       const gap = pv && isFinite(at(h)) && isFinite(at(pv)) ? Math.round(at(h) - at(pv)) : null;
-      const after = gap === null ? '' : gap >= 0 ? `${mm(gap)} after #${pvNo} (${esc(pv.addr)}) was bought · ` : `bought ${mm(-gap)} before #${pvNo} · `;
+      const after = gap === null ? '' : gap === 0 ? `bought the same month as #${pvNo} (${esc(pv.addr)}) · ` : gap > 0 ? `${gap} mo after #${pvNo} (${esc(pv.addr)}) was bought · ` : `bought ${mm(-gap)} before #${pvNo} · `;
       if (h.status === 'owned') return first ? null : { text: `${after}In the trust today · its borrowing room and cash flow fund the assets below it` };
       if (!isFinite(buy)) return { text: first ? 'Not bought: no month works' : `Not funded: all ${S.houses.indexOf(h)} earlier assets cannot pay its ${$f(E.needFor(S, h))} in 50 years` };
       if (!tr || !tr.pooled) return first ? { text: `Bought in ${mm(buy)} with cash on hand` } : { text: `Bought in ${mm(buy)} with cash on hand · nothing earlier in the list to fund it` };
