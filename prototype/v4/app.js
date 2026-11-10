@@ -147,7 +147,7 @@
     const empty = !S.houses.length;
     const secOf = (id, title, list, tp) => {
       CDEF[id] = id === 'cat-house' || empty ? false : true; const open = !(UI.coll[id] === undefined ? CDEF[id] : UI.coll[id]), tid = tp || 'sold', lt = E.latestOf(list);
-      const nn = tp ? NOUN[tp] : ['sold', 'sold'], day = lt && lt.created ? Math.floor((Date.now() - lt.created) / 864e5) + 1 : 1, sub = list.length ? `${esc(lt.addr)}<sup class="ast" title="Added on day ${day}">* day ${day}</sup>` : 'None yet';
+      const nn = tp ? NOUN[tp] : ['sold', 'sold'], day = lt && lt.created ? Math.floor((Date.now() - lt.created) / 864e5) + 1 : 1, sub = list.length ? `${esc(lt.addr)}` : 'None yet';
       return `<section class="card cat${open ? ' open' : ''}${tp ? '' : ' soldcat'}" data-testid="cat-${tid}"><div class="cathw"><div class="cath" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}" data-testid="cat-header-${tid}"><span class="catt"><b>${title}</b></span><span class="chev" aria-hidden="true">›</span></div><div class="cats" data-testid="cat-sub-${tid}" aria-label="Latest added, for information only">${sub}</div></div>
         ${open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length > 1 && tp ? '<p class="note hold">Hold and drag ⋮⋮ to reorder. The asset above funds the one below.</p>' : ''}</div>` : ''}</section>`; };
     const soldList = S.houses.filter(isSold);
