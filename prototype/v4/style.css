@@ -280,3 +280,6 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
 .cathw .cats .sc{display:flex;flex-direction:column;min-width:0}.cathw .cats .sc b{font-size:13px;font-weight:700;white-space:nowrap}.cathw .cats .sc b.bad{color:var(--bad)}
 .cathw .cats .sc small{font-size:10px;color:var(--mut);white-space:nowrap}
 .cathw .cats:not(:has(.sc)){display:block}
+
+.xtog{min-height:32px;padding:0 10px;font-size:12px;font-weight:600;border-color:transparent;color:var(--mut)}
+.row .locline{font-size:13px}
