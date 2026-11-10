@@ -270,6 +270,14 @@ select.notarget{max-width:9em}
 select.notarget{color:var(--mut);font-weight:400;font-size:14px}
 .row .locline{color:var(--mut)}
 
+.cathw{position:relative}.cathw .cath{min-height:48px;padding-bottom:2px}
+.cathw .cats{padding:0 14px 12px;pointer-events:none;-webkit-user-select:none;user-select:none;cursor:default}
+.ast{font-size:10px;color:var(--mut);margin-left:3px;vertical-align:super}
+.addr .ed{font-style:normal;font-weight:500;font-size:12px;color:var(--acc);margin-left:4px}
+.card.cat.open .cathw .cats{padding-bottom:8px}
+
+.xtog{display:block;margin:4px 0 0 auto;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:18px;background:none;color:var(--acc);font-size:13px;font-weight:600}
+
 </style>
 <main id="app" aria-live="polite"></main>
 <script>
@@ -813,7 +821,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
   if (S && Array.isArray(S.houses) && S.g && S.v === 8) { S.p = S.p || E.samplePersonal(); S.v = DATA_V; } /* v8 saves keep their assets and gain a finance profile */
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seed();
   E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
-  const fixOrder = (s) => { s.seq = +s.seq || 0; if (s.orderV !== 1) E.orderByBuy(s); return s; }; /* list order = buy order, sorted once; after that the saved order is the truth */
+  const fixOrder = (s) => { s.seq = +s.seq || 0; s.houses.forEach((h) => { if (!h.created) h.created = Date.now(); }); if (s.orderV !== 1) E.orderByBuy(s); return s; }; /* list order = buy order, sorted once; after that the saved order is the truth */
   fixOrder(S);
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
   let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
@@ -946,15 +954,15 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       const loses = type === 'house' && v.cf < 0 ? '<span class="hi">loses money at today\'s terms</span>' : '';
       const loc = !t ? '' : !isFinite(p + v.locM) ? 'not reachable' : p + v.locM <= 0 ? 'opens now' : 'opens in ' + mm(p + v.locM);
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
-      return `<div class="rw" data-rw="${h.id}"><div class="row${soldBy ? ' sold' : ''}${sel ? ' sel' : ''}" data-row="${h.id}" data-testid="ledger-row"${soldBy ? ' data-nodrag' : ''}><div class="r1"><span class="nm"><button type="button" class="addrbtn" aria-expanded="${sel}" data-testid="row-toggle"><span class="addr">${esc(h.addr)}</span><span class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}"><span class="tag">${tag}</span> ${soldBy ? 'sold' : sp ? (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : v.payment > 0.5 ? 'paid off by then' : 'no loan') + ' · equity ' + $k(sp.equity) : 'not in the totals yet'} ${hi}${loses}</span>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<span class="exitline">${parts.join(' · ')}</span>` : ''; })()}</button></span>
+      return `<div class="rw" data-rw="${h.id}"><div class="row${soldBy ? ' sold' : ''}${sel ? ' sel' : ''}" data-row="${h.id}" data-testid="ledger-row"${soldBy ? ' data-nodrag' : ''}><div class="r1"><span class="nm"><button type="button" class="addrbtn" aria-expanded="${sel}" data-testid="row-toggle"><span class="addr" data-go="h/${h.id}" data-testid="row-edit" title="Edit ${esc(h.addr)}">${esc(h.addr)} <i class="ed" aria-hidden="true">edit ›</i></span><span class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}"><span class="tag">${tag}</span> ${soldBy ? 'sold' : sp ? (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : v.payment > 0.5 ? 'paid off by then' : 'no loan') + ' · equity ' + $k(sp.equity) : 'not in the totals yet'} ${hi}${loses}</span>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<span class="exitline">${parts.join(' · ')}</span>` : ''; })()}</button></span>
         <span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy ? '+' + $c(pl.exits[h.id].proceeds) : !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'cash from sale' : !sp ? 'not counted' : 'cash flow'}</small></span></div>
-        <div class="r2">${soldBy ? `<div class="fcol"><span class="locline" data-testid="loc-line"></span></div>` : `<div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div>`}</div></div>${sel ? panelOf(h, soldBy, vis, ci) : ''}</div>`; };
+        <div class="r2">${soldBy ? `<div class="fcol"><span class="locline" data-testid="loc-line"></span></div>` : `<div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div>`}${soldBy ? '' : `<button type="button" class="xtog" data-panel="${h.id}" aria-expanded="${sel}" data-testid="row-extra-toggle">Extra payment ${sel ? '▴' : '▾'}</button>`}</div></div>${sel ? panelOf(h, soldBy, vis, ci) : ''}</div>`; };
     const NOUN = { house: ['home', 'homes'], commercial: ['commercial property', 'commercial properties'], business: ['business', 'businesses'] }, ADD = { house: 'home', commercial: 'commercial property', business: 'business' };
     const empty = !S.houses.length;
     const secOf = (id, title, list, tp) => {
       CDEF[id] = id === 'cat-house' || empty ? false : true; const open = !(UI.coll[id] === undefined ? CDEF[id] : UI.coll[id]), tid = tp || 'sold', lt = E.latestOf(list);
-      const nn = tp ? NOUN[tp] : ['sold', 'sold'], sub = list.length ? `${list.length} ${list.length === 1 ? nn[0] : nn[1]} · latest: ${esc(lt.addr)}` : 'None yet';
-      return `<section class="card cat${open ? ' open' : ''}${tp ? '' : ' soldcat'}" data-testid="cat-${tid}"><div class="cath" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}" data-testid="cat-header-${tid}"><span class="catt"><b>${title}</b><span class="cats" data-testid="cat-sub-${tid}">${sub}</span></span><span class="chev" aria-hidden="true">›</span></div>
+      const nn = tp ? NOUN[tp] : ['sold', 'sold'], day = lt && lt.created ? Math.floor((Date.now() - lt.created) / 864e5) + 1 : 1, sub = list.length ? `${list.length} ${list.length === 1 ? nn[0] : nn[1]} · latest: ${esc(lt.addr)}<sup class="ast" title="Added on day ${day}">* day ${day}</sup>` : 'None yet';
+      return `<section class="card cat${open ? ' open' : ''}${tp ? '' : ' soldcat'}" data-testid="cat-${tid}"><div class="cathw"><div class="cath" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}" data-testid="cat-header-${tid}"><span class="catt"><b>${title}</b></span><span class="chev" aria-hidden="true">›</span></div><div class="cats" data-testid="cat-sub-${tid}" aria-label="Latest added, for information only">${sub}</div></div>
         ${open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length > 1 && tp ? '<p class="note hold">Hold and drag ⋮⋮ to reorder. The asset above funds the one below.</p>' : ''}</div>` : ''}</section>`; };
     const soldList = S.houses.filter(isSold);
     const sections = [['house', 'Homes'], ['commercial', 'Commercial'], ['business', 'Businesses']].map(([tp, title]) => secOf('cat-' + tp, title, S.houses.filter((h) => (h.type || 'house') === tp && !isSold(h)), tp)).join('') + (soldList.length ? secOf('cat-sold', 'Sold', soldList, null) : '');
@@ -1304,7 +1312,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.resetYes !== undefined) { S = E.seed(); S.v = DATA_V; fixOrder(S); ask = null; save(); render(); return; }
     const mvb = t.closest('[data-move]'); if (mvb) { const [id, d] = mvb.dataset.move.split(':'); moveBy(id, +d); return; }
     const dpb = t.closest('[data-dup]'); if (dpb) { const c = E.duplicate(S, dpb.dataset.dup); if (c) { ask = null; UI.coll['cat-' + (c.type || 'house')] = false; save(); if (routeOf().startsWith('h/')) { selId = null; goto('h/' + c.id); } else { selId = c.id; render(); } } return; }
-    const rwEl = t.closest('[data-row]'); if (rwEl && !t.closest('[data-go]')) { if (Date.now() - lastDragEnd < 350) return; selId = selId === rwEl.dataset.row ? null : rwEl.dataset.row; ask = null; render(); return; }
+    const rwEl = t.closest('[data-row]'); if (rwEl && !t.closest('[data-go]') && !t.closest('.panel')) { if (Date.now() - lastDragEnd < 350) return; if (t.closest('[data-panel]')) { selId = selId === rwEl.dataset.row ? null : rwEl.dataset.row; ask = null; render(); return; } if (!t.closest('select,input,textarea,a,[data-info],button:not(.addrbtn)')) { goto('h/' + rwEl.dataset.row); return; } }
     const go = t.closest('[data-go]'); if (go) goto(go.dataset.go);
   });
   /* ---------- reorder: Move up/down buttons and press-and-hold drag. List order = buy order; funding is relinked after every change. ---------- */
