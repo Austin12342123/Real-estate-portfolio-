@@ -1,14 +1,14 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-09T05:09:57.292Z  |  168s
+Target: `prototype/v4`  |  Run: 2026-11-09T17:14:32.186Z  |  206s
 
-## Automated score: **85.00 / 84.99900000000001** (a separate design review adds 15)
+## Automated score: **84.93 / 84.99900000000001** (a separate design review adds 15)
 
 | Category | Score |
 |---|---|
 | A. Requirement / propagation | 18.00 / 18.00 |
 | B. Engine correctness | 12.00 / 12.00 |
-| C. UX conciseness & usability | 10.00 / 10.00 |
+| C. UX conciseness & usability | 9.93 / 10.00 |
 | D. PWA / local-first | 8.00 / 8.00 |
 | E. Robustness & accessibility | 7.00 / 7.00 |
 | R. Realism & market accuracy | 30.00 / 30.00 |
@@ -42,7 +42,7 @@ Target: `prototype/v4`  |  Run: 2026-11-09T05:09:57.292Z  |  168s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok Infinity,Infinity/0/0,49,98/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 2.9ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 4.2ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: every credit-line funder stays within cap (loan + liens + drawn LOC) when its target closes | 0.48 | 0.48 | 3/3 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |
@@ -57,16 +57,16 @@ Target: `prototype/v4`  |  Run: 2026-11-09T05:09:57.292Z  |  168s
 | C01 | At 390x844: summary KPIs, plan headline and the first ledger rows are visible without scrolling | 1.33 | 1.33 | 3/3 sub-checks pass |
 | C02 | Main page has only the per-row extra fields as text inputs (one per asset) | 1.00 | 1.00 | 2/2 sub-checks pass |
 | C03 | No horizontal overflow at 320/390/430 on main, asset, assumptions, add, import | 1.33 | 1.33 | 15/15 sub-checks pass |
-| C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.33 | 118/118 targets >=44px. Small:  |
-| C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 65/65 ok  |
+| C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.26 | 159/165 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32 |
+| C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 61/61 ok  |
 | C06 | Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps | 1.33 | 1.33 | 3/3 sub-checks pass |
-| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 129px x 14, page 3140px |
-| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 863/863 text elements pass (light 428/428, dark 435/435).  |
+| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 111px x 14, page 2776px |
+| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 849/849 text elements pass (light 421/421, dark 428/428).  |
 | C09 | Summary-first: one concise summary card (single snapshot, short text), plan card collapsible | 1.00 | 1.00 | 3/3 sub-checks pass |
 | D01 | Manifest valid; icons load with true declared dimensions | 1.14 | 1.14 | 8/8 sub-checks pass |
 | D02 | Service worker (index.html) registers, activates, controls page after reload; precache complete | 1.14 | 1.14 | 3/3 sub-checks pass |
 | D03 | Works offline: reload, deep-link, and edit with network off | 1.52 | 1.52 | 4/4 sub-checks pass |
-| D04 | Zero external (non-localhost) network requests across every flow | 0.76 | 0.76 | 718 requests, 0 external  |
+| D04 | Zero external (non-localhost) network requests across every flow | 0.76 | 0.76 | 896 requests, 0 external  |
 | D05 | Data persists across reload and new tab (localStorage rep-v4, v7); no server round-trip | 1.14 | 1.14 | 5/5 sub-checks pass |
 | D06 | Backup: Show backup gives valid JSON text; pasted text and file restore state (with confirm); invalid text rejected without damage | 1.52 | 1.52 | 6/6 sub-checks pass |
 | D07 | iOS install meta: apple-touch-icon loads, viewport-fit=cover, apple-mobile-web-app-capable, theme-color | 0.38 | 0.38 | 4/4 sub-checks pass |
@@ -74,7 +74,7 @@ Target: `prototype/v4`  |  Run: 2026-11-09T05:09:57.292Z  |  168s
 | E01 | Edge inputs (60 cases + compound: zero, 100% down, blanks, garbage, negatives, 1e12, caps, sale/merge/improvement fields) leave no NaN/Infinity/undefined in any page or crash | 1.91 | 1.91 | 65/65 sub-checks pass |
 | E02 | Remove all assets (main page) -> clean empty state with add action; can add again | 0.96 | 0.96 | 3/3 sub-checks pass |
 | E03 | Deleting a funding target clears references (select, storage, plan, merge-into) | 0.96 | 0.96 | 5/5 sub-checks pass |
-| E04 | Every input/select/button has an accessible name (main, asset, assumptions, add, import) | 0.64 | 0.64 | 190/190 named. unnamed:  |
+| E04 | Every input/select/button has an accessible name (main, asset, assumptions, add, import) | 0.64 | 0.64 | 279/279 named. unnamed:  |
 | E05 | Typing 5 digits sequentially keeps focus + full value (re-render safe) on main, asset, assumptions, text field | 0.64 | 0.64 | 5/5 sub-checks pass |
 | E06 | No layout shift while navigating and editing (CLS <= 0.05) | 0.32 | 0.32 | CLS 0.0000 |
 | E07 | No console errors or page errors during all flows | 0.96 | 0.96 | 0 errors:  |
@@ -92,7 +92,9 @@ Target: `prototype/v4`  |  Run: 2026-11-09T05:09:57.292Z  |  168s
 
 ## Top failures
 
-None.
+1. **C04 Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)** (-0.07)
+   - Detail: 159/165 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32
+   - Reproduce: Measure interactive elements on main/asset/assumptions/add
 
 ## F. Personal finances: **90.00 / 90** (separate scale; a design review adds 10 later; not included in the A-E + R total)
 
@@ -112,15 +114,37 @@ None.
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| G1 | Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine) | 14.00 | 14.00 | 40/40 sub-checks pass |
-| G2 | Asset page <-> Portfolio sync (share line, hero, impact, edits propagate) | 14.00 | 14.00 | 72/72 sub-checks pass |
-| G3 | Portfolio <-> Finances sync (cash flow, funding, extra scope, verdict, edge cases) | 14.00 | 14.00 | 32/32 sub-checks pass |
+| G1 | Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine) | 14.00 | 14.00 | 42/42 sub-checks pass |
+| G2 | Asset page <-> Portfolio sync (share line, hero, impact, edits propagate) | 14.00 | 14.00 | 74/74 sub-checks pass |
+| G3 | Portfolio <-> Finances sync (cash flow, funding, extra scope, verdict, edge cases) | 14.00 | 14.00 | 35/35 sub-checks pass |
 | G4 | Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences) | 18.00 | 18.00 | 35/35 sub-checks pass |
 | G5 | Add page <-> created asset (loan option cards, option switching, 203(k) defaults) | 6.00 | 6.00 | 12/12 sub-checks pass |
 | G6 | Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light) | 12.00 | 12.00 | 12/12 sub-checks pass |
-| G7 | Shared settings (g.* and p.*) propagate to every dependent display | 10.00 | 10.00 | 142/142 sub-checks pass |
+| G7 | Shared settings (g.* and p.*) propagate to every dependent display | 10.00 | 10.00 | 147/147 sub-checks pass |
 | G8 | No stale / duplicate / contradictory numbers | 12.00 | 12.00 | 10/10 sub-checks pass |
 
 ### G failures
 
 None.
+
+## H. Help buttons and hourly jobs: **97.45 / 100** (separate scale; not included in the A-E + R total, F or G)
+
+| ID | Check | Pts | Earned | Detail |
+|---|---|---|---|---|
+| H1 | Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained | 8.00 | 6.00 | 7/9 sub-checks pass. FAIL: every acronym used in a definition is itself explained (own entry, title or spelled out) [k203:HUD]; plain language: no sentence over 40 words and every body reads at about grade 12 or easier (Flesch-Kincaid) [long  hard noi=14.6] |
+| H2 | Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries | 16.00 | 15.45 | 82/83 sub-checks pass. FAIL: no orphan glossary entries: every definition can be opened from some page (80 entries) [10 never shown: noi, qualifying, ownerocc, mip, interestonly, equity, outsidecash, cashfromselling, planned, capital] |
+| H3 | Info sheet: opens with the right content, closes by button / Escape / backdrop / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data | 16.00 | 16.00 | 22/22 sub-checks pass |
+| H4 | Definitions are accurate: numbers quoted match the engine constants and loan table, examples do their own arithmetic, stated rules behave that way in the engine | 16.00 | 16.00 | 42/42 sub-checks pass |
+| H5 | Hourly jobs: add, gross = (wage + tips) x hours x weeks, automatic vs typed tax, blank tax returns to automatic, temporary end month, switching kind, clamps, persistence | 12.00 | 12.00 | 28/28 sub-checks pass |
+| H6 | Optional fields left blank never break the plan or the finance verdict (job extras, improvements, exit fields, co-signers) | 8.00 | 8.00 | 16/16 sub-checks pass |
+| H7 | Old saves migrate: v8 (assets only) and pre-hourly jobs (no kind / wage / tips / weeks) load, keep their numbers and show correctly | 6.00 | 6.00 | 10/10 sub-checks pass |
+| H8 | Automatic tax estimate: matches an independent 2025 single-filer calculation (federal after standard deduction + Social Security + Medicare, no state tax), is monotone and bounded | 6.00 | 6.00 | 6/6 sub-checks pass |
+| H9 | Disclosure defaults and new wording: collapsed sections open on tap (and stay open), renamed labels, Hold/Sell/Merge + Status, loan grouping, import preview title | 8.00 | 8.00 | 12/12 sub-checks pass |
+| H10 | Clean run: no console / page errors and no network requests outside localhost during all help and hourly-job flows | 4.00 | 4.00 | 2/2 sub-checks pass |
+
+### H failures
+
+- **H1 Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained** (-2.00): 7/9 sub-checks pass. FAIL: every acronym used in a definition is itself explained (own entry, title or spelled out) [k203:HUD]; plain language: no sentence over 40 words and every body reads at about grade 12 or easier (Flesch-Kincaid) [long  hard noi=14.6]
+  - Reproduce: node: inspect v4/info.js INFO / LABEL / LOAN
+- **H2 Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries** (-0.55): 82/83 sub-checks pass. FAIL: no orphan glossary entries: every definition can be opened from some page (80 entries) [10 never shown: noi, qualifying, ownerocc, mip, interestonly, equity, outsidecash, cashfromselling, planned, capital]
+  - Reproduce: Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels

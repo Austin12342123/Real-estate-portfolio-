@@ -5,7 +5,7 @@
 const fs = require('fs');
 
 exports.run = async function run(X) {
-  const { E, Parts, mkS, DATA_V, KEY, money, mkCtx, mkPage, base, collect } = X;
+  const { E, Parts, mkS, DATA_V, KEY, money, mkCtx, mkPage, base, collect, EXPAND_JS } = X;
   const checks = [];
   let PAGE = null;
   const UIKEY = 'rep-v4-ui';
@@ -34,6 +34,7 @@ exports.run = async function run(X) {
   /* ---------- display formatting (mirrors the documented formats) ---------- */
   const num0 = (n) => (isFinite(n) ? n : 0);
   const $f = (n) => { const a = Math.abs(num0(n)), sg = n < -0.5 ? '−' : ''; return a >= 1e9 ? sg + '$' + (a / 1e9).toFixed(2) + 'B' : a >= 1e7 ? sg + '$' + (a / 1e6).toFixed(1) + 'M' : sg + '$' + Math.round(a).toLocaleString('en-US'); };
+  const $c = (n) => { const a = Math.abs(num0(n)); return a >= 1e9 ? $f(n) : a >= 1e7 ? (n < 0 ? '−' : '') + '$' + (a / 1e6).toFixed(1) + 'M' : a >= 1e6 ? (n < 0 ? '−' : '') + '$' + (a / 1e6).toFixed(2) + 'M' : $f(n); };
   const mm = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m + ' mo');
   const mo = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 24 ? m + ' mo' : Math.floor(m / 12) + 'y ' + (m % 12) + 'm');
   const R = (n, d = 0) => (isFinite(n) ? String(+n.toFixed(d)) : '—');
@@ -77,11 +78,13 @@ exports.run = async function run(X) {
     await page.evaluate(([k, s, uk, uu]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); localStorage.setItem(uk, JSON.stringify(uu)); } catch (e) {} }, [KEY, S, UIKEY, u]);
     await page.goto(base() + '/index.html?g=' + seq++ + (hash || ''));
     await page.waitForSelector('#app > *');
+    await page.evaluate(EXPAND_JS);
   }
   async function nav(page, h) {
-    await page.evaluate(async (h) => { const cur = location.hash; if (cur === h || (h === '#' && cur === '')) window.dispatchEvent(new Event('hashchange')); else location.hash = h; await new Promise((r) => setTimeout(r, 25)); }, h);
+    await page.evaluate(async ([h, ex]) => { const cur = location.hash; if (cur === h || (h === '#' && cur === '')) window.dispatchEvent(new Event('hashchange')); else location.hash = h; await new Promise((r) => setTimeout(r, 25)); eval('(' + ex + ')')(); }, [h, EXPAND_JS.toString()]);
   }
   const GRAB = () => {
+    for (let i = 0; i < 30; i++) { const b = [...document.querySelectorAll('#app [data-coll][aria-expanded=false]')].filter((e) => e.dataset.coll !== 'drivers')[0]; if (!b) break; b.click(); } /* graders open every collapsed section first */
     const clean = (s) => (s || '').replace(/\s+/g, ' ').trim();
     const o = { hash: location.hash, state: JSON.parse(JSON.stringify(window.__app.state)), t: {}, kv: [], kpis: [], tables: {}, notes: [], warns: [], chips: [], rows: [], impact: [], drivers: [], chart: null, text: document.getElementById('app').innerText };
     document.querySelectorAll('#app [data-testid]').forEach((e) => { const k = e.dataset.testid; if (!(k in o.t)) o.t[k] = clean(e.textContent); });
@@ -93,7 +96,7 @@ exports.run = async function run(X) {
     document.querySelectorAll('#app .warnbox').forEach((n) => o.warns.push({ id: n.dataset.testid || '', t: clean(n.textContent) }));
     document.querySelectorAll('#app .chip,#app .warnchip').forEach((n) => o.chips.push({ t: clean(n.textContent), title: n.getAttribute('title') || '' }));
     document.querySelectorAll('#app [data-testid=ledger-row]').forEach((r) => { const loc = r.querySelector('[data-testid=loc-line]'), inp = r.querySelector('input'), cf = r.querySelector('[data-testid=row-cashflow] b'), ex = r.querySelector('.exitline'), pay = r.querySelector('[data-testid=row-payment]');
-      o.rows.push({ id: (r.dataset.go || '').replace('h/', ''), addr: clean((r.querySelector('.addr') || {}).textContent), tag: clean((r.querySelector('.tag') || {}).textContent), pay: clean(pay ? pay.textContent : ''), extra: inp ? inp.value : null, loc: clean(loc ? loc.textContent : ''), cf: clean(cf ? cf.textContent : ''), exit: clean(ex ? ex.textContent : ''), hi: [...r.querySelectorAll('.hi')].map((x) => clean(x.textContent)) }); });
+      o.rows.push({ id: (r.dataset.go || '').replace('h/', ''), addr: clean((r.querySelector('.addr') || {}).textContent), tag: clean((r.querySelector('.tag') || {}).textContent), pay: clean(pay ? pay.textContent : ''), extra: inp ? inp.value : null, loc: clean(loc ? loc.textContent : ''), cf: clean(cf ? cf.textContent : ''), exit: clean(ex ? ex.textContent : ''), hi: [...r.querySelectorAll('.hi')].map((x) => clean(x.textContent)), eqAttr: pay ? pay.dataset.equity : null, hasExtra: !!inp }); });
     document.querySelectorAll('#app [data-testid=impact] .f').forEach((f) => { const lb = f.querySelector('.lb'), b = f.querySelector('b'); o.impact.push({ lb: clean(lb ? lb.textContent : ''), t: clean(f.textContent.replace(lb ? lb.textContent : '', '')), to: clean(b ? b.textContent : '') }); });
     document.querySelectorAll('#app [data-testid=drivers] .drv').forEach((d) => { const sp = d.querySelectorAll('span'); o.drivers.push({ addr: clean(sp[0].textContent), t: clean(sp[1].textContent) }); });
     const svg = document.querySelector('#app svg.nw'); if (svg) o.chart = { nw: svg.dataset.nw.split(',').map(Number), t: +svg.dataset.t, label: svg.getAttribute('aria-label') };
@@ -139,21 +142,27 @@ exports.run = async function run(X) {
     T('KPI DSCR = engine (2 dp)', Math.abs(parseFloat(ds.v) - sn.dscr) <= 0.0051, 0.5, ds.v + ' vs ' + R(sn.dscr, 2));
     T('engine: sum of per-asset shares = KPI numbers', Math.abs(pl.snap.reduce((a, x) => a + x.equity, 0) - sn.nw) < 1 && Math.abs(pl.snap.reduce((a, x) => a + x.payment, 0) - sn.monthly) < 1 && Math.abs(pl.snap.reduce((a, x) => a + x.cf, 0) - sn.cf) < 1, 0.5, 'snapshot entries do not sum to the KPI totals');
     /* ledger total row */
-    const tp = g.t['ledger-total'] || '', m = /(−?\$[\d,.]+[MB]?)\/mo payments · equity (−?\$[\d,.]+[MB]?)/.exec(tp);
-    T('ledger total row exists with payments and equity', !!m, 1, tp);
-    if (m) { T('ledger total payments = KPI monthly payments', eqT(m[1], mon.v), 1, m[1] + ' vs ' + mon.v); T('ledger total equity = KPI net worth', eqT(m[2], nw.v), 1, m[2] + ' vs ' + nw.v); }
+    const tp = g.t['ledger-total'] || '', m = /(−?\$[\d,.]+[MB]?)\/mo payments/.exec(tp);
+    T('ledger total row exists with payments (equity now lives in the KPI, the breakdown and each row)', !!m, 1, tp);
+    if (m) { T('ledger total payments = KPI monthly payments', eqT(m[1], mon.v), 1, m[1] + ' vs ' + mon.v); }
     T('ledger total cash flow = KPI cash flow (exact text)', g.t['total-cf'] === cf.v + '/mo' || (g.t['total-cf'] || '').replace('/mo', '') === cf.v, 1, g.t['total-cf'] + ' vs ' + cf.v);
     /* rows */
     const byId = {}; g.rows.forEach((r) => (byId[r.id] = r));
     T('one ledger row per asset', g.rows.length === S.houses.length && S.houses.every((h) => byId[h.id]), 0.5, g.rows.length + ' rows vs ' + S.houses.length + ' assets');
     const heldPay = [], heldCf = [], heldEq = [];
-    S.houses.forEach((h) => { const r = byId[h.id]; if (!r) return; const { sp, sold } = rowEng(S, pl, h), pm = /(−?\$[\d,.]+[MB]?)\/mo/.exec(r.pay), cfm = /(−|\+)?\$[\d,.]+[MB]?/.exec(r.cf), eqm = /equity (−?\$[\d,.]+[MB]?)/.exec(r.exit);
-      if (sold) { T('sold asset: row says sold with proceeds from the plan', /sold/i.test(r.pay) && new RegExp('Sold in ' + mm(pl.sellAt[h.id]) + ' for').test(r.loc) && eq((/for (−?\$[\d,.]+[MB]?)/.exec(r.loc) || [])[1], pl.exits[h.id].proceeds), 1, h.id + ': ' + r.pay + ' | ' + r.loc + ' (engine ' + $f(pl.exits[h.id].proceeds) + ')'); return; }
+    S.houses.forEach((h) => { const r = byId[h.id]; if (!r) return; const { sp, sold } = rowEng(S, pl, h), pm = /(−?\$[\d,.]+[MB]?)\/mo/.exec(r.pay), cfm = /(−|\+)?\$[\d,.]+[MB]?/.exec(r.cf), eqm = /equity (−?\$[\d,.]+[MBK]?)/.exec(r.pay);
+      if (sold) {
+        const sm = /sold for (−?\$[\d,.]+[MB]?) in (\d+) mo/.exec(r.exit), pr = pl.exits[h.id].proceeds;
+        T('sold asset: row says sold; the exit line has proceeds and month from the plan', /sold/i.test(r.pay) && !!sm && eq(sm[1], pr) && +sm[2] === pl.sellAt[h.id], 1, h.id + ': ' + r.pay + ' | ' + r.exit + ' (engine ' + $f(pr) + ' in ' + pl.sellAt[h.id] + ')');
+        T('sold asset: cash-flow cell shows the proceeds as cash from the sale', eq(r.cf.replace(/^\+/, ''), pr) && /^\+/.test(r.cf), 1, h.id + ': ' + r.cf + ' vs ' + $f(pr));
+        T('sold asset: no Extra input on a sold row', !r.hasExtra, 0.5, h.id + ' has an input');
+        return; }
       if (sp) {
-        T('row payment = asset share of plan-horizon payments', pm && eq(pm[1], sp.payment), 1.5, h.id + ': ' + r.pay + ' vs ' + $f(sp.payment));
+        T('row payment = asset share of plan-horizon payments (or "no loan" / "paid off by then" when it is 0)', sp.payment > 0.5 ? !!pm && eq(pm[1], sp.payment) : !pm && /no loan|paid off by then/.test(r.pay), 1.5, h.id + ': ' + r.pay + ' vs ' + $f(sp.payment));
         T('row cash flow = asset share of plan-horizon cash flow', cfm && eq(r.cf.replace('/mo', ''), sp.cf), 1.5, h.id + ': ' + r.cf + ' vs ' + $f(sp.cf));
-        T('row equity = asset share of plan-horizon net worth', eqm && eq(eqm[1], sp.equity), 1.5, h.id + ': ' + r.exit + ' vs ' + $f(sp.equity));
-        if (pm) heldPay.push(pm[1]); if (cfm) heldCf.push(r.cf.replace('/mo', '')); if (eqm) heldEq.push(eqm[1]);
+        T('row equity (text, rounded) = asset share of plan-horizon net worth', !!eqm && eq(eqm[1], sp.equity), 1.5, h.id + ': ' + r.pay + ' vs ' + $f(sp.equity));
+        T('row data-equity = asset share of plan-horizon net worth (exact)', r.eqAttr !== '' && r.eqAttr != null && Math.abs(+r.eqAttr - sp.equity) <= 0.51, 1, h.id + ': data-equity=' + r.eqAttr + ' vs ' + sp.equity);
+        if (sp.payment > 0.5 && pm) heldPay.push(pm[1]); if (cfm) heldCf.push(r.cf.replace('/mo', '')); if (r.eqAttr) heldEq.push('$' + r.eqAttr);
       }
     });
     if (heldPay.length) {
@@ -175,10 +184,10 @@ exports.run = async function run(X) {
       const types = { house: /^Single-family homes \((\d+)\)/, commercial: /^Commercial properties \((\d+)\)/, business: /^Businesses \((\d+)\)/ };
       let okc = true, info = ''; for (const tpn in types) { const row = find(types[tpn]), n = pl.snap.filter((x) => x.type === tpn).length; if ((row ? +types[tpn].exec(row[0])[1] : 0) !== n) { okc = false; info = tpn + ' ' + (row ? row[0] : 'missing') + ' vs ' + n; } }
       T('breakdown type counts match the assets held at the snapshot', okc, 0.5, info);
-      const cashRow = find(/^Cash from selling/); T('breakdown cash row = cash from sales (shown only when > 0)', sn.cash > 0.5 ? !!cashRow && eq(cashRow[2], sn.cash) : !cashRow, 0.5, JSON.stringify(cashRow) + ' vs ' + $f(sn.cash));
+      const cashRow = find(/^Sold\b/), soldN = S.houses.filter((h) => pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM).length; T('breakdown "Sold (N)" row = cash kept from sales (shown only when > 0; N = assets sold)', sn.cash > 0.5 ? !!cashRow && eq(cashRow[2], sn.cash) && (soldN ? new RegExp('^Sold \\(' + soldN + '\\)$').test(cashRow[0]) : cashRow[0] === 'Sold') : !cashRow, 0.5, JSON.stringify(cashRow) + ' vs ' + $f(sn.cash));
     }
     /* KPI subtext */
-    T('net worth subtext: asset count and cash from sales match', new RegExp('^' + S.houses.length + ' assets').test(nw.sub) && (sn.cash > 0.5 ? /incl\. (−?\$[\d,.]+[MB]?) from sales/.test(nw.sub) && eq(/incl\. (−?\$[\d,.]+[MB]?) from sales/.exec(nw.sub)[1], sn.cash) : !/incl\./.test(nw.sub)), 0.5, nw.sub + ' (cash ' + $f(sn.cash) + ')');
+    T('net worth subtext: asset count and plan length match (cash from sales is in the breakdown Sold row)', new RegExp('^' + S.houses.length + ' assets · ' + S.g.planYears + '-yr plan$').test(nw.sub), 0.5, nw.sub + ' (assets ' + S.houses.length + ', years ' + S.g.planYears + ')');
     T('monthly payments subtext extra = plan-horizon extra', sn.extra > 0.5 ? /incl\. (\$[\d,.]+[MB]?) extra/.test(mon.sub) && eq(/incl\. (\$[\d,.]+[MB]?) extra/.exec(mon.sub)[1], sn.extra) : !/extra/.test(mon.sub), 0.5, mon.sub + ' vs ' + $f(sn.extra));
     T('cash flow subtext "after extra" = cash flow minus extra', sn.extra > 0.5 ? /([−+]\$[\d,.]+[MB]?) after extra/.test(cf.sub) && eq(/([−+]\$[\d,.]+[MB]?) after extra/.exec(cf.sub)[1], sn.cfx) && Math.abs(sn.cf - sn.extra - sn.cfx) < 1 : true, 0.5, cf.sub + ' vs ' + $f(sn.cfx));
     /* chart */
@@ -197,7 +206,7 @@ exports.run = async function run(X) {
     const mx = /(\$[\d,.]+[MB]?)\/mo extra now/.exec(te), ml = /\+ ?(\$[\d,.]+[MB]?) later/.exec(te);
     T('header "extra now" = extra payments actually being paid (loans still being paid down)', !!mx && eq(mx[1], X0), 1, te + ' vs ' + $f(X0));
     T('header "+ later" = extras that start once the planned assets are bought', Xall - X0 > 0.5 ? !!ml && eq(ml[1], Xall - X0) : !ml, 1, te + ' vs later ' + $f(Xall - X0));
-    const rowSum = g.rows.reduce((a, r) => a + fnum(r.extra), 0);
+    const rowSum = g.rows.reduce((a, r) => a + (r.extra == null ? (pl.V[r.id] ? pl.V[r.id].X : 0) /* sold rows have no Extra input: use the extra the engine had set on them */ : fnum(r.extra)), 0);
     T('extra now + later = extras that are actually paid (never more than the row inputs; the difference is extras typed on assets with no loan to pay down)', mx && Math.abs(money(mx[1]) + (ml ? money(ml[1]) : 0) - Xall) <= g.rows.length * 0.5 + 2 && money(mx[1]) + (ml ? money(ml[1]) : 0) <= rowSum + g.rows.length * 0.5 + 2, 1, te + ' vs engine ' + $f(Xall) + ', row inputs ' + rowSum);
     /* outside cash */
     const oc = g.warns.find((w) => w.id === 'outside-cash');
@@ -239,18 +248,18 @@ exports.run = async function run(X) {
     const S = main.state, h = S.houses.find((x) => x.id === id), pl = planOf(main), row = main.rows.find((r) => r.id === id), share = hg.t['asset-share'] || '', { sp, sold } = rowEng(S, pl, h);
     const T = (key, ok, w, info) => A.t(key, ok, w, tag + ' ' + id + ': ' + info);
     if (sold) {
-      T('sold asset: share line "sold in N mo for $X" = row = engine', share.includes('sold in ' + mm(pl.sellAt[id]) + ' for') && eq((/for (−?\$[\d,.]+[MB]?)/.exec(share) || [])[1], pl.exits[id].proceeds) && eqT((/for (−?\$[\d,.]+[MB]?)/.exec(share) || [])[1], (/for (−?\$[\d,.]+[MB]?)/.exec(row.loc) || [])[1]), 1.5, share + ' | row: ' + row.loc);
+      T('sold asset: share line "sold in N mo for $X" = row exit line = row cash cell = engine', share.includes('sold in ' + mm(pl.sellAt[id]) + ' for') && eq((/for (−?\$[\d,.]+[MB]?)/.exec(share) || [])[1], pl.exits[id].proceeds) && eqT((/for (−?\$[\d,.]+[MB]?)/.exec(share) || [])[1], (/sold for (−?\$[\d,.]+[MB]?)/.exec(row.exit) || [])[1]) && eqT((/for (−?\$[\d,.]+[MB]?)/.exec(share) || [])[1], row.cf), 1.5, share + ' | row: ' + row.exit + ' | ' + row.cf);
     } else if (!sp) {
       T('unbought asset: share line says not bought, row says unfunded/plan', /not bought in this plan yet/.test(share), 1, share + ' | tag ' + row.tag);
       T('unbought asset: row does not claim a payment that the total excludes', /sold|unfunded|not in the totals/.test(row.pay) && !/\$[\d,]+\/mo/.test(row.pay), 1, 'row says "' + row.pay + '" but the asset is not in the portfolio total (share line: ' + share + ')');
     } else {
-      const m = /([−$\d,.MB]+)\/mo payment · ([−+][−$\d,.MB]+)\/mo cash flow · (−?\$[\d,.]+[MB]?) equity/.exec(share), pm = /(−?\$[\d,.]+[MB]?)\/mo/.exec(row.pay), eqm = /equity (−?\$[\d,.]+[MB]?)/.exec(row.exit);
+      const m = /(?:(−?\$[\d,.]+[MB]?)\/mo|no loan) · ([−+][−$\d,.MB]+)\/mo cash flow · (−?\$[\d,.]+[MB]?) equity/.exec(share), pm = /(−?\$[\d,.]+[MB]?)\/mo/.exec(row.pay), eqm = /equity (−?\$[\d,.]+[MBK]?)/.exec(row.pay);
       T('asset-share line is parseable', !!m, 1, share);
       if (m) {
-        T('share payment = row payment (exact)', !!pm && m[1] === pm[1], 2, m[1] + ' vs row ' + (pm && pm[1]));
+        T('share payment = row payment (exact; "no loan" when the row has no payment)', m[1] ? !!pm && m[1] === pm[1] : !pm, 2, m[1] + ' vs row ' + (pm && pm[1]));
         T('share cash flow = row cash flow (exact)', m[2] + '/mo' === row.cf, 2, m[2] + ' vs row ' + row.cf);
-        T('share equity = row equity (exact)', !!eqm && m[3] === eqm[1], 2, m[3] + ' vs row ' + (eqm && eqm[1]));
-        T('share = engine plan-horizon share', eq(m[1], sp.payment) && eq(m[2], sp.cf) && eq(m[3], sp.equity), 1, share + ' vs ' + $f(sp.payment) + ',' + $f(sp.cf) + ',' + $f(sp.equity));
+        T('share equity = row equity (share is exact, the row rounds to $K: same number within that rounding; and equals the row data-equity)', !!eqm && eqT(m[3], eqm[1]) && m[3] === $c(+row.eqAttr), 2, m[3] + ' vs row ' + (eqm && eqm[1]) + ' attr ' + row.eqAttr);
+        T('share = engine plan-horizon share', (m[1] ? eq(m[1], sp.payment) : sp.payment <= 0.5) && eq(m[2], sp.cf) && eq(m[3], sp.equity), 1, share + ' vs ' + $f(sp.payment) + ',' + $f(sp.cf) + ',' + $f(sp.equity));
       }
     }
   }
@@ -268,7 +277,7 @@ exports.run = async function run(X) {
   }
   function chkAssetImpact(main, hg, id, A, tag) {
     const S = main.state, pl = planOf(main), wo = E.plan(E.without(clone(S), id)), T = (key, ok, w, info) => A.t(key, ok, w, tag + ' ' + id + ': ' + info);
-    const L = [['Portfolio net worth', wo.horizon.nw, pl.horizon.nw, 'kpi-networth'], ['Portfolio cash flow / mo', wo.horizon.cf, pl.horizon.cf, 'kpi-cashflow'], ['Portfolio monthly payments', wo.horizon.monthly, pl.horizon.monthly, 'kpi-monthly'], ['Outside cash needed', wo.outsideTotal, pl.outsideTotal, null]];
+    const L = [['Net worth', wo.horizon.nw, pl.horizon.nw, 'kpi-networth'], ['Cash flow / mo', wo.horizon.cf, pl.horizon.cf, 'kpi-cashflow'], ['Payments / mo', wo.horizon.monthly, pl.horizon.monthly, 'kpi-monthly'], ['Outside cash', wo.outsideTotal, pl.outsideTotal, null]];
     L.forEach(([lb, a, b, kid]) => {
       const line = hg.impact.find((x) => x.lb === lb), differs = Math.abs(a - b) > 0.5;
       T('impact line shown iff the asset changes that number', differs === !!line, 0.5, lb + ': engine ' + $f(a) + ' -> ' + $f(b) + (line ? ' shown ' + line.t : ' not shown'));
@@ -326,7 +335,8 @@ exports.run = async function run(X) {
     const picture = fg.tables['monthly-picture'] || [], row = (re) => (picture.find((r) => re.test(r[0])) || [])[1];
     const kc = mg.kpis.find((x) => x.id === 'kpi-cashflow').v, sync = fg.t['sync-cf'], card = fg.t['finances-sync'] || '';
     T('Finances sync-cf = Portfolio KPI cash flow (exact text)', sync === kc, 2, sync + ' vs ' + kc);
-    const pe = k.planEnd, aft = /After tax on portfolio income\s*([−+]\$[\d,.]+[MB]?)/.exec(card), left = /Left over each month at plan end\s*([−+]\$[\d,.]+[MB]?)/.exec(card);
+    const pe = k.planEnd, bef = /Before tax\s*([−+]\$[\d,.]+[MB]?)/.exec(card), aft = /After tax\s*([−+]\$[\d,.]+[MB]?)/.exec(card), left = /Left over each month\s*([−+]\$[\d,.]+[MB]?)/.exec(card);
+    T('Finances "At plan end" card is headed as plan end and its Before tax = Portfolio KPI cash flow = engine', /^At plan end/.test(card) && !!bef && eq(bef[1], pe.cfBefore) && eqT(bef[1], kc), 1, card.slice(0, 80) + ' | ' + (bef && bef[1]) + ' vs ' + $f(pe.cfBefore));
     T('Finances after-tax (plan end) = engine cfAfter = cash flow - tax', !!aft && eq(aft[1], pe.cfAfter) && Math.abs(pe.cfAfter - (pe.cfBefore - pe.tax)) < 1, 1, (aft && aft[1]) + ' vs ' + $f(pe.cfAfter));
     T('Finances left over (plan end) = engine net at plan end', !!left && eq(left[1], pe.net), 1, (left && left[1]) + ' vs ' + $f(pe.net));
     const oc = mg.warns.find((w) => w.id === 'outside-cash'), ocAmt = oc ? (/\$[\d,.]+[MB]?/.exec(oc.t) || [''])[0] : '$0', fl = fg.t['funding-line'] || '', fm = /needs (\$[\d,.]+[MB]?) of outside cash/.exec(fl);
@@ -334,14 +344,14 @@ exports.run = async function run(X) {
     T('funding-line amount = engine outside total', !!fm && eq(fm[1], pl.outsideTotal), 0.5, (fm && fm[1]) + ' vs ' + $f(pl.outsideTotal));
     const cov = /cover (\$[\d,.]+[MB]?);/.exec(fl); T('funding-line "partners cover" = min(outside, capital lined up)', !!cov && eq(cov[1], Math.min(k.totalOutside, k.capitalTotal)), 0.5, fl);
     /* extra now scope */
-    const X0 = pl.extraNow, te = mg.t['total-extra'] || '', mx = /(\$[\d,.]+[MB]?)\/mo extra now/.exec(te), ex = row(/Extra loan payments now/);
-    T('Finances "extra loan payments now" = Portfolio "extra now"', !!mx && eq(ex && ex.replace('−', '-').replace('+', ''), -money(mx[1])) || (!!mx && Math.abs(Math.abs(money(ex)) - money(mx[1])) <= 1), 2, 'Finances ' + ex + ' vs Portfolio header ' + te + ' (assets with an extra but no loan to pay down are counted in one but not the other)');
+    const X0 = pl.extraNow, te = mg.t['total-extra'] || '', mx = /(\$[\d,.]+[MB]?)\/mo extra now/.exec(te), ex = row(/^Extra payments/);
+    T('Finances "Extra payments" (now) = Portfolio "extra now"', !!mx && eq(ex && ex.replace('−', '-').replace('+', ''), -money(mx[1])) || (!!mx && Math.abs(Math.abs(money(ex)) - money(mx[1])) <= 1), 2, 'Finances ' + ex + ' vs Portfolio header ' + te + ' (assets with an extra but no loan to pay down are counted in one but not the other)');
     const later = pl.extraLater, ml = /\+ ?(\$[\d,.]+[MB]?) later/.exec(te), pn = /Plus (\$[\d,.]+[MB]?)\/mo of extra payments on assets you have not bought yet/.exec(fg.text);
     T('Finances "plus $X/mo extra on assets not bought yet" = Portfolio "+ later"', later > 0.5 ? !!pn && !!ml && eqT(pn[1], ml[1]) : !pn && !ml, 1, (pn && pn[1]) + ' vs ' + (ml && ml[1]) + ' engine ' + $f(later));
     /* monthly picture = engine */
     const chkRow = (re, v, label) => T('monthly picture "' + label + '" = engine', eq(row(re), v), 0.8, row(re) + ' vs ' + $f(v));
-    chkRow(/take-home/, k.takeHome, 'take-home'); chkRow(/Portfolio cash flow \(after tax\)/, k.portfolioAfterTax, 'portfolio after tax'); chkRow(/Managers/, -k.managerCost0, 'managers'); chkRow(/Living/, -k.living, 'living'); chkRow(/Other monthly debts/, -k.debts, 'other debts'); chkRow(/Left over/, k.net0, 'left over');
-    const sum = money(row(/take-home/)) + money(row(/Portfolio cash flow/)) + money(row(/Managers/)) + money(row(/Extra loan/)) + money(row(/Living/)) + money(row(/Other monthly/));
+    chkRow(/take-home/, k.takeHome, 'take-home'); chkRow(/^Portfolio cash flow/, k.portfolioAfterTax, 'portfolio cash flow (after tax, now)'); chkRow(/^Managers/, -k.managerCost0, 'managers'); chkRow(/^Extra payments/, -k.extra, 'extra payments'); chkRow(/Living/, -k.living, 'living'); chkRow(/^Other debts/, -k.debts, 'other debts'); chkRow(/Left over/, k.net0, 'left over');
+    const sum = money(row(/take-home/)) + money(row(/Portfolio cash flow/)) + money(row(/Managers/)) + money(row(/^Extra payments/)) + money(row(/Living/)) + money(row(/^Other debts/));
     T('monthly picture rows add up to "left over"', Math.abs(sum - money(row(/Left over/))) <= 3.5, 1, sum + ' vs ' + row(/Left over/));
     T('portfolio "after tax" now = engine cash flow now - tax', Math.abs(k.portfolioAfterTax - (pl.series.cf[0] - Math.max(0, pl.series.cf[0]) * S.p.portfolioTaxPct / 100)) < 1, 0.5, 'engine');
     /* verdict */
@@ -351,12 +361,13 @@ exports.run = async function run(X) {
     T('Portfolio afford chip = Finances verdict chip', mg.t['afford-chip'] === fg.t['verdict-chip'], 2, mg.t['afford-chip'] + ' vs ' + fg.t['verdict-chip']);
     T('Portfolio afford note = Finances headline (minus the Yes/Tight prefix)', (mg.t['afford-line'] || '').includes(f.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, '')), 1, mg.t['afford-line'] + ' vs ' + f.headline);
     const dti = /debt payments (?:peak at|reach) (\d+)% of qualifying income/.exec(fg.text), hw = mg.warns.find((w) => /Debt-to-income peaks/.test(w.t));
-    T('DTI percentage: Finances reason = engine worst DTI', !!dti && +dti[1] === Math.round(pl.worst.dti), 1, (dti && dti[1]) + ' vs ' + pl.worst.dti);
+    if (pl.worst.dti > S.g.dti) T('DTI percentage: Finances reason = engine worst DTI', !!dti && +dti[1] === Math.round(pl.worst.dti), 1, (dti && dti[1]) + ' vs ' + pl.worst.dti);
+    else T('DTI within the limit: Finances shows the short "lenders should approve" note (no percentage is shown for passing reasons) and no Portfolio DTI warning', /lenders should approve/.test(fg.t['reasons-ok'] || '') && !hw, 1, (fg.t['reasons-ok'] || '').slice(0, 120) + ' vs worst ' + pl.worst.dti);
     if (hw) T('DTI percentage: Portfolio warning = Finances reason', !!dti && Math.abs(+(/peaks at (\d+(?:\.\d+)?)%/.exec(hw.t) || [])[1] - +dti[1]) <= 0.5, 0.5, hw.t + ' vs ' + (dti && dti[0]));
     const lc = fg.t['lowest-cash'] || '', lm = /(−?\$[\d,.]+[MB]?) · month (\d+)/.exec(lc);
     T('lowest cash and month = engine', !!lm && eq(lm[1], k.minLiquid) && +lm[2] === k.minLiquidMonth, 1, lc + ' vs ' + $f(k.minLiquid) + ' month ' + k.minLiquidMonth);
     if (fg.chart) { const mn = Math.min.apply(null, fg.chart.nw); T('lowest cash = minimum of the cash chart', Math.abs(mn - k.minLiquid) <= Math.max(1, dispTol(lm ? lm[1] : '') + 1), 1.5, 'chart minimum ' + $f(mn) + ' (chart covers ' + fg.chart.t + ' of ' + pl.T + ' months) vs lowest cash ' + $f(k.minLiquid)); }
-    const rw = /Months you could last without a paycheck\s*([\d.]+|Portfolio income covers it)/.exec(fg.text);
+    const rw = /Months you could last without a paycheck\s*([\d.]+|No limit — portfolio income covers it)/.exec(fg.text);
     T('runway = engine minimum runway', !!rw && (isFinite(k.minRunway) ? Math.abs(parseFloat(rw[1]) - k.minRunway) <= 0.051 : /covers/.test(rw[1])), 0.5, (rw && rw[1]) + ' vs ' + R(k.minRunway, 1));
     T('Finances other-debts field = Assumptions value (g.otherDebt)', fnum(fld(fg, 'g.otherDebt')) === Math.round(S.g.otherDebt), 0.5, fld(fg, 'g.otherDebt') + ' vs ' + S.g.otherDebt);
   }
@@ -494,7 +505,7 @@ exports.run = async function run(X) {
         for (const lo of list) {
           await nav(page, '#add'); await clickSel(page, `[data-addtype="${tp}"]`);
           const card = await page.evaluate((id) => { const b = document.querySelector(`[data-pickloan="${id}"]`); return b ? b.textContent.replace(/\s+/g, ' ') : null; }, lo.id);
-          const m = card && /(\d+(?:\.\d+)?)% down · (\d+(?:\.\d+)?)% · (interest-only, )?(\d+(?:\.\d+)?) yr/.exec(card);
+          const m = lo.dp >= 100 ? (card && /No loan · pay the full price/.test(card) ? [null, String(lo.dp), String(lo.rate), '', String(lo.term / 12)] : null) /* cash card: no loan terms to show */ : card && /(\d+(?:\.\d+)?)% down · (\d+(?:\.\d+)?)% · (interest-only, )?(\d+(?:\.\d+)?) yr/.exec(card);
           A.t('add-page card shows down / rate / term of the option', !!m && +m[1] === lo.dp && +m[2] === lo.rate && Math.abs(+m[4] - lo.term / 12) <= 0.051 && !!m[3] === !!lo.io, 1, lo.id + ': ' + card);
           await clickSel(page, `[data-pickloan="${lo.id}"]`); await clickSel(page, '[data-testid=confirm-add]'); await page.waitForTimeout(40);
           const g = await page.evaluate(GRAB), h = g.state.houses[g.state.houses.length - 1], id = h.id;
@@ -584,11 +595,11 @@ exports.run = async function run(X) {
         const { mg, fg, hg } = await full(S, 'after ' + p + '=' + v, ['a']);
         const pl = E.plan(clone(S)), ag = await grab(page, '#house-a'), bg = await grab(page, '#house-b'), cg = await grab(page, '#house-c');
         if (key === 'cap') { const n = ag.notes.find((x) => /When its line of credit opens/.test(x)) || ''; A.t('cap edit shows on the asset page note (cap N%)', new RegExp('cap ' + v + '%').test(n) || !/When its line/.test(n), 1, n.slice(-60)); const lr = mg.rows.find((r) => r.id === 'a'); A.t('cap edit moves the credit-line date on the Portfolio row = engine', lr && (isFinite(pl.purchase.a + pl.V.a.locM) ? lr.loc.includes('opens ' + (pl.purchase.a + pl.V.a.locM <= 0 ? 'now' : 'in ' + mm(pl.purchase.a + pl.V.a.locM))) : /not reachable/.test(lr.loc)), 1, lr && lr.loc + ' vs ' + pl.V.a.locM); }
-        if (key === 'dti') { const hw = mg.warns.find((w) => /Debt-to-income peaks/.test(w.t)); A.t('DTI limit shows in the Portfolio warning and the Finances reason', (pl.worst.dti > v ? !!hw && new RegExp('limit ' + v + '%').test(hw.t) : !hw) && new RegExp('limit ' + v + '%').test(fg.text), 1, (hw && hw.t) + ' | ' + (/limit \d+%/.exec(fg.text) || [])[0]); const ch = ag.chips.find((c) => /Debt-to-income/.test(c.t)); const af = E.afford(clone(S), S.houses.find((h) => h.id === 'a'), pl); A.t('DTI limit shows in the asset-page chip title', af.cls === 'ok' || af.cls === 'na' ? !ch : !!ch && new RegExp(v + '% limit').test(ch.title), 1, (ch && ch.title) + ' vs ' + af.why); }
+        if (key === 'dti') { const hw = mg.warns.find((w) => /Debt-to-income peaks/.test(w.t)); A.t('DTI limit shows in the Portfolio warning and the Finances reason', (pl.worst.dti > v ? !!hw && new RegExp('limit ' + v + '%').test(hw.t) : !hw) && (pl.worst.dti > v ? new RegExp('limit ' + v + '%').test(fg.text) /* passing reasons are shown as a short note without the limit */ : /lenders should approve/.test(fg.t['reasons-ok'] || '')), 1, (hw && hw.t) + ' | ' + (/limit \d+%/.exec(fg.text) || [])[0]); const ch = ag.chips.find((c) => /Debt-to-income/.test(c.t)); const af = E.afford(clone(S), S.houses.find((h) => h.id === 'a'), pl); A.t('DTI limit shows in the asset-page chip title', af.cls === 'ok' || af.cls === 'na' ? !ch : !!ch && new RegExp(v + '% limit').test(ch.title), 1, (ch && ch.title) + ' vs ' + af.why); }
         if (key === 'closing') { A.t('closing default shows on every asset with no own closing %', fnum(fld(ag, 'h.a.closingPct')) === v && fnum(fld(bg, 'h.b.closingPct')) === v && fnum(fld(cg, 'h.c.closingPct')) === v, 1, fld(ag, 'h.a.closingPct') + ',' + fld(bg, 'h.b.closingPct')); A.t('closing default changes "Cash needed" on the funder', close(fnum(fld(ag, 'h.a.need')), 240000 * 0.2 + 240000 * v / 100), 1, fld(ag, 'h.a.need') + ' vs ' + (48000 + 2400 * v)); }
         if (key === 'appr') A.t('appreciation default shows as the growth on assets with no own growth', [ag, bg, cg].every((x, i) => fnum(fld(x, 'h.' + 'abc'[i] + '.growth')) === v), 1, fld(ag, 'h.a.growth') + ',' + fld(bg, 'h.b.growth'));
-        if (key === 'planYears') { A.t('projection length changes the plan-end numbers everywhere', new RegExp('projected ' + v + ' years').test(mg.text) && eq(mg.kpis.find((k) => k.id === 'kpi-networth').v, pl.horizon.nw) && eq((/Portfolio cash flow at plan end[^$+−]*([−+]\$[\d,.]+[MB]?)/.exec(fg.text) || [])[1], pl.series.cf[Math.min(pl.T, pl.planM)]), 2, 'note/KPI/Finances for ' + v + ' years'); A.t('projection length reflected in plan-end month (' + pl.planM + ')', pl.planM === v * 12 || pl.planM === pl.T, 0.3, ''); }
-        if (key === 'otherDebt') { A.t('other debts edited on Assumptions shows on Finances', fnum(fld(fg, 'g.otherDebt')) === v && eq((fg.tables['monthly-picture'].find((r) => /Other monthly debts/.test(r[0])) || [])[1], -v), 2, fld(fg, 'g.otherDebt')); }
+        if (key === 'planYears') { A.t('projection length changes the plan-end numbers everywhere', new RegExp('^\\d+ assets · ' + v + '-yr plan$').test(kpiOf(mg, 'kpi-networth').sub) && eq(mg.kpis.find((k) => k.id === 'kpi-networth').v, pl.horizon.nw) && eq((/Before tax\s*([−+]\$[\d,.]+[MB]?)/.exec(fg.t['finances-sync'] || '') || [])[1], pl.series.cf[Math.min(pl.T, pl.planM)]), 2, 'note/KPI/Finances for ' + v + ' years'); A.t('projection length reflected in plan-end month (' + pl.planM + ')', pl.planM === v * 12 || pl.planM === pl.T, 0.3, ''); }
+        if (key === 'otherDebt') { A.t('other debts edited on Assumptions shows on Finances', fnum(fld(fg, 'g.otherDebt')) === v && eq((fg.tables['monthly-picture'].find((r) => /^Other debts/.test(r[0])) || [])[1], -v), 2, fld(fg, 'g.otherDebt')); }
         if (['vac', 'mgmt', 'maint'].includes(key)) { A.t(key + ' edit re-derives NOI / cap rate on commercial and home pages', verifyAsset(ag, 'a', '').concat(verifyAsset(cg, 'c', '')).filter(([k]) => /NOI|cap rate/.test(k)).every(([, ok]) => ok) && new RegExp((key === 'maint' ? 'Repairs ' : key === 'vac' ? 'Vacancy ' : 'Mgmt ') + v + '%').test(ag.chips.map((c) => c.t).join(' ')), 1.5, 'chips ' + ag.chips.map((c) => c.t).join(' ')); }
         if (key === 'hrate') A.t('credit-line rate changes cash flow consistently on every page', true, 0.1, '');
       }
@@ -616,24 +627,25 @@ exports.run = async function run(X) {
           const noi = hg.notes.find((n) => /^Net operating income/.test(n)), cfv = kpiOf(hg, 'h-cf').v;
           if (noi) A.t('the same cash flow is not shown twice on one asset page', !(noi.match(money$) || []).some((x) => x === cfv.replace(/^\+?/, '+') || x === cfv), 1.5, d.tag + ' ' + id + ': hero "Cash flow now" ' + cfv + ' and again in "' + noi + '"');
           /* now vs plan-end basis: share line is labeled "In your portfolio total" and hero is labeled "now" */
-          A.t('asset hero and portfolio-share are labeled with their different bases', /now/i.test(kpiOf(hg, 'h-cf').label) && /portfolio total/i.test(hg.t['asset-share'] || ''), 1, d.tag + ' ' + id);
+          A.t('asset hero and portfolio-share are labeled with their different bases', /now/i.test(kpiOf(hg, 'h-cf').label) && /portfolio total|portfolio row \(at plan end\)/i.test(hg.t['asset-share'] || ''), 1, d.tag + ' ' + id);
         }
         /* contradictions on Portfolio rows */
         main.rows.forEach((r) => { const h = S.houses.find((x) => x.id === r.id), v = pl.V[r.id]; const losing = /home loses money/.test(r.hi.join(' ')), shown = /^−/.test(r.cf);
           A.t('"home loses money" flag does not contradict the row cash flow beside it', !losing || shown || r.cf === '—', 2, d.tag + ' ' + r.id + ': flag "home loses money" (cash flow NOW ' + $f(v.cf) + ') next to a row cash flow of ' + r.cf + ' (plan-end share)'); });
         /* header vs KPI subtext: both extras are labeled with their basis */
         const te = main.t['total-extra'] || '', ms = kpiOf(main, 'kpi-monthly').sub;
-        A.t('"extra now" header is not contradicted by the KPI subtext (different basis is named)', /extra now/.test(te) && (!/extra/.test(ms) || /incl\./.test(ms)) && /projected \d+ years/.test(main.text), 1, te + ' | ' + ms);
+        A.t('"extra now" header is not contradicted by the KPI subtext (different basis is named)', /extra now/.test(te) && (!/extra/.test(ms) || /incl\./.test(ms)) && /\d+-yr plan/.test(main.text), 1, te + ' | ' + ms);
         const warnSum = main.warns.map((w) => w.t).join(' ');
         A.t('"not bought yet" claims agree between warning, headline and rows', pl.unfunded.length ? /not funded yet/.test(main.t['plan-headline']) && /never funded/.test(warnSum) && main.rows.filter((r) => /unfunded/.test(r.tag)).length === pl.unfunded.length : !/not funded yet/.test(main.t['plan-headline']) && !/never funded/.test(warnSum), 1, d.tag + ': ' + main.t['plan-headline'] + ' | ' + warnSum.slice(0, 80));
         /* Finances: same label for two bases */
-        const lbls = d.fin.text.match(/Left over each month[^\n]*/g) || []; A.t('Finances "left over" is shown with its basis (now vs plan end)', lbls.length >= 2 && lbls.some((l) => /plan end/.test(l)) && lbls.some((l) => !/plan end/.test(l)) , 1, lbls.join(' / '));
-        const cfLbls = (d.fin.text.match(/Portfolio cash flow[^\n]*/g) || []); A.t('Finances portfolio cash flow rows each name their basis (now/after tax/plan end)', cfLbls.every((l) => /after tax|plan end/.test(l)), 1, cfLbls.join(' / '));
+        const fs_ = d.fin.t['finances-sync'] || '', pic = (d.fin.tables['monthly-picture'] || []).map((r) => r[0]);
+        A.t('Finances "left over" appears twice, the plan-end one inside a card headed "At plan end" and the other in the monthly picture whose section is titled "now and at plan end"', /^At plan end/.test(fs_) && /Left over each month/.test(fs_) && pic.includes('Left over each month') && /Your month: now and at plan end/i.test(d.fin.text), 1, fs_.slice(0, 60) + ' | ' + pic.join(','));
+        A.t('Finances portfolio cash flow: the picture row sits under "now and at plan end"; plan-end rows are "Before tax" / "After tax" inside the "At plan end" card', pic.includes('Portfolio cash flow') && /Before tax/.test(fs_) && /After tax/.test(fs_) && (d.fin.text.match(/Portfolio cash flow/g) || []).length === 1, 1, pic.join(','));
       }
       /* redundancy of the same value on the Portfolio page: KPI + ledger total + breakdown */
       const d0 = DATA[0].main, cfK = kpiOf(d0, 'kpi-cashflow').v, nwK = kpiOf(d0, 'kpi-networth').v, port = (d0.tables.breakdown || []).find((r) => r[0] === 'Portfolio') || [];
-      const reps = [[cfK, d0.t['total-cf'], port[3]], [nwK, port[2], /equity (\S+)/.exec(d0.t['ledger-total'] || '')]].map((a) => a.filter((x) => x && (typeof x === 'string' ? x : x[1])).length);
-      A.t('the same net worth / cash flow appears only in the three labeled total places on the Portfolio page (KPI card, list total row, breakdown total row), each a deliberate sum check, and nowhere else', reps.every((n) => n <= 3), 2, 'cash flow ' + cfK + ' appears in the KPI, the ledger total row and the breakdown row; net worth ' + nwK + ' also appears 3 times');
+      const reps = [[cfK, d0.t['total-cf'], port[3]], [nwK, port[2]]].map((a) => a.filter((x) => x && (typeof x === 'string' ? x : x[1])).length);
+      A.t('the same net worth / cash flow appears only in the labeled total places on the Portfolio page (KPI card, list total row for cash flow, breakdown total row), each a deliberate sum check, and nowhere else', reps.every((n) => n <= 3), 2, 'cash flow ' + cfK + ' appears in the KPI, the ledger total row and the breakdown row; net worth ' + nwK + ' also appears 3 times');
       return A.parts(P);
     });
 

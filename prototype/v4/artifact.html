@@ -755,7 +755,7 @@ select.notarget{max-width:9em}
   const r = (n, d = 0) => (isFinite(n) ? String(+n.toFixed(d)) : '—');
   const GL = (window.Info && window.Info) || { INFO: {}, LABEL: {}, LOAN: {} }, INFO = GL.INFO;
   const infoBtn = (k) => (INFO[k] ? `<button type="button" class="info" data-info="${k}" aria-label="What does ${(INFO[k].t || '').replace(/"/g, '')} mean?"><span aria-hidden="true">i</span></button>` : '');
-  let infoKey = null;
+  let infoKey = null, infoFrom = null; /* infoFrom = which (i) opened the sheet, so focus can go back to it */
   const sheetHtml = () => { const d = INFO[infoKey]; return d ? `<div class="sheet-bg" data-info-close></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="infot" data-testid="info-sheet"><div class="grab"></div><h3 id="infot">${esc(d.t)}</h3><p>${esc(d.b)}</p>${d.e ? `<p class="eg"><b>Example:</b> ${esc(d.e)}</p>` : ''}<button class="btn" data-info-close data-testid="info-close">Got it</button></div>` : ''; };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -1077,7 +1077,10 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     app.innerHTML = route === 'finances' ? finances() : route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
     app.insertAdjacentHTML('beforeend', sheetHtml());
     if (route.startsWith('h/') && !UI.seenLegend) { UI.seenLegend = true; save(); }
+    /* aria-modal: while the sheet is open nothing behind it can be reached with the keyboard or a screen reader */
+    [...app.children].forEach((el) => { if (infoKey && !el.matches('.sheet-bg,.sheet')) el.setAttribute('inert', ''); });
     if (infoKey) { const cb = app.querySelector('[data-info-close].btn'); if (cb) cb.focus(); }
+    else if (infoFrom) { const back = app.querySelectorAll(`[data-info="${infoFrom.key}"]`)[infoFrom.idx]; infoFrom = null; if (back) back.focus(); }
     if (id) { const el = app.querySelector(`[data-p="${id}"],[data-sel="${id}"]`); if (el) { el.focus(); if (a.dataset.p && !el.readOnly && document.hasFocus()) { el.value = typed; try { el.setSelectionRange(pos, pos); } catch (e) {} } } }
     const cur = {};
     app.querySelectorAll('[data-k]').forEach((el) => { const k = el.dataset.k, v = el.tagName === 'INPUT' ? el.value : el.textContent; cur[k] = v;
@@ -1085,7 +1088,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     prev = cur;
   }
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && infoKey) { infoKey = null; render(); } });
-  window.addEventListener('hashchange', () => { infoKey = null; prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
+  window.addEventListener('hashchange', () => { infoKey = null; infoFrom = null; prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
 
   /* ---------- editing: every field is an input; derived fields back-solve ---------- */
   function setField(p, s) {
@@ -1121,6 +1124,8 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   }
   const app = document.getElementById('app');
   app.addEventListener('input', (e) => { const p = e.target.dataset.p; if (p && setField(p, e.target.value)) { save(); render(); } });
+  /* section headers are role=button divs, so Enter and Space must open them like a real button */
+  app.addEventListener('keydown', (e) => { const cs = e.target.closest && e.target.closest('[data-coll][role=button]'); if (cs && cs === e.target && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); cs.click(); } });
   app.addEventListener('pointermove', nwHover); app.addEventListener('pointerdown', nwHover);
   app.addEventListener('pointerleave', nwLeave, true); app.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') return; });
   app.addEventListener('focusout', (e) => { if (e.target.dataset && e.target.dataset.p && e.target.tagName === 'INPUT' && !e.relatedTarget) setTimeout(() => { const a = document.activeElement; if (!(a && a.dataset && (a.dataset.p || a.dataset.sel))) render(); }, 0); });
@@ -1139,7 +1144,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const vw = t.closest('[data-view]'); if (vw) { UI.view = vw.dataset.view; prev = {}; save(); render(); return; }
     const ex = t.closest('[data-exit]'); if (ex) { const hh = H(routeOf().slice(2)); if (hh) { hh.exit = ex.dataset.exit; save(); render(); } return; }
     if (t.dataset.tab) { if (t.dataset.tab === 'hide') UI.open = false; else { UI.open = true; UI.tab = t.dataset.tab; } save(); render(); return; }
-    const ib = t.closest('[data-info]'); if (ib) { infoKey = ib.dataset.info; render(); return; }
+    const ib = t.closest('[data-info]'); if (ib) { infoKey = ib.dataset.info; infoFrom = { key: infoKey, idx: [...app.querySelectorAll(`[data-info="${infoKey}"]`)].indexOf(ib) }; render(); return; }
     if (t.closest('[data-info-close]')) { infoKey = null; render(); return; }
     if (t.dataset.addjob !== undefined) { const hourly = t.dataset.addjob === 'hourly'; S.p.jobs.push(hourly ? { id: 'job' + Date.now().toString(36), name: 'Hourly job', kind: 'hourly', wage: 15, tips: 0, weeks: 50, hours: 25, raise: 0, tax: null, start: 0, end: null } : { id: 'job' + Date.now().toString(36), name: 'New job', kind: 'salary', gross: 60000, raise: 0, tax: null, hours: 40, start: 0, end: null }); S.p = E.normalizePersonal(S.p); save(); render(); return; }
     const jk = t.closest('[data-jobkind]'); if (jk) { const [jid, kind] = jk.dataset.jobkind.split(':'), jb = S.p.jobs.find((q) => q.id === jid); if (jb) { jb.kind = kind; if (kind === 'hourly' && !(jb.wage > 0)) { jb.wage = 15; jb.hours = Math.min(jb.hours || 25, 40); } S.p = E.normalizePersonal(S.p); save(); render(); } return; }
@@ -1158,7 +1163,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.askCancel !== undefined) { ask = null; pendingImport = null; render(); return; }
     if (t.dataset.hidelegend !== undefined) { UI.hideLegend = true; save(); render(); return; }
     if (t.dataset.togglepaste !== undefined) { UI.paste = !UI.paste; render(); return; }
-    const cs = t.closest('[data-coll]'); if (cs) { const id = cs.dataset.coll, cur = UI.coll[id] === undefined ? !!CDEF[id] : UI.coll[id]; UI.coll[id] = !cur; save(); render(); return; }
+    const cs = t.closest('[data-coll]'); if (cs) { const id = cs.dataset.coll, cur = UI.coll[id] === undefined ? !!CDEF[id] : UI.coll[id], had = document.activeElement === cs; UI.coll[id] = !cur; save(); render(); if (had) { const n = app.querySelector(`[data-coll="${id}"]`); if (n) n.focus(); } return; }
     if (t.dataset.status) { const h = H(routeOf().slice(2)); h.status = t.dataset.status; save(); render(); return; }
     if (t.dataset.export !== undefined) { exportOpen = !exportOpen; if (exportOpen) { try { localStorage.setItem('rep-v4-backup', String(Date.now())); } catch (x) {} } render(); return; }
     if (t.dataset.copybackup !== undefined) { const m = document.getElementById('cbm'), ta = document.getElementById('bkout'); const fail = () => { ta.focus(); ta.select(); m.textContent = 'Select the text above and copy it by hand.'; };

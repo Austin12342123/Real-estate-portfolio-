@@ -262,7 +262,7 @@ exports.run = async function run(X) {
     let d = await rd(page); matchUI(P, d, sampleS(), 'sample', 0.7);
     /* every documented control exists */
     const need = ['j.job1.name', 'j.job1.gross', 'j.job1.raise', 'j.job1.tax', 'j.job1.hours', 'j.job1.start', 'j.job1.end', 'p.cash', 'p.cashApy', 'p.emergencyMonths', 'p.living', 'p.inflation', 'g.otherDebt', 'p.portfolioTaxPct', 'p.salesTaxPct', 'p.operating', 'p.bizHours', 'p.gmMonthly'];
-    const have = await page.evaluate((n) => n.filter((x) => document.querySelector(`[data-p="${x}"]`)), need); P.t(have.length === need.length && (await page.locator(SEL('add-job')).count()) === 1 && (await page.locator(SEL('add-planned')).count()) === 1 && (await page.locator(SEL('add-capital')).count()) === 1, 'all job / cash / tax / manager fields and the three add buttons exist', 0.8, need.filter((x) => !have.includes(x)).join(','));
+    await X.expandAll(page); const have = await page.evaluate((n) => n.filter((x) => document.querySelector(`[data-p="${x}"]`)), need); P.t(have.length === need.length && (await page.locator(SEL('add-job')).count()) === 1 && (await page.locator(SEL('add-planned')).count()) === 1 && (await page.locator(SEL('add-capital')).count()) === 1, 'all job / cash / tax / manager fields and the three add buttons exist', 0.8, need.filter((x) => !have.includes(x)).join(','));
     /* job edits (expected values computed on an independent copy of the sample) */
     const Sx = sampleS(); const J = Sx.p.jobs[0];
     const jedit = async (field, val, fn, label) => { await fin(`[data-p="j.job1.${field}"]`, val); applyS(Sx, fn); matchUI(P, await rd(page), Sx, label, 0.35); };

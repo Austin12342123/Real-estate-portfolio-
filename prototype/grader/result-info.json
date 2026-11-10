@@ -1,0 +1,118 @@
+{
+  "info": {
+    "earned": 97.45,
+    "max": 100,
+    "checks": [
+      {
+        "id": "H1",
+        "category": "H",
+        "name": "Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained",
+        "points": 8,
+        "earned": 6,
+        "ratio": 0.75,
+        "detail": "7/9 sub-checks pass. FAIL: every acronym used in a definition is itself explained (own entry, title or spelled out) [k203:HUD]; plain language: no sentence over 40 words and every body reads at about grade 12 or easier (Flesch-Kincaid) [long  hard noi=14.6]",
+        "repro": "node: inspect v4/info.js INFO / LABEL / LOAN",
+        "seconds": 0
+      },
+      {
+        "id": "H2",
+        "category": "H",
+        "name": "Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries",
+        "points": 16,
+        "earned": 15.45,
+        "ratio": 0.9659090909090909,
+        "detail": "82/83 sub-checks pass. FAIL: no orphan glossary entries: every definition can be opened from some page (80 entries) [10 never shown: noi, qualifying, ownerocc, mip, interestonly, equity, outsidecash, cashfromselling, planned, capital]",
+        "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
+        "seconds": 3.3
+      },
+      {
+        "id": "H3",
+        "category": "H",
+        "name": "Info sheet: opens with the right content, closes by button / Escape / backdrop / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "22/22 sub-checks pass",
+        "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
+        "seconds": 7.2
+      },
+      {
+        "id": "H4",
+        "category": "H",
+        "name": "Definitions are accurate: numbers quoted match the engine constants and loan table, examples do their own arithmetic, stated rules behave that way in the engine",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "42/42 sub-checks pass",
+        "repro": "node: parse numbers out of v4/info.js and compare with engine.js constants and engine calculations",
+        "seconds": 0
+      },
+      {
+        "id": "H5",
+        "category": "H",
+        "name": "Hourly jobs: add, gross = (wage + tips) x hours x weeks, automatic vs typed tax, blank tax returns to automatic, temporary end month, switching kind, clamps, persistence",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "28/28 sub-checks pass",
+        "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
+        "seconds": 2.7
+      },
+      {
+        "id": "H6",
+        "category": "H",
+        "name": "Optional fields left blank never break the plan or the finance verdict (job extras, improvements, exit fields, co-signers)",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "16/16 sub-checks pass",
+        "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
+        "seconds": 3.8
+      },
+      {
+        "id": "H7",
+        "category": "H",
+        "name": "Old saves migrate: v8 (assets only) and pre-hourly jobs (no kind / wage / tips / weeks) load, keep their numbers and show correctly",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
+        "repro": "Load crafted localStorage states; pasted old backup restore",
+        "seconds": 0.9
+      },
+      {
+        "id": "H8",
+        "category": "H",
+        "name": "Automatic tax estimate: matches an independent 2025 single-filer calculation (federal after standard deduction + Social Security + Medicare, no state tax), is monotone and bounded",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "node: E.estTaxPct against a separate implementation and properties",
+        "seconds": 0
+      },
+      {
+        "id": "H9",
+        "category": "H",
+        "name": "Disclosure defaults and new wording: collapsed sections open on tap (and stay open), renamed labels, Hold/Sell/Merge + Status, loan grouping, import preview title",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Fresh state: check aria-expanded, hidden fields, labels",
+        "seconds": 2
+      },
+      {
+        "id": "H10",
+        "category": "H",
+        "name": "Clean run: no console / page errors and no network requests outside localhost during all help and hourly-job flows",
+        "points": 4,
+        "earned": 4,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
+        "repro": "Collected over the whole H run",
+        "seconds": 0
+      }
+    ]
+  }
+}

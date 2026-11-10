@@ -2,7 +2,9 @@
 /* Automated prototype grader (85 pts automated: A 18, B 12, C 10, D 8, E 7, R 30; a separate design review adds 15).
    Run:  NODE_PATH=$(npm root -g) node grade.js
    Serves ../v4 on a free localhost port, drives it with Playwright/Chromium, unit-tests engine.js in node.
-   Category R (realism) is plugged in from ./realism.js. Writes report.md + result.json next to this file. Never modifies the app. */
+   Category R (realism) is plugged in from ./realism.js. Categories F (finance-grade.js), G (sync-grade.js) and H (info-grade.js: help (i) buttons + hourly jobs) are scored on their own scales.
+   Run one category: FINANCE_ONLY=1, SYNC_ONLY=1, INFO_ONLY=1 (H_ONLY=H3,H5 for single checks), MAIN_ONLY=1 (A-E + R only).
+   Collapsed sections: A-G run with an observer that opens collapsed sections like a user tapping the header (mkCtx autoExpand); category H runs with it off and tests the collapsed defaults itself. Writes report.md + result.json next to this file. Never modifies the app. */
 const http = require('http'), fs = require('fs'), path = require('path'), os = require('os');
 const { spawnSync } = require('child_process');
 const { chromium } = require('playwright');
@@ -13,7 +15,7 @@ const results = [];
 const cats = { A: 'Requirement / propagation', B: 'Engine correctness', C: 'UX conciseness & usability', D: 'PWA / local-first', E: 'Robustness & accessibility', R: 'Realism & market accuracy' };
 const CATMAX = { A: 18, B: 12, C: 10, D: 8, E: 7, R: 30 };
 const KEY = 'rep-v4', DATA_V = +((/const DATA_V = (\d+)/.exec(fs.readFileSync(path.resolve(__dirname, '../v4/app.js'), 'utf8')) || [0, 0])[1]);
-const FIN_ONLY = process.env.FINANCE_ONLY === '1', SYNC_ONLY = process.env.SYNC_ONLY === '1';
+const FIN_ONLY = process.env.FINANCE_ONLY === '1', SYNC_ONLY = process.env.SYNC_ONLY === '1', INFO_ONLY = process.env.INFO_ONLY === '1', MAIN_ONLY = process.env.MAIN_ONLY === '1';
 const NSEED = E.seed().houses.length; /* derived from the app, never hard-coded */
 
 /* ---------------------------------------------------------------- helpers */
@@ -43,7 +45,9 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
 const nearRel = (a, b, abs = 1.01, rel = 0.002) => Math.abs(a - b) <= abs + rel * Math.abs(b);
 const BAD = /(^|[^A-Za-z])(NaN|-?Infinity|undefined|\[object)([^A-Za-z]|$)/;
 const pmt = E.pmt;
-const buyOf = (tag) => { tag = String(tag || ''); if (/owned/.test(tag)) return 0; if (/unfunded/.test(tag)) return Infinity; if (/buy now/.test(tag)) return 0; const m = /buy (\d+) mo/.exec(tag); return m ? +m[1] : NaN; };
+/* row tag is now 'Home' (owned) or 'Home · buy N mo' / 'Home · unfunded' (planned) */
+const isOwnedTag = (tag) => !/·/.test(String(tag || ''));
+const buyOf = (tag) => { tag = String(tag || ''); if (isOwnedTag(tag)) return 0; if (/unfunded/.test(tag)) return Infinity; if (/buy now/.test(tag)) return 0; const m = /buy (\d+) mo/.exec(tag); return m ? +m[1] : NaN; };
 
 /* ---------------------------------------------------------------- static server */
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.json': 'application/json', '.svg': 'image/svg+xml' };
@@ -67,9 +71,18 @@ const INIT = () => {
   try { const o = navigator.storage && navigator.storage.persist; if (o) navigator.storage.persist = function () { window.__persist++; return o.apply(this, arguments); }; } catch (e) {}
   try { new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true }); } catch (e) {}
 };
+/* Sections are collapsed by default (see EXPAND_JS below). The A-G graders need every field reachable, so they run with this observer that opens
+   any collapsed section as soon as it renders, exactly like a user tapping the header. Category H runs without it (autoExpand: false). */
+const AUTO_EXPAND = () => {
+  const open = () => { try { const b = [...document.querySelectorAll('#app [data-coll][aria-expanded=false]')].filter((e) => e.dataset.coll !== 'drivers')[0]; if (b && !window.__noExpand) b.click(); } catch (e) {} };
+  let q = false; const go = () => { if (q) return; q = true; setTimeout(() => { q = false; open(); }, 0); };
+  const start = () => { const a = document.getElementById('app'); if (!a) return setTimeout(start, 5); new MutationObserver(go).observe(a, { childList: true, subtree: true }); go(); };
+  start();
+};
 async function mkCtx(o = {}) {
+  const autoExpand = o.autoExpand !== false; o = Object.assign({}, o); delete o.autoExpand;
   const ctx = await browser.newContext(Object.assign({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block', acceptDownloads: true, reducedMotion: 'reduce' }, o));
-  await ctx.addInitScript(INIT);
+  await ctx.addInitScript(INIT); if (autoExpand) await ctx.addInitScript(AUTO_EXPAND);
   ctx.on('request', (r) => collect.requests.push(r.url()));
   return ctx;
 }
@@ -82,11 +95,17 @@ async function mkPage(ctx, label) {
   return page;
 }
 let rn = 0;
+/* Sections are collapsed by default (Asset: loan/rent/loc/exit/impact; Assumptions: backup/samples; Finances: tax/time; job 'More details').
+   The graders reach every field the way a user would after tapping a section header, so open every collapsed section on the current page.
+   (Category H and C07 test the collapsed defaults themselves with expand:false.) */
+const EXPAND_JS = () => { let n = 0; for (let i = 0; i < 30; i++) { const b = [...document.querySelectorAll('#app [data-coll][aria-expanded=false]')].filter((e) => e.dataset.coll !== 'drivers')[0]; if (!b) break; b.click(); n++; } return n; };
+async function expandAll(page) { try { await page.evaluate(EXPAND_JS); } catch (e) {} }
 async function reset(page, hash) {
   await page.goto(BASE + '/index.html?r=' + rn++);
   await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
   await page.goto(BASE + '/index.html?r=' + rn++ + (hash || ''));
   await page.waitForSelector('#app > *');
+  await expandAll(page);
 }
 /* Load the app with a custom saved state (state must be normalized, v:7). */
 async function loadState(page, S, hash) {
@@ -94,14 +113,18 @@ async function loadState(page, S, hash) {
   await page.evaluate(([k, s]) => { try { localStorage.clear(); localStorage.setItem(k, JSON.stringify(s)); } catch (e) {} }, [KEY, S]);
   await page.goto(BASE + '/index.html?r=' + rn++ + (hash || ''));
   await page.waitForSelector('#app > *');
+  await expandAll(page);
 }
 async function goHash(page, h) {
   await page.evaluate((h) => { const cur = location.hash; if (cur === h || (h === '#' && cur === '')) window.dispatchEvent(new Event('hashchange')); else location.hash = h; }, h);
   await page.waitForTimeout(60);
+  await expandAll(page);
 }
 const goMain = async (page) => { await goHash(page, '#'); await page.waitForSelector('[data-testid=summary],.empty'); };
 /* Set a field like a user finishing an edit: native value set + 'input' event, then blur. */
 async function setVal(page, sel, val) {
+  /* a field inside a section the user has not opened yet: open collapsed sections first (as a person would) */
+  if (!(await page.$(sel))) await expandAll(page);
   await page.waitForSelector(sel);
   await page.evaluate(([sel, val]) => { const el = document.querySelector(sel); el.focus(); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(el, val); el.dispatchEvent(new Event('input', { bubbles: true })); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); }, [sel, String(val)]);
   await page.waitForTimeout(60);
@@ -115,14 +138,15 @@ async function snap(page) {
     const txt = (s) => { const e = document.querySelector(s); return e ? e.textContent.trim() : null; };
     const rows = [...document.querySelectorAll('[data-testid=ledger-row]')].map((r) => { const loc = r.querySelector('[data-testid=loc-line]'), inp = r.querySelector('input'), cf = r.querySelector('[data-testid=row-cashflow] b'), ex = r.querySelector('.exitline');
       return { id: (r.dataset.go || '').replace('h/', ''), addr: (r.querySelector('.addr') || {}).textContent, tag: (r.querySelector('.tag') || {}).textContent, pay: (r.querySelector('[data-testid=row-payment]') || {}).textContent,
-        extra: inp ? inp.value : null, loc: loc ? loc.textContent.trim() : '', cf: cf ? cf.textContent.trim() : '', exitline: ex ? ex.textContent.trim() : '' }; });
+        extra: inp ? inp.value : null, eqA: (r.querySelector('[data-testid=row-payment]') || { dataset: {} }).dataset.equity, loc: loc ? loc.textContent.trim() : '', cf: cf ? cf.textContent.trim() : '', exitline: ex ? ex.textContent.trim() : '' }; });
     const bd = {}; document.querySelectorAll('[data-testid=breakdown] tbody tr').forEach((tr) => { const c = [...tr.children].map((x) => x.textContent.trim()); bd[c[0]] = c.slice(1); });
     return { nw: txt('[data-testid=kpi-networth]'), mon: txt('[data-testid=kpi-monthly]'), cf: txt('[data-testid=kpi-cashflow]'), dscr: txt('[data-testid=kpi-dscr]'), totX: txt('[data-testid=total-extra]'), headline: txt('[data-testid=plan-headline]'),
       nwSub: (document.querySelector('[data-testid=kpi-networth]') || { nextElementSibling: null }).nextElementSibling ? document.querySelector('[data-testid=kpi-networth]').nextElementSibling.textContent : '',
       rows, bd, body: document.getElementById('app').innerText };
   });
   const s = { raw: d, nw: money(d.nw), mon: money(d.mon), cf: money(d.cf), dscr: parseFloat(d.dscr), totX: money(d.totX), headline: d.headline, rows: d.rows, bd: d.bd, body: d.body };
-  s.rows.forEach((r) => { r.payN = (/\$([\d,.]+[MB]?)\/mo/.exec(r.pay) ? money('$' + /\$([\d,.]+[MB]?)\/mo/.exec(r.pay)[1]) : NaN); r.sold = /sold/.test(r.pay || ''); r.exN = money(r.extra); r.buy = buyOf(r.tag); r.cfN = /—/.test(r.cf) ? 0 : money(r.cf); });
+  s.rows.forEach((r) => { r.payN = (/\$([\d,.]+[MB]?)\/mo/.exec(r.pay) ? money('$' + /\$([\d,.]+[MB]?)\/mo/.exec(r.pay)[1]) : NaN); r.sold = /sold/.test(r.pay || ''); r.exN = r.extra == null ? 0 : money(r.extra); r.buy = buyOf(r.tag); r.cfN = /—/.test(r.cf) || r.sold ? 0 : money(r.cf); /* a sold row's cash cell shows the sale proceeds, not a monthly cash flow */ r.eqN = r.eqA ? +r.eqA : 0; });
+  { const k = Object.keys(s.bd).find((x) => /^Sold\b/.test(x)); s.soldCash = k ? money(s.bd[k][1]) : 0; }
   s.row = (id) => s.rows.find((r) => r.id === id);
   return s;
 }
@@ -372,7 +396,7 @@ async function reqChecks(page) {
   await check('A13', 'A', 'FHA 203(k) through the UI: add flow auto-fills rehab + terms, owner-occupied notice, financed-rehab note, Limited cap warning, switching loan option resets', 2, 'Add page > Home > FHA 203(k)', async () => {
     const P = new Parts(); await reset(page); await goHash(page, '#add'); await page.click('[data-addtype=house]'); await page.waitForTimeout(40);
     P.t((await page.locator('[data-pickloan=k203]').count()) === 1, 'add page lists the 203(k) option for homes', 0.3);
-    P.t((await page.locator('[data-pickloan=k203]').innerText()).toLowerCase().includes('rehab') && (await page.locator('[data-pickloan=k203]').innerText()).toLowerCase().includes('live'), 'card says rehab financed / you live there', 0.3);
+    P.t((await page.locator('[data-pickloan=k203]').innerText()).toLowerCase().includes('rehab') && await page.evaluate(() => { const lo = document.querySelector('[data-testid=loan-options]'), h = [...lo.querySelectorAll('b')].find((b) => /If you will live there/i.test(b.textContent)), k = lo.querySelector('[data-pickloan=k203]'), f = lo.querySelector('[data-pickloan=fha]'); return !!h && !!(h.compareDocumentPosition(k) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(h.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(lo.querySelector('[data-pickloan=conv30]').compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING); }), 'card says rehab financed; FHA and 203(k) are grouped under "If you will live there"', 0.3);
     await page.click('[data-pickloan=k203]'); await page.click('[data-testid=confirm-add]'); await page.waitForSelector('[data-testid=h-payment]');
     const g = (k) => page.inputValue('[data-p$=".' + k + '"]'); const num = (t) => parseFloat(String(t).replace(/[^0-9.\-]/g, ''));
     P.t(num(await g('dp')) === 3.5 && num(await g('rate')) === 7.15 && num(await g('capex')) === 40000 && num(await g('arv')) > 0, 'dp 3.5, rate 7.15, rehab 40,000 and a new appraised value are auto-filled', 0.5, [await g('dp'), await g('rate'), await g('capex')].join('/'));
@@ -437,7 +461,7 @@ async function reqChecks(page) {
   await check('A06', 'A', 'Main rows are ordered by purchase month (owned first); tags match the engine\'s purchase months', 1.5, 'Main ledger on sample and on a small state', async () => {
     const P = new Parts(); await reset(page); const s = await snap(page); const seq = s.rows.map((r) => r.buy);
     P.t(seq.every((v, i) => !isNaN(v) && (i === 0 || seq[i - 1] <= v)), 'sample rows nondecreasing by purchase month', 0.7, seq.join(','));
-    const own = s.rows.filter((r) => /owned/.test(r.tag)).length; P.t(own === 3 && s.rows.slice(0, 3).every((r) => /owned/.test(r.tag)), 'owned rows come first', 0.3, own);
+    const own = s.rows.filter((r) => isOwnedTag(r.tag)).length; P.t(own === 3 && s.rows.slice(0, 3).every((r) => isOwnedTag(r.tag)), 'owned rows come first (owned tag has no "· buy" part)', 0.3, own);
     const pl = E.plan(E.seed()); P.t(s.rows.every((r) => { const m = pl.purchase[r.id]; return r.buy === (isFinite(m) ? m : Infinity); }), 'row tags equal Engine purchase months', 0.5);
     await loadState(page, SB()); const t = await snap(page), pb = E.plan(SB()); const seq2 = t.rows.map((r) => r.id), want = SB().houses.map((h) => h.id).sort((x, y) => pb.purchase[x] - pb.purchase[y]); P.t(JSON.stringify(seq2.map((i) => pb.purchase[i])) === JSON.stringify(want.map((i) => pb.purchase[i])), 'small state ordered by month', 0.5, seq2.join(',')); return P; });
   await check('A07', 'A', 'No "Today" / "20 years" view toggle anywhere (single portfolio snapshot)', 1, 'Scan buttons on main, asset, assumptions, add pages', async () => {
@@ -458,7 +482,7 @@ async function reqChecks(page) {
     P.t(nearRel(s.nw, h.nw, 1, 0.002) && nearRel(s.mon, h.monthly, 1, 0.002) && nearRel(s.cf, h.cf, 1, 0.002), 'KPIs equal Engine.plan(seed).horizon', 0.7, `nw ${s.nw} vs ${Math.round(h.nw)}; mon ${s.mon} vs ${Math.round(h.monthly)}; cf ${s.cf} vs ${Math.round(h.cf)}`);
     const cfSum = s.rows.reduce((a, r) => a + (r.cfN || 0), 0); P.t(near(cfSum, s.cf, 0.5 * s.rows.length + 1 + Math.abs(s.cf) * 0.001), 'sum of row cash flows = Cash flow / mo KPI', 0.8, `${Math.round(cfSum)} vs ${s.cf}`);
     const paySum = s.rows.reduce((a, r) => a + (r.sold || !isFinite(r.payN) ? 0 : r.payN), 0); P.t(near(paySum, s.mon, 0.5 * s.rows.length + 1 + Math.abs(s.mon) * 0.001), 'sum of row payments = Total monthly payments KPI', 0.8, `${Math.round(paySum)} vs ${s.mon}`);
-    const eq = s.rows.reduce((a, r) => { const m = /equity (\S+)/.exec(r.exitline); return a + (m ? money(m[1]) : 0); }, 0), cash = (/incl\. (\S+) from sales/.exec(s.raw.nwSub) || [])[1]; const tot = eq + (cash ? money(cash) : 0);
+    const eq = s.rows.reduce((a, r) => a + r.eqN, 0), cash = s.soldCash; const tot = eq + cash; /* row equity from data-equity; cash kept from sales is the breakdown Sold row */
     P.t(near(tot, s.nw, Math.abs(s.nw) * 0.004 + 1000), 'sum of row equity (+ cash from sales) = Net worth KPI', 0.8, `${Math.round(tot)} vs ${s.nw}`);
     const pr = s.bd['Portfolio']; P.t(!!pr && nearRel(money(pr[1]), s.nw, 1, 0.003) && nearRel(money(pr[2]), s.cf, 1, 0.003), 'breakdown table Portfolio row = KPIs', 0.4, JSON.stringify(pr));
     const exSum = s.rows.reduce((a, r) => a + r.exN, 0); P.t(near(exSum, s.totX, s.rows.length), 'total extra = sum of extra inputs', 0.3, `${exSum} vs ${s.totX}`);
@@ -472,7 +496,7 @@ async function reqChecks(page) {
     await setVal(page, '[data-p="h.b.exitMonth"]', '120'); E.H(S, 'b').exitMonth = 120; await setVal(page, '[data-p="h.b.sellCost"]', '7'); E.H(S, 'b').sellCost = 7;
     const pl = E.plan(S); const proceeds = await page.inputValue('[data-p="h.b.proceeds"]').catch(() => ''); P.t(pl.exits.b && near(money(proceeds), pl.exits.b.proceeds, 2), 'Net proceeds field = engine proceeds', 0.8, proceeds + ' vs ' + (pl.exits.b && Math.round(pl.exits.b.proceeds)));
     const s = await snap(page); P.t(nearRel(s.nw, pl.horizon.nw) && /sells in|sold for/.test(s.row('b').exitline) && /sold for/.test(s.row('b').exitline + s.row('d').exitline + s.row('b').pay), 'main KPIs follow; row shows sale', 0.6, s.row('b').exitline);
-    const cashRow = Object.keys(s.bd).find((k) => /Cash from selling/.test(k)); P.t(!!cashRow && /from sales/i.test(s.raw.nwSub), 'breakdown shows "Cash from selling" and net worth subtitle mentions cash', 0.4, cashRow);
+    const cashRow = Object.keys(s.bd).find((k) => /^Sold \(\d+\)$/.test(k)); P.t(!!cashRow && s.soldCash > 0 && /Sold = cash kept/.test(s.body), 'breakdown shows a "Sold (N)" row with the cash kept and the Sold note explains it', 0.4, cashRow);
     await goHash(page, '#house-a'); await page.click('[data-exit=merge]'); await page.waitForTimeout(50); E.H(S, 'a').exit = 'merge'; await page.selectOption('[data-merge=a]', 'e'); E.H(S, 'a').mergeInto = 'e'; await setVal(page, '[data-p="h.a.exitLift"]', '25'); E.H(S, 'a').exitLift = 25; await setVal(page, '[data-p="h.a.exitMonth"]', '90'); E.H(S, 'a').exitMonth = 90;
     const s2 = await snap(page), pl2 = E.plan(S); P.t(nearRel(s2.nw, pl2.horizon.nw) && nearRel(s2.cf, pl2.horizon.cf) && /merges into Echo House/.test(s2.row('a').exitline), 'merge: KPIs follow engine, row shows "merges into"', 0.8, s2.row('a').exitline);
     await goHash(page, '#house-a'); await page.click('[data-exit=hold]'); E.H(S, 'a').exit = 'hold'; const s3 = await snap(page); P.t(nearRel(s3.nw, E.plan(S).horizon.nw), 'back to Hold restores numbers', 0.3);
@@ -501,8 +525,9 @@ async function uxChecks(page) {
     P.t(r.nw < 844 && r.mon < 844 && r.cf < 844 && r.dscr < 844, 'four KPIs in first viewport', 0.8, JSON.stringify(r)); P.t(r.head < 844, 'plan headline visible', 0.5); P.t(r.row1 < 844, 'first ledger row visible', 0.7); return P; });
   await check('C02', 'C', 'Main page has only the per-row extra fields as text inputs (one per asset)', 1.5, 'Count visible <input> on main (sample and after adding 3)', async () => {
     const P = new Parts(); await reset(page); const cnt = () => page.evaluate(() => [...document.querySelectorAll('#app input')].filter((i) => i.type !== 'hidden' && i.offsetParent).length);
-    const c0 = await cnt(); P.t(c0 === NSEED, NSEED + ' assets -> ' + NSEED + ' inputs', 1, c0);
-    for (let i = 0; i < 3; i++) { await goHash(page, '#add'); await page.click('[data-testid=confirm-add]'); await goMain(page); } const c3 = await cnt(); P.t(c3 === NSEED + 3, (NSEED + 3) + ' assets -> ' + (NSEED + 3) + ' inputs', 0.5, c3); return P; });
+    const nSold = async () => page.evaluate(() => document.querySelectorAll('[data-testid=ledger-row].sold').length); const plS = E.plan(E.seed()), soldE = E.seed().houses.filter((h) => plS.exits[h.id] && plS.sellAt[h.id] <= plS.planM).length, s0 = await nSold();
+    const c0 = await cnt(); P.t(s0 === soldE && c0 === NSEED - soldE, NSEED + ' assets, ' + soldE + ' sold (no Extra field) -> ' + (NSEED - soldE) + ' inputs', 1, c0 + ' inputs, ' + s0 + ' sold rows');
+    for (let i = 0; i < 3; i++) { await goHash(page, '#add'); await page.click('[data-testid=confirm-add]'); await goMain(page); } const c3 = await cnt(); P.t(c3 === NSEED + 3 - soldE, (NSEED + 3) + ' assets -> ' + (NSEED + 3 - soldE) + ' inputs (one per unsold asset)', 0.5, c3); return P; });
   await check('C03', 'C', 'No horizontal overflow at 320/390/430 on main, asset, assumptions, add, import', 2, 'Resize, check scrollWidth and element rects', async () => {
     const P = new Parts(); await reset(page);
     for (const w of [320, 390, 430]) { await page.setViewportSize({ width: w, height: 844 });
@@ -670,9 +695,9 @@ async function robustChecks(page) {
   const t0 = Date.now(); const { srv, port } = await startServer(); BASE = 'http://127.0.0.1:' + port;
   console.log('Serving', V4, 'on', BASE);
   browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
-  let finance = null, sync = null;
+  let finance = null, sync = null, info = null;
   try {
-    if (!FIN_ONLY && !SYNC_ONLY) {
+    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY) {
     await engineChecks();
     const ctx = await mkCtx(); const page = await mkPage(ctx, 'main');
     await reqChecks(page); await uxChecks(page); await robustChecks(page);
@@ -685,16 +710,22 @@ async function robustChecks(page) {
     catch (e) { results.push({ id: 'R00', category: 'R', name: 'Realism module failed to run', points: 30, rawPoints: 30, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.message || e), repro: 'node -e "require(\'./realism.js\')"' }); console.log('  [0.00/30] R00 realism module error: ' + (e && e.message)); }
     }
     /* Category F: personal finances, scored separately on its own 90-point scale (does not touch the A-E + R total) */
-    if (!SYNC_ONLY) {
+    if (!SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY) {
     console.log('F. Personal finances');
-    try { finance = await require('./finance-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect }); }
+    try { finance = await require('./finance-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS }); }
     catch (e) { finance = { earned: 0, max: 90, checks: [{ id: 'F00', category: 'F', name: 'Finance module failed to run', points: 90, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./finance-grade.js\')"' }] }; console.log('  [0.00/90] F00 finance module error: ' + (e && e.message)); }
     }
     /* Category G: number sync, scored separately on its own 100-point scale (does not touch the A-E + R total or F) */
-    if (!FIN_ONLY) {
+    if (!FIN_ONLY && !INFO_ONLY && !MAIN_ONLY) {
     console.log('G. Number sync');
-    try { sync = await require('./sync-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, base: () => BASE }); }
+    try { sync = await require('./sync-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS, base: () => BASE }); }
     catch (e) { sync = { earned: 0, max: 100, checks: [{ id: 'G00', category: 'G', name: 'Sync module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./sync-grade.js\')"' }] }; console.log('  [0.00/100] G00 sync module error: ' + (e && e.message)); }
+    }
+    /* Category H: plain-language help and hourly jobs, scored on its own 100-point scale (does not touch A-E + R, F or G) */
+    if (!FIN_ONLY && !SYNC_ONLY && !MAIN_ONLY) {
+    console.log('H. Help (i) buttons and hourly jobs');
+    try { info = await require('./info-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS, base: () => BASE }); }
+    catch (e) { info = { earned: 0, max: 100, checks: [{ id: 'H00', category: 'H', name: 'Info module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./info-grade.js\')"' }] }; console.log('  [0.00/100] H00 info module error: ' + (e && e.message || e)); }
     }
   } finally { await browser.close(); srv.close(); }
 
@@ -705,6 +736,14 @@ async function robustChecks(page) {
   const syncMd = () => { if (!sync) return ''; let m = `\n## G. Number sync: **${fmt2(sync.earned)} / ${sync.max}** (separate scale; not included in the A-E + R total or in F)\n\n| ID | Check | Pts | Earned | Detail |\n|---|---|---|---|---|\n`;
     sync.checks.forEach((r) => (m += `| ${r.id} | ${r.name} | ${fmt2(r.points)} | ${fmt2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 1500)} |\n`));
     const ff = sync.checks.filter((r) => r.earned < r.points - 0.001); m += `\n### G failures\n\n`; if (!ff.length) m += 'None.\n'; ff.forEach((r) => (m += `- **${r.id} ${r.name}** (-${fmt2(r.points - r.earned)}): ${String(r.detail).slice(0, 1500)}\n  - Reproduce: ${r.repro}\n`)); return m; };
+  const infoMd = () => { if (!info) return ''; let m = `\n## H. Help buttons and hourly jobs: **${fmt2(info.earned)} / ${info.max}** (separate scale; not included in the A-E + R total, F or G)\n\n| ID | Check | Pts | Earned | Detail |\n|---|---|---|---|---|\n`;
+    info.checks.forEach((r) => (m += `| ${r.id} | ${r.name} | ${fmt2(r.points)} | ${fmt2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 1500)} |\n`));
+    const ff = info.checks.filter((r) => r.earned < r.points - 0.001); m += `\n### H failures\n\n`; if (!ff.length) m += 'None.\n'; ff.forEach((r) => (m += `- **${r.id} ${r.name}** (-${fmt2(r.points - r.earned)}): ${String(r.detail).slice(0, 1500)}\n  - Reproduce: ${r.repro}\n`)); return m; };
+  if (INFO_ONLY) {
+    fs.writeFileSync(path.join(__dirname, 'report-info.md'), `# Help / hourly-job grader (INFO_ONLY)\n\nRun: ${new Date().toISOString()}  |  ${((Date.now() - t0) / 1000).toFixed(0)}s\n` + infoMd());
+    fs.writeFileSync(path.join(__dirname, 'result-info.json'), JSON.stringify({ info }, null, 2));
+    console.log(`\nH Help and hourly jobs: ${fmt2(info.earned)}/${info.max}  (${((Date.now() - t0) / 1000).toFixed(0)}s)`); return;
+  }
   if (SYNC_ONLY) {
     fs.writeFileSync(path.join(__dirname, 'report-sync.md'), `# Number-sync grader (SYNC_ONLY)\n\nRun: ${new Date().toISOString()}  |  ${((Date.now() - t0) / 1000).toFixed(0)}s\n` + syncMd());
     fs.writeFileSync(path.join(__dirname, 'result-sync.json'), JSON.stringify({ sync }, null, 2));
@@ -730,11 +769,12 @@ async function robustChecks(page) {
   results.forEach((r) => (md += `| ${r.id} | ${r.name} | ${f2(r.points)} | ${f2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 400)} |\n`));
   const fails = results.filter((r) => r.earned < r.points - 0.001).sort((a, b) => (b.points - b.earned) - (a.points - a.earned));
   md += `\n## Top failures\n\n`; if (!fails.length) md += 'None.\n'; fails.slice(0, 15).forEach((r, i) => (md += `${i + 1}. **${r.id} ${r.name}** (-${f2(r.points - r.earned)})\n   - Detail: ${String(r.detail).slice(0, 500)}\n   - Reproduce: ${r.repro}\n`));
-  md += finMd() + syncMd();
+  md += finMd() + syncMd() + infoMd();
   fs.writeFileSync(path.join(__dirname, 'report.md'), md);
-  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results, finance, sync }, null, 2));
+  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results, finance, sync, info }, null, 2));
   console.log('\nCategory scores:'); Object.keys(cats).forEach((c) => console.log(`  ${c}  ${f2(per[c].earned)} / ${f2(per[c].max)}  ${cats[c]}`));
   console.log(`\nTOTAL ${f2(total)} / ${max}`);
   if (finance) console.log(`\nF Personal finances: ${fmt2(finance.earned)}/${finance.max}`);
   if (sync) console.log(`\nG Number sync: ${fmt2(sync.earned)}/${sync.max}`);
+  if (info) console.log(`\nH Help and hourly jobs: ${fmt2(info.earned)}/${info.max}`);
 })().catch((e) => { console.error('GRADER CRASH', e); process.exit(2); });
