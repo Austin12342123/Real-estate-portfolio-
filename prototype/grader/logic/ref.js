@@ -84,6 +84,43 @@ function taxWalk(startTaxable, amount, kind) {
   return t;
 }
 
+
+/* ---- the TRUST funding model, re-implemented from its plain-English definition (no engine code) ----
+   Every asset sits in one trust. Walking down the list, a planned asset is bought the first month the POOL of everything before it can pay its cash need
+   (down payment + closing + improvements): max(0, pool room) + cash >= need, and the month is at least its own "not before" month (buyIn).
+     pool room = sum over assets held of max(0, cap% x (1 - cut%) x value - loan balance - liens)  minus the line the trust has drawn.
+   A purchase spends held cash first and draws the rest on the line. Each month's pooled cash flow (income at the grown rate - loan payment - line interest at hrate/12, no tax or
+   manager pay in this reference: it is for portfolios without a personal profile) is, when positive, swept to pay the line down (oldest draw first), then (while something is
+   still waiting to be bought) held as cash. The first asset when nothing is owned or bought has no pool: it is bought on its own month. An asset that cannot be funded in 600 months is
+   skipped (the rest are re-run without it). spec = { g:{cap,capBiz,haircut,closing,hrate,vac,mgmt,maint,appr}, assets:[{id,type,status,price,dp,rate,term,closingPct,paid,extra,rent,tax,ins,hoa,nnn,growth,liens,buyIn,capex}] } */
+function trustSim(spec) {
+  const g = spec.g, A = spec.assets, TS = 600, skipped = {};
+  const info = A.map((a) => {
+    const close = (a.closingPct == null ? g.closing : a.closingPct), L = a.price * (1 - a.dp / 100), P = L <= 0 ? 0 : paymentClosed(L, a.rate, a.term), age0 = a.status === 'owned' ? (a.paid || 0) : 0;
+    const B0 = a.status === 'owned' ? balanceAfter(L, a.rate, P, age0) : L, gr = a.growth == null ? g.appr : a.growth, sim = loanSim({ B0, ratePct: a.rate, pay: P, extra: a.extra || 0, mat: 0, months: TS + 5 });
+    const noi0 = a.type === 'business' ? a.rent : noiRental(a.rent, a.price, a.tax || 0, a.ins || 0, a.hoa || 0, g.vac, g.mgmt, g.maint, a.nnn || 0);
+    return { a, close, need: a.price * a.dp / 100 + a.price * close / 100 + (a.capex || 0), age0, gr, sim, noi0, cap: a.type === 'business' ? g.capBiz : g.cap, buy: Math.max(0, Math.round(a.buyIn || 0)) };
+  });
+  const at = (x, age) => ({ val: valueAt(x.a.price, x.gr, x.age0 + age), bal: x.sim.bal[age], pay: x.sim.pay[age], noi: x.noi0 * Math.pow(1 + x.gr / 100, age / 12) });
+  for (let round = 0; round <= A.length + 1; round++) {
+    const P0 = {}, fund = {}, draw = {}, held = [], queue = info.filter((x) => x.a.status !== 'owned' && !skipped[x.a.id]); let C = 0, qi = 0;
+    info.forEach((x) => { P0[x.a.id] = x.a.status === 'owned' ? 0 : Infinity; draw[x.a.id] = 0; if (x.a.status === 'owned') held.push(x); });
+    for (let t = 0; t <= TS; t++) {
+      const room = () => held.reduce((s2, x) => { const o = at(x, t - P0[x.a.id]); return s2 + Math.max(0, x.cap / 100 * (1 - g.haircut / 100) * o.val - o.bal - (x.a.liens || 0)) - draw[x.a.id]; }, 0);
+      while (qi < queue.length) {
+        const x = queue[qi], pool = held.length > 0; if (t < x.buy) break;
+        if (pool) { const head = room(); if (Math.max(0, head) + C < x.need - 1e-6) break; const useC = Math.min(C, x.need); C -= useC; draw[x.a.id] = x.need - useC; fund[x.a.id] = { n: held.length, room: Math.max(0, head), cash: useC, draw: x.need - useC }; } else fund[x.a.id] = { n: 0, room: 0, cash: 0, draw: 0 };
+        P0[x.a.id] = t; held.push(x); qi++;
+      }
+      let cf = 0; held.forEach((x) => { const o = at(x, t - P0[x.a.id]); cf += o.noi - o.pay - draw[x.a.id] * g.hrate / 1200; });
+      if (cf > 0) { let rem = cf; for (const x of held) { if (rem <= 0) break; const p = Math.min(draw[x.a.id], rem); draw[x.a.id] -= p; rem -= p; } if (qi < queue.length) C += rem; }
+    }
+    if (qi < queue.length) { skipped[queue[qi].a.id] = 1; continue; }
+    return { purchase: P0, fund, skipped: Object.keys(skipped) };
+  }
+  return null;
+}
+
 /* ---- U.S. single-filer tax estimate, tax year 2026 ----
    IRS Rev. Proc. 2025-32 / IRS 2026 inflation release: standard deduction 16,100; brackets below. IRS Pub. 15 (2026): social security wage base 184,500, 6.2% + 1.45% employee share. */
 const TAX2026 = { std: 16100, brackets: [[12400, 0.10], [50400, 0.12], [105700, 0.22], [201775, 0.24], [256225, 0.32], [640600, 0.35], [Infinity, 0.37]], ssBase: 184500, ss: 0.062, medicare: 0.0145 };
@@ -105,4 +142,4 @@ function dtiRef(o) {
 /* ---- small seeded RNG for reproducible random cases ---- */
 function rng(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
 
-module.exports = { loanSim, depSim, taxWalk, paymentIter, paymentClosed, balanceAfter, payoffMonths, fhaLoan, fhaAnnualOnBalance, noiRental, capRate, dscr, valueAt, headroom, monthsToLine, TAX2026, taxPct2026, dtiRef, rng };
+module.exports = { trustSim, loanSim, depSim, taxWalk, paymentIter, paymentClosed, balanceAfter, payoffMonths, fhaLoan, fhaAnnualOnBalance, noiRental, capRate, dscr, valueAt, headroom, monthsToLine, TAX2026, taxPct2026, dtiRef, rng };

@@ -151,7 +151,7 @@ async function snap(page) {
   });
   const s = { raw: d, nw: money(d.nw), mon: money(d.mon), cf: money(d.cf), dscr: parseFloat(d.dscr), totX: money(d.totX), headline: d.headline, rows: d.rows, bd: d.bd, body: d.body };
   s.rows.forEach((r) => { r.payN = (/\$([\d,.]+[MB]?)\/mo/.exec(r.pay) ? money('$' + /\$([\d,.]+[MB]?)\/mo/.exec(r.pay)[1]) : NaN); r.sold = /sold/.test(r.pay || ''); r.exN = r.extra == null ? 0 : money(r.extra); r.buy = buyOf(r.tag); r.cfN = /—/.test(r.cf) || r.sold ? 0 : money(r.cf); /* a sold row's cash cell shows the sale proceeds, not a monthly cash flow */ r.eqN = r.eqA ? +r.eqA : 0; });
-  { const k = Object.keys(s.bd).find((x) => /^Sold\b/.test(x)); s.soldCash = k ? money(s.bd[k][1]) : 0; }
+  { const k = Object.keys(s.bd).find((x) => /^Trust cash$/.test(x)); s.soldCash = k ? money(s.bd[k][1]) : 0; }
   { const st = await store(page); const plst = st && Array.isArray(st.houses) && st.houses.length ? E.plan(E.normalize(clone(st))) : null; if (st) s.rows.forEach((r) => { if (plst) r.buy = isFinite(plst.purchase[r.id]) ? plst.purchase[r.id] : Infinity; /* the rows no longer carry a tag: the buy month is the engine's */ const h = (st.houses || []).find((x) => x.id === r.id); if (h && !r.sold) { const X = E.view(st, h).X; r.extra = Math.round(X).toLocaleString('en-US'); r.exN = Math.round(X); } }); }
   s.row = (id) => s.rows.find((r) => r.id === id);
   return s;
@@ -179,12 +179,14 @@ const TGT = (o) => A('house', 'conv30', Object.assign({ id: 'b', addr: 'B', stat
 function EDGE() { const S = E.seedPlan(); const k = S.houses.find((h) => h.id === 'keystonehv'); Object.assign(k, { exit: 'merge', exitMonth: 200, exitLift: 10, mergeInto: 'auto' }); S.v = DATA_V; return S; }
 /* small mixed portfolio used for UI propagation checks */
 function SB() {
-  return mkS({}, [
-    A('house', 'conv30', { id: 'a', addr: 'Alpha House', status: 'owned', price: 300000, paid: 12, extra: 200, rent: 3000, tax: 250, ins: 100, growth: 3, target: 'b' }),
-    A('house', 'conv30', { id: 'b', addr: 'Bravo House', price: 250000, rent: 2600, tax: 220, ins: 90, growth: null, target: 'c' }),
+  const S = mkS({}, [
+    A('house', 'conv30', { id: 'a', addr: 'Alpha House', status: 'owned', price: 300000, paid: 12, extra: 200, rent: 3000, tax: 250, ins: 100, growth: 3 }),
+    A('house', 'conv30', { id: 'b', addr: 'Bravo House', price: 250000, rent: 2600, tax: 220, ins: 90, growth: null }),
     A('commercial', 'comm25', { id: 'c', addr: 'Charlie Plaza', price: 800000, rent: 8500, tax: 400, ins: 300, hoa: 200, growth: null }),
     A('business', 'sba7a', { id: 'd', addr: 'Delta Biz', price: 400000, rent: 9000, buyIn: 24, growth: 6, exit: 'sell', exitMonth: 100, sellCost: 8 }),
     A('house', 'conv30', { id: 'e', addr: 'Echo House', price: 200000, rent: 2300, tax: 200, ins: 80, buyIn: 6, growth: 3, capex: 15000, capexMonths: 4, arv: 220000, liftIncome: 8, exit: 'merge', exitMonth: 80, exitLift: 10, mergeInto: 'a' })]);
+  S.p = E.samplePersonal(); /* the app adds a finance profile on load; the pooled plan nets managers and taxes out of the cash it reinvests, so the engine reference needs the same profile */
+  return S;
 }
 
 /* independent simulations */
@@ -228,13 +230,13 @@ async function engineChecks() {
     const P = new Parts(); const S = E.seed(); const h = S.houses.find((x) => x.id === 'maple'); let prev = Infinity, okm = true, bad = ''; for (let x = 0; x <= 3000; x += 50) { const m = E.locMonths(S, h, x); if (m > prev) { okm = false; bad = 'x=' + x + ' ' + m + '>' + prev; } prev = m; }
     P.t(okm, 'sample maple monotone', 1, bad);
     const S2 = chain({ appr: 3, haircut: 10 }, 0, { liens: 20000, growth: null }); prev = Infinity; okm = true; for (let x = 0; x <= 3000; x += 50) { const m = E.locMonths(S2, S2.houses[0], x); if (m > prev) okm = false; prev = m; } P.t(okm, 'with liens/haircut/appr', 1); return P; });
-  await check('B09', 'B', 'Purchase order respects chain (A->B->C->D, LOC month additive)', 1.5, 'Engine.plan on 4-asset chain', () => {
-    const hs = [SRC({ id: 'a', target: 'b', extra: 800, closingPct: null }), TGT({ id: 'b', target: 'c', price: 250000, extra: 300, closingPct: null }), TGT({ id: 'c', target: 'd', price: 220000, closingPct: null }), TGT({ id: 'd', price: 200000, closingPct: null })];
+  await check('B09', 'B', 'Purchase order follows the list (A, B, C, D): the trust buys each when the pool of everything before it can pay; months never go backwards; later purchases wait for earlier ones; liens on an earlier asset delay the later ones', 1.5, 'Engine.plan on a 4-asset list', () => {
+    const hs = [SRC({ id: 'a', extra: 800, closingPct: null }), TGT({ id: 'b', price: 250000, extra: 300, closingPct: null }), TGT({ id: 'c', price: 220000, closingPct: null }), TGT({ id: 'd', price: 200000, closingPct: null })];
     const S = mk({ closing: 3 }, hs), pl = E.plan(S), P = new Parts(), p = pl.purchase;
-    P.t(p.a === 0 && p.b === pl.V.a.locM && p.c === p.b + pl.V.b.locM && p.d === p.c + pl.V.c.locM, 'purchase month = source purchase + source locM', 1, JSON.stringify(p));
-    P.t(p.a <= p.b && p.b <= p.c && p.c <= p.d && isFinite(p.d), 'monotone & finite', 1);
-    P.t(pl.series.count[pl.T] === 4 && pl.series.count[Math.max(0, p.b - 1)] === 1, 'count series steps 1..4', 1);
-    P.t(pl.funds.a && pl.funds.b && pl.funds.c && !pl.funds.d, 'funds flags along chain', 0.5);
+    P.t(p.a === 0 && p.b > 0 && p.b <= p.c && p.c <= p.d && isFinite(p.d), 'purchase months finite and nondecreasing down the list', 1, JSON.stringify(p));
+    P.t(pl.trust.b.ready === p.b && pl.trust.c.ready === p.c && pl.trust.d.ready === p.d && pl.trust.b.n === 1 && pl.trust.c.n === 2 && pl.trust.d.n === 3, 'each purchase is the first month the pool of the assets before it can pay (pool sizes 1, 2, 3)', 1, JSON.stringify(pl.trust.d));
+    P.t(pl.series.count[pl.T] === 4 && pl.series.count[Math.max(0, p.b - 1)] === 1, 'count series steps 1..4', 0.5);
+    P.t(pl.funds.b && pl.funds.c && pl.funds.d && !pl.funds.a, 'funds flags: every planned asset is funded by the trust, the owned one is not', 0.5);
     const S2 = mk({ closing: 3 }, hs.map((h) => (h.id === 'b' ? Object.assign({}, h, { liens: 60000 }) : h))); P.t(E.plan(S2).purchase.c > p.c, 'liens on B delay C (and D)', 1); return P; });
   const scen = [['price0', { price: 0 }], ['dp100', { dp: 100 }], ['rate0', { rate: 0 }], ['term12', { term: 12 }], ['huge price', { price: 1e12 }], ['huge extra', { extra: 1e12 }], ['neg price', { price: -1000 }], ['cap0', null, { cap: 0 }], ['cap1000', null, { cap: 1000 }], ['zero income', null, { p1: 0, p2: 0, rentCount: 0 }], ['rent0 zero income', { rent: 0 }, { p1: 0, p2: 0, rentCount: 0 }], ['dp>100', { dp: 150 }], ['closing 100', null, { closing: 100 }], ['driver months wait0', { driver: 'months', wait: 0 }], ['driver months infeasible', { driver: 'months', wait: 1 }, { cap: 10 }],
     ['io rate0', { io: true, rate: 0 }], ['capex huge', { capex: 1e10, arv: 1e10 }], ['sell month 0', { exit: 'sell', exitMonth: 0 }], ['sell neg month + 100% cost', { exit: 'sell', exitMonth: -5, sellCost: 100 }], ['merge nonexistent', { exit: 'merge', mergeInto: 'ghost', exitLift: 500 }], ['lift -100', { arv: -100, liftIncome: -100, capexMonths: -3 }], ['growth -90', { growth: -90 }], ['growth huge', { growth: 1e4 }]];
@@ -270,11 +272,12 @@ async function engineChecks() {
       const b = TGT({ price: 100000 + Math.floor(rnd() * 300000), dp: 15 + Math.floor(rnd() * 15), closingPct: null }); const S = mk(g, [a, b]), X = Math.floor(rnd() * 1500);
       const e = E.locMonths(S, S.houses[0], X), s = simLoc(S, S.houses[0], S.houses[1], X); if (e === s) exact++; if (e === s || Math.abs(e - s) <= 1) close++; else bad.push(`#${n} eng ${e} sim ${s}`); }
     return { ratio: close === N ? (exact === N ? 1 : 0.8) : close / N * 0.6, detail: `exact ${exact}/${N}, within1 ${close}/${N} ${bad.slice(0, 3).join('; ')}` }; });
-  await check('B15', 'B', 'Debt cap: every credit-line funder stays within cap (loan + liens + drawn LOC) when its target closes', 1.5, 'node: seed + liens, assetsAt(target purchase month)', () => {
+  await check('B15', 'B', 'Debt cap: the trust never draws more than its pool room (cap% of each asset\'s value less its loan and liens), at every purchase and every month', 1.5, 'node: seed + liens, poolAt(month)', () => {
     const S = E.seed(); S.houses.find((x) => x.id === 'maple').liens = 15000; S.houses.find((x) => x.id === 'cedar').liens = 20000; const pl = E.plan(S), P = new Parts();
-    let worst = 0, n = 0; S.houses.forEach((h) => { if (!pl.funds[h.id]) return; const m = pl.purchase[E.H(S, h.target).id]; const en = pl.assetsAt(m).find((x) => x.id === h.id); if (!en) return; n++; worst = Math.max(worst, en.debt - S.g.cap / 100 * en.value); });
-    P.t(n >= 2 && worst <= 1, 'no funder exceeds cap at its target closing (' + n + ' funders)', 1, 'worst excess $' + worst.toFixed(0));
-    P.t(pl.funds.maple && pl.funds.cedar, 'sample funding flags maple and cedar', 0.5);
+    let worst = 0, n = 0; S.houses.forEach((h) => { const tr = pl.trust[h.id]; if (!tr || !tr.pooled) return; n++; worst = Math.max(worst, tr.draw - tr.room); }); let worstM = 0; for (let t = 0; t <= pl.T; t += 6) { const q = pl.poolAt(t); worstM = Math.max(worstM, q.drawn - q.room); }
+    P.t(n >= 5 && worst <= 0.01, 'no purchase draws more than the pool room (' + n + ' pooled purchases)', 1, 'worst excess $' + worst.toFixed(0));
+    P.t(worstM <= 1, 'the line drawn stays within the pool room in every sampled month', 0.5, 'worst excess $' + worstM.toFixed(0));
+    P.t(pl.funds.ridge && pl.funds.north, 'sample purchases are funded by the trust', 0.25);
     P.t(pl.snap.every((x) => x.equity === x.value - x.debt), 'equity = value - debt per asset', 0.5); return P; });
   /* ---- v4 features ---- */
   await check('B16', 'B', 'Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows', 2, 'node: Engine.LOANS, loansFor, applyLoan, newAsset', () => {
@@ -306,15 +309,15 @@ async function engineChecks() {
     P.t(near(pl.series.nw[61], want, 2) && pl.assetsAt(61).some((x) => x.id === '__cash'), 'net worth afterwards = cash from sale', 0.6, pl.series.nw[61]);
     const sellEarly = E.plan(mk({}, [SRC({ target: '', growth: 3, exit: 'sell', exitMonth: 1, sellCost: 6, liens: 5000 })])).exits.a; P.t(sellEarly && sellEarly.month === 1, 'exit month clamps to after purchase', 0.3);
     return P; });
-  await check('B19', 'B', 'Sale cash funds a later purchase before outside cash; outside cash only for the shortfall', 2, 'node: sell a at 60, buy b at 90 for 20000 down', () => {
-    const buy = TGT({ id: 'b', price: 100000, dp: 20, buyIn: 90, target: '', closingPct: 0 }), P = new Parts();
+  await check('B19', 'B', 'Sale cash stays in the trust and funds a later purchase before any borrowing; outside cash only for a true shortfall', 2, 'node: sell a at 60, buy b at 90 for 20000 down', () => {
+    const buy = TGT({ id: 'b', price: 100000, dp: 20, buyIn: 90, closingPct: 0 }), P = new Parts();
     const S = sellS([buy]), pl = E.plan(S), proceeds = pl.exits.a.proceeds;
-    P.t(proceeds > 20000 && near(pl.series.cash[89], proceeds, 2) && near(pl.series.cash[90], proceeds - 20000, 2), 'cash drops by the down payment at the purchase month', 1, pl.series.cash[90] + ' from ' + pl.series.cash[89] + ' (proceeds ' + proceeds + ')');
-    P.t(near(pl.horizon.outside, 0, 0.5), 'no outside cash needed', 0.7, pl.horizon.outside);
-    const big = mk({}, [SRC({ target: '', growth: 3, exit: 'sell', exitMonth: 60, sellCost: 6, liens: 5000 }), TGT({ id: 'b', price: 2000000, dp: 20, buyIn: 90, closingPct: 0 })]), pb = E.plan(big);
-    P.t(near(pb.horizon.outside, 400000 - pb.exits.a.proceeds, 2) && near(pb.series.cash[90], 0, 0.01), 'shortfall beyond sale cash is outside money', 0.6, pb.horizon.outside);
-    const without = E.plan(mk({}, [SRC({ target: '', growth: 3, liens: 5000 }), buy])); P.t(near(without.horizon.outside, 20000, 0.5), 'without the sale the same purchase needs 20000 outside', 0.4, without.horizon.outside);
-    P.t(pl.series.cash[Math.min(pl.T, 100)] > 0 && pl.horizon.nw > E.plan(mk({}, [SRC({ target: '', growth: 3, liens: 5000, exit: 'hold' }), buy])).horizon.nw - 1e9, 'cash stays in net worth', 0.3); return P; });
+    P.t(proceeds > 20000 && pl.series.cash[89] >= proceeds - 2 && near(pl.series.cash[89] - pl.series.cash[90], 20000, 2), 'cash drops by the down payment at the purchase month (cash = sale proceeds plus cash flow the trust kept)', 1, pl.series.cash[90] + ' from ' + pl.series.cash[89] + ' (proceeds ' + proceeds + ')');
+    P.t(near(pl.horizon.outside, 0, 0.5) && pl.trust.b.draw === 0 && near(pl.trust.b.cash, 20000, 0.01), 'no outside cash and no line draw needed: the held cash pays', 0.7, pl.horizon.outside);
+    const big = mk({}, [SRC({ growth: 3, exit: 'sell', exitMonth: 60, sellCost: 6, liens: 5000 }), TGT({ id: 'b', price: 2000000, dp: 20, buyIn: 90, closingPct: 0 })]), pb = E.plan(big);
+    P.t(!isFinite(pb.purchase.b) && near(pb.horizon.outside, 0, 0.5) && pb.unfunded.join() === 'b', 'a purchase the pool and its cash cannot pay is not funded (never silently paid with outside money)', 0.6, JSON.stringify(pb.purchase));
+    const without = E.plan(mk({}, [SRC({ growth: 3, liens: 5000 }), buy])); P.t(near(without.horizon.outside, 0, 0.5) && without.trust.b.pooled && without.trust.b.draw > 0, 'without the sale the same purchase is drawn on the trust line instead', 0.4, without.horizon.outside + ' ' + JSON.stringify(without.trust.b));
+    P.t(pl.series.cash[Math.min(pl.T, 100)] > 0 && pl.horizon.nw > E.plan(mk({}, [SRC({ growth: 3, liens: 5000, exit: 'hold' }), buy])).horizon.nw - 1e9, 'cash stays in net worth', 0.3); return P; });
   await check('B20', 'B', 'Merge applies exitLift to value and income at exitMonth; asset stays held', 1.5, 'node: exit merge at 60, lift 20%', () => {
     const P = new Parts(), a = SRC({ target: '', growth: 0, status: 'owned', rent: 3000, tax: 200, ins: 100 }), m = Object.assign({}, a, { exit: 'merge', exitMonth: 60, exitLift: 20, mergeInto: 'z' }), z = TGT({ id: 'z', status: 'owned', target: '' });
     const b = E.plan(mk({}, [a, z])), p = E.plan(mk({}, [m, z])); const v = (pl, t) => pl.assetsAt(t).find((x) => x.id === 'a');
@@ -380,7 +383,7 @@ async function reqChecks(page) {
         const okFill = /^#house-/.test(hash) && near(f.dp, lo.dp, 0.01) && near(f.rate, lo.rate, 0.001) && near(f.termY, lo.term / 12, 0.01) && near(f.cl, lo.closing, 0.01) && f.loan === lo.id && f.io === !!lo.io;
         if (!okFill) badFill.push(tp + '/' + lo.id + ' ' + JSON.stringify(f));
         const a = await snap(page);
-        const changed = a.rows.length === prev.rows.length + 1 && !!a.row(id) && (a.nw !== prev.nw || a.mon !== prev.mon || a.cf !== prev.cf || /Credit line|Bought in/.test(a.row(id).dp || '')); /* an add after the chain tail can be unfunded (waits for the previous asset's credit line): then the row says so */
+        const changed = a.rows.length === prev.rows.length + 1 && !!a.row(id) && (a.nw !== prev.nw || a.mon !== prev.mon || a.cf !== prev.cf || /Funded|Bought in|In the trust today|Not funded/.test(a.row(id).dp || '')); /* an add after the chain tail can be unfunded (waits for the previous asset's credit line): then the row says so */
         if (!changed) noChange.push(lo.id + ' rows ' + prev.rows.length + '->' + a.rows.length + ' nw ' + prev.nw + '->' + a.nw);
         if (okFill && changed) nOk++; prev = a;
       } }
@@ -438,20 +441,17 @@ async function reqChecks(page) {
     P.t(changing >= M.length - 15, 'matrix is meaningful: most edits change the 20-year numbers (' + changing + '/' + M.length + ')', 1.5);
     return P; });
 
-  await check('A04', 'A', 'Two-way back-solves: wait-months->extra, payoff->extra, down$->%, and main page follows', 3, 'Asset page: type in "Months until LOC", "Paid off in", "Down payment $"', async () => {
+  await check('A04', 'A', 'Two-way back-solves: payoff->extra, down$->%, and main page follows', 3, 'Asset page: type in "Paid off in", "Down payment $"', async () => {
     const P = new Parts(); await loadState(page, SB());
-    const S = SB(), a = E.H(S, 'a'); const want = E.extraFor(S, a, 24);
-    await edit(page, 'h.a.wait', '24'); const ex24 = money(await page.inputValue('[data-p="h.a.extra"]'));
-    P.t(want != null && near(ex24, want, 1.01), 'wait=24 -> extra field = back-solved value', 1, `ui ${ex24} engine ${want && want.toFixed(2)}`);
-    P.t(want != null && simLoc(S, a, E.H(S, 'b'), ex24 + 1) <= 24 && simLoc(S, a, E.H(S, 'b'), ex24 - 3) > 24, 'independent simulation agrees', 0.5);
-    const m = await snap(page); P.t(m.row('a').exN === Math.round(ex24) && /Credit line opens in 24 mo/.test(m.row('b').dp), 'main shows the extra on the source row and "Credit line opens in 24 mo" on the asset it funds', 0.5, m.row('a').exN + ' / ' + m.row('b').dp);
-    await edit(page, 'h.a.wait', '12'); const ex12 = money(await page.inputValue('[data-p="h.a.extra"]')); P.t(ex12 > ex24, 'shorter wait -> bigger extra', 0.2);
+    const S = SB(), a = E.H(S, 'a');
     await loadState(page, SB()); await edit(page, 'h.a.payoff', '120'); const exP = money(await page.inputValue('[data-p="h.a.extra"]'));
-    const wantP = pmt(E.balToday(a), a.rate / 1200, 120) - E.payment(a); P.t(near(exP, wantP, 1.01), 'payoff=120 -> extra = amortization solve (~' + wantP.toFixed(0) + ')', 0.8, 'ui ' + exP);
-    const pf = parseInt(await page.inputValue('[data-p="h.a.payoff"]')); P.t(pf >= 119 && pf <= 120, 'payoff field stays ~120', 0.2, pf);
+    const wantP = pmt(E.balToday(a), a.rate / 1200, 120) - E.payment(a); P.t(near(exP, wantP, 1.01), 'payoff=120 -> extra = amortization solve (~' + wantP.toFixed(0) + ')', 1.6, 'ui ' + exP);
+    const pf = parseInt(await page.inputValue('[data-p="h.a.payoff"]')); P.t(pf >= 119 && pf <= 120, 'payoff field stays ~120', 0.4, pf);
+    const m = await snap(page); P.t(m.row('a').exN === Math.round(exP), 'main shows the back-solved extra on the row', 0.4, m.row('a').exN + ' vs ' + exP);
+    P.t((await page.locator('[data-p="h.a.wait"]').count()) === 0, 'no "Months until LOC" field any more (the trust decides when each asset is funded)', 0.3);
     await loadState(page, SB()); await edit(page, 'h.a.down', '90000'); const dp = parseFloat(await page.inputValue('[data-p="h.a.dp"]')); const ln = money(await page.inputValue('[data-p="h.a.loan"]'));
-    P.t(near(dp, 30, 0.01) && near(ln, 210000, 1), 'down$ 90,000 on 300k -> 30%, loan 210,000', 0.5, dp + ' / ' + ln);
-    await edit(page, 'h.a.dp', '25'); const d2 = money(await page.inputValue('[data-p="h.a.down"]')); P.t(near(d2, 75000, 1), 'dp% 25 -> down$ 75,000', 0.25, d2); return P; });
+    P.t(near(dp, 30, 0.01) && near(ln, 210000, 1), 'down$ 90,000 on 300k -> 30%, loan 210,000', 1, dp + ' / ' + ln);
+    await edit(page, 'h.a.dp', '25'); const d2 = money(await page.inputValue('[data-p="h.a.down"]')); P.t(near(d2, 75000, 1), 'dp% 25 -> down$ 75,000', 0.5, d2); return P; });
 
   await check('A05', 'A', 'Remove from the MAIN page: Edit mode, confirm, Undo, totals update; removing a funding source leaves the target listed', 4, 'Main > Edit > Remove > Yes; Undo', async () => {
     await loadState(page, SB()); const P = new Parts(); await goMain(page); const b = await snap(page);
@@ -470,7 +470,7 @@ async function reqChecks(page) {
     await page.click('[data-undo]'); await page.waitForTimeout(80); const u = await snap(page);
     P.t(u.rows.length === b.rows.length && !!u.row('a') && u.nw === b.nw && u.mon === b.mon, 'Undo restores the asset and the totals', 0.6, `${u.rows.length} rows nw ${u.nw} vs ${b.nw}`);
     return P; });
-  await check('A06', 'A', 'Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset of a category has no wait line and every later one has', 1.5, 'Main ledger on the default plan and on a small state', async () => {
+  await check('A06', 'A', 'Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has', 1.5, 'Main ledger on the default plan and on a small state', async () => {
     const P = new Parts(); await reset(page); const s = await snap(page); const st = await store(page), plS = E.plan(E.normalize(clone(st)));
     const cats = ['house', 'commercial', 'business'], byCat = (rows) => cats.map((c) => rows.filter((r) => { const h = st.houses.find((x) => x.id === r.id); return h && h.type === c && !r.sold; }));
     P.t(byCat(s.rows).every((q) => q.every((r, i) => i === 0 || q[i - 1].buy <= r.buy)), 'rows in each category are nondecreasing by purchase month', 0.4, s.rows.map((r) => r.buy).join(','));
@@ -478,8 +478,8 @@ async function reqChecks(page) {
     const ordr = st.houses.map((h, i) => [h.id, i]).sort((a, b) => (isFinite(plS.purchase[a[0]]) ? plS.purchase[a[0]] : 1e9) - (isFinite(plS.purchase[b[0]]) ? plS.purchase[b[0]] : 1e9) || a[1] - b[1]).map((x) => x[0]), noOf = {}; ordr.forEach((id, k) => { noOf[id] = k + 1; });
     P.t(s.rows.every((r) => +r.no === noOf[r.id]) && s.rows.length === st.houses.length, 'every row shows its buy number (badge before the name) = its place in buy order', 0.3, s.rows.map((r) => r.no).join(','));
     P.t(s.rows.every((r) => !/\b(owned|planned)\b/i.test(r.text)) && (await page.locator('[data-row] [data-sel], [data-row] .tag').count()) === 0, 'no row says owned or planned, and rows have no Funds picker', 0.3);
-    const firsts = cats.map((c, i) => byCat(s.rows)[i][0]).filter(Boolean), laters = byCat(s.rows).flatMap((q2) => q2.slice(1));
-    P.t(firsts.every((r) => r.dp === '') && laters.length > 0 && laters.every((r) => /^(Credit line opens in|Bought in|Credit line not reachable)/.test(r.dp)), 'the first asset of each category shows no wait line; every later asset shows one', 0.5, 'firsts: ' + firsts.map((r) => r.id + ':' + r.dp.slice(0, 20)).join(' | ') + ' laters without: ' + laters.filter((r) => !r.dp).map((r) => r.id).join(','));
+    const firstId = st.houses[0].id, others = s.rows.filter((r) => r.id !== firstId && !r.sold);
+    P.t(s.row(firstId).dp === '' && others.length > 10 && others.every((r) => /^(Funded (in \d+ mo|now) by the trust|In the trust today|Bought in|Not funded)/.test(r.dp)), 'the very first asset in the list shows no wait line; every later asset shows one (Funded in N mo by the trust / Owned today / Bought in / Not funded)', 0.5, 'first: ' + s.row(firstId).dp.slice(0, 30) + ' later without: ' + others.filter((r) => !r.dp).map((r) => r.id).join(','));
     await loadState(page, SB()); const t = await snap(page), pb = E.plan(SB()); P.t(t.rows.every((r) => r.buy === (isFinite(pb.purchase[r.id]) ? pb.purchase[r.id] : Infinity)) && byCat(t.rows).length > 0, 'small state: buy months follow the engine', 0.2); return P; });
   await check('A07', 'A', 'No "Today" / "20 years" view toggle anywhere (single portfolio snapshot)', 1, 'Scan buttons on main, asset, assumptions, add pages', async () => {
     await reset(page); const P = new Parts(); let toggles = [], dv = 0;
@@ -513,7 +513,7 @@ async function reqChecks(page) {
     await setVal(page, '[data-p="h.b.exitMonth"]', '120'); E.H(S, 'b').exitMonth = 120; await setVal(page, '[data-p="h.b.sellCost"]', '7'); E.H(S, 'b').sellCost = 7;
     const pl = E.plan(S); const proceeds = await page.inputValue('[data-p="h.b.proceeds"]').catch(() => ''); P.t(pl.exits.b && near(money(proceeds), pl.exits.b.proceeds, 2), 'Net proceeds field = engine proceeds', 0.8, proceeds + ' vs ' + (pl.exits.b && Math.round(pl.exits.b.proceeds)));
     const s = await snap(page); P.t(nearRel(s.nw, pl.horizon.nw) && /sells in|sold for/.test(s.row('b').exitline) && /sold for/.test(s.row('b').exitline + s.row('d').exitline + s.row('b').pay), 'main KPIs follow; row shows sale', 0.6, s.row('b').exitline);
-    const cashRow = Object.keys(s.bd).find((k) => /^Sold \(\d+\)$/.test(k)); P.t(!!cashRow && s.soldCash > 0 && /Sold = cash kept/.test(s.body), 'breakdown shows a "Sold (N)" row with the cash kept and the Sold note explains it', 0.4, cashRow);
+    const cashRow = Object.keys(s.bd).find((k) => /^Trust cash$/.test(k)); P.t(!!cashRow && s.soldCash > 0 && /Trust cash = cash the trust holds/.test(s.body), 'breakdown shows a "Trust cash" row with the cash the trust holds and the note explains it', 0.4, cashRow);
     await goHash(page, '#house-a'); await page.click('[data-exit=merge]'); await page.waitForTimeout(50); E.H(S, 'a').exit = 'merge'; await page.selectOption('[data-merge=a]', 'e'); E.H(S, 'a').mergeInto = 'e'; await setVal(page, '[data-p="h.a.exitLift"]', '25'); E.H(S, 'a').exitLift = 25; await setVal(page, '[data-p="h.a.exitMonth"]', '90'); E.H(S, 'a').exitMonth = 90;
     const s2 = await snap(page), pl2 = E.plan(S); P.t(nearRel(s2.nw, pl2.horizon.nw) && nearRel(s2.cf, pl2.horizon.cf) && /merges into Echo House/.test(s2.row('a').exitline), 'merge: KPIs follow engine, row shows "merges into"', 0.8, s2.row('a').exitline);
     await goHash(page, '#house-a'); await page.click('[data-exit=hold]'); E.H(S, 'a').exit = 'hold'; const s3 = await snap(page); P.t(nearRel(s3.nw, E.plan(S).horizon.nw), 'back to Hold restores numbers', 0.3);
@@ -525,11 +525,11 @@ async function reqChecks(page) {
     P.t(isFinite(s.nw) && isFinite(s.mon) && isFinite(s.cf) && isFinite(s.dscr) && s.nw > 0 && !BAD.test(s.body), 'KPIs finite and positive, no NaN text', 0.4, `${s.raw.nw} ${s.raw.mon} ${s.raw.cf} ${s.raw.dscr}`);
     P.t(!/never funded|Debt-to-income peaks/.test(s.body), 'no unfunded / DTI-peak warning', 0.5); P.t(/Next: buy/.test(s.headline || '') && /by/.test(s.headline || ''), 'plan headline names the next purchase and completion', 0.2, s.headline);
     P.t((await page.locator('[data-testid=outside-cash]').count()) <= 1, 'outside-cash warning renders at most once', 0.2); return P; });
-  await check('A12', 'A', 'Credit-line chain on screen: the asset being bought shows "Credit line opens in N mo · down payment from X" (or "Bought in N mo with cash on hand"), N matches the engine; raising source extra opens sooner', 2, 'Main rows on small state', async () => {
-    await loadState(page, SB()); const P = new Parts(); const s = await snap(page), S = SB(), pl = E.plan(S);
-    const okLoc = [['a', 'b'], ['b', 'c']].every(([f, id]) => { const m = pl.purchase[f] + pl.V[f].locM, d = s.row(id).dp; return pl.funds[f] ? d.includes('Credit line opens in ' + m + ' mo') && d.includes('down payment from ' + S.houses.find((x) => x.id === f).addr) : /^Bought in/.test(d); });
-    P.t(okLoc, 'dp-line on the asset being bought equals engine funder purchase + locM', 1, s.row('b').dp + ' | ' + s.row('c').dp); P.t(s.row('b').buy === pl.purchase.b && s.row('c').buy === pl.purchase.c, 'buy months equal engine', 0.5);
-    await setExtra(page, 'a', '2000'); const a = await snap(page); P.t(a.row('b').buy < s.row('b').buy && a.row('c').buy <= s.row('c').buy, 'more extra on source -> targets bought sooner', 0.5, `b ${s.row('b').buy}->${a.row('b').buy}`); return P; });
+  await check('A12', 'A', 'Trust funding on screen: every row after the first shows "Funded in N mo by the trust: all earlier assets (cash flow $X/mo + borrowing room $Y) · pool of K assets", the numbers match the engine; raising an earlier asset\'s extra opens later purchases sooner', 2, 'Main rows on small state', async () => {
+    await loadState(page, SB()); const P = new Parts(); const s = await snap(page), S = SB(), pl = E.plan(S), n0 = (x) => Math.round(x).toLocaleString('en-US');
+    const okLoc = ['b', 'c'].every((id) => { const tr = pl.trust[id], m = pl.purchase[id], d = s.row(id).dp; return tr.pooled ? d.includes('Funded in ' + m + ' mo by the trust') && d.includes('cash flow $' + n0(tr.cf) + '/mo') && d.includes('borrowing room $' + n0(tr.room)) && d.includes('pool of ' + tr.n + ' assets') : /^Bought in/.test(d); });
+    P.t(okLoc, 'dp-line on each later asset equals the engine trust numbers (month, pooled cash flow, borrowing room, pool size)', 1, s.row('b').dp + ' | ' + s.row('c').dp); P.t(s.row('b').buy === pl.purchase.b && s.row('c').buy === pl.purchase.c, 'buy months equal engine', 0.5);
+    await setExtra(page, 'a', '2000'); const a = await snap(page); P.t(a.row('b').buy <= s.row('b').buy && a.row('c').buy <= s.row('c').buy && (a.row('b').buy < s.row('b').buy || a.row('c').buy < s.row('c').buy), 'more extra on an earlier asset -> later assets bought sooner', 0.5, `b ${s.row('b').buy}->${a.row('b').buy} c ${s.row('c').buy}->${a.row('c').buy}`); return P; });
 }
 
 /* ================================================================ C: UX */
@@ -658,7 +658,7 @@ async function robustChecks(page) {
   console.log('E. Robustness / accessibility');
   await page.setViewportSize({ width: 390, height: 844 });
   const cases = [['h.maple.price', '0'], ['h.maple.dp', '100'], ['h.maple.dp', '150'], ['h.maple.dp', '-20'], ['h.maple.rate', '0'], ['h.maple.rate', '1000'], ['h.maple.termY', '0'], ['h.maple.price', ''], ['h.maple.price', 'abc'], ['h.maple.price', '-500'], ['h.maple.price', '1e12'], ['h.maple.price', '1000000000000'],
-    ['h.maple.extra', '1000000000000'], ['h.maple.rent', '1000000000000'], ['h.maple.tax', '-100'], ['h.maple.wait', '0'], ['h.maple.wait', '-5'], ['h.maple.wait', '999999'], ['h.maple.payoff', '0'], ['h.maple.payoff', '1'], ['h.maple.payoff', '9999'], ['h.maple.down', '0'], ['h.maple.down', '99999999'],
+    ['h.maple.extra', '1000000000000'], ['h.maple.rent', '1000000000000'], ['h.maple.tax', '-100'], ['h.maple.payoff', '0'], ['h.maple.payoff', '1'], ['h.maple.payoff', '9999'], ['h.maple.down', '0'], ['h.maple.down', '99999999'],
     ['h.maple.paid', '5000'], ['h.maple.liens', '99999999999'], ['h.maple.growth', '1000'], ['h.maple.growth', '-100'], ['h.maple.closingPct', '1000'],
     ['h.birch.capex', '1000000000000'], ['h.birch.capexMonths', '-5'], ['h.birch.capexMonths', '99999'], ['h.birch.arv', '1000000000000'], ['h.birch.arv', '-100'], ['h.birch.liftIncome', '-1000'], ['h.birch.exitMonth', '0'], ['h.birch.exitMonth', '-9'], ['h.birch.exitMonth', '99999'], ['h.birch.sellCost', '100'], ['h.birch.sellCost', '1000'],
     ['h.keystonehv.exitLift', '10000'], ['h.keystonehv.exitLift', '-50'], ['h.keystonehv.exitMonth', '1'],

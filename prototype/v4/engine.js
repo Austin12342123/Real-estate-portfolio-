@@ -1,6 +1,6 @@
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
-   extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn, growth(%/yr or null), target }.
+   extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
    Percentages are plain numbers (85 = 85%). Money is dollars. Time is months. */
 (function (root) {
   const GDEF = { cap: 85, capBiz: 50, haircut: 0, closing: 3, vac: 7, refiRate: 7.5, refiTerm: 300, mgmt: 8, maint: 1, appr: 0, hrate: 8.5, dti: 43,
@@ -38,7 +38,7 @@
   }
   function newAsset(type, loanId, o) {
     type = TYPES[type] ? type : 'house';
-    const h = Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), type, status: 'planned', extra: 0, driver: 'extra', wait: 24, liens: 0, paid: 0, buyIn: 12,
+    const h = Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), type, status: 'planned', extra: 0, driver: 'extra', wait: 24, liens: 0, paid: 0, buyIn: 0,
       target: '', growth: null, io: false, closingPct: null, loanId: '', dp: 20, rate: 6.75, term: 360, mat: 0, refiRate: null, refiTerm: null,
       capex: 0, capexMonths: 6, arv: 0, arvAuto: false, gain: null, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false }, DEFAULTS[type]);
     applyLoan(h, loanId || loansFor(type)[0].id);
@@ -70,6 +70,8 @@
   /* value k months after the asset's start. After the improvement finishes, the value IS the new appraisal (arv), then it keeps growing from there. */
   const valAt = (S, h, k) => { const cm = Math.max(0, h.capexMonths || 0);
     return +h.arv > 0 && k >= cm ? h.arv * Math.pow(1 + gr(S, h) / 100, (k - cm) / 12) : valK(S, h, k); };
+  /* cash a planned asset needs the day it is bought: down payment + closing costs + improvements paid in cash (a financed rehab is part of the loan) */
+  const needFor = (S, h) => downAmt(h) + (h.price * clPct(S, h)) / 100 + (h.finCapex ? 0 : Math.max(0, h.capex || 0));
   const need = (S, h) => { const t = H(S, h.target); return t ? downAmt(t) + (t.price * clPct(S, t)) / 100 : 0; };
   /* operating income per month (rent or owner profit minus operating costs), before any loan payment */
   const reimbOf = (h) => ((h.type || 'house') === 'business' ? 0 : (Math.min(100, Math.max(0, +h.nnn || 0)) / 100) * ((+h.tax || 0) + (+h.ins || 0) + (+h.hoa || 0))); /* costs the tenants pay back (NNN leases) */
@@ -218,73 +220,102 @@
 
   /* FHA annual mortgage insurance is charged on the outstanding balance (HUD Handbook 4000.1: annual MIP on the average outstanding balance), so the monthly amount falls as the loan is paid down. The first-month figure (view().mip) is on the starting loan. */
   const mipNow = (h, a) => ((h.mipAnn || 0) > 0 ? ((a.B / (1 + (h.mipUp || 0) / 100)) * h.mipAnn) / 100 / 12 : 0);
-  /* The whole-portfolio plan: purchase months, sales, cash, month-by-month series, plan-level KPIs. */
+  /* The whole-portfolio plan: purchase months, sales, cash, month-by-month series, plan-level KPIs.
+     THE TRUST MODEL. Every asset sits in one trust and the trust borrows against all of it. Walking the list in order, a planned asset is bought the first month the POOL of
+     everything before it (assets owned today plus the planned assets above it that are already bought) can pay its cash need (down payment + closing + improvements):
+       pool room   = sum over pool assets of max(0, cap% x (1 - appraisal cut) x value - loan balance - liens), minus what the trust has drawn on its line so far
+       cash        = cash the trust is holding: the pool's cash flow reinvested (after the line is paid off) and sale proceeds
+       bought when   max(0, room) + cash >= need   (and not before the asset's own "not before" month, buyIn)
+     The purchase uses held cash first and draws the rest on the line (the draw is charged to the new asset, at the Assumptions line rate). Each month the pool's total cash flow (income minus costs,
+     loan payments, insurance and line interest; only a positive total) is swept first into paying the line down, which raises the room, then into cash. Extra payments (owner money) only speed up loan principal.
+     The first asset of the whole list, with nothing before it, is bought on its own month with outside cash. An asset the trust can never fund (within 50 years) is skipped and shows as not funded. */
   function plan(S) {
     const hs = S.houses, g = S.g, V = {};
     hs.forEach((h) => (V[h.id] = view(S, h)));
-    const memo = {}, stack = {};
-    function pm(h) {
-      if (memo[h.id] !== undefined) return memo[h.id];
-      if (h.status === 'owned') return (memo[h.id] = 0);
-      if (stack[h.id]) return Infinity;
-      stack[h.id] = 1;
-      const srcs = hs.filter((x) => x.target === h.id && x.id !== h.id);
-      let r;
-      if (!srcs.length) r = Math.max(0, Math.round(h.buyIn || 0));
-      else { r = Infinity; srcs.forEach((s) => { const a = pm(s) + V[s.id].locM; if (a < r) r = a; }); }
-      stack[h.id] = 0;
-      return (memo[h.id] = r);
-    }
-    const P0 = {}; hs.forEach((h) => (P0[h.id] = pm(h)));
-    const funds = {}; hs.forEach((h) => { const t = H(S, h.target);
-      funds[h.id] = !!(t && t.status === 'planned' && isFinite(P0[h.id] + V[h.id].locM) && P0[t.id] === P0[h.id] + V[h.id].locM); });
-    const fundedByLOC = {}; hs.forEach((h) => { if (funds[h.id]) fundedByLOC[h.target] = true; });
-    const dpCashBy = {}; hs.forEach((h) => { if (funds[h.id] && V[h.id].cashDP > 0) dpCashBy[h.target] = (dpCashBy[h.target] || 0) + V[h.id].cashDP; }); /* saved cash flow that goes into a purchase, by target id */
-    /* exits: a sale ends ownership at sellAt; a merge applies a synergy lift at mergeAt */
-    const sellAt = {}, mergeAt = {};
-    hs.forEach((h) => { sellAt[h.id] = Infinity; mergeAt[h.id] = Infinity; const p = P0[h.id]; if (!isFinite(p)) return;
-      const m = Math.max(Math.round(h.exitMonth || 0), p + 1);
-      if (h.exit === 'sell') sellAt[h.id] = m; else if (h.exit === 'merge') mergeAt[h.id] = m; });
-    const finiteBuys = hs.map((h) => P0[h.id]).filter(isFinite);
-    const lastEvent = Math.max(0, ...finiteBuys, ...hs.map((h) => (isFinite(sellAt[h.id]) ? sellAt[h.id] : 0)), ...hs.map((h) => (isFinite(mergeAt[h.id]) ? mergeAt[h.id] : 0)));
-    const lastBuy = finiteBuys.length ? Math.max.apply(null, finiteBuys) : 0;
-    const planM = Math.round(Math.max(1, g.planYears || 20) * 12);
-    const T = Math.min(g.horizon, Math.max(120, lastEvent + 60, planM));
-    const keys = ['nw', 'monthly', 'extra', 'noi', 'ds', 'cf', 'cfx', 'debt', 'value', 'rent', 'dsti', 'dti', 'count', 'outside', 'cash', 'intr', 'dep', 'txRE', 'txBiz'];
-    const pp = taxP(S);
-    const s = {}; keys.forEach((k) => (s[k] = new Array(T + 1).fill(0)));
-    /* state of an asset at month t, ignoring whether it has been sold */
-    function st(h, t) {
+    const planM = Math.round(Math.max(1, g.planYears || 20) * 12), hz = isFinite(+g.horizon) ? +g.horizon : GDEF.horizon, TS = Math.max(600, Math.min(2400, Math.round(hz)));
+    const queue0 = hs.filter((h) => h.status !== 'owned'), skipped = {}, hel = isFinite(+g.hrate) ? +g.hrate : GDEF.hrate;
+    let P0, sellAt, mergeAt, dr, cur, exits, fund, readyAt, cashA, outsideA, reinv, bought, blocked;
+    const exitTimes = (h) => { const p = P0[h.id]; sellAt[h.id] = Infinity; mergeAt[h.id] = Infinity; if (!isFinite(p)) return;
+      const m = Math.max(Math.round(h.exitMonth || 0), p + 1); if (h.exit === 'sell') sellAt[h.id] = m; else if (h.exit === 'merge') mergeAt[h.id] = m; };
+    /* state of an asset at month t, ignoring whether it has been sold (hl = its line draw this month) */
+    function st(h, t, hl) {
       const p = P0[h.id]; if (!isFinite(p) || t < p) return null;
       const v = V[h.id], age = t - p, live = age < v.payoff;
       const B = live ? v.path.bal(age) : 0;
       const improved = (+h.arv > 0 || h.liftIncome) && age >= Math.max(0, h.capexMonths || 0), merged = t >= mergeAt[h.id];
       const fv = merged ? 1 + (h.exitLift || 0) / 100 : 1;
       const fi = (improved ? 1 + (h.liftIncome || 0) / 100 : 1) * (merged ? 1 + (h.exitLift || 0) / 100 : 1);
-      const val = valAt(S, h, age) * fv, heloc = funds[h.id] && age >= v.locM ? v.draw : 0;
+      const val = valAt(S, h, age) * fv, heloc = hl === undefined ? (dr[h.id] ? dr[h.id][Math.min(t, TS)] : 0) : hl;
       return { v, age, live, B, val, heloc, depAge: age0(h) + age, gfi: (h.price > 0 ? valK(S, h, age) / valK(S, h, 0) : 1) * fi }; /* income and costs grow from TODAY's entered rent: growth since the purchase (paid months) is already in today's rent */
     }
     const held = (h, t) => t < sellAt[h.id];
-    const exits = {}; let cashBal = 0, outsideCum = 0; const dpCash = new Array(T + 1).fill(0);
-    hs.forEach((h) => { if (dpCashBy[h.id] && isFinite(P0[h.id]) && P0[h.id] <= T) dpCash[P0[h.id]] += dpCashBy[h.id]; });
+    /* what the pool of held assets looks like at month t (draws are the trust's line balances, charged to the assets they bought) */
+    function snapOf(t) {
+      const out = [];
+      for (const h of bought) { if (!held(h, t)) continue; const a = st(h, t, cur[h.id]); if (!a) continue;
+        const v = a.v, hi = (cur[h.id] * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0;
+        const intr = (a.live ? a.B * v.path.rate(a.age) : 0) + hi, dep = depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge), biz = (h.type || 'house') === 'business';
+        out.push({ h, a, tx: v.noi * a.gfi - intr - dep, biz, live: t < mergeAt[h.id], inc: v.noi * a.gfi, sched, hi, draw: cur[h.id], room: Math.max(0, (capOf(S, h) / 100) * (1 - g.haircut / 100) * a.val - a.B - (h.liens || 0)) }); }
+      return out;
+    }
+    /* pooled numbers for a snapshot at month t: room, line drawn, cash flow (income minus costs, loan payments and line interest), and the part of it the trust can reinvest: the trust pays the managers of businesses you do not run and the income tax on the portfolio's profit first (only when there is a personal profile) */
+    const pp = S.p || null;
+    const sumSnap = (sn, t) => { let room = 0, draw = 0, cf = 0, re = 0, bz = 0, nb = 0; sn.forEach((x) => { room += x.room; draw += x.draw; cf += x.inc - x.sched - x.hi; if (x.biz) { bz += x.tx; if (x.live) nb++; } else re += x.tx; });
+      const tax = pp ? portTaxAt(S, t, re, bz) : 0, gm = pp ? Math.max(0, nb - (pp.operating || 0)) * (pp.gmMonthly || 0) * Math.pow(1 + (pp.inflation || 0) / 100, t / 12) : 0;
+      return { n: sn.length, room, draw, head: room - draw, cf, tax, gm, sweep: Math.max(0, cf - tax - gm) }; };
+    function run() {
+      P0 = {}; sellAt = {}; mergeAt = {}; dr = {}; cur = {}; exits = {}; fund = {}; readyAt = {}; bought = []; blocked = null;
+      cashA = new Array(TS + 1).fill(0); outsideA = new Array(TS + 1).fill(0); reinv = new Array(TS + 1).fill(0);
+      hs.forEach((h) => { cur[h.id] = 0; P0[h.id] = h.status === 'owned' ? 0 : Infinity; exitTimes(h); if (h.status === 'owned') { bought.push(h); dr[h.id] = new Array(TS + 1).fill(0); } });
+      const queue = queue0.filter((h) => !skipped[h.id]); let C = 0, out = 0, qi = 0;
+      for (let t = 0; t <= TS; t++) {
+        if (t === 0) hs.forEach((h) => { if (h.status === 'owned' && !h.finCapex && h.capex > 0) out += h.capex; }); /* improvements on assets owned today are paid with outside money */
+        /* 1) sales put net proceeds (after the sold asset's own line draw) in the trust's cash */
+        for (const h of bought) if (sellAt[h.id] === t) {
+          const a = st(h, t, cur[h.id]); if (!a) continue;
+          const proceeds = a.val * (1 - (h.sellCost || 0) / 100) - a.B - (h.liens || 0);
+          exits[h.id] = { month: t, proceeds, price: a.val, net: a.val * (1 - (h.sellCost || 0) / 100), age: a.depAge, dep: depCum(S, h, a.depAge), cost: costBasis(S, h) };
+          /* the proceeds (after the sold asset's own loan) go to the trust's cash; the sold asset's own line draw stays with the trust and moves to the oldest asset still held (with nothing left, cash pays it) */
+          let x = proceeds; if (x < 0) { out += -x; x = 0; }
+          const own = cur[h.id]; cur[h.id] = 0;
+          if (own > 0.005) { const o = bought.find((q) => q !== h && held(q, t)); if (o) cur[o.id] += own; else { const p0 = Math.min(own, x); x -= p0; out += own - p0; } }
+          C += x;
+        }
+        /* 2) the next planned asset in the list is bought when the pool can pay for it */
+        let snap = snapOf(t);
+        while (qi < queue.length) {
+          const N = queue[qi], pool = bought.length > 0, bi = Math.max(0, Math.round(N.buyIn || 0)), base = downAmt(N) + (N.price * clPct(S, N)) / 100;
+          const cap0 = N.finCapex ? 0 : Math.max(0, N.capex || 0), needAmt = base + cap0, sm = sumSnap(snap, t);
+          if (pool && readyAt[N.id] === undefined && Math.max(0, sm.head) + C >= needAmt - 1e-6) readyAt[N.id] = t;
+          if (t < bi || (pool && readyAt[N.id] === undefined)) break;
+          if (pool && Math.max(0, sm.head) + C < needAmt - 1e-6) break;
+          P0[N.id] = t; exitTimes(N); dr[N.id] = new Array(TS + 1).fill(0);
+          if (pool) { const useC = Math.min(C, needAmt); C -= useC; cur[N.id] = needAmt - useC; fund[N.id] = { pool: true, n: sm.n, room: Math.max(0, sm.head), cf: sm.sweep, gross: sm.cf, cash: useC, draw: needAmt - useC, need: needAmt }; }
+          else { const nd = (t > 0 ? base : 0) + cap0; out += nd; fund[N.id] = { pool: false, n: 0, room: 0, cf: 0, cash: 0, draw: 0, need: nd }; }
+          bought.push(N); qi++; snap = snapOf(t);
+        }
+        /* 3) record the state and sweep the month's pooled cash flow: first pay the line down (oldest draw first), then hold the rest as cash */
+        snap.forEach((x) => { dr[x.h.id][t] = cur[x.h.id]; });
+        cashA[t] = C; outsideA[t] = out;
+        const cf = sumSnap(snap, t).sweep, pending = qi < queue.length; /* once nothing is left to buy, only the line is paid down; after that you keep the cash flow */
+        if (cf > 0) { let x = cf; for (const h of bought) { if (x <= 0) break; if (!held(h, t) || !(cur[h.id] > 0)) continue; const pay = Math.min(cur[h.id], x); cur[h.id] -= pay; x -= pay; } reinv[t] = cf - (pending ? 0 : x); if (pending) C += x; }
+      }
+      blocked = qi < queue.length ? queue[qi] : null;
+    }
+    for (let i = 0; i <= queue0.length + 1; i++) { run(); if (!blocked) break; skipped[blocked.id] = 1; }
+    const sellKeys = hs.map((h) => (isFinite(sellAt[h.id]) ? sellAt[h.id] : 0)), mergeKeys = hs.map((h) => (isFinite(mergeAt[h.id]) ? mergeAt[h.id] : 0));
+    const finiteBuys = hs.map((h) => P0[h.id]).filter(isFinite);
+    const lastEvent = Math.max(0, ...finiteBuys, ...sellKeys, ...mergeKeys);
+    const lastBuy = finiteBuys.length ? Math.max.apply(null, finiteBuys) : 0;
+    const T = Math.min(TS, g.horizon, Math.max(120, lastEvent + 60, planM));
+    const keys = ['nw', 'monthly', 'extra', 'noi', 'ds', 'cf', 'cfx', 'debt', 'value', 'rent', 'dsti', 'dti', 'count', 'outside', 'cash', 'intr', 'dep', 'txRE', 'txBiz'];
+    const s = {}; keys.forEach((k) => (s[k] = new Array(T + 1).fill(0)));
+    const dpCash = new Array(T + 1).fill(0); for (let t = 1; t <= T; t++) dpCash[t] = reinv[Math.min(TS, t - 1)]; /* pooled cash flow that moved into the trust (line paydown or cash) is no longer yours to spend */
     for (let t = 0; t <= T; t++) {
-      /* 1) sales put net proceeds in cash */
-      for (const h of hs) if (sellAt[h.id] === t) {
-        const a = st(h, t); if (!a) continue;
-        const proceeds = a.val * (1 - (h.sellCost || 0) / 100) - a.B - (h.liens || 0) - a.heloc;
-        exits[h.id] = { month: t, proceeds, price: a.val, net: a.val * (1 - (h.sellCost || 0) / 100), age: a.depAge, dep: depCum(S, h, a.depAge), cost: costBasis(S, h) };
-        if (proceeds >= 0) cashBal += proceeds; else outsideCum += -proceeds;
-      }
-      /* 2) purchases and improvements use cash first, then outside money */
-      for (const h of hs) if (P0[h.id] === t) {
-        const need = (t > 0 && !fundedByLOC[h.id] ? downAmt(h) + (h.price * clPct(S, h)) / 100 : 0) + (h.finCapex ? 0 : h.capex || 0);
-        const use = Math.min(cashBal, need); cashBal -= use; outsideCum += need - use;
-      }
-      /* 3) sum what is held this month */
       let incAdd = 0, debtAdd = 0;
       for (const h of hs) {
         if (!held(h, t)) continue; const a = st(h, t); if (!a) continue;
-        const { v } = a, hi = (a.heloc * g.hrate) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0, ex = a.live ? v.X : 0, rentG = h.rent * a.gfi, reimbG = v.reimb * a.gfi;
+        const { v } = a, hi = (a.heloc * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0, ex = a.live ? v.X : 0, rentG = h.rent * a.gfi, reimbG = v.reimb * a.gfi;
         const intr = (a.live ? a.B * v.path.rate(a.age) : 0) + hi, dep = depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge), tx = v.noi * a.gfi - intr - dep;
         s.intr[t] += intr; s.dep[t] += dep; if ((h.type || 'house') === 'business') s.txBiz[t] += tx; else s.txRE[t] += tx;
         s.count[t]++; s.value[t] += a.val; s.debt[t] += a.B + (h.liens || 0) + a.heloc; s.nw[t] += a.val - a.B - (h.liens || 0) - a.heloc;
@@ -293,7 +324,7 @@
         const net = (g.rentCount / 100) * (rentG + reimbG) - (sched + v.escrow + hi);
         if (net >= 0) incAdd += net; else debtAdd += -net;
       }
-      s.nw[t] += cashBal; s.cash[t] = cashBal; s.outside[t] = outsideCum;
+      s.nw[t] += cashA[t]; s.cash[t] = cashA[t]; s.outside[t] = outsideA[t];
       s.cf[t] = s.noi[t] - s.ds[t]; s.cfx[t] = s.cf[t] - s.extra[t];
       const inc = (g.p1 + g.p2) / 12 + jobsGross(S, t) + incAdd, debts = g.otherDebt + housingAt(S, t) + debtAdd;
       s.dti[t] = inc > 0 ? Math.min(999, (debts / inc) * 100) : debts > 0 ? 999 : 0;
@@ -302,16 +333,24 @@
       o.cltv = o.value ? (o.debt / o.value) * 100 : 0; o.dscr = o.ds ? o.noi / o.ds : 0; return o; };
     /* every asset's contribution to the portfolio totals at month t; the entries sum exactly to the series values */
     const assetsAt = (t) => { t = Math.min(T, Math.round(t)); const list = hs.map((h) => { if (!held(h, t)) return null; const a = st(h, t); if (!a) return null;
-      const v = a.v, hi = (a.heloc * g.hrate) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
+      const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
       return { id: h.id, addr: h.addr, type: h.type || 'house', equity: a.val - a.B - (h.liens || 0) - a.heloc, value: a.val, debt: a.B + (h.liens || 0) + a.heloc,
         payment: sched + ex + v.escrow + hi, cf: inc - sched - hi, income: inc }; }).filter(Boolean);
-      if (s.cash[t] > 0.5) list.push({ id: '__cash', addr: 'Cash from sales', type: 'cash', equity: s.cash[t], value: s.cash[t], debt: 0, payment: 0, cf: 0, income: 0 }); return list; };
-    const rows = hs.filter((h) => H(S, h.target)).map((h) => ({ id: h.id, target: h.target, start: P0[h.id], locM: V[h.id].locM,
-      end: P0[h.id] + V[h.id].locM, ok: isFinite(P0[h.id] + V[h.id].locM), funds: funds[h.id] }));
+      if (s.cash[t] > 0.5) list.push({ id: '__cash', addr: 'Cash in the trust', type: 'cash', equity: s.cash[t], value: s.cash[t], debt: 0, payment: 0, cf: 0, income: 0 }); return list; };
+    /* the pool at the END of month t: how many assets, borrowing room, line drawn, room left, pooled monthly cash flow, cash held */
+    const poolAt = (t) => { t = Math.max(0, Math.min(TS, Math.round(t))); const sn = []; for (const h of bought) { if (!held(h, t)) continue; const a = st(h, t); if (!a) continue; const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0;
+        sn.push({ inc: v.noi * a.gfi, sched, hi, draw: a.heloc, biz: (h.type || 'house') === 'business', live: t < mergeAt[h.id], tx: v.noi * a.gfi - ((a.live ? a.B * v.path.rate(a.age) : 0) + hi) - (depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge)), room: Math.max(0, (capOf(S, h) / 100) * (1 - g.haircut / 100) * a.val - a.B - (h.liens || 0)) }); }
+      const m = sumSnap(sn, t); return { month: t, n: m.n, room: m.room, drawn: m.draw, head: Math.max(0, m.head), cf: m.cf, tax: m.tax, gm: m.gm, sweep: m.sweep, cash: cashA[t] }; };
+    const order = queue0.filter((h) => !skipped[h.id]).concat(queue0.filter((h) => skipped[h.id]));
+    const funds = {}; hs.forEach((h) => { funds[h.id] = !!(fund[h.id] && fund[h.id].pool); });
+    const trust = {}; let prevM = 0; hs.forEach((h) => { if (h.status === 'owned') return; const m = P0[h.id], f = fund[h.id] || null;
+      trust[h.id] = { month: m, ready: readyAt[h.id] === undefined ? Infinity : readyAt[h.id], ok: isFinite(m), pooled: funds[h.id], n: f ? f.n : 0, room: f ? f.room : 0, cf: f ? f.cf : 0, cash: f ? f.cash : 0, draw: f ? f.draw : 0, need: f ? f.need : 0 };
+    });
+    const rows = queue0.map((h) => { const m = P0[h.id], r = { id: h.id, target: h.id, start: prevM, locM: isFinite(m) ? Math.max(0, m - prevM) : Infinity, end: m, ok: isFinite(m), funds: funds[h.id], ready: trust[h.id].ready }; if (isFinite(m)) prevM = Math.max(prevM, m); return r; });
     let worst = { dti: 0, month: 0 }; for (let t = 0; t <= T; t++) if (s.dti[t] > worst.dti) worst = { dti: s.dti[t], month: t };
     let extraLater = 0; hs.forEach((h) => { const v = V[h.id]; if (isFinite(P0[h.id]) && P0[h.id] > 0 && v.L > 0 && v.payoff > 0) extraLater += v.X; });
     return { dpCash, outsideTotal: s.outside[T], extraNow: s.extra[0], extraLater, purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
-      at, assetsAt, snap: assetsAt(Math.min(T, planM)), rows, funds, fundedByLOC, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id) };
+      at, assetsAt, poolAt, snap: assetsAt(Math.min(T, planM)), rows, funds, fundedByLOC: funds, trust, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id), skipped: Object.keys(skipped), queue: order.map((h) => h.id) };
   }
 
 
@@ -381,16 +420,16 @@
         minLiquid: minT, minLiquidMonth: minM, shortAmount: short, firstShortMonth: firstShort, reserveTarget0: R.reserve[0], reserveGap, runway0: R.runway[0], minRunway: minRun, totalOutside, capitalTotal, savingsUsed: Math.min(p.cash, totalOutside), gap: Math.max(0, totalOutside - p.cash - capitalTotal), dtiPeak: pl.worst.dti } };
   }
 
+  /* Can the lenders carry this purchase? Debt-to-income (including your own rent or mortgage) in the month the trust buys the asset. Assets owned today have nothing to afford. */
   function afford(S, h, pl) {
     pl = pl || plan(S);
-    const t = H(S, h.target);
-    if (!t) return { cls: 'na', txt: 'No target', why: 'Pick the asset this line of credit will fund.' };
-    const m = pl.purchase[t.id];
-    if (!isFinite(m)) return { cls: 'bad', txt: '✗ Not reachable', why: 'The debt cap leaves no room within 50 years.' };
+    if (!h || h.status === 'owned') return { cls: 'na', txt: 'Owned', why: 'You already own this one.' };
+    const m = pl.purchase[h.id];
+    if (!isFinite(m)) return { cls: 'bad', txt: '✗ Not reachable', why: 'The trust (all the assets before it) cannot fund this within 50 years.' };
     const dti = pl.series.dti[Math.min(pl.T, m)], lim = S.g.dti;
     if (dti >= 999) return { cls: 'bad', dti, txt: '✗ Short', why: 'No qualifying income is set (see Assumptions).' };
     const cls = dti <= lim * 0.8 ? 'ok' : dti <= lim ? 'warn' : 'bad';
-    return { cls, dti, txt: cls === 'ok' ? '✓ Afford' : cls === 'warn' ? '△ Tight' : '✗ Short', why: 'Debt-to-income ' + dti.toFixed(0) + '% (including your own rent or mortgage) vs ' + lim + '% limit when ' + t.addr + ' closes.' };
+    return { cls, dti, txt: cls === 'ok' ? '✓ Afford' : cls === 'warn' ? '△ Tight' : '✗ Short', why: 'Debt-to-income ' + dti.toFixed(0) + '% (including your own rent or mortgage) vs ' + lim + '% limit when ' + h.addr + ' closes.' };
   }
   function normalize(S) {
     S.g = Object.assign({}, GDEF, S.g || {});
@@ -439,13 +478,13 @@
     c.houses = c.houses.filter((h) => h.id !== id); c.houses.forEach((h) => { if (h.target === id) h.target = ''; if (h.mergeInto === id) h.mergeInto = ''; });
     return c;
   }
-  /* STRETCH scenario (listed in the order the assets are bought): tuned so the plan reaches about $540M of net worth and +$1.4M/mo of cash flow
-     after 20 years. It leans on two large business exits at 21-25%/yr growth. Not a forecast. */
+  /* STRETCH scenario (listed in the order the assets are bought; the trust now decides every purchase month): about $380M of net worth and +$1.1M/mo of cash flow
+     after 20 years (it was tuned for $540M when each asset had its own funding chain). It leans on two large business exits at 21-25%/yr growth. Not a forecast. */
   /* The older samples and scenarios list commercial costs net of what tenants repay, so their tenants repay 0% (their numbers are unchanged by the NNN field). */
   const netCosts = (S) => { S.houses.forEach((h) => { if (h.type === 'commercial') h.nnn = 0; }); return S; };
   const seedStretch = () => { const A = newAsset; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: samplePersonal(), houses: [
-    A('house', 'conv30', { id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4, target: 'birch' }),
-    A('house', 'conv30', { id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4, target: 'willow' }),
+    A('house', 'conv30', { id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4 }),
+    A('house', 'conv30', { id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4 }),
     A('business', 'sba7a', { id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 9 }),
     A('house', 'conv30', { id: 'ridge', addr: '5521 Ridgeview Ct', price: 140000, buyIn: 12, rent: 1525, tax: 160, ins: 75, growth: 4, capex: 28000, capexMonths: 4, liftValue: 14, liftIncome: 8, exit: 'sell', exitMonth: 42 }),
     A('commercial', 'comm25', { id: 'north', addr: 'Northgate Retail Strip', price: 1900000, rent: 19200, tax: 900, ins: 700, hoa: 500, growth: 5, buyIn: 18 }),
@@ -463,10 +502,10 @@
     A('house', 'conv30', { id: 'linden', addr: '2914 Linden Way', price: 175000, buyIn: 90, rent: 1825, tax: 195, ins: 85, growth: 4 }),
     A('commercial', 'bridge', { id: 'river', addr: 'Riverside Flex Industrial', price: 16000000, rent: 161800, tax: 5800, ins: 4500, hoa: 2500, growth: 5, buyIn: 96, capex: 1200000, capexMonths: 12, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 160 }),
     A('commercial', 'comm25', { id: 'west', addr: 'Westfield Office Park', price: 11000000, rent: 112000, tax: 4200, ins: 3300, hoa: 2400, growth: 5, buyIn: 120 })] })); };
-  /* $130M scenario: net worth about $130M at the end of the plan, and the portfolio's own cash (sale proceeds and cash flow) buys a $35M waterfront estate in month 200. Business growth is capped at 8%/yr; partners put in capital early. */
+  /* $120M scenario: net worth about $120M at the end of the plan (it was tuned for $130M under the old per-asset funding chains), and the trust's own cash (sale proceeds and cash flow) buys a $35M waterfront estate in month 200. Business growth is capped at 8%/yr; partner capital is listed but the trust no longer needs it for purchases. */
   const seedBig = () => { const A = newAsset; const p = samplePersonal(); p.capital = [{ id: 'cap0', name: 'Family and friends', month: 11, amount: 100000 }, { id: 'cap1', name: 'Seed partners', month: 17, amount: 2850000 }, { id: 'cap2', name: 'Growth partners', month: 47, amount: 2910000 }, { id: 'cap3', name: 'Institutional partner', month: 79, amount: 6260000 }, { id: 'cap4', name: 'Follow-on partner', month: 119, amount: 1880000 }]; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p, houses: [
-    A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4, target: 'birch'}),
-    A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4, target: 'willow'}),
+    A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4}),
+    A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4}),
     A('business', 'sba7a', {id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 9}),
     A('house', 'conv30', {id: 'ridge', addr: '5521 Ridgeview Ct', price: 140000, buyIn: 12, rent: 1525, tax: 160, ins: 75, growth: 4, capex: 28000, capexMonths: 4, liftValue: 14, liftIncome: 8, exit: 'sell', exitMonth: 42}),
     A('commercial', 'comm25', {id: 'north', addr: 'Northgate Retail Strip', price: 1159000, rent: 11712, tax: 549, ins: 427, hoa: 305, growth: 5, buyIn: 18}),
@@ -485,10 +524,10 @@
     A('commercial', 'bridge', {id: 'river', addr: 'Riverside Flex Industrial', price: 9760000, rent: 98698, tax: 3538, ins: 2745, hoa: 1525, growth: 5, buyIn: 96, capex: 1200000, capexMonths: 12, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 160}),
     A('commercial', 'comm25', {id: 'west', addr: 'Westfield Office Park', price: 6710000, rent: 68320, tax: 2562, ins: 2013, hoa: 1464, growth: 5, buyIn: 120}),
     A('house', 'cashh', {id: 'estate', addr: 'Lakeshore Waterfront Estate', price: 35000000, rent: 130000, tax: 32000, ins: 12000, growth: 3.5, buyIn: 200})] })); };
-  /* $38.7M residence scenario (900 Stradella Rd, Los Angeles; Zestimate $38,731,700). Creative financing: seller financing, SBA 504 and 7(a), bridge loan, DSCR, bank term loans, seller notes, a credit-line chain, partner capital. The portfolio's own cash buys the house outright; its rent is the amount the house would rent for, so the carry (tax, insurance, upkeep) is visible and the house never cash-flows negative. */
+  /* $38.7M residence scenario (900 Stradella Rd, Los Angeles; Zestimate $38,731,700). Creative financing: seller financing, SBA 504 and 7(a), bridge loan, DSCR, bank term loans, seller notes, the trust's pooled line of credit, partner capital (listed, not needed for purchases). The portfolio's own cash buys the house outright; its rent is the amount the house would rent for, so the carry (tax, insurance, upkeep) is visible and the house never cash-flows negative. */
   const seedStradella = () => { const A = newAsset; const p = samplePersonal(); p.capital = [{ id: 'cap0', name: 'Family and friends', month: 11, amount: 100000 }, { id: 'cap1', name: 'Seed partners', month: 17, amount: 4400000 }, { id: 'cap2', name: 'Growth partners', month: 47, amount: 4170000 }, { id: 'cap3', name: 'Institutional partner', month: 79, amount: 7490000 }, { id: 'cap4', name: 'Follow-on partner', month: 119, amount: 2820000 }]; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p, houses: [
-    A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4, target: 'birch'}),
-    A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4, target: 'willow'}),
+    A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4}),
+    A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4}),
     A('business', 'sba7a', {id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 9}),
     A('house', 'conv30', {id: 'ridge', addr: '5521 Ridgeview Ct', price: 140000, buyIn: 12, rent: 1525, tax: 160, ins: 75, growth: 4, capex: 28000, capexMonths: 4, liftValue: 14, liftIncome: 8, exit: 'sell', exitMonth: 42}),
     A('commercial', 'sellerc', {id: 'north', addr: 'Northgate Retail Strip', price: 1159000, rent: 11712, tax: 549, ins: 427, hoa: 305, growth: 5, buyIn: 18}),
@@ -507,61 +546,54 @@
     A('commercial', 'bridge', {id: 'river', addr: 'Riverside Flex Industrial', price: 14640000, rent: 148047, tax: 5307, ins: 4118, hoa: 2288, growth: 5, buyIn: 96, capex: 1200000, capexMonths: 12, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 160}),
     A('commercial', 'comm25', {id: 'west', addr: 'Westfield Office Park', price: 10065000, rent: 102480, tax: 3843, ins: 3020, hoa: 2196, growth: 5, buyIn: 120}),
     A('house', 'cashh', {id: 'stradella', addr: '900 Stradella Rd residence', price: 38731700, rent: 150000, tax: 35500, ins: 11000, growth: 3.5, buyIn: 200})] })); };
-  /* Default portfolio: smooth growth to about $125M of net worth after 28 years (built by grader/logic/gen-plan.js). Purchases get bigger step by step (about 25% larger than the one before), financed with loans a lender would write: conventional and DSCR home loans, SBA 7(a) (never more than $5M outstanding at once), bank term loans and commercial loans with enough down payment that each loan's DSCR meets the lender minimum (1.15 SBA, 1.25 bank), and a credit-line chain. Commercial rows carry realistic gross tax, insurance and CAM (about 1.35% of value a year) that tenants repay under NNN leases (85%). Growth is 4%/yr for businesses (about the Federal Reserve's long-run nominal GDP growth), homes and commercial. No partner or investor money: every down payment comes from loans listed here, sale proceeds, credit lines, your savings and the cash flow. */
+  /* Default portfolio: smooth growth to about $125M of net worth after 28 years (built by grader/logic/gen-plan.js). Purchases get bigger step by step (about 25% larger than the one before), financed with loans a lender would write: conventional and DSCR home loans, SBA 7(a) (never more than $5M outstanding at once), bank term loans and commercial loans with enough down payment that each loan's DSCR meets the lender minimum (1.15 SBA, 1.25 bank), and the trust's pooled line of credit. The trust decides every purchase month (each row's buyIn is 0 = as soon as everything before it can pay). Commercial rows carry realistic gross tax, insurance and CAM (about 1.35% of value a year) that tenants repay under NNN leases (85%). Growth is 4%/yr for businesses (about the Federal Reserve's long-run nominal GDP growth), homes and commercial. No partner or investor money: every down payment comes from the pool of assets before it (its cash flow and borrowing room), sale proceeds and the trust's line. */
   const seedPlan = () => { const A = newAsset; const p = samplePersonal(); p.capital = []; return orderByBuy(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450, planYears: 28 }), p, houses: [
-    A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4, target: 'birch'}),
-    A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4, target: 'willow'}),
+    A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4}),
+    A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4}),
     A('business', 'sba7a', {id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 4}),
     A('house', 'conv30', {id: 'birch', addr: '908 Birchwood Ct', price: 195000, rent: 2000, tax: 220, ins: 90, growth: 4, capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8, exit: 'sell', exitMonth: 56}),
-    A('house', 'dscr', {id: 'willow', addr: '3350 Willow Bend Rd', price: 210000, rent: 2200, tax: 235, ins: 95, growth: 4, target: 'linden'}),
+    A('house', 'dscr', {id: 'willow', addr: '3350 Willow Bend Rd', price: 210000, rent: 2200, tax: 235, ins: 95, growth: 4}),
     A('house', 'conv30', {id: 'linden', addr: '2914 Linden Way', price: 175000, rent: 1825, tax: 195, ins: 85, growth: 4}),
-    A('business', 'sba7a', {id: "cornerston", addr: "Cornerstone Plumbing Co", price: 1150000, rent: 29040, growth: 4, dp: 10, buyIn: 18}),
-    A('commercial', 'comm25', {id: "northgater", addr: "Northgate Retail Strip", price: 1440000, growth: 4, dp: 40, rent: 11740, tax: 900, ins: 360, hoa: 360, nnn: 85, buyIn: 38}),
-    A('business', 'bankbiz', {id: "summitfrei", addr: "Summit Freight & Logistics", price: 1795000, rent: 45330, growth: 4, dp: 25, buyIn: 56}),
-    A('commercial', 'comm25', {id: "harborstse", addr: "Harbor St Self-Storage", price: 2245000, growth: 4, dp: 45, rent: 17200, tax: 1403, ins: 561, hoa: 561, nnn: 85, capex: 135000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 158, buyIn: 86}),
-    A('business', 'sba7a', {id: "keystonehv", addr: "Keystone HVAC Services", price: 2810000, rent: 58540, growth: 4, dp: 10, buyIn: 94}),
-    A('commercial', 'comm25', {id: "lakeviewme", addr: "Lakeview Medical Office", price: 3510000, growth: 4, dp: 40, rent: 28610, tax: 2194, ins: 878, hoa: 878, nnn: 85, buyIn: 120}),
-    A('business', 'bankbiz', {id: "apexproper", addr: "Apex Property Services", price: 4385000, rent: 79440, growth: 4, exit: "sell", exitMonth: 230, dp: 25, buyIn: 134}),
-    A('commercial', 'comm25', {id: "westfieldo", addr: "Westfield Office Park", price: 5485000, growth: 4, dp: 35, rent: 50050, tax: 3428, ins: 1371, hoa: 1371, nnn: 85, buyIn: 152}),
-    A('business', 'bankbiz', {id: "meridianst", addr: "Meridian Staffing Group", price: 6855000, rent: 114250, growth: 4, dp: 25, buyIn: 158}),
-    A('commercial', 'comm25', {id: "eastgatesh", addr: "Eastgate Shopping Plaza", price: 8570000, growth: 4, dp: 40, rent: 69850, tax: 5356, ins: 2143, hoa: 2143, nnn: 85, capex: 515000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 252, buyIn: 180}),
-    A('business', 'bankbiz', {id: "ironwoodma", addr: "Ironwood Manufacturing", price: 10710000, rent: 159380, growth: 4, dp: 30, buyIn: 198}),
-    A('commercial', 'comm25', {id: "redwoodlog", addr: "Redwood Logistics Center", price: 13390000, growth: 4, dp: 35, rent: 112390, tax: 8369, ins: 3348, hoa: 3348, nnn: 85, buyIn: 220}),
-    A('business', 'bankbiz', {id: "graniteind", addr: "Granite Industrial Supply", price: 16735000, rent: 249030, growth: 4, dp: 30, buyIn: 230}),
-    A('commercial', 'comm25', {id: "bayviewmed", addr: "Bayview Medical Plaza", price: 20920000, growth: 4, dp: 35, rent: 175600, tax: 13075, ins: 5230, hoa: 5230, nnn: 85, buyIn: 248})] })); };
+    A('business', 'sba7a', {id: "cornerston", addr: "Cornerstone Plumbing Co", price: 950000, rent: 23990, growth: 4, dp: 10, buyIn: 0}),
+    A('commercial', 'comm25', {id: "northgater", addr: "Northgate Retail Strip", price: 1190000, growth: 4, dp: 40, rent: 9700, tax: 744, ins: 298, hoa: 298, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "summitfrei", addr: "Summit Freight & Logistics", price: 1485000, rent: 37500, growth: 4, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "harborstse", addr: "Harbor St Self-Storage", price: 1855000, growth: 4, dp: 45, rent: 14220, tax: 1159, ins: 464, hoa: 464, nnn: 85, capex: 110000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 129, buyIn: 0}),
+    A('business', 'sba7a', {id: "keystonehv", addr: "Keystone HVAC Services", price: 2320000, rent: 48330, growth: 4, dp: 10, buyIn: 0}),
+    A('commercial', 'comm25', {id: "lakeviewme", addr: "Lakeview Medical Office", price: 2900000, growth: 4, dp: 40, rent: 23640, tax: 1813, ins: 725, hoa: 725, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "apexproper", addr: "Apex Property Services", price: 3625000, rent: 65670, growth: 4, exit: "sell", exitMonth: 166, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "westfieldo", addr: "Westfield Office Park", price: 4530000, growth: 4, dp: 35, rent: 41330, tax: 2831, ins: 1133, hoa: 1133, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "meridianst", addr: "Meridian Staffing Group", price: 5660000, rent: 102540, growth: 4, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "eastgatesh", addr: "Eastgate Shopping Plaza", price: 7080000, growth: 4, dp: 40, rent: 57700, tax: 4425, ins: 1770, hoa: 1770, nnn: 85, capex: 425000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 183, buyIn: 0}),
+    A('business', 'bankbiz', {id: "ironwoodma", addr: "Ironwood Manufacturing", price: 8850000, rent: 147500, growth: 4, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "redwoodlog", addr: "Redwood Logistics Center", price: 11060000, growth: 4, dp: 35, rent: 92840, tax: 6913, ins: 2765, hoa: 2765, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "graniteind", addr: "Granite Industrial Supply", price: 13825000, rent: 205730, growth: 4, dp: 30, buyIn: 0})] })); };
   /* LEGACY small sample (the Load realistic sample button; the app's default is seedPlan above; listed in the order the assets are bought). Every loan, price, cap rate, multiple and growth rate is checked against
      the grader's benchmark file (prototype/grader). Homes cash flow positive. Recycles sale cash; needs about $1.3M of outside cash. */
   const seed = () => { const A = newAsset; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: Object.assign(samplePersonal(), { cash: 100000 }), houses: [
-    A('house', undefined, { id: 'maple', status: 'owned', extra: 600, paid: 18, target: 'birch', growth: 3.5, loanId: 'custom', rate: 6.5, addr: '1412 Maple Ridge Dr', price: 185000, rent: 1900, tax: 215, ins: 90 }),
-    A('house', undefined, { id: 'cedar', status: 'owned', extra: 400, paid: 30, target: 'willow', growth: 3.5, loanId: 'custom', rate: 6.75, addr: '2207 Cedar Hollow Ln', price: 165000, rent: 1750, tax: 180, ins: 85 }),
+    A('house', undefined, { id: 'maple', status: 'owned', extra: 600, paid: 18, growth: 3.5, loanId: 'custom', rate: 6.5, addr: '1412 Maple Ridge Dr', price: 185000, rent: 1900, tax: 215, ins: 90 }),
+    A('house', undefined, { id: 'cedar', status: 'owned', extra: 400, paid: 30, growth: 3.5, loanId: 'custom', rate: 6.75, addr: '2207 Cedar Hollow Ln', price: 165000, rent: 1750, tax: 180, ins: 85 }),
     A('business', undefined, { id: 'auto', status: 'owned', paid: 12, growth: 5, loanId: 'custom', rate: 9.5, addr: 'Precision Auto Care', price: 1100000, rent: 33950 }),
     A('house', 'cashh', { id: 'ridge', buyIn: 8, growth: 3.5, capex: 35000, capexMonths: 4, liftValue: 45, exit: 'sell', exitMonth: 20, addr: '5521 Ridgeview Ct', price: 130000, rent: 1300, tax: 150, ins: 70 }),
     A('commercial', 'comm25', { id: 'north', buyIn: 18, capex: 70000, capexMonths: 8, liftValue: 16, liftIncome: 12, exit: 'sell', exitMonth: 96, addr: 'Northgate Retail Strip', price: 750000, rent: 8300, tax: 500, ins: 380, hoa: 250, sellCost: 4 }),
     A('house', 'cashh', { id: 'syc', buyIn: 26, growth: 3.5, capex: 32000, capexMonths: 4, liftValue: 42, exit: 'sell', exitMonth: 44, addr: '7702 Sycamore Dr', price: 140000, rent: 1400, tax: 160, ins: 75 }),
     A('house', 'dscr', { id: 'birch', growth: 3.5, addr: '908 Birchwood Ct', price: 195000, rent: 2050, tax: 220, ins: 90 }),
     A('business', 'sba7a', { id: 'keystone', buyIn: 32, growth: 7, exit: 'merge', exitMonth: 68, exitLift: 10, mergeInto: 'auto', addr: 'Keystone HVAC Services', rent: 27800 }),
-    A('house', 'dscr', { id: 'willow', target: 'linden', growth: 3.5, addr: '3350 Willow Bend Rd', price: 210000, rent: 2175, tax: 235, ins: 95 }),
+    A('house', 'dscr', { id: 'willow', growth: 3.5, addr: '3350 Willow Bend Rd', price: 210000, rent: 2175, tax: 235, ins: 95 }),
     A('house', 'cashh', { id: 'elm', buyIn: 46, growth: 3.5, capex: 38000, capexMonths: 5, liftValue: 44, exit: 'sell', exitMonth: 66, addr: '418 Elm Street', price: 150000, rent: 1500, tax: 170, ins: 80 }),
     A('commercial', undefined, { id: 'harbor', buyIn: 56, loanId: 'custom', dp: 35, addr: 'Harbor St Self-Storage', price: 1400000, rent: 13650, ins: 650 }),
     A('business', 'sba7a', { id: 'freight', buyIn: 62, growth: 8, addr: 'Summit Freight & Logistics', price: 1800000, rent: 41650 }),
     A('house', 'dscr', { id: 'linden', buyIn: 84, growth: 3.5, addr: '2914 Linden Way', price: 175000, rent: 1850, tax: 195, ins: 85 }),
     A('commercial', undefined, { id: 'lake', buyIn: 100, loanId: 'custom', dp: 35, addr: 'Lakeview Medical Office', price: 1800000, rent: 17450, tax: 1000, ins: 800, hoa: 500 })] })); };
-  /* ---------- list order = buy order; the asset right before another one in its category funds it ---------- */
+  /* ---------- list order = buy order; the trust (everything earlier in the list) funds each purchase ---------- */
   const catOf = (h) => h.type || 'house';
   /* Sort the list once into purchase order (owned first; ties keep their order). S.orderV marks it done so a saved order is never re-sorted. */
   function orderByBuy(S) {
     const pl = plan(S), rk = (h) => (isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9);
     S.houses = S.houses.map((h, i) => [h, i]).sort((a, b) => rk(a[0]) - rk(b[0]) || a[1] - b[1]).map((x) => x[0]); S.orderV = 1; return S;
   }
-  /* Relink every category: each asset funds the planned asset right after it. An in-category link that no longer matches is cleared; a link to another category is left alone. */
-  function relink(S) {
-    const cats = {}; S.houses.forEach((h) => { (cats[catOf(h)] = cats[catOf(h)] || []).push(h); });
-    Object.keys(cats).forEach((c) => { const L = cats[c];
-      L.forEach((a, i) => { const t = H(S, a.target), nxt = L[i + 1];
-        if (t && catOf(t) !== c) return;
-        if (nxt && nxt.status === 'planned') a.target = nxt.id; else a.target = ''; }); });
-    return S;
-  }
+  /* Funding no longer uses per-asset links: the trust (everything earlier in the list plus what is owned today) funds each purchase, so the list order IS the funding order and nothing needs relinking.
+     The old h.target field is kept only so old saves load; it is ignored by plan(). relink() just clears it. */
+  function relink(S) { S.houses.forEach((h) => { h.target = ''; }); return S; }
   /* creation sequence: the latest asset added in a category is the one with the highest seq (assets from before this feature have none: list position decides) */
   function register(S, h) { S.seq = (+S.seq || 0) + 1; h.seq = S.seq; h.created = Date.now(); return h; }
   function latestOf(list) { let best = null, bs = -Infinity; list.forEach((h) => { const q = h.seq != null && isFinite(+h.seq) ? +h.seq : -1; if (q >= bs) { bs = q; best = h; } }); return best; }
@@ -569,14 +601,14 @@
     const i = S.houses.findIndex((h) => h.id === id); if (i < 0) return null;
     const o = S.houses[i], c = JSON.parse(JSON.stringify(o));
     c.id = 'h' + Date.now().toString(36) + (uid++); c.addr = o.addr + ' (copy)'; c.status = 'planned'; c.paid = 0; c.target = ''; c.fresh = false; c.listingUrl = '';
-    register(S, c); S.houses.splice(i + 1, 0, c); relink(S); return c;
+    register(S, c); S.houses.splice(i + 1, 0, c); return c;
   }
   /* move an asset one step inside its category (visible = ids shown in the category, in order); returns true if the order changed */
   function reorder(S, ids) {
     const set = new Set(ids), slots = []; S.houses.forEach((h, i) => { if (set.has(h.id)) slots.push(i); });
     const cur = slots.map((i) => S.houses[i].id); if (cur.join() === ids.join()) return false;
-    const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); relink(S); return true;
+    const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); return true;
   }
-  const E = { depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, reimbOf, matOf, savedBy, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

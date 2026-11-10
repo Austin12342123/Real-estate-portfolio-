@@ -1,6 +1,6 @@
 {
   "gest": {
-    "earned": 100,
+    "earned": 99.6,
     "max": 100,
     "checks": [
       {
@@ -12,7 +12,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
-        "seconds": 4.6
+        "seconds": 4.8
       },
       {
         "id": "I2",
@@ -23,7 +23,7 @@
         "ratio": 1,
         "detail": "13/13 sub-checks pass",
         "repro": "Hold 600 ms, drag, release; check saved order",
-        "seconds": 5.3
+        "seconds": 5.4
       },
       {
         "id": "I3",
@@ -34,29 +34,29 @@
         "ratio": 1,
         "detail": "7/7 sub-checks pass",
         "repro": "Select row, press Move",
-        "seconds": 0.8
+        "seconds": 1
       },
       {
         "id": "I4",
         "category": "I",
-        "name": "Funding auto-assigns by list order: the asset before another funds it (1,2,3 and 1,3,2), stale in-category links clear, other categories untouched, no re-link on plain load",
+        "name": "Funding follows the list order by itself: the trust funds each asset from everything before it (1,2,3 and 1,3,2), the wait lines and purchase months re-work after each move, nothing is stored per asset, no per-asset Funds picker, no re-link on plain load",
         "points": 16,
         "earned": 16,
         "ratio": 1,
-        "detail": "11/11 sub-checks pass",
-        "repro": "Reorder with Move buttons; read Funds selects + saved targets + plan",
-        "seconds": 1.8
+        "detail": "10/10 sub-checks pass",
+        "repro": "Reorder with Move buttons; read wait lines + saved state + plan",
+        "seconds": 1.9
       },
       {
         "id": "I5",
         "category": "I",
-        "name": "Duplicate: from the row panel and the asset page; copy sits right after the original, named \"(copy)\", planned, funding relinked",
+        "name": "Duplicate: from the row panel and the asset page; copy sits right after the original, named \"(copy)\", planned, funded by the trust like any later asset",
         "points": 10,
         "earned": 10,
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Panel > Duplicate; asset page > Duplicate",
-        "seconds": 0.8
+        "seconds": 0.9
       },
       {
         "id": "I6",
@@ -67,18 +67,18 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Headers, subtitles, collapse state, empty portfolio",
-        "seconds": 1.1
+        "seconds": 1.2
       },
       {
         "id": "I7",
         "category": "I",
         "name": "Selecting a row opens a nested panel with the extra payment and live effects: loan term, monthly payment, next down payment (with cash flow); all match the engine and the asset page",
         "points": 12,
-        "earned": 12,
-        "ratio": 1,
-        "detail": "25/25 sub-checks pass",
+        "earned": 11.6,
+        "ratio": 0.9669421487603306,
+        "detail": "23/24 sub-checks pass. FAIL: Finances cash line drops by exactly the cash flow reinvested so far [101323]",
         "repro": "Panel on maple, type extra, compare with engine + asset page",
-        "seconds": 1
+        "seconds": 1.3
       },
       {
         "id": "I8",
@@ -89,7 +89,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Asset page > Rent & expenses",
-        "seconds": 0.9
+        "seconds": 1
       },
       {
         "id": "I9",
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Focus the extra field, swipe",
-        "seconds": 2
+        "seconds": 2.1
       },
       {
         "id": "I10",

@@ -1,57 +1,57 @@
 {
- "run": "2026-11-10T18:38:14.072Z",
+ "run": "2026-11-10T21:04:32.787Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 15.52,
-   "max": 15.52
+   "earned": 14.6,
+   "max": 14.6
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 9.7,
-   "max": 9.7
+   "earned": 9.13,
+   "max": 9.13
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 12.61,
-   "max": 12.61
+   "earned": 17.8,
+   "max": 17.8
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 10.67,
-   "max": 10.67
+   "earned": 10.04,
+   "max": 10.04
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 8.31,
-   "max": 8.32
+   "earned": 7.82,
+   "max": 7.82
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 9.7,
-   "max": 9.7
+   "earned": 9.13,
+   "max": 9.13
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 14.07,
-   "max": 14.07
+   "earned": 13.23,
+   "max": 13.23
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 6.79,
-   "max": 6.79
+   "earned": 6.39,
+   "max": 6.39
   },
   "L9": {
-   "name": "Plan integrity (ordering, funding chain, cash recycling, stress test)",
-   "earned": 6.79,
-   "max": 6.79
+   "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
+   "earned": 6.39,
+   "max": 6.39
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 5.82,
-   "max": 5.82
+   "earned": 5.48,
+   "max": 5.48
   }
  },
  "checks": [
@@ -311,22 +311,44 @@
   {
    "cat": "L3",
    "id": "L3.6",
-   "name": "Credit-line interest: draw x line rate / 12 per month from the month the line is drawn, none before; the draw shows as debt then; draw = cash needed minus saved cash flow",
+   "name": "Credit-line interest: the trust's draw x line rate / 12 per month from the month it is drawn, none before; the draw shows as debt on the asset it bought; draw = cash needed minus the cash the trust held",
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "1968.11 2398.99 430.88 230065.49 287275.6 57450.31",
+   "detail": "25 2239.31 2239.31 257450.31 257450.31 57450.31",
    "source": "",
    "disclosedOnly": false
   },
   {
    "cat": "L3",
    "id": "L3.7",
-   "name": "Saved cash flow toward a down payment GROWS with the asset income and stays capped at the cash needed: view().cashDP equals the month-by-month sum of max(0, NOI x growth(k) - payment) (60 random), is larger than the old flat figure when growth > 0, equals plan().dpCash at the purchase month, and the finance cash line deducts it",
+   "name": "Pooled cash flow is reinvested: the amount that moves out of your pocket in month t (plan().dpCash[t]) equals the independent sum of every held asset's max-0 total of (income x growth - loan payment - line interest) in month t-1 while something is still waiting to be bought; the finance cash line deducts it; after the last purchase and the line is paid off you keep the cash flow again",
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "0 / 60 disagree ; growth-visible cases 10",
+   "detail": "0 months disagree ; reinvested months 639; after everything is paid 0",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L3",
+   "id": "L3.10",
+   "name": "Trust funding month: the purchase month of every planned asset (and the cash / line split) equals an independent month-by-month reference of the pooled model (pool room + held cash vs down payment + closing + improvements; list order; \"not before\" month; surplus pays the line down), on 120 random portfolios with homes, commercial, businesses, liens, appraisal cut, caps, extra payments",
+   "pts": 4,
+   "earned": 4,
+   "pass": true,
+   "detail": "0 disagree of 553 planned assets in 120 portfolios (528 bought after month 0) ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L3",
+   "id": "L3.11",
+   "name": "Trust behaviour: reordering changes the funding order (the first of two equal planned assets is bought no later than the second); more earlier cash flow or room never delays a purchase (raising the rent of an earlier asset); a later \"not before\" month is respected and never earlier than the trust could pay; unreachable assets are skipped, not blocking; extra payments on an earlier asset never delay the next purchase",
+   "pts": 2.5,
+   "earned": 2.5,
+   "pass": true,
+   "detail": "p1/p2/p3 18/40/56, richer 9/34, not-before 65, unfunded huge, extra 9/32",
    "source": "",
    "disclosedOnly": false
   },
@@ -359,7 +381,7 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "debts rise by the housing payment: true; afford dti 6.3 -> 28.3 (ok -> ok); sample housing 1400",
+   "detail": "debts rise by the housing payment: true; afford dti 6.3 -> 28.4 (ok -> ok); sample housing 1400",
    "source": "S10,S11",
    "disclosedOnly": false
   },
@@ -392,7 +414,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "peak DTI 3.5% at month 15 vs limit 43",
+   "detail": "peak DTI 25.1% at month 129 vs limit 43",
    "source": "",
    "disclosedOnly": false
   },
@@ -403,7 +425,7 @@
    "pts": 0.5,
    "earned": 0.5,
    "pass": true,
-   "detail": "ok; peak 7(a) outstanding $3198686 at month 94",
+   "detail": "ok; peak 7(a) outstanding $3240635 at month 57",
    "source": "S2,S3,S4,S5",
    "disclosedOnly": false
   },
@@ -744,7 +766,7 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "NW 25y $105.5M, 28y $126.1M; step ratios 1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 20; business growth 4",
+   "detail": "NW 25y $109.7M, 28y $124.9M; step ratios 1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 19; business growth 4",
    "source": "",
    "disclosedOnly": false
   },
@@ -766,7 +788,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "0,0,0,15,18,25,38,45,56,86,94,120,134,152,158,180,198,220,230,248; verdict yes, lowest liquid cash $38100",
+   "detail": "0,0,0,2,5,6,10,31,34,57,57,67,70,86,91,111,113,124,129; verdict yes, lowest liquid cash $62591",
    "source": "",
    "disclosedOnly": false
   },
@@ -784,7 +806,7 @@
   {
    "cat": "L9",
    "id": "L9.3",
-   "name": "Funding chain: every credit-line funder closes the target exactly funder-purchase + months-to-line; the target buys at the earliest such month; no cycles",
+   "name": "Trust funding on the default plan: every planned asset is bought at the later of its \"not before\" month and the first month the pool can pay; purchase months never go backwards down the list; cash used + line drawn = cash needed; the line drawn never exceeds the pool room; no cycles",
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
@@ -795,11 +817,11 @@
   {
    "cat": "L9",
    "id": "L9.4",
-   "name": "Cash recycling: sale proceeds go to cash, purchases use cash before outside money; cash never negative; outside draws only for the shortfall (random 25)",
+   "name": "Cash recycling: sale proceeds go to the trust's cash, a later purchase uses held cash first (with no assets left to borrow against it can only use that cash), cash never negative, outside money only for a true shortfall (random 25)",
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "0 / 25 disagree",
+   "detail": "0 / 25 disagree; 16 bought with the sale cash",
    "source": "",
    "disclosedOnly": false
   },

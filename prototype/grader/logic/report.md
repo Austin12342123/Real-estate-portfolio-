@@ -1,21 +1,21 @@
 # Logic and math grader (LOGIC_ONLY)
 
-Run: 2026-11-10T18:38:14.072Z
+Run: 2026-11-10T21:04:32.787Z
 
 **TOTAL 100 / 100**
 
 | Cat | Area | Earned | Max |
 |---|---|---|---|
-| L1 | Loan / amortization / payoff math | 15.52 | 15.52 |
-| L2 | Income, expense and NOI model | 9.7 | 9.7 |
-| L3 | Leverage, LTV/CLTV and credit-line rules | 12.61 | 12.61 |
-| L4 | Lender qualification (DTI / DSCR / rental haircut) | 10.67 | 10.67 |
-| L5 | Loan-product terms vs sources (every LOANS preset) | 8.31 | 8.32 |
-| L6 | Appreciation, rent growth, inflation and time basis | 9.7 | 9.7 |
-| L7 | Taxes, selling costs and depreciation | 14.07 | 14.07 |
-| L8 | Business valuation, growth and operating model | 6.79 | 6.79 |
-| L9 | Plan integrity (ordering, funding chain, cash recycling, stress test) | 6.79 | 6.79 |
-| L10 | Disclosure, labels, units and glossary accuracy | 5.82 | 5.82 |
+| L1 | Loan / amortization / payoff math | 14.6 | 14.6 |
+| L2 | Income, expense and NOI model | 9.13 | 9.13 |
+| L3 | Leverage, LTV/CLTV and credit-line rules | 17.8 | 17.8 |
+| L4 | Lender qualification (DTI / DSCR / rental haircut) | 10.04 | 10.04 |
+| L5 | Loan-product terms vs sources (every LOANS preset) | 7.82 | 7.82 |
+| L6 | Appreciation, rent growth, inflation and time basis | 9.13 | 9.13 |
+| L7 | Taxes, selling costs and depreciation | 13.23 | 13.23 |
+| L8 | Business valuation, growth and operating model | 6.39 | 6.39 |
+| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 6.39 | 6.39 |
+| L10 | Disclosure, labels, units and glossary accuracy | 5.48 | 5.48 |
 
 ## Checks
 
@@ -44,15 +44,17 @@ Run: 2026-11-10T18:38:14.072Z
 | L3.4 | Default max combined loan-to-value (cap) does not exceed the 85% supervisory ceiling for improved property incl. non-owner-occupied 1-4 family (12 CFR 365 App. A); default credit-line rate sits between prime (7.00%, Fed H.15) and prime + 3.5 | 1.5 | 1.5 | PASS cap 85, credit-line rate 8.5 | S5,S14 |
 | L3.5 | A credit line against a BUSINESS uses its own lower, editable cap (default below the 85% real-estate ceiling): the same numbers give a smaller headroom and a later line for a business than for a home, head0 and view().cap use it, editing g.capBiz changes locMonths and cltvAtLoc, the plan chain follows, and the Assumptions page has the field and the glossary entry | 2 | 2 | PASS default capBiz 50; head0 0 (50) vs 276276 (70); wait 4 vs 0 | S5 |
 | L3.8 | UNVERIFIED (upper bound verified): the 50% business credit-line cap is a conservative disclosed choice. No fetchable lender rule found for lending against an operating business (the OCC asset-based-lending handbook S37 only bounds it: the best collateral advances 70-85%, so a whole business must be lower); the UI says it is a choice, not a lender quote, and the field is editable | 0 | 0 | PASS (disclosed, not source-verified) default 50% (unverified; below the 70-85% OCC advance rates on the most liquid collateral) | S37 |
-| L3.6 | Credit-line interest: draw x line rate / 12 per month from the month the line is drawn, none before; the draw shows as debt then; draw = cash needed minus saved cash flow | 1.5 | 1.5 | PASS 1968.11 2398.99 430.88 230065.49 287275.6 57450.31 |  |
-| L3.7 | Saved cash flow toward a down payment GROWS with the asset income and stays capped at the cash needed: view().cashDP equals the month-by-month sum of max(0, NOI x growth(k) - payment) (60 random), is larger than the old flat figure when growth > 0, equals plan().dpCash at the purchase month, and the finance cash line deducts it | 2 | 2 | PASS 0 / 60 disagree ; growth-visible cases 10 |  |
+| L3.6 | Credit-line interest: the trust's draw x line rate / 12 per month from the month it is drawn, none before; the draw shows as debt on the asset it bought; draw = cash needed minus the cash the trust held | 1.5 | 1.5 | PASS 25 2239.31 2239.31 257450.31 257450.31 57450.31 |  |
+| L3.7 | Pooled cash flow is reinvested: the amount that moves out of your pocket in month t (plan().dpCash[t]) equals the independent sum of every held asset's max-0 total of (income x growth - loan payment - line interest) in month t-1 while something is still waiting to be bought; the finance cash line deducts it; after the last purchase and the line is paid off you keep the cash flow again | 2 | 2 | PASS 0 months disagree ; reinvested months 639; after everything is paid 0 |  |
+| L3.10 | Trust funding month: the purchase month of every planned asset (and the cash / line split) equals an independent month-by-month reference of the pooled model (pool room + held cash vs down payment + closing + improvements; list order; "not before" month; surplus pays the line down), on 120 random portfolios with homes, commercial, businesses, liens, appraisal cut, caps, extra payments | 4 | 4 | PASS 0 disagree of 553 planned assets in 120 portfolios (528 bought after month 0)  |  |
+| L3.11 | Trust behaviour: reordering changes the funding order (the first of two equal planned assets is bought no later than the second); more earlier cash flow or room never delays a purchase (raising the rent of an earlier asset); a later "not before" month is respected and never earlier than the trust could pay; unreachable assets are skipped, not blocking; extra payments on an earlier asset never delay the next purchase | 2.5 | 2.5 | PASS p1/p2/p3 18/40/56, richer 9/34, not-before 65, unfunded huge, extra 9/32 |  |
 | L4.1 | DTI at month 0 equals the reference: other debts + the borrower's own rent/mortgage (Finances field) + any negative net of 75% of collected rent minus the property payment; a positive net adds to income; plus co-signer and job income (80 random portfolios incl. commercial tenant repayments) | 3 | 3 | PASS 0 / 80 disagree  | S11,S12 |
 | L4.2 | DTI limit default 43% and rental haircut 75% are consistent with CFPB (43% was the old General QM cap, now replaced by price-based test) and the UI says lenders vary (up to ~50%); wording must not present 43% as a current legal rule | 1.5 | 1.5 | PASS Your monthly debt payments divided by the monthly income a lender counts. Limits vary by loan and lender, often 43% to 50% at most. The app counts your other de | S10,S11 |
-| L4.3 | DTI includes the borrower's OWN housing payment: the Finances field has a sample default, raising it by $X raises debts by exactly $X in the dti series at every month (inflated like rent), can flip the afford verdict and the Finances verdict, the app page has the field, and the glossary says it is counted | 2 | 2 | PASS debts rise by the housing payment: true; afford dti 6.3 -> 28.3 (ok -> ok); sample housing 1400 | S10,S11 |
+| L4.3 | DTI includes the borrower's OWN housing payment: the Finances field has a sample default, raising it by $X raises debts by exactly $X in the dti series at every month (inflated like rent), can flip the afford verdict and the Finances verdict, the app page has the field, and the glossary says it is counted | 2 | 2 | PASS debts rise by the housing payment: true; afford dti 6.3 -> 28.4 (ok -> ok); sample housing 1400 | S10,S11 |
 | L4.4 | Every purchase in the default plan meets its lender's minimum DSCR at closing (SBA 7(a)/504 >= 1.15, bank loans >= 1.25 as the app states, DSCR loan >= 1.2 as the app states, bridge and seller notes >= 1.0) | 2 | 2 | PASS all meet minimums | S3,S1 |
 | L4.5 | No asset in the default plan cash-flows negative at its own purchase (owner requirement: homes never negative; commercial and businesses must at least pay their own loan) | 1 | 1 | PASS none negative |  |
-| L4.6 | Debt-to-income in the default plan stays at or under the limit at every month (no purchase that a lender would decline on DTI) | 1 | 1 | PASS peak DTI 3.5% at month 15 vs limit 43 |  |
-| L4.7 | Default plan loan rules: each SBA 7(a) <= $5M and the 7(a) balances outstanding at once <= $5M (conservative reading: SBA aggregates a borrower and affiliates), 504 only for owner-occupied property, bank real-estate loans <= 85% LTV, no seller note above 50% of price | 0.5 | 0.5 | PASS ok; peak 7(a) outstanding $3198686 at month 94 | S2,S3,S4,S5 |
+| L4.6 | Debt-to-income in the default plan stays at or under the limit at every month (no purchase that a lender would decline on DTI) | 1 | 1 | PASS peak DTI 25.1% at month 129 vs limit 43 |  |
+| L4.7 | Default plan loan rules: each SBA 7(a) <= $5M and the 7(a) balances outstanding at once <= $5M (conservative reading: SBA aggregates a borrower and affiliates), 504 only for owner-occupied property, bank real-estate loans <= 85% LTV, no seller note above 50% of price | 0.5 | 0.5 | PASS ok; peak 7(a) outstanding $3240635 at month 57 | S2,S3,S4,S5 |
 | L5.conv30 | Conventional 30-yr investor: 360 months, rate between PMMS 30-yr (7.18%) and PMMS + 1.0 (investor price adjustment), down >= 15% | 0.8571428571428571 | 0.8571428571428571 | PASS dp 20 rate 7.5 term 360 io false | S13 |
 | L5.conv15 | Conventional 15-yr: 180 months, rate between PMMS 15-yr (6.57%) and +1.0, down >= 15% | 0.8571428571428571 | 0.8571428571428571 | PASS dp 20 rate 7 term 180 io false | S13 |
 | L5.fha | FHA 30-yr: 3.5% down, upfront 1.75%, annual 0.55%, owner-occupied flag, rate <= PMMS 30-yr | 0.8571428571428571 | 0.8571428571428571 | PASS dp 3.5 rate 6.9 term 360 io false | S6,S7,S13 |
@@ -83,12 +85,12 @@ Run: 2026-11-10T18:38:14.072Z
 | L8.1 | Business price multiples by size in the default plan: <$1.5M 2.0-3.8x, $1.5-5M 2.5-5.2x, >$5M 3.5-7x of owner profit (bench-business.json: BizBuySell avg ~2.6-2.7x SDE for small deals; larger deals higher; sources unverified, flagged) | 0 | 0 | PASS (disclosed, not source-verified) in band |  |
 | L8.2 | Manager cost for businesses you do not run = max(0, businesses held - run yourself) x monthly pay, inflated, only while the business is held and not sold or merged into another (random 30) | 2 | 2 | PASS 0 disagree |  |
 | L8.3 | Hours check: weekly hours = job hours (while the job runs) + min(run yourself, businesses held) x hours per business; flagged tight above 70 (random 30) | 2 | 2 | PASS 0 / 30 disagree |  |
-| L8.4 | Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M (115-135M at the 28-year plan end, 95-140M at 25 years) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative | 2 | 2 | PASS NW 25y $105.5M, 28y $126.1M; step ratios 1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 20; business growth 4 |  |
+| L8.4 | Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M (115-135M at the 28-year plan end, 95-140M at 25 years) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative | 2 | 2 | PASS NW 25y $109.7M, 28y $124.9M; step ratios 1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 19; business growth 4 |  |
 | L8.5 | Sell / merge: sale proceeds = value x (1 - selling cost) - balance - liens - line draw; merge lift scales value and income by (1 + lift) from the merge month (random 20) | 1 | 1 | PASS 0 disagree |  |
-| L9.1 | Default plan: list order = buy order (owned first, then non-decreasing purchase months), every asset gets a purchase month inside the plan, no unfunded asset | 1.5 | 1.5 | PASS 0,0,0,15,18,25,38,45,56,86,94,120,134,152,158,180,198,220,230,248; verdict yes, lowest liquid cash $38100 |  |
+| L9.1 | Default plan: list order = buy order (owned first, then non-decreasing purchase months), every asset gets a purchase month inside the plan, no unfunded asset | 1.5 | 1.5 | PASS 0,0,0,2,5,6,10,31,34,57,57,67,70,86,91,111,113,124,129; verdict yes, lowest liquid cash $62591 |  |
 | L9.2 | Combined portfolio total equals the sum of the rows at 12 months across the plan (net worth, value, debt, cash flow, payments) | 1.5 | 1.5 | PASS 0 months disagree |  |
-| L9.3 | Funding chain: every credit-line funder closes the target exactly funder-purchase + months-to-line; the target buys at the earliest such month; no cycles | 1.5 | 1.5 | PASS ok |  |
-| L9.4 | Cash recycling: sale proceeds go to cash, purchases use cash before outside money; cash never negative; outside draws only for the shortfall (random 25) | 1.5 | 1.5 | PASS 0 / 25 disagree |  |
+| L9.3 | Trust funding on the default plan: every planned asset is bought at the later of its "not before" month and the first month the pool can pay; purchase months never go backwards down the list; cash used + line drawn = cash needed; the line drawn never exceeds the pool room; no cycles | 1.5 | 1.5 | PASS ok |  |
+| L9.4 | Cash recycling: sale proceeds go to the trust's cash, a later purchase uses held cash first (with no assets left to borrow against it can only use that cash), cash never negative, outside money only for a true shortfall (random 25) | 1.5 | 1.5 | PASS 0 / 25 disagree; 16 bought with the sale cash |  |
 | L9.5 | Stress test ("lasts"): the ~45% biggest earners fail (rent gone, fixed costs and loan payments still due), everything at plan-end values: re-derived independently on 30 random category sets, including that fixed costs have grown with the asset | 1 | 1 | PASS 0 / 30 disagree |  |
 | L10.1 | Glossary numbers agree with sources: FHA 1.75% + 0.55% (HUD), Limited 203(k) $75,000 (ML 2024-13), SBA 7(a) $5M and 504 $5.5M (SBA.gov), DSCR 1.2/1.25 wording, 43% DTI wording | 1.5 | 1.5 | PASS  | S2,S4,S6,S7 |
 | L10.2 | The Assumptions page carries a "how the numbers are built" note that is true of the model: nominal dollars, growth with value, 50% business credit-line cap, own rent/mortgage in DTI, worked-out taxes with depreciation (27.5/39/15/7 years), refinance at maturity, NNN repayments, 7% vacancy, 4% business growth, savings grow with income; and it no longer says the old things (same cap for all, no own housing, depreciation not modeled) | 1.5 | 1.5 | PASS model-notes block complete: true |  |
