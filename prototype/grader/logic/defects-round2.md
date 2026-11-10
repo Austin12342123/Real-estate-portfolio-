@@ -1,0 +1,17 @@
+# Round 2: every disclosed-only item changed into a model change
+
+Evidence for each is a behavioral check in `grader/logic-grade.js` (independent reference in `grader/logic/ref.js`). Sources are S1-S43 in `sources.md`.
+
+| # | Was | Model change (file, behavior) | Check |
+|---|---|---|---|
+| 1 | Vacancy default 5% (below Census 7.1%) | `engine.js` GDEF.vac = 7. One value (`g.vac`) feeds noiOf, view, plan series, assetsAt, DTI rent counted; editable in Assumptions | L2.1 (vac synced across view, series, rows), L2.4 |
+| 2 | Credit line on a business used the 85% real-estate cap | `engine.js` `capOf(S,h)`; GDEF.capBiz = 50 (editable "Max loan vs value (business)"); used by `locMonths`, `view().cap/head0/cltvAtLoc`, plan chain; `app.js` Assumptions field + asset page note | L3.1, L3.3, L3.5 |
+| 3 | Flat 20% portfolio tax and flat 25% sale tax | `engine.js` `depCum` (27.5 / 39 year straight line on building share, mid-month; business: 70% goodwill over 15 years + equipment over 7), `portTaxAt` (marginal 2026 brackets on wages + taxable profit, NIIT 3.8% over $200k, state %), `saleTax` (gain after depreciation, 25% unrecaptured 1250 cap, 0/15/20 LTCG stacked on income, NIIT, ordinary recapture for business, short holds ordinary); typed rates override; plan series dep/intr/txRE/txBiz; Finances > Taxes fields and lines; asset page depreciation note and sale tax note | L7.2-L7.5, L7.7 |
+| 4 | DTI left out the borrower's own housing payment | `samplePersonal().housing = 1400` (part of living costs), `housingAt` adds it (inflated) to plan DTI debts; Finances field; afford text | L4.1, L4.3 |
+| 5 | Commercial rows had unexplained low costs | per-asset `nnn` (tenant repay %, homes 0, commercial 85 default), `reimbOf`, noiOf adds repayments (vacancy and management apply); default commercial rows carry gross tax 0.75% + insurance 0.30% + CAM 0.30% of price a year; asset page field | L2.1, L2.2, L2.6 |
+| 6 | Interest-only / short loans never matured | `loanPath`, `matOf`, `refiRateOf/refiTermOf`: balance left at maturity is refinanced (Assumptions rate and term, per-asset override); plan debt, payment, interest, DSCR, finance follow; `payoffN(h,X,S)`; asset page fields and note | L1.4, L1.5, L1.10 |
+| 7 | Saved cash flow flat | `cfAt` grows with the asset's income and stops with the loan; `savedBy`; locMonths, view().cashDP, plan().dpCash and finance cash line agree; capped at the cash needed | L3.1, L3.7 |
+| 8 | Business growth 7.2%/yr x 28 years | default 4% (Federal Reserve longer-run nominal growth, S30); `grader/logic/gen-plan.js` rebuilt the 20-asset plan (about 25% per step, DSCR lender minimums, no partner capital): net worth $126.1M at 28 years | L6.5, L8.4 |
+| 9 | Unverified defaults | 14 more sources read (S30-S43); unverified items (management 8%, repairs 1%, selling costs, cap rates, business multiples, 50% business cap) are listed with 0 points | L2.5, L2.7, L3.8, L7.6, L10.5 |
+| 10 | Glossary / notes | `info.js` creditline, nextdp, dti, growth, vacancy, noi, interestonly, bridge, portfoliotax, salestax rewritten; new refi, debtcapbiz, housing, nnn, statetax, landshare, goodwillshare; Assumptions "How the numbers are built" rewritten | L10.2, H suite |
+| 11 | Wording-only checks | behavioral checks against independent references (loan simulation with refinance, tax walker, depreciation simulator, credit-line month-by-month with growth) | L1-L8 |

@@ -31,7 +31,7 @@ exports.run = async function run(X) {
   const hash = () => page.evaluate(() => location.hash);
   const openCat = async (tp) => { const h = page.locator(`[data-testid=cat-header-${tp}]`); if ((await h.getAttribute('aria-expanded')) === 'false') { await h.click(); await page.waitForTimeout(40); } };
   const openAll = async () => { for (const t of ['house', 'commercial', 'business']) await openCat(t); };
-  const sel = async (id) => { if (!(await page.$(`[data-for="${id}"]`))) { await page.click(`[data-row="${id}"] .addrbtn`); await page.waitForTimeout(60); } };
+  const sel = async (id) => { if (!(await page.$(`[data-for="${id}"]`))) { await openAll(); await page.click(`[data-row="${id}"] [data-testid=row-extra-toggle]`); await page.waitForTimeout(60); } };
   const ids = (tp) => page.evaluate((t) => [...document.querySelectorAll(`[data-catbody=${t}] [data-testid=ledger-row]`)].map((r) => r.dataset.row), tp);
   const box = async (sl) => (await page.locator(sl).first().boundingBox());
   async function touch(points) { /* points: [{x,y,wait?}] first = start, last = end */
@@ -44,7 +44,7 @@ exports.run = async function run(X) {
   const home = (id, o) => E.newAsset('house', 'conv30', Object.assign({ id, addr: id.toUpperCase() + ' House', price: 200000, rent: 2400, tax: 150, ins: 80, growth: 3, closingPct: 3 }, o || {}));
   const mk = (houses, extra) => { const S = mkS({}, houses); S.orderV = 1; return Object.assign(S, extra || {}); };
   const $f = (n) => { const a = Math.abs(n), sg = n < -0.5 ? '−' : ''; return sg + '$' + Math.round(a).toLocaleString('en-US'); };
-  const sample = () => { const S = E.seed(); E.orderByBuy(S); return S; };
+  const sample = () => { const S = E.seed(); E.orderByBuy(S); S.v = X.DATA_V; return S; };
 
   /* ---------------------------------------------------------------- I1 swipe back */
   await icheck('I1', 'Swipe right from the left edge goes back like iOS (touchstart within 24 px, dx > 70, |dy| < 45); ignored elsewhere', 12, 'CDP touch swipes on asset page, deep link, portfolio, inputs', async () => {
@@ -78,7 +78,7 @@ exports.run = async function run(X) {
     P.t(nz(after) === 'cedar,maple,birch,willow,linden', 'drop puts maple after cedar in the list', 2.5, after.join());
     P.t(st.houses.map((h) => h.id).filter((x) => after.includes(x)).join() === after.join(), 'the new order is saved (list order = buy order)', 1.5);
     P.t((await page.locator('[data-testid=asset-panel]').count()) === 0 && (await hash()) === '' || /^#?$/.test(await hash()), 'releasing a drag does not also open a panel or navigate', 0.6);
-    await page.waitForTimeout(400); await page.click('[data-row=birch] .addrbtn'); await page.waitForTimeout(60); P.t((await page.locator('[data-for=birch]').count()) === 1, 'a normal tap still opens the row panel', 0.6);
+    await page.waitForTimeout(400); await page.click('[data-row=birch] [data-testid=row-extra-toggle]'); await page.waitForTimeout(60); P.t((await page.locator('[data-for=birch]').count()) === 1, 'a normal tap still opens the row panel', 0.6);
     /* touch drag in Commercial */
     await openCat('commercial'); const cb0 = await ids('commercial'); const lake = await box('[data-rw=' + cb0[1] + ']'), harb = await box('[data-rw=' + cb0[0] + ']');
     await touch([{ x: lake.x + 60, y: lake.y + 20, wait: 650 }].concat(line(lake.x + 60, lake.y + 20, lake.x + 60, harb.y - 4, 8).slice(1))); await page.waitForTimeout(150);
@@ -113,12 +113,12 @@ exports.run = async function run(X) {
     const sm = await load(sample()).then(store); P.t(sm.houses.find((h) => h.id === 'maple').target === 'birch' && sm.houses.find((h) => h.id === 'cedar').target === 'willow', 'the sample keeps its calibrated links on load (maple -> birch, cedar -> willow)', 1, '');
     await load(S0); await sel('h2'); await page.click('[data-testid=move-down]'); await page.waitForTimeout(60); await page.click('[data-testid=move-up]'); await page.waitForTimeout(80);
     let t = await tgt(); P.t((await ids('house')).join() === 'h1,h2,h3' && t.h1 === 'h2' && t.h2 === 'h3' && t.h3 === '', 'order 1,2,3: house 1 funds house 2 and house 2 funds house 3', 3, JSON.stringify(t));
-    const selv = (id) => page.inputValue(`[data-row=${id}] [data-sel=${id}]`); P.t((await selv('h1')) === 'h2' && (await selv('h2')) === 'h3', 'the Funds pickers on the rows show those links', 1);
+    const dpl = (id) => page.locator(`[data-row=${id}] [data-testid=dp-line]`).textContent().catch(() => ''); P.t(/H1 House/.test(await dpl('h2')) && /H2 House/.test(await dpl('h3')) && (await page.locator('[data-row=h1] [data-testid=dp-line]').count()) === 0, 'the waits on the rows name the funder (house 2 <- house 1, house 3 <- house 2; the first row has none)', 1);
     let pl = E.plan((await store())); P.t(pl.purchase.h2 === pl.purchase.h1 + pl.V.h1.locM && pl.purchase.h3 === pl.purchase.h2 + pl.V.h2.locM, 'purchase months follow the chain (house 2 when house 1 line opens, house 3 when house 2 line opens)', 1.5, JSON.stringify(pl.purchase));
     await sel('h3'); await page.click('[data-for=h3] [data-testid=move-up]'); await page.waitForTimeout(80);
     t = await tgt(); P.t((await ids('house')).join() === 'h1,h3,h2' && t.h1 === 'h3' && t.h3 === 'h2' && t.h2 === '', 'order 1,3,2: house 1 funds house 3 and house 3 funds house 2; the old 2 -> 3 link is cleared', 3.5, JSON.stringify(t));
     pl = E.plan((await store())); P.t(pl.purchase.h3 === pl.purchase.h1 + pl.V.h1.locM, 'house 3 is now bought when house 1 line of credit opens', 1, JSON.stringify(pl.purchase));
-    await page.selectOption('[data-row=h1] [data-sel=h1]', 'h2'); t = await tgt(); P.t(t.h1 === 'h2', 'the Funds picker still works as a manual override', 0.8, JSON.stringify(t));
+    await page.evaluate(() => { location.hash = '#house-h1'; }); await page.waitForTimeout(100); if (!(await page.$('[data-sel=h1]'))) await page.click('[data-coll=loc]'); await page.selectOption('[data-sel=h1]', 'h2'); t = await tgt(); P.t(t.h1 === 'h2', 'the Funds picker on the asset page still works as a manual override', 0.8, JSON.stringify(t));
     /* cross-category links and owned targets */
     const biz = E.newAsset('business', 'sba7a', { id: 'b1', addr: 'Biz One', price: 400000, rent: 9000, buyIn: 20 });
     const S1 = mk([home('x1', { status: 'owned', paid: 24, target: 'b1' }), home('x2', { buyIn: 30 }), home('x3', { status: 'owned', paid: 10 }), biz]);
@@ -138,21 +138,22 @@ exports.run = async function run(X) {
     const hb = await ids('house'); P.t(hb.filter((x) => x !== 'elm').join() === ['maple', cp.id].concat(homesBefore.slice(1)).join(), 'the Homes list shows the copy right after the original', 1.5, hb.join());
     P.t((await page.locator(`[data-for="${cp.id}"]`).count()) === 1, 'the copy is selected so you can edit it', 0.7);
     P.t(st.houses[i].target === cp.id && cp.target === '' /* the next home (cedar) is owned, so nothing to fund */ && (cp.price === st.houses[i].price) && cp.rent === st.houses[i].rent, 'funding relinked: original funds the copy (it is planned); the copy does not fund an owned home; the numbers are copied', 2.5, st.houses[i].target + ' / ' + cp.target);
-    const ct = await page.locator('[data-testid=cat-sub-house]').textContent(); P.t(new RegExp('^' + hb.length + ' homes · latest: 1412 Maple Ridge Dr \\(copy\\)$').test(ct.trim()), 'category subtitle counts it and names it as the latest', 1, ct);
+    const ct = await page.locator('[data-testid=cat-count-house]').textContent(); P.t(ct.trim() === String(hb.length), 'the category stat strip counts it', 1, ct);
     await page.click('[data-for="' + cp.id + '"] [data-testid=open-details]'); await page.waitForTimeout(80); await page.click('[data-testid=h-duplicate]'); await page.waitForTimeout(120);
     const s2 = await store(); P.t(s2.houses.length === n0 + 2 && /#house-/.test(await hash()) && (await hash()) !== '#house-' + cp.id && /\(copy\) \(copy\)$/.test((await page.inputValue('input.t'))), 'asset page Duplicate makes another copy and opens it', 1.8, await page.inputValue('input.t'));
     return P; });
 
   /* ---------------------------------------------------------------- I6 sections */
-  await icheck('I6', 'Portfolio = total row + Homes / Commercial / Businesses dropdowns (name left, chevron right, "N homes · latest: name"), empty sections, Sold section only when something sold', 12, 'Headers, subtitles, collapse state, empty portfolio', async () => {
+  await icheck('I6', 'Portfolio = total row + Homes / Commercial / Businesses dropdowns (name left, chevron right, stat strip: count, before/after loan, worth, DSCR, lasts), empty sections, Sold section only when something sold', 12, 'Headers, subtitles, collapse state, empty portfolio', async () => {
     const P = new Parts(); await load(sample());
-    const hd = await page.evaluate(() => [...document.querySelectorAll('[data-testid^=cat-header-]')].map((h) => ({ t: h.dataset.testid.replace('cat-header-', ''), name: h.querySelector('b').textContent, sub: h.querySelector('.cats').textContent.trim(), chev: !!h.querySelector('.chev'), x: h.querySelector('b').getBoundingClientRect().left, cx: h.querySelector('.chev').getBoundingClientRect().left, exp: h.getAttribute('aria-expanded'), sy: h.querySelector('.cats').getBoundingClientRect().top - h.querySelector('b').getBoundingClientRect().bottom })));
+    const hd = await page.evaluate(() => [...document.querySelectorAll('[data-testid^=cat-header-]')].map((h) => ({ t: h.dataset.testid.replace('cat-header-', ''), name: h.querySelector('b').textContent, sub: h.parentElement.querySelector('.cats').textContent.trim(), chev: !!h.querySelector('.chev'), x: h.querySelector('b').getBoundingClientRect().left, cx: h.querySelector('.chev').getBoundingClientRect().left, exp: h.getAttribute('aria-expanded'), sy: h.parentElement.querySelector('.cats').getBoundingClientRect().top - h.querySelector('b').getBoundingClientRect().bottom })));
     P.t(hd.map((h) => h.t).join() === 'house,commercial,business,sold' && hd.slice(0, 3).map((h) => h.name).join() === 'Homes,Commercial,Businesses', 'three category headers (plus Sold when something is sold)', 1.5, hd.map((h) => h.name).join());
     P.t(hd.every((h) => h.chev && h.cx > h.x + 150 && h.sy >= -2 && h.sy < 14), 'name on the left, chevron on the right, subtitle directly below the name', 1, JSON.stringify(hd.map((h) => [Math.round(h.x), Math.round(h.cx), Math.round(h.sy)])));
     P.t(hd[0].exp === 'true' && hd[1].exp === 'false' && hd[2].exp === 'false' && hd[3].exp === 'false', 'default: Homes open, the others collapsed', 1, hd.map((h) => h.exp).join());
     const S = sample(), pl = E.plan(S), vis = (tp) => S.houses.filter((h) => (h.type || 'house') === tp && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM));
-    const want = (tp, n1, n2) => { const l = vis(tp); return `${l.length} ${l.length === 1 ? n1 : n2} · latest: ${l[l.length - 1].addr}`; };
-    P.t(hd[0].sub === want('house', 'home', 'homes') && hd[1].sub === want('commercial', 'commercial property', 'commercial properties') && hd[2].sub === want('business', 'business', 'businesses'), 'subtitles show the count and the latest asset (list position when no creation time is stored)', 2, hd.map((h) => h.sub).join(' | '));
+    const cnt = (tp) => S.houses.filter((h) => (h.type || 'house') === tp && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM)).length;
+    const strip = (x, tp) => x.sub.startsWith(String(cnt(tp))) && /before loan/.test(x.sub) && /after loan/.test(x.sub) && /worth/.test(x.sub) && /DSCR/.test(x.sub) && /lasts/.test(x.sub);
+    P.t(strip(hd[0], 'house') && strip(hd[1], 'commercial') && strip(hd[2], 'business') && (await page.locator('[data-testid=cat-count-house]').textContent()).trim() === String(cnt('house')), 'each header carries the stat strip: count, cash flow before and after loans, worth, DSCR, lasts', 2, hd.map((h) => h.sub).join(' | '));
     const tot = await page.evaluate(() => { const t = document.querySelector('[data-testid=ledger-total]'), h = document.querySelector('[data-testid=cat-header-house]'); return { y: t.getBoundingClientRect().top, hy: h.getBoundingClientRect().top, cf: document.querySelector('[data-testid=total-cf]').textContent, kpi: document.querySelector('[data-testid=kpi-cashflow]').textContent }; });
     P.t(tot.y < tot.hy && tot.cf === tot.kpi + '/mo', 'portfolio total row sits above the sections and equals the summary cash flow', 1, JSON.stringify(tot));
     await page.click('[data-testid=cat-header-house]'); await page.waitForTimeout(60); P.t((await page.locator('[data-catbody=house]').count()) === 0, 'tapping a header collapses it', 0.6);
@@ -160,7 +161,7 @@ exports.run = async function run(X) {
     await openCat('house'); await openCat('commercial'); await page.waitForTimeout(40);
     await page.click('[data-testid=add-commercial]'); await page.waitForTimeout(80); P.t((await hash()) === '#add' && (await page.locator('[data-addtype=commercial].on').count()) === 1, 'the Add button in Commercial opens Add with Commercial preselected', 0.7);
     await page.click('[data-testid=confirm-add]'); await page.waitForTimeout(100); const nid = (await hash()).replace('#house-', ''); await page.evaluate(() => { location.hash = '#'; }); await page.waitForTimeout(100);
-    const nm = (await store()).houses.find((h) => h.id === nid).addr; const ct = (await page.locator('[data-testid=cat-sub-commercial]').textContent()).trim(); P.t(ct === `${vis('commercial').length + 1} commercial properties · latest: ${nm}`, 'a newly added asset becomes the latest in its category subtitle', 1.5, ct);
+    const ct = (await page.locator('[data-testid=cat-count-commercial]').textContent()).trim(); P.t(ct === String(vis('commercial').length + 1), 'a newly added asset is counted in its category strip', 1.5, ct);
     /* empty portfolio */
     await load(mk([]), null); const t = await page.evaluate(() => document.getElementById('app').innerText);
     P.t((await page.locator('[data-testid^=cat-header-]').count()) === 3 && !/nothing here yet/i.test(t) && (await page.locator('[data-testid=cat-sub-house]').textContent()).trim() === 'None yet', 'empty portfolio: three dropdowns, each "None yet", no "Nothing here yet" screen', 1.5, t.slice(0, 120).replace(/\n/g, ' '));
@@ -188,10 +189,10 @@ exports.run = async function run(X) {
     await setX('1500'); const { v } = await check1('extra 1500', 1500);
     async function setX(val) { await page.evaluate((val) => { const el = document.querySelector('[data-testid=extra-input]'); el.focus(); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, val); el.dispatchEvent(new Event('input', { bubbles: true })); document.activeElement.blur(); }, val); await page.waitForTimeout(80); }
     /* engine: saved cash flow really is money toward the down payment (independent simulation) */
-    const St = S(); const h = E.H(St, 'maple'), t = E.H(St, 'birch'), g = St.g; const Pm = E.payment(h), i = h.rate / 1200, egi = h.rent * (1 - g.vac / 100), noi = egi - (h.tax + h.ins + h.hoa + g.maint / 100 * h.price / 12 + g.mgmt / 100 * egi), cf = Math.max(0, noi - Pm); const D = t.price * (t.dp / 100 + (t.closingPct == null ? g.closing : t.closingPct) / 100);
-    let b = E.loan(h); for (let k = 0; k < h.paid; k++) b = b * (1 + i) - Pm; let sim = Infinity; const gr = h.growth; for (let k = 0; k <= 600; k++) { const val = h.price * Math.pow(1 + gr / 100, (h.paid + k) / 12); if (Math.max(0, g.cap / 100 * val - b) + cf * k >= D) { sim = k; break; } b = Math.max(0, b * (1 + i) - Pm - 600); }
+    const St = S(); const h = E.H(St, 'maple'), t = E.H(St, 'birch'), g = St.g; const Pm = E.payment(h), i = h.rate / 1200, egi = h.rent * (1 - g.vac / 100), noi = egi - (h.tax + h.ins + h.hoa + g.maint / 100 * h.price / 12 + g.mgmt / 100 * egi); const cf = Math.max(0, noi - Pm); const D = t.price * (t.dp / 100 + (t.closingPct == null ? g.closing : t.closingPct) / 100);
+    let b = E.loan(h); for (let k = 0; k < h.paid; k++) b = b * (1 + i) - Pm; let sim = Infinity, cum = 0, simCum = 0; const gr = h.growth; for (let k = 0; k <= 600; k++) { const val = h.price * Math.pow(1 + gr / 100, (h.paid + k) / 12); if (Math.max(0, g.cap / 100 * val - b) + cum >= D) { sim = k; simCum = cum; break; } cum += Math.max(0, noi * Math.pow(1 + gr / 100, k / 12) - (b > 0.005 ? Pm : 0)); b = Math.max(0, b * (1 + i) - Pm - 600); } /* the saved cash flow grows with the rent */
     P.t(sim === E.view(St, h).locM, 'independent simulation (balance + value + saved cash flow >= down payment + closing) gives the same months as the engine', 1.5, sim + ' vs ' + E.view(St, h).locM);
-    const pl2 = E.plan(St); const dpc = pl2.dpCash[pl2.purchase.birch]; P.t(Math.abs(dpc - Math.min(D, cf * sim)) < 1 && dpc > 0, 'cash used toward the purchase = saved cash flow x months (reaches the Finances cash line)', 0.8, dpc + ' vs ' + Math.min(D, cf * sim));
+    const pl2 = E.plan(St); const dpc = pl2.dpCash[pl2.purchase.birch]; P.t(Math.abs(dpc - Math.min(D, simCum)) < 1 && dpc > 0, 'cash used toward the purchase = the saved cash flow summed month by month as it grows (reaches the Finances cash line)', 0.8, dpc + ' vs ' + Math.min(D, simCum));
     /* Finances page: the saved cash is taken out of the cash line in the purchase month */
     const f = E.finance(St, pl2), mo = pl2.purchase.birch; const f0 = E.finance((() => { const c = clone(St); return c; })(), (() => { const q = E.plan(St); q.dpCash = q.dpCash.map(() => 0); return q; })());
     P.t(Math.abs((f0.series.liquid[mo] - f.series.liquid[mo]) - dpc) < 1, 'Finances cash line drops by exactly that amount in the purchase month', 0.8, Math.round(f0.series.liquid[mo] - f.series.liquid[mo]) + ' vs ' + Math.round(dpc));

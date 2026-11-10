@@ -33,8 +33,9 @@ function fhaAnnualOnBalance(balance, annualPct) { return (balance * annualPct) /
 
 /* ---- income model ---- */
 /* monthly NOI of a rental: vacancy off the rent, management % of collected rent, repairs % of price per year, fixed escrow costs */
-function noiRental(rent, price, tax, ins, hoa, vacPct, mgmtPct, maintPct) {
-  const collected = rent * (1 - vacPct / 100), mgmt = collected * mgmtPct / 100, repairs = price * maintPct / 100 / 12;
+function noiRental(rent, price, tax, ins, hoa, vacPct, mgmtPct, maintPct, nnnPct) {
+  const reimb = (nnnPct || 0) / 100 * (tax + ins + hoa); /* tenants repay nnn% of tax + insurance + CAM; the repayment is collected like rent (vacant space repays nothing) */
+  const collected = (rent + reimb) * (1 - vacPct / 100), mgmt = collected * mgmtPct / 100, repairs = price * maintPct / 100 / 12;
   return collected - mgmt - repairs - tax - ins - hoa;
 }
 const capRate = (noiMonthly, price) => (noiMonthly * 12) / price * 100;
@@ -48,15 +49,39 @@ const valueAt = (price, growthPct, ageMonths) => price * Math.pow(1 + growthPct 
    headroom = cap * (value * (1 - haircut)) - balance - liens, floored at 0. */
 function headroom(value, capPct, haircutPct, balance, liens) { return Math.max(0, (capPct / 100) * value * (1 - haircutPct / 100) - balance - (liens || 0)); }
 
-/* months until headroom + saved cash flow covers `need` (month-by-month, independent of the engine's closed-form balance) */
+/* months until headroom + saved cash flow covers `need` (month-by-month, independent of the engine's closed-form balance).
+   o.payAt(k) = scheduled payment in month k (so a refinance can change it); o.savedAt(k) = cash flow saved in month k (it grows with the asset's income). */
 function monthsToLine(o) {
-  const i = o.ratePct / 1200; let bal = o.B0;
+  let cum = 0;
   for (let k = 0; k <= 600; k++) {
-    if (k > 0) bal = Math.max(0, bal * (1 + i) - o.pay);
-    const h = headroom(o.valueAt(k), o.capPct, o.haircutPct, bal, o.liens);
-    if (h + o.savedPerMonth * k >= o.need) return k;
+    if (k > 0 && !o.noCash) cum += o.savedAt(k - 1);
+    const h = headroom(o.valueAt(k), o.capPct, o.haircutPct, o.balAt(k), o.liens);
+    if (h + cum >= o.need) return k;
   }
   return Infinity;
+}
+/* loan with an optional balloon: month-by-month balances and payments. At month mat the balance left is refinanced into a level-payment loan (refiRatePct, refiTermMonths). */
+function loanSim(o) {
+  const N = o.months || 400, bal = [o.B0], pay = [], rate = []; let b = o.B0, p = o.pay, r = o.ratePct;
+  for (let k = 0; k < N; k++) {
+    if (o.mat > 0 && k === o.mat) { r = o.refiRatePct; p = paymentClosed(b, r, o.refiTermMonths); }
+    pay.push(b > 0.005 ? p : 0); rate.push(r);
+    b = b > 0.005 ? Math.max(0, b * (1 + r / 1200) - p - (o.extra || 0)) : 0; if (b <= 0.005) b = 0; bal.push(b);
+  }
+  let payoff = Infinity; for (let k = 0; k < bal.length; k++) if (bal[k] <= 0.005) { payoff = k; break; }
+  return { bal, pay, rate, payoff };
+}
+/* straight-line depreciation by month (IRS Pub. 946): first month half (mid-month convention), no more than the basis */
+function depSim(basis, years, months, mid) { let tot = 0; const u = basis / (years * 12), cum = [0]; for (let m = 0; m < months; m++) { tot = Math.min(basis, tot + u * (mid && m === 0 ? 0.5 : 1)); cum.push(tot); } return cum; }
+/* federal tax on an amount of ordinary income by walking up in $25 slices (independent of the engine's closed-form brackets) */
+function taxWalk(startTaxable, amount, kind) {
+  const br = TAX2026.brackets; let t = 0; const step = 25;
+  for (let x = 0; x < amount; x += step) { const w = Math.min(step, amount - x), at = startTaxable + x + w / 2;
+    let rate = 0, lo = 0; for (const [hi, r] of br) { if (at <= hi) { rate = r; break; } }
+    if (kind === '1250') rate = Math.min(rate, 0.25);
+    if (kind === 'ltcg') rate = at <= 49450 ? 0 : at <= 545500 ? 0.15 : 0.20;
+    t += w * rate; }
+  return t;
 }
 
 /* ---- U.S. single-filer tax estimate, tax year 2026 ----
@@ -72,7 +97,7 @@ function taxPct2026(gross) {
 
 /* ---- qualifying DTI (Fannie-style rental treatment: count 75% of gross rent; net of the property's full payment; a positive net adds to income, a negative net adds to debts) ---- */
 function dtiRef(o) {
-  const income = o.otherIncomeMonthly; let debts = o.otherDebt, inc = income;
+  const income = o.otherIncomeMonthly; let debts = o.otherDebt + (o.housing || 0), inc = income; /* the borrower's own rent or mortgage is a debt */
   for (const a of o.assets) { const net = o.rentCountPct / 100 * a.grossRent - a.payment; if (net >= 0) inc += net; else debts += -net; }
   return inc > 0 ? Math.min(999, debts / inc * 100) : debts > 0 ? 999 : 0;
 }
@@ -80,4 +105,4 @@ function dtiRef(o) {
 /* ---- small seeded RNG for reproducible random cases ---- */
 function rng(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
 
-module.exports = { paymentIter, paymentClosed, balanceAfter, payoffMonths, fhaLoan, fhaAnnualOnBalance, noiRental, capRate, dscr, valueAt, headroom, monthsToLine, TAX2026, taxPct2026, dtiRef, rng };
+module.exports = { loanSim, depSim, taxWalk, paymentIter, paymentClosed, balanceAfter, payoffMonths, fhaLoan, fhaAnnualOnBalance, noiRental, capRate, dscr, valueAt, headroom, monthsToLine, TAX2026, taxPct2026, dtiRef, rng };

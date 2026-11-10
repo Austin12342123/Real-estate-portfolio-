@@ -50,12 +50,12 @@ exports.run = async function run(X) {
     const keys = ['income', 'portfolio', 'portTax', 'extra', 'living', 'debts', 'gm', 'hours', 'nBiz', 'outsideCall', 'saleTax', 'net', 'interest', 'liquid', 'total', 'reserve', 'burn', 'runway', 'oneTime', 'capitalIn'];
     keys.forEach((k) => (o[k] = []));
     const jobPay = (j, t) => { if (t < j.start) return 0; if (j.end !== null && j.end !== undefined && t >= j.end) return 0; const yrs = Math.floor((t - j.start) / 12); return (j.gross / 12) * Math.pow(1 + j.raise / 100, yrs); };
-    const saleTaxAt = {}; for (const h of S.houses) { const ex = pl.exits[h.id]; if (!ex) continue; const gain = ex.price * (1 - h.sellCost / 100) - h.price - h.capex; saleTaxAt[ex.month] = (saleTaxAt[ex.month] || 0) + Math.max(0, gain) * p.salesTaxPct / 100; }
+    const saleTaxAt = {}; for (const h of S.houses) { const ex = pl.exits[h.id]; if (!ex) continue; const gain = ex.price * (1 - h.sellCost / 100) - (ex.cost - ex.dep); /* flat override: rate x (sale price after costs - price, closing costs and improvements + depreciation taken) */ saleTaxAt[ex.month] = (saleTaxAt[ex.month] || 0) + Math.max(0, gain) * p.salesTaxPct / 100; }
     let liq = p.cash;
     for (let t = 0; t <= T; t++) {
       let inc = 0, hrs = 0; for (const j of p.jobs) { const v = jobPay(j, t); inc += v * (1 - j.tax / 100); if (v > 0) hrs += j.hours; }
       let nb = 0; for (const h of S.houses) if (h.type === 'business' && pl.purchase[h.id] <= t && t < pl.sellAt[h.id]) nb++;
-      const infl = Math.pow(1 + p.inflation / 100, t / 12), port = s.cf[t], ptax = Math.max(0, port) * p.portfolioTaxPct / 100, ex = s.extra[t], liv = p.living * infl, dbt = g.otherDebt;
+      const infl = Math.pow(1 + p.inflation / 100, t / 12), port = s.cf[t], ptax = Math.max(0, s.txRE[t] + s.txBiz[t]) * p.portfolioTaxPct / 100, /* a typed rate is a flat rate on taxable profit (NOI - interest - depreciation) */ ex = s.extra[t], liv = p.living * infl, dbt = g.otherDebt;
       const gm = Math.max(0, nb - p.operating) * p.gmMonthly * infl; hrs += Math.min(p.operating, nb) * p.bizHours;
       const oc = t === 0 ? s.outside[0] : s.outside[t] - s.outside[t - 1];
       const net = inc + port - ptax - gm - ex - liv - dbt;
@@ -116,9 +116,9 @@ exports.run = async function run(X) {
     /* sale tax: owned asset, growth 5%, sells month 24, cost 6%, price 300000, no loan balance concerns (cash purchase) */
     const sellH = () => E.newAsset('house', 'cashh', { id: 's', status: 'owned', price: 300000, rent: 0, tax: 0, ins: 0, growth: 5, exit: 'sell', exitMonth: 24, sellCost: 6, capex: 0, paid: 0 });
     const t0 = base({ cash: 1000, salesTaxPct: 0 }, [sellH()]), t25 = base({ cash: 1000, salesTaxPct: 25 }, [sellH()]);
-    const gain = t0.pl.exits.s.price * 0.94 - 300000, wantTax = 0.25 * gain;
-    P.t(near(gain, 300000 * 1.05 * 1.05 * 0.94 - 300000, 1) && gain > 0, 'sanity: exit price is value at month 24 (300000 x 1.05^2)', 0.5, t0.pl.exits.s.price);
-    P.t(closeAbs(t0.f.series.total[24] - t25.f.series.total[24], wantTax, 0.5) && closeAbs(t0.f.series.total[23] - t25.f.series.total[23], 0, 0.001) && closeAbs(t0.f.series.total[100] - t25.f.series.total[100], wantTax, 0.5), 'sale tax = 25% of the gain (' + wantTax.toFixed(2) + ') taken in the sale month only', 2, (t0.f.series.total[24] - t25.f.series.total[24]).toFixed(2) + ' want ' + wantTax.toFixed(2));
+    const clc = 300000 * 0.02, depT = (300000 + clc) * 0.8 / 330 * 23.5 /* 27.5-year straight line on the 80% building share, first month half */, gain = t0.pl.exits.s.price * 0.94 - (300000 + clc - depT), wantTax = 0.25 * gain;
+    P.t(near(t0.pl.exits.s.price, 300000 * 1.05 * 1.05, 1) && gain > 0, 'sanity: exit price is value at month 24 (300000 x 1.05^2)', 0.5, t0.pl.exits.s.price);
+    P.t(closeAbs(t0.f.series.total[24] - t25.f.series.total[24], wantTax, 0.5) && closeAbs(t0.f.series.total[23] - t25.f.series.total[23], 0, 0.001) && closeAbs(t0.f.series.total[100] - t25.f.series.total[100], wantTax, 0.5), 'sale tax = 25% of the gain after selling costs, closing costs and the depreciation taken (' + wantTax.toFixed(2) + ') taken in the sale month only', 2, (t0.f.series.total[24] - t25.f.series.total[24]).toFixed(2) + ' want ' + wantTax.toFixed(2));
     const loss = base({ cash: 1000, salesTaxPct: 25 }, [E.newAsset('house', 'cashh', { id: 's', status: 'owned', price: 300000, rent: 0, tax: 0, ins: 0, growth: -3, exit: 'sell', exitMonth: 24, sellCost: 6 })]);
     P.t(loss.f.series.saleTax.every((x) => x === 0), 'a sale at a loss pays no sale tax (never negative)', 0.5);
     const iR = base({ cash: 10000, cashApy: 12 });
@@ -126,7 +126,7 @@ exports.run = async function run(X) {
     const gmR = base({ operating: 1, gmMonthly: 6000, inflation: 0, bizHours: 20, jobs: [job({ id: 'a', hours: 30, gross: 60000 })] }, ['b1', 'b2', 'b3'].map((id, i) => E.newAsset('business', 'cashb', { id, status: 'owned', price: 100000, rent: 3000 })));
     P.t(closeAbs(gmR.f.series.gm[0], 12000, 0.001) && gmR.f.series.nBiz[0] === 3 && closeAbs(gmR.f.series.hours[0], 30 + 20, 0.001), '3 businesses, 1 run by you: 2 managers x 6000 = 12000/mo, hours = job 30 + 1 x 20', 1.5, gmR.f.series.gm[0] + ' / ' + gmR.f.series.hours[0]);
     const tx = base({ jobs: [job({ id: 'a', gross: 120000, tax: 20 })], portfolioTaxPct: 20, cash: 0 }, [E.newAsset('house', 'cashh', { id: 'h', status: 'owned', price: 100000, rent: 2000, tax: 0, ins: 0, growth: 0 })], { vac: 0, mgmt: 0, maint: 0 });
-    const cf0 = tx.pl.series.cf[0]; P.t(cf0 > 0 && closeAbs(tx.f.series.portTax[0], cf0 * 0.2, 0.001) && closeAbs(tx.f.series.net[0], 8000 + cf0 * 0.8, 0.001), 'portfolio tax is 20% of positive cash flow; net = take-home + cash flow x 0.8', 1, cf0);
+    const cf0 = tx.pl.series.cf[0], tp0 = tx.pl.series.txRE[0], dep0 = 100000 * 1.02 * 0.8 / 330 * 0.5 /* mid-month: first month half */; P.t(cf0 > 0 && closeAbs(tp0, cf0 - dep0 + (0), 0.01) && closeAbs(tx.f.series.portTax[0], tp0 * 0.2, 0.001) && closeAbs(tx.f.series.net[0], 8000 + cf0 - tp0 * 0.2, 0.001), 'typed portfolio tax is 20% of taxable profit (cash flow less depreciation, 27.5 years on 80% of the price, half a month in month 0); net = take-home + cash flow - tax', 1, cf0);
     /* edge profiles: no NaN / Infinity */
     const BADK = (f) => { const out = []; const allowInf = { runway: 1 }; for (const k in f.series) f.series[k].forEach((v, t) => { if (!Number.isFinite(v) && !(k in allowInf && v === Infinity)) out.push(k + '[' + t + ']=' + v); });
       for (const k in f.kpis) { const v = f.kpis[k]; if (typeof v === 'number' && !Number.isFinite(v) && !(['minRunway', 'runway0', 'reserveMonths0'].includes(k) && v === Infinity)) out.push('kpi ' + k + '=' + v); }
@@ -247,7 +247,7 @@ exports.run = async function run(X) {
     const fx = f.fixes.join('|'); P.t(d.fixes.join('|') === fx, label + ': fix list equals the engine', w / 2, d.fixes.join('|').slice(0, 120));
   }
   const chipMain = async (pg) => { await goMain(pg); return pg.evaluate(() => (document.querySelector('[data-testid=afford-chip]') || {}).textContent || null); };
-  const sampleS = () => E.seed();
+  const sampleS = () => E.seedPlan(); /* the app's default portfolio */
   const applyS = (S, fn) => { fn(S, S.p, S.g); S.p = E.normalizePersonal(S.p); return S; };
   const fin = async (sel, v) => { await setVal(page, sel, v); };
 
@@ -337,7 +337,7 @@ exports.run = async function run(X) {
     await loadState(page, v8, '#finances'); const sm = await appState(page); const same = JSON.stringify(sm.houses.map((h) => h.id).sort()) === JSON.stringify(v8.houses.map((h) => h.id).sort()) && sm.houses.find((h) => h.id === v8.houses[0].id).addr === 'Kept From V8' && sm.houses.find((h) => h.id === v8.houses[0].id).extra === 4321; /* the list is sorted into buy order once on load */
     P.t(same && sm.v === DATA_V && sm.p && sm.p.cash === 45000 && sm.p.jobs.length === 1 && sm.p.jobs[0].gross === 96000, 'a saved v8 state (assets only) keeps its assets and gains the default profile at DATA_V', 1.2, `v=${sm.v} p=${sm.p && sm.p.cash} addr=${sm.houses[0].addr}`);
     matchUI(P, await rd(page), (() => { const S = clone(v8); S.v = DATA_V; S.p = E.samplePersonal(); return E.normalize(S); })(), 'migrated v8', 0.4);
-    await loadState(page, Object.assign(clone(v8), { v: 7 }), '#finances'); P.t((await appState(page)).houses.length === E.seed().houses.length && (await appState(page)).p.cash === 45000, 'an older (v7) save is replaced by the current sample with a profile', 0.3);
+    await loadState(page, Object.assign(clone(v8), { v: 7 }), '#finances'); P.t((await appState(page)).houses.length === E.seedPlan().houses.length && (await appState(page)).p.cash === 45000, 'an older (v7) save is replaced by the current sample with a profile', 0.3);
     /* empty states */
     const emp = E.seed(); emp.v = DATA_V; emp.p.jobs = []; emp.p.planned = []; emp.p.capital = [];
     await loadState(page, emp, '#finances'); const bd = []; for (const h of ['#finances', '#']) { await goHash(page, h); const t = await page.evaluate(() => document.getElementById('app').innerText + ' ' + [...document.querySelectorAll('#app input')].map((i) => i.value).join(' ')); if (BAD.test(t)) bd.push(h + ': ' + (BAD.exec(t) || [])[2]); }

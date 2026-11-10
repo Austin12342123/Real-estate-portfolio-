@@ -1,6 +1,6 @@
 {
   "finance": {
-    "earned": 81.28,
+    "earned": 90,
     "max": 90,
     "checks": [
       {
@@ -12,7 +12,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "node: simulate from the definitions, compare E.finance on 80 random states; hand-calculated cases; NaN scan",
-        "seconds": 0.4
+        "seconds": 0.3
       },
       {
         "id": "F2",
@@ -23,18 +23,18 @@
         "ratio": 1,
         "detail": "17/17 sub-checks pass",
         "repro": "node: constructed states for yes / tight (5 causes) / no; fix amounts; apply the fix; monotonicity; stretch",
-        "seconds": 0.7
+        "seconds": 0.6
       },
       {
         "id": "F3",
         "category": "F",
         "name": "UI features",
         "points": 24,
-        "earned": 15.28,
-        "ratio": 0.6364659538548116,
-        "detail": "57/89 sub-checks pass. FAIL: afford chip on main equals the engine status (Tight) [Yes]; sample: verdict chip + headline equal the engine (Tight) [Yes / Yes. You can carry this plan. vs Tight / Tight. Your cash dips below your emergency reserve in month 18.]; sample: lowest cash + month equal the engine [$63,302 · month 0 vs 7156 m18]; sample: fix list equals the engine []; gross 150000: lowest cash + month equal the engine [$66,722 · month 0 vs 74343 m18]; raise 6: lowest cash + month equal the engine [$66,722 · month 0 vs 76353 m18]; tax 30: lowest cash + month equal the engine [$65,972 · month 0 vs 61460 m18]; hours 55: lowest cash + month equal the engine [$65,972 · month 0 vs 61460 m18]; start 3: lowest cash + month equal the engine [$57,222 · month 0 vs 32477 m18]; end 40: lowest cash + month equal the engine [$57,222 · month 0 vs 32477 m18]; blank end = ongoing: lowest cash + month equal the engine [$57,222 · month 0 vs 32477 m18]; after adding a job: lowest cash + month equal the engine [$61,422 · month 0 vs 86491 m0]; after removing the added job: lowest cash + month equal the engine [$57,222 · month 0 vs 32477 m18]; editing each of the 11 cash / expense / tax / manager fields updates verdict, left-over and lowest cash like the engine [0/11 sub-checks pass. FAIL: p.cash=12000 [Tight/Not yet net 12222/12291 low $24,222 · month 0/-28189]; p.living=5200 [Tight/Not yet net 10622/10691 low $22,622 · month 0/-59974]; p.cashApy=4.5 [Tight/Not yet net 10622/10691 low $22,622 · month 0/-57947]; p.inflation=5 [Tight/Not yet net 10622/10691 low $22,622 · month 0/-59461]; p.emergencyMonths=9 [Tight/Not yet net 10622/10691 low $22,622 · month 0/-59461]; g.otherDebt=900 [Tight/Not yet net 10172/10241 low $22,172 · month 0/-68290]; p.portfolioTaxPct=33 [Tight/Not yet net 7366/7423 low $19,366 · month 0/-128270]; p.salesTaxPct=30 [Tight/Not yet net 7366/7423 low $19,366 · month 0/-128270]; p.operating=2 [Tight/Not yet net 7366/7423 low $19,366 · month 0/-128270]; p.bizHours=15 [Tight/Not yet net 7366/7423 low $19,366 · month 0/-128270]; p.gmMonthly=6500 [Tight/Not yet net 7366/7423 low $19,366 · month 0/-128270]]; with planned expense: verdict chip + headline equal the engine (Not yet) [Tight / Tight. The hours do not fit in a week around month 28. vs Not yet / Not yet. You run short of cash in month 8.]; with planned expense: monthly picture rows equal the engine [0,14466,0,-1000,-5200,-900,7366 vs 0,14523,0,-1000,-5200,-900,7423]; with planned expense: lowest cash + month equal the engine [$19,366 · month 0 vs -153935 m18]; with planned expense: fix list equals the engine [Hire a general manager for a business, drop a job, or sell a business sooner. Each manager costs about $6,500/mo.|Hold a]; with capital: verdict chip + headline equal the engine (Not yet) [Tight / Tight. The hours do not fit in a week around month 28. vs Not yet / Not yet. You run short of cash in month 8.]; with capital: monthly picture rows equal the engine [0,14466,0,-1000,-5200,-900,7366 vs 0,14523,0,-1000,-5200,-900,7423]; with capital: lowest cash + month equal the engine [$19,366 · month 0 vs -56095 m8]; with capital: fix list equals the engine [Hire a general manager for a business, drop a job, or sell a business sooner. Each manager costs about $6,500/mo.|Hold a]; after removing planned + capital: verdict chip + headline equal the engine (Not yet) [Tight / Tight. The hours do not fit in a week around month 28. vs Not yet / Not yet. You run short of cash in month 8.]; after removing planned + capital: monthly picture rows equal the engine [0,14466,0,-1000,-5200,-900,7366 vs 0,14523,0,-1000,-5200,-900,7423]; after removing planned + capital: lowest cash + month equal the engine [$19,366 · month 0 vs -128270 m18]; after removing planned + capital: fix list equals the engine [Hire a general manager for a business, drop a job, or sell a business sooner. Each manager costs about $6,500/mo.|Hold a]; hovering the cash chart shows the tooltip with the cash balance of that month (equal to the engine) [$10.1Min 168 mo (14y 0m) t=168 engine 12941572]; after reload: verdict chip + headline equal the engine (Not yet) [Tight / Tight. The hours do not fit in a week around month 28. vs Not yet / Not yet. You run short of cash in month 8.]; after reload: monthly picture rows equal the engine [0,14466,0,-1000,-5200,-900,7366 vs 0,14523,0,-1000,-5200,-900,7423]; after reload: lowest cash + month equal the engine [$19,366 · month 0 vs -128270 m18]; after reload: fix list equals the engine [Hire a general manager for a business, drop a job, or sell a business sooner. Each manager costs about $6,500/mo.|Hold a]; an older (v7) save is replaced by the current sample with a profile",
+        "earned": 24,
+        "ratio": 1,
+        "detail": "89/89 sub-checks pass",
         "repro": "Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states",
-        "seconds": 8
+        "seconds": 7.9
       },
       {
         "id": "F4",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Playwright: edge inputs, names, tap targets, font size, overflow 320/390/430, chip contrast light+dark, typing, render storm, console errors",
-        "seconds": 18.4
+        "seconds": 19.3
       }
     ]
   }

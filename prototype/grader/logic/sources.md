@@ -37,11 +37,35 @@ Nothing here was copied from memory: where a number comes only from a search-res
 | S28 | FHFA, House Price Index master file, purchase-only US, monthly (fhfa.gov/hpi/download/monthly/hpi_master.csv, 17 MB) | Computed here: 1991-01 to 2026-08 compound growth **4.32%/yr**; 2000-2025 4.59%; 20-year rolling windows min 2.75%, median 3.56%, max 4.38% (16 windows); worst 12 months -10.6% (Nov 2007), best +18.9% (Jul 2020) | L6.3 |
 | S29 | NY Fed Household Debt and Credit report (newyorkfed.org/microeconomics/hhdc/background.html) | Q2 2026: mortgage balances $13.1T, home-equity line balances $459B | context for credit-line scale |
 
+## A2. Fetched and read in the follow-up audit, fact used (14 more; access date 2026-11-10, curl through the session proxy, raw files kept outside the repo)
+
+| ID | Source (URL) | Exact fact / formula used | Used by |
+|---|---|---|---|
+| S30 | Federal Reserve, FOMC Summary of Economic Projections, 16 Sept 2026 (federalreserve.gov/monetarypolicy/fomcprojtabl20260916.htm) | Table 1 "Change in real GDP ... 2.3 2.4 2.2 2.1 2.0" and "PCE inflation 3.7 2.3 2.1 2.0 2.0": the **longer-run** median is real GDP 2.0% and PCE inflation 2.0%, i.e. about 4.0% nominal growth | L6.5 (business growth default 4%) |
+| S31 | IRS Publication 551, Basis of Assets (irs.gov/publications/p551) | "Your basis includes the settlement fees and closing costs for buying property. You can't include in your basis the fees and costs for getting a loan." and "Because land isn't depreciable, you include only the cost of the house when figuring the basis for depreciation." | L7.5 (basis = price + closing costs + improvements, land excluded) |
+| S32 | IRS Publication 925, Passive Activity and At-Risk Rules (irs.gov/publications/p925) | Special $25,000 allowance for rental real estate with active participation is reduced by 50% of modified AGI above $100,000 and gone at $150,000; passive losses otherwise are not allowed | L7.4 (a loss pays no tax and creates no refund: passive-loss limits, carry-forward not modeled) |
+| S33 | IRS Form 8594 (irs.gov/forms-pubs/about-form-8594) | The buyer and seller of a business must use Form 8594 to allocate the price when goodwill or going concern value attaches to the assets | L7.5 (business price split into goodwill and equipment) |
+| S34 | IRS Internal Revenue Manual 4.48.4, Business Valuation Guidelines (irs.gov/irm/part4/irm_04-048-004) | The appraiser selects "capitalization rates or multiples consistent with the benefit stream"; the manual gives no market multiple (so multiples stay unverified, L2.7) | L2.7 note |
+| S35 | eCFR, 13 CFR 120.160 SBA loan conditions (ecfr.gov renderer API) | "Holders of at least a 20 percent ownership interest generally must guarantee the loan" (SBA loans are not non-recourse; context for the plan's SBA loans) | L4.7 context |
+| S36 | CFPB, Figure out how much you want to spend (consumerfinance.gov/owning-a-home/prepare/figure-out-how-much-you-want-to-spend/) | "Typically closing costs range from 2% to 5% of the home purchase price (not including your down payment)" | L7.6 (3% default closing cost is inside the verified range) |
+| S37 | OCC, Comptroller's Handbook, Asset-Based Lending v1.1 (occ.gov/.../asset-based-lending/pub-ch-asset-based-lending.pdf) | Advance rates: "70 percent to 85 percent of eligible accounts receivable"; inventory "up to 65 percent of the book value ... or 80 percent of the NOLV". These are the highest advance rates on the most liquid business collateral; goodwill and a going concern's value are not collateral, so a cap on a whole business must be lower. The exact 50% is NOT in the handbook | L3.8 (upper bound only) |
+| S38 | IRS Instructions for Form 8960, Net Investment Income Tax (irs.gov/pub/irs-pdf/i8960.pdf) | NIIT threshold "Single or Head of household is $200,000"; rental income is included in net investment income unless derived in the ordinary course of a trade or business (real estate professional) | L7.2-L7.4 |
+| S39 | IRS Instructions for Schedule D (irs.gov/pub/irs-pdf/i1040sd.pdf) | Unrecaptured section 1250 gain worksheet: the amount is multiplied by 25% (0.25) | L7.2, L7.3 |
+| S40 | IRS Instructions for Form 4562 (irs.gov/pub/irs-pdf/i4562.pdf) | Residential rental property **27.5 yrs**, nonresidential real property **39 yrs**; "Mid-month convention. This convention applies only to residential rental property, nonresidential real property ..."; also "The 100% special depreciation allowance is restored for qualified property acquired after January 19, 2025" (the model does NOT assume bonus depreciation: conservative) | L7.5 |
+| S41 | IRS Instructions for Form 4797 (irs.gov/pub/irs-pdf/i4797.pdf) | Part of the gain on section 1245 property is "recaptured as ordinary income because of depreciation" (business equipment and amortized intangibles) | L7.2, L7.3 |
+| S42 | IRS Instructions for Schedule E (irs.gov/pub/irs-pdf/i1040se.pdf) | Rental depreciation is a rental expense reported on Schedule E line 18; rental income less expenses incl. depreciation is taxable | L7.4 |
+| S43 | IRS Topic 704, Depreciation (irs.gov/taxtopics/tc704) | "For property placed in service after 1986, you generally must use the Modified Accelerated Cost Recovery System (MACRS)" | L7.5 |
+
+Facts added to earlier sources: **S25** (IRS Rev. Proc. 2025-32) also gives the 2026 capital-gain rate thresholds for "All Other Individuals" (single): 0% up to **$49,450**, 15% up to **$545,500**, 20% above; **S21** (IRS Topic 559) gives the NIIT $200,000 single threshold ("$200,000 for single or head of household").
+
 ## B. Fetched, no usable audit number found (counted as not used)
 
 Page loaded but was a landing or JavaScript page, or held nothing the model needs: FHFA HPI page and conforming-loan-limit pages, Freddie Mac research/forecast/HPI pages, Federal Reserve SCF, Z.1, SLOOS, H.8, Financial Stability Report, Beige Book, FOMC calendar, NY Fed SCE, Census HVS index / AHS / new-residential pages, FDIC quarterly banking profile and examination manual index, CFPB LTV / HMDA / owning-a-home pages, HUD FHA info page, SBA buy-a-business / size standards / microloans / loans index, IRS Topics 414, 554, 703 and Publications 523, 535, 551, 925, Form 8949 instructions. About 40 pages in total. They do **not** count toward the source tally above.
 
 ## C. Not reachable (reported honestly, not bypassed)
+
+(Business growth: nominal GDP growth from BEA/FRED is still unreachable. The default now rests on the Federal Reserve's own longer-run projection in S30, about 4.0% nominal; small-business revenue-growth studies were not reachable.)
+
 
 - SSA wage-base page (ssa.gov/oact/cola/cbb.html): HTTP 403 bot block. The 2026 wage base was taken from IRS Pub. 15 (S17) instead.
 - BLS CPI / rent index pages (bls.gov): HTTP 403. No CPI or shelter-index numbers were verified.
@@ -58,4 +82,6 @@ Page loaded but was a landing or JavaScript page, or held nothing the model need
 
 ## Honest tally
 
-28 distinct sources fetched, read and used for a stated fact; about 40 more pages fetched with nothing usable; about 25 requested sources unreachable (blocked, refused, or not retrievable). The mission target of 40 distinct sources actually read **was not reached**; the shortfall is almost entirely the network allow-list and bot blocks listed in section C.
+42 distinct sources fetched, read and used for a stated fact (28 in section A, 14 in section A2); about 45 more pages fetched with nothing usable; about 30 requested sources unreachable (blocked, refused, or not retrievable). The target of 40 distinct sources was reached, but almost all of the additions are IRS and Federal Reserve pages: the hosts that carry market data (BEA, FRED, BizBuySell, CBRE, LoopNet, Pepperdine, SSRN, NAIC, III, JPMorgan, state tax sites, SBA Advocacy, Fannie Mae, Treasury) are not reachable from this session (connection refused or no DNS; never bypassed). Cap rates, business multiples, management fee, repairs, selling costs and the 50% business credit-line cap therefore remain UNVERIFIED and carry no score in the logic grader.
+
+Round 2 attempts that failed (not bypassed): BEA GDP tables, FRED, Pepperdine Private Capital Markets Report (digitalcommons and bschool hosts), NAIC and Insurance Information Institute, SBA Office of Advocacy, Fed Small Business Credit Survey (fedsmallbusiness.org), JPMorgan LTCMA, Treasury yield curve, SSRN, NBER, CBO, Tax Foundation, state tax sites (ftb.ca.gov, tax.ny.gov, tax.texas.gov), Cornell LII and uscode.house.gov, SEC, Freddie Mac multifamily (mf.freddiemac.com), Census API, SBA SOP 50 10 7 document pages, CFPB closing-cost ask page IDs, HUD Handbook 4381.5 page (fetched, held no fee figure).

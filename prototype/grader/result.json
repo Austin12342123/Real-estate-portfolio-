@@ -1,9 +1,9 @@
 {
-  "total": 70.17,
+  "total": 84.94,
   "max": 84.99900000000001,
   "categories": {
     "A": {
-      "earned": 11.028,
+      "earned": 17.998999999999995,
       "max": 17.998999999999995
     },
     "B": {
@@ -11,15 +11,15 @@
       "max": 12.000000000000004
     },
     "C": {
-      "earned": 7.441999999999999,
+      "earned": 9.939,
       "max": 9.999
     },
     "D": {
-      "earned": 5.913,
+      "earned": 8.001,
       "max": 8.001
     },
     "E": {
-      "earned": 3.7860000000000005,
+      "earned": 7,
       "max": 7
     },
     "R": {
@@ -34,9 +34,9 @@
       "name": "Add flow: each type x each loan option auto-fills dp/rate/term/closing, opens the asset page, adds a ledger row and changes plan numbers",
       "points": 1.946,
       "rawPoints": 4,
-      "earned": 0.292,
-      "ratio": 0.15,
-      "detail": "1/3 sub-checks pass. FAIL: all 14 type/loan combinations fill terms, open page, add row, change plan (13 ok) [cashh rows 22->23 nw 127400000->127400000]; new assets stored as planned [31]",
+      "earned": 1.946,
+      "ratio": 1,
+      "detail": "3/3 sub-checks pass",
       "repro": "Main > + Add > pick type > pick loan > Add; inspect asset page + main"
     },
     {
@@ -67,9 +67,9 @@
       "name": "Two-way back-solves: wait-months->extra, payoff->extra, down$->%, and main page follows",
       "points": 1.459,
       "rawPoints": 3,
-      "earned": 1.274,
-      "ratio": 0.8734177215189873,
-      "detail": "7/8 sub-checks pass. FAIL: main row shows extra and \"opens in 24 mo\" [133 / ]",
+      "earned": 1.459,
+      "ratio": 1,
+      "detail": "8/8 sub-checks pass",
       "repro": "Asset page: type in \"Months until LOC\", \"Paid off in\", \"Down payment $\""
     },
     {
@@ -78,21 +78,21 @@
       "name": "Remove from the MAIN page: Edit mode, confirm, Undo, totals update; removing a funding source leaves the target listed",
       "points": 1.946,
       "rawPoints": 4,
-      "earned": 0,
-      "ratio": 0,
-      "detail": "CRASH in check: page.click: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-for=\"a\"] [data-testid=row-remove]')\u001b[22m\n",
+      "earned": 1.946,
+      "ratio": 1,
+      "detail": "10/10 sub-checks pass",
       "repro": "Main > Edit > Remove > Yes; Undo"
     },
     {
       "id": "A06",
       "category": "A",
-      "name": "Main rows follow list order = buy order (sorted once on first load, owned first); tags match the engine's purchase months",
+      "name": "Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset of a category has no wait line and every later one has",
       "points": 0.73,
       "rawPoints": 1.5,
-      "earned": 0.317,
-      "ratio": 0.4347826086956522,
-      "detail": "2/5 sub-checks pass. FAIL: owned homes come first in the Homes list (owned tag has no \"· buy\" part) [0]; row tags equal Engine purchase months; small state: list order sorted by month once, tags equal the engine [a:0,e:0,b:0,c:0,d:0]",
-      "repro": "Main ledger on sample and on a small state"
+      "earned": 0.73,
+      "ratio": 1,
+      "detail": "6/6 sub-checks pass",
+      "repro": "Main ledger on the default plan and on a small state"
     },
     {
       "id": "A07",
@@ -122,9 +122,9 @@
       "name": "Per-row numbers sum to the portfolio headline (cash flow, monthly payments, net worth) on the sample, and match the engine",
       "points": 1.459,
       "rawPoints": 3,
-      "earned": 0,
-      "ratio": 0,
-      "detail": "CRASH in check: page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-for=\"maple\"] [data-testid=extra-input]') to be visible\u001b[22m\n",
+      "earned": 1.459,
+      "ratio": 1,
+      "detail": "7/7 sub-checks pass",
       "repro": "Main page: sum row cash flows / payments / equity vs KPIs"
     },
     {
@@ -144,20 +144,20 @@
       "name": "Sample portfolio on screen: all rows, three types, sane finite headline, no unfunded warning, no DTI warning",
       "points": 0.973,
       "rawPoints": 2,
-      "earned": 0.632,
-      "ratio": 0.65,
-      "detail": "4/6 sub-checks pass. FAIL: 14 ledger rows [17]; Home / Comm. / Biz rows present",
+      "earned": 0.973,
+      "ratio": 1,
+      "detail": "6/6 sub-checks pass",
       "repro": "Fresh load"
     },
     {
       "id": "A12",
       "category": "A",
-      "name": "Credit-line chain on screen: \"opens in N mo\" and buy months match the engine; raising source extra opens sooner",
+      "name": "Credit-line chain on screen: the asset being bought shows \"Credit line opens in N mo · down payment from X\" (or \"Bought in N mo with cash on hand\"), N matches the engine; raising source extra opens sooner",
       "points": 0.973,
       "rawPoints": 2,
-      "earned": 0,
-      "ratio": 0,
-      "detail": "CRASH in check: page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-for=\"a\"] [data-testid=extra-input]') to be visible\u001b[22m\n",
+      "earned": 0.973,
+      "ratio": 1,
+      "detail": "3/3 sub-checks pass",
       "repro": "Main rows on small state"
     },
     {
@@ -240,7 +240,7 @@
     {
       "id": "B07",
       "category": "B",
-      "name": "Growth 3%: LOC months extra 0/500 = 50/32 (growth on asset, or g.appr with growth null)",
+      "name": "Growth 3%: LOC months extra 0/500 = 48/32 (growth on asset, or g.appr with growth null; the home's saved cash flow grows with its rent, so it starts saving once rent growth passes the payment)",
       "points": 0.48,
       "rawPoints": 1.5,
       "earned": 0.48,
@@ -311,7 +311,7 @@
       "rawPoints": 0.5,
       "earned": 0.16,
       "ratio": 1,
-      "detail": "median 2.6ms",
+      "detail": "median 3.5ms",
       "repro": "node timing"
     },
     {
@@ -452,9 +452,9 @@
       "name": "Main page keeps text inputs out of the list: no inputs until a row is selected, then exactly one extra field (none for a sold row)",
       "points": 1,
       "rawPoints": 1.5,
-      "earned": 0,
-      "ratio": 0,
-      "detail": "CRASH in check: page.click: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-row=\"maple\"] .addrbtn')\u001b[22m\n",
+      "earned": 1,
+      "ratio": 1,
+      "detail": "5/5 sub-checks pass",
       "repro": "Count visible <input> on main before / after selecting a row (sample, and after adding 3)"
     },
     {
@@ -474,9 +474,9 @@
       "name": "Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)",
       "points": 1.333,
       "rawPoints": 2,
-      "earned": 1.27,
-      "ratio": 0.9527609051444303,
-      "detail": "183/189 targets >=44px. Small: main:BUTTON.info\"What does Cash flo\" 32x32; main:BUTTON.info\"What does DSCR mea\" 32x32; main:BUTTON.info\"What does Cash-on-\" 32x32; asset:BUTTON.info\"What does Cash flo\" 32x32; asset:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash-on-\" 32x32",
+      "earned": 1.273,
+      "ratio": 0.9546643645219672,
+      "detail": "191/197 targets >=44px. Small: main:BUTTON.info\"What does Net wort\" 32x32; main:BUTTON.info\"What does Cash flo\" 32x32; main:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash flo\" 32x32; asset:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash-on-\" 32x32",
       "repro": "Measure interactive elements on main/asset/assumptions/add"
     },
     {
@@ -487,7 +487,7 @@
       "rawPoints": 1,
       "earned": 0.667,
       "ratio": 1,
-      "detail": "41/41 ok ",
+      "detail": "45/45 ok ",
       "repro": "computed font-size"
     },
     {
@@ -496,9 +496,9 @@
       "name": "Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps",
       "points": 1.333,
       "rawPoints": 2,
-      "earned": 0,
-      "ratio": 0,
-      "detail": "CRASH in check: page.click: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=open-details]')\u001b[22m\n",
+      "earned": 1.333,
+      "ratio": 1,
+      "detail": "3/3 sub-checks pass",
       "repro": "Tap row, Back; Add > Add (defaults)"
     },
     {
@@ -509,7 +509,7 @@
       "rawPoints": 1,
       "earned": 0.667,
       "ratio": 1,
-      "detail": "avg row 106px x 17, page 3954px",
+      "detail": "avg row 113px x 20, page 4426px",
       "repro": "Measure ledger rows"
     },
     {
@@ -518,9 +518,9 @@
       "name": "Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add)",
       "points": 1.333,
       "rawPoints": 2,
-      "earned": 1.172,
-      "ratio": 0.8792858962707055,
-      "detail": "1164/1215 text elements pass (light 605/605, dark 559/610). dark/main: Bbn1 2.61; dark/main: Bbn2 2.61; dark/main: Bbn5 2.61; dark/main: Bbn8 2.61; dark/main: Bbn7 2.61; dark/main: Bbn12 2.61",
+      "earned": 1.333,
+      "ratio": 1,
+      "detail": "1157/1157 text elements pass (light 576/576, dark 581/581). ",
       "repro": "emulate prefers-color-scheme; compute WCAG ratio for every text element"
     },
     {
@@ -562,9 +562,9 @@
       "name": "Works offline: reload, deep-link, and edit with network off",
       "points": 1.524,
       "rawPoints": 2,
-      "earned": 0.762,
-      "ratio": 0.5,
-      "detail": "3/4 sub-checks pass. FAIL: offline reload renders the 14-row ledger",
+      "earned": 1.524,
+      "ratio": 1,
+      "detail": "4/4 sub-checks pass",
       "repro": "DevTools offline; reload"
     },
     {
@@ -584,9 +584,9 @@
       "name": "Data persists across reload and new tab (localStorage rep-v4, v7); no server round-trip",
       "points": 1.143,
       "rawPoints": 1.5,
-      "earned": 0.403,
-      "ratio": 0.35294117647058826,
-      "detail": "1/5 sub-checks pass. FAIL: added asset survives reload [18]; stored in localStorage key rep-v4 with v:7 [13]; second tab sees same data; stale data version is replaced by the current sample",
+      "earned": 1.143,
+      "ratio": 1,
+      "detail": "5/5 sub-checks pass",
       "repro": "Edit extra + address + add asset via the add flow, reload"
     },
     {
@@ -595,9 +595,9 @@
       "name": "Backup: Show backup gives valid JSON text; pasted text and file restore state (with confirm); invalid text rejected without damage",
       "points": 1.524,
       "rawPoints": 2,
-      "earned": 0.938,
-      "ratio": 0.6153846153846153,
-      "detail": "4/6 sub-checks pass. FAIL: backup text = valid JSON with all 14 assets + assumptions [{\"g\":{\"cap\":85,\"haircut\":0,\"closing\":3,\"]; corrupt text rejected with message, data untouched",
+      "earned": 1.524,
+      "ratio": 1,
+      "detail": "6/6 sub-checks pass",
       "repro": "Assumptions > Show backup; modify; Restore from pasted text / file"
     },
     {
@@ -628,9 +628,9 @@
       "name": "Edge inputs (60 cases + compound: zero, 100% down, blanks, garbage, negatives, 1e12, caps, sale/merge/improvement fields) leave no NaN/Infinity/undefined in any page or crash",
       "points": 1.909,
       "rawPoints": 3,
-      "earned": 1.495,
-      "ratio": 0.7829457364341085,
-      "detail": "51/65 sub-checks pass. FAIL: h.ridge.capex=\"1000000000000\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.ridge.capexMonths=\"-5\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.ridge.capexMonths=\"99999\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.ridge.arv=\"1000000000000\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.ridge.arv=\"-100\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.ridge.liftIncome=\"-1000\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.ridge.exitMonth=\"0\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.ridge.exitMonth=\"-9\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.ridge.exitMonth=\"99999\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.ridge.sellCost=\"100\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.ridge.sellCost=\"1000\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.keystone.exitLift=\"10000\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.keystone.exitLift=\"-50\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]; h.keystone.exitMonth=\"1\" [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for loc]",
+      "earned": 1.909,
+      "ratio": 1,
+      "detail": "65/65 sub-checks pass",
       "repro": "Type each value into the field; scan text + input values on all pages"
     },
     {
@@ -639,9 +639,9 @@
       "name": "Remove all assets (main page) -> clean empty state with add action; can add again",
       "points": 0.955,
       "rawPoints": 1.5,
-      "earned": 0,
-      "ratio": 0,
-      "detail": "CRASH in check: locator.click: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=row-remove]').first()\u001b[22m\n",
+      "earned": 0.955,
+      "ratio": 1,
+      "detail": "3/3 sub-checks pass",
       "repro": "Edit > Remove each row"
     },
     {
@@ -650,9 +650,9 @@
       "name": "Deleting a funding target clears references (select, storage, plan, merge-into)",
       "points": 0.955,
       "rawPoints": 1.5,
-      "earned": 0,
-      "ratio": 0,
-      "detail": "CRASH in check: page.click: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-for=\"b\"] [data-testid=row-remove]')\u001b[22m\n",
+      "earned": 0.955,
+      "ratio": 1,
+      "detail": "5/5 sub-checks pass",
       "repro": "Remove Bravo; Alpha target must reset"
     },
     {
@@ -663,7 +663,7 @@
       "rawPoints": 1,
       "earned": 0.636,
       "ratio": 1,
-      "detail": "269/269 named. unnamed: ",
+      "detail": "308/308 named. unnamed: ",
       "repro": "aria-label / label / text on all pages"
     },
     {
@@ -672,9 +672,9 @@
       "name": "Typing 5 digits sequentially keeps focus + full value (re-render safe) on main, asset, assumptions, text field",
       "points": 0.636,
       "rawPoints": 1,
-      "earned": 0.382,
-      "ratio": 0.6,
-      "detail": "3/5 sub-checks pass. FAIL: main extra field [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2]; improvement budget [threw page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2]",
+      "earned": 0.636,
+      "ratio": 1,
+      "detail": "5/5 sub-checks pass",
       "repro": "page.keyboard.type(\"12345\") with delay"
     },
     {
@@ -705,9 +705,9 @@
       "name": "No render storm: DOM settles when an input is focused (no endless re-render loop)",
       "points": 0.636,
       "rawPoints": 1,
-      "earned": 0,
-      "ratio": 0,
-      "detail": "CRASH in check: page.waitForSelector: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=extra-input]') to be visible\u001b[22m\n",
+      "earned": 0.636,
+      "ratio": 1,
+      "detail": "4/4 sub-checks pass",
       "repro": "Type one char into any input (no blur), count #app mutations over 600ms (Chromium)"
     },
     {
@@ -821,8 +821,391 @@
       "repro": "Lenders often want net worth >= loan size (secondary); co-signer allowance $2M and outside-cash cap $1.5M are stated judgments; <= 4 commercial/business closings per 12 months (secondary: small teams close a few deals a year)"
     }
   ],
-  "finance": null,
-  "sync": null,
-  "info": null,
-  "gest": null
+  "finance": {
+    "earned": 90,
+    "max": 90,
+    "checks": [
+      {
+        "id": "F1",
+        "category": "F",
+        "name": "Engine correctness: independent month-by-month simulation + hand cases + edge values",
+        "points": 26,
+        "earned": 26,
+        "ratio": 1,
+        "detail": "16/16 sub-checks pass",
+        "repro": "node: simulate from the definitions, compare E.finance on 80 random states; hand-calculated cases; NaN scan",
+        "seconds": 0.3
+      },
+      {
+        "id": "F2",
+        "category": "F",
+        "name": "Verdict logic and advice",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "17/17 sub-checks pass",
+        "repro": "node: constructed states for yes / tight (5 causes) / no; fix amounts; apply the fix; monotonicity; stretch",
+        "seconds": 0.6
+      },
+      {
+        "id": "F3",
+        "category": "F",
+        "name": "UI features",
+        "points": 24,
+        "earned": 24,
+        "ratio": 1,
+        "detail": "89/89 sub-checks pass",
+        "repro": "Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states",
+        "seconds": 7.9
+      },
+      {
+        "id": "F4",
+        "category": "F",
+        "name": "Factor coverage: every input moves the answer in the right direction",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "23/23 sub-checks pass",
+        "repro": "node: perturb one factor at a time on the sample",
+        "seconds": 0.1
+      },
+      {
+        "id": "F5",
+        "category": "F",
+        "name": "Robustness and accessibility",
+        "points": 10,
+        "earned": 10,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
+        "repro": "Playwright: edge inputs, names, tap targets, font size, overflow 320/390/430, chip contrast light+dark, typing, render storm, console errors",
+        "seconds": 19.9
+      }
+    ]
+  },
+  "sync": {
+    "earned": 100,
+    "max": 100,
+    "checks": [
+      {
+        "id": "G1",
+        "category": "G",
+        "name": "Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine)",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "42/42 sub-checks pass",
+        "repro": "Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)",
+        "seconds": 0.3
+      },
+      {
+        "id": "G2",
+        "category": "G",
+        "name": "Asset page <-> Portfolio sync (share line, hero, impact, edits propagate)",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "74/74 sub-checks pass",
+        "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
+        "seconds": 6.6
+      },
+      {
+        "id": "G3",
+        "category": "G",
+        "name": "Portfolio <-> Finances sync (cash flow, funding, extra scope, verdict, edge cases)",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "35/35 sub-checks pass",
+        "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
+        "seconds": 2.7
+      },
+      {
+        "id": "G4",
+        "category": "G",
+        "name": "Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences)",
+        "points": 18,
+        "earned": 18,
+        "ratio": 1,
+        "detail": "35/35 sub-checks pass",
+        "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, wait, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status, target); every dependent field is re-derived independently after each edit",
+        "seconds": 36.6
+      },
+      {
+        "id": "G5",
+        "category": "G",
+        "name": "Add page <-> created asset (loan option cards, option switching, 203(k) defaults)",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
+        "seconds": 3.6
+      },
+      {
+        "id": "G6",
+        "category": "G",
+        "name": "Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light)",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
+        "seconds": 9.9
+      },
+      {
+        "id": "G7",
+        "category": "G",
+        "name": "Shared settings (g.* and p.*) propagate to every dependent display",
+        "points": 10,
+        "earned": 10,
+        "ratio": 1,
+        "detail": "147/147 sub-checks pass",
+        "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
+        "seconds": 6.4
+      },
+      {
+        "id": "G8",
+        "category": "G",
+        "name": "No stale / duplicate / contradictory numbers",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
+        "repro": "Scan every page for repeated labels with different values, missing bases, redundant repeated numbers, subtext that restates the main value, and numbers that contradict adjacent statements",
+        "seconds": 0
+      }
+    ]
+  },
+  "info": {
+    "earned": 100,
+    "max": 100,
+    "checks": [
+      {
+        "id": "H1",
+        "category": "H",
+        "name": "Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
+        "repro": "node: inspect v4/info.js INFO / LABEL / LOAN",
+        "seconds": 0
+      },
+      {
+        "id": "H2",
+        "category": "H",
+        "name": "Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "83/83 sub-checks pass",
+        "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
+        "seconds": 3.4
+      },
+      {
+        "id": "H3",
+        "category": "H",
+        "name": "Info sheet: opens with the right content, closes by button / Escape / backdrop / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "22/22 sub-checks pass",
+        "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
+        "seconds": 7.6
+      },
+      {
+        "id": "H4",
+        "category": "H",
+        "name": "Definitions are accurate: numbers quoted match the engine constants and loan table, examples do their own arithmetic, stated rules behave that way in the engine",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "42/42 sub-checks pass",
+        "repro": "node: parse numbers out of v4/info.js and compare with engine.js constants and engine calculations",
+        "seconds": 0
+      },
+      {
+        "id": "H5",
+        "category": "H",
+        "name": "Hourly jobs: add, gross = (wage + tips) x hours x weeks, automatic vs typed tax, blank tax returns to automatic, temporary end month, switching kind, clamps, persistence",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "28/28 sub-checks pass",
+        "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
+        "seconds": 2.6
+      },
+      {
+        "id": "H6",
+        "category": "H",
+        "name": "Optional fields left blank never break the plan or the finance verdict (job extras, improvements, exit fields, co-signers)",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "16/16 sub-checks pass",
+        "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
+        "seconds": 3.7
+      },
+      {
+        "id": "H7",
+        "category": "H",
+        "name": "Old saves migrate: v8 (assets only) and pre-hourly jobs (no kind / wage / tips / weeks) load, keep their numbers and show correctly",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
+        "repro": "Load crafted localStorage states; pasted old backup restore",
+        "seconds": 0.9
+      },
+      {
+        "id": "H8",
+        "category": "H",
+        "name": "Automatic tax estimate: matches an independent 2026 single-filer calculation (IRS Rev. Proc. 2025-32, Pub. 15) (federal after standard deduction + Social Security + Medicare, no state tax), is monotone and bounded",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "node: E.estTaxPct against a separate implementation and properties",
+        "seconds": 0
+      },
+      {
+        "id": "H9",
+        "category": "H",
+        "name": "Disclosure defaults and new wording: collapsed sections open on tap (and stay open), renamed labels, Hold/Sell/Merge + Status, loan grouping, import preview title",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Fresh state: check aria-expanded, hidden fields, labels",
+        "seconds": 1.9
+      },
+      {
+        "id": "H10",
+        "category": "H",
+        "name": "Clean run: no console / page errors and no network requests outside localhost during all help and hourly-job flows",
+        "points": 4,
+        "earned": 4,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
+        "repro": "Collected over the whole H run",
+        "seconds": 0
+      }
+    ]
+  },
+  "gest": {
+    "earned": 100,
+    "max": 100,
+    "checks": [
+      {
+        "id": "I1",
+        "category": "I",
+        "name": "Swipe right from the left edge goes back like iOS (touchstart within 24 px, dx > 70, |dy| < 45); ignored elsewhere",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
+        "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
+        "seconds": 4.6
+      },
+      {
+        "id": "I2",
+        "category": "I",
+        "name": "Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "13/13 sub-checks pass",
+        "repro": "Hold 600 ms, drag, release; check saved order",
+        "seconds": 5.3
+      },
+      {
+        "id": "I3",
+        "category": "I",
+        "name": "Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "7/7 sub-checks pass",
+        "repro": "Select row, press Move",
+        "seconds": 0.9
+      },
+      {
+        "id": "I4",
+        "category": "I",
+        "name": "Funding auto-assigns by list order: the asset before another funds it (1,2,3 and 1,3,2), stale in-category links clear, other categories untouched, no re-link on plain load",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "11/11 sub-checks pass",
+        "repro": "Reorder with Move buttons; read Funds selects + saved targets + plan",
+        "seconds": 1.8
+      },
+      {
+        "id": "I5",
+        "category": "I",
+        "name": "Duplicate: from the row panel and the asset page; copy sits right after the original, named \"(copy)\", planned, funding relinked",
+        "points": 10,
+        "earned": 10,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "Panel > Duplicate; asset page > Duplicate",
+        "seconds": 0.8
+      },
+      {
+        "id": "I6",
+        "category": "I",
+        "name": "Portfolio = total row + Homes / Commercial / Businesses dropdowns (name left, chevron right, stat strip: count, before/after loan, worth, DSCR, lasts), empty sections, Sold section only when something sold",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Headers, subtitles, collapse state, empty portfolio",
+        "seconds": 1.2
+      },
+      {
+        "id": "I7",
+        "category": "I",
+        "name": "Selecting a row opens a nested panel with the extra payment and live effects: loan term, monthly payment, next down payment (with cash flow); all match the engine and the asset page",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "25/25 sub-checks pass",
+        "repro": "Panel on maple, type extra, compare with engine + asset page",
+        "seconds": 1
+      },
+      {
+        "id": "I8",
+        "category": "I",
+        "name": "Rent & expenses shows the loan payment (P&I + mortgage insurance, extra) and the cash flow after the loan, in sync with Payment now / Cash flow now",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "Asset page > Rent & expenses",
+        "seconds": 1
+      },
+      {
+        "id": "I9",
+        "category": "I",
+        "name": "Swipe down closes the keyboard (blurs the focused field); Enter / Done also closes it; swipes inside the field or upward do not",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "Focus the extra field, swipe",
+        "seconds": 2.1
+      },
+      {
+        "id": "I10",
+        "category": "I",
+        "name": "Layout and hygiene: no sideways scroll at 320 / 390 / 430 with a panel open and while dragging, new buttons >= 44 px, no console errors or outside requests",
+        "points": 4,
+        "earned": 4,
+        "ratio": 1,
+        "detail": "4/4 sub-checks pass",
+        "repro": "Resize, measure, collected errors",
+        "seconds": 1.4
+      }
+    ]
+  }
 }

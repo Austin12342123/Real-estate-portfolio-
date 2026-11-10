@@ -17,7 +17,8 @@ const cats = { A: 'Requirement / propagation', B: 'Engine correctness', C: 'UX c
 const CATMAX = { A: 18, B: 12, C: 10, D: 8, E: 7, R: 30 };
 const KEY = 'rep-v4', DATA_V = +((/const DATA_V = (\d+)/.exec(fs.readFileSync(path.resolve(__dirname, '../v4/app.js'), 'utf8')) || [0, 0])[1]);
 const FIN_ONLY = process.env.FINANCE_ONLY === '1', SYNC_ONLY = process.env.SYNC_ONLY === '1', INFO_ONLY = process.env.INFO_ONLY === '1', MAIN_ONLY = process.env.MAIN_ONLY === '1', GEST_ONLY = process.env.GEST_ONLY === '1';
-const NSEED = E.seed().houses.length; /* derived from the app, never hard-coded */
+const NSEED = E.seedPlan().houses.length; /* the app's default portfolio (the self-funded plan), derived from the app, never hard-coded */
+const SEEDN = E.seed().houses.length; /* the older small sample (Load realistic sample) */
 
 /* ---------------------------------------------------------------- helpers */
 class Parts {
@@ -122,7 +123,7 @@ async function goHash(page, h) {
   await expandAll(page);
 }
 /* Portfolio rows: tapping a row selects it and opens its panel (extra payment, effects, move / duplicate / details / remove) */
-async function selRow(page, id) { if (!(await page.$(`[data-for="${id}"]`))) { await page.click(`[data-row="${id}"] .addrbtn`); await page.waitForTimeout(60); } }
+async function selRow(page, id) { if (!(await page.$(`[data-for="${id}"]`))) { await page.click(`[data-row="${id}"] [data-testid=row-extra-toggle]`); await page.waitForTimeout(60); } }
 async function setExtra(page, id, val) { await selRow(page, id); await setVal(page, `[data-for="${id}"] [data-testid=extra-input]`, val); }
 const goMain = async (page) => { await goHash(page, '#'); await page.waitForSelector('[data-testid=summary],.empty'); };
 /* Set a field like a user finishing an edit: native value set + 'input' event, then blur. */
@@ -141,7 +142,7 @@ async function snap(page) {
   const d = await page.evaluate(() => {
     const txt = (s) => { const e = document.querySelector(s); return e ? e.textContent.trim() : null; };
     const rows = [...document.querySelectorAll('[data-testid=ledger-row]')].map((r) => { const loc = r.querySelector('[data-testid=loc-line]'), inp = r.querySelector('input'), cf = r.querySelector('[data-testid=row-cashflow] b'), ex = r.querySelector('.exitline');
-      return { id: r.dataset.row || '', addr: (r.querySelector('.addr') || {}).textContent, tag: (r.querySelector('.tag') || {}).textContent, pay: (r.querySelector('[data-testid=row-payment]') || {}).textContent,
+      return { id: r.dataset.row || '', addr: (r.querySelector('.addr') || {}).textContent, tag: (r.querySelector('.tag') || {}).textContent, dp: ((r.querySelector('[data-testid=dp-line]') || {}).textContent || '').trim(), no: (r.querySelector('[data-testid=buy-no]') || {}).textContent, text: r.innerText, pay: (r.querySelector('[data-testid=row-payment]') || {}).textContent,
         extra: inp ? inp.value : null, eqA: (r.querySelector('[data-testid=row-payment]') || { dataset: {} }).dataset.equity, loc: loc ? loc.textContent.trim() : '', cf: cf ? cf.textContent.trim() : '', exitline: ex ? ex.textContent.trim() : '' }; });
     const bd = {}; document.querySelectorAll('[data-testid=breakdown] tbody tr').forEach((tr) => { const c = [...tr.children].map((x) => x.textContent.trim()); bd[c[0]] = c.slice(1); });
     return { nw: txt('[data-testid=kpi-networth]'), mon: txt('[data-testid=kpi-monthly]'), cf: txt('[data-testid=kpi-cashflow]'), dscr: txt('[data-testid=kpi-dscr]'), totX: txt('[data-testid=total-extra]'), headline: txt('[data-testid=plan-headline]'),
@@ -151,11 +152,11 @@ async function snap(page) {
   const s = { raw: d, nw: money(d.nw), mon: money(d.mon), cf: money(d.cf), dscr: parseFloat(d.dscr), totX: money(d.totX), headline: d.headline, rows: d.rows, bd: d.bd, body: d.body };
   s.rows.forEach((r) => { r.payN = (/\$([\d,.]+[MB]?)\/mo/.exec(r.pay) ? money('$' + /\$([\d,.]+[MB]?)\/mo/.exec(r.pay)[1]) : NaN); r.sold = /sold/.test(r.pay || ''); r.exN = r.extra == null ? 0 : money(r.extra); r.buy = buyOf(r.tag); r.cfN = /—/.test(r.cf) || r.sold ? 0 : money(r.cf); /* a sold row's cash cell shows the sale proceeds, not a monthly cash flow */ r.eqN = r.eqA ? +r.eqA : 0; });
   { const k = Object.keys(s.bd).find((x) => /^Sold\b/.test(x)); s.soldCash = k ? money(s.bd[k][1]) : 0; }
-  { const st = await store(page); if (st) s.rows.forEach((r) => { const h = (st.houses || []).find((x) => x.id === r.id); if (h && !r.sold) { const X = E.view(st, h).X; r.extra = Math.round(X).toLocaleString('en-US'); r.exN = Math.round(X); } }); }
+  { const st = await store(page); const plst = st && Array.isArray(st.houses) && st.houses.length ? E.plan(E.normalize(clone(st))) : null; if (st) s.rows.forEach((r) => { if (plst) r.buy = isFinite(plst.purchase[r.id]) ? plst.purchase[r.id] : Infinity; /* the rows no longer carry a tag: the buy month is the engine's */ const h = (st.houses || []).find((x) => x.id === r.id); if (h && !r.sold) { const X = E.view(st, h).X; r.extra = Math.round(X).toLocaleString('en-US'); r.exN = Math.round(X); } }); }
   s.row = (id) => s.rows.find((r) => r.id === id);
   return s;
 }
-const scanRoutes = ['#', '#house-maple', '#house-ridge', '#house-auto', '#assumptions', '#add'];
+const scanRoutes = ['#', '#house-maple', '#house-birch', '#house-auto', '#assumptions', '#add'];
 const scanBad = async (page, routes) => {
   const out = [];
   for (const h of routes || scanRoutes) {
@@ -174,6 +175,8 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 const mk = (g, houses) => mkS(Object.assign({ closing: 0, appr: 0, cap: 85, haircut: 0 }, g || {}), houses);
 const SRC = (o) => A('house', 'conv30', Object.assign({ id: 'a', addr: 'A', status: 'owned', price: 300000, dp: 20, rate: 6.5, term: 360, io: false, closingPct: 0, growth: 0, extra: 0, paid: 0, rent: 2000, tax: 0, ins: 0, target: 'b', loanId: 'custom' }, o || {}));
 const TGT = (o) => A('house', 'conv30', Object.assign({ id: 'b', addr: 'B', status: 'planned', price: 300000, dp: 20, rate: 6.5, term: 360, closingPct: 0, growth: 0, rent: 2000, tax: 0, ins: 0, target: '', loanId: 'custom', buyIn: 0 }, o || {}));
+/* the default plan with one business set to merge, so every exit field exists for the edge-input sweep */
+function EDGE() { const S = E.seedPlan(); const k = S.houses.find((h) => h.id === 'keystonehv'); Object.assign(k, { exit: 'merge', exitMonth: 200, exitLift: 10, mergeInto: 'auto' }); S.v = DATA_V; return S; }
 /* small mixed portfolio used for UI propagation checks */
 function SB() {
   return mkS({}, [
@@ -192,8 +195,9 @@ function simLoc(S, h, t, X) {
   let bal = L; for (let m = 0; m < k0; m++) bal = bal * (1 + i) - P; bal = Math.max(0, bal);
   const D = t.price * (t.dp / 100 + cl / 100);
   /* the funder's own monthly cash flow (income after costs and loan payment, before extra) is saved toward the down payment */
-  const egi = h.rent * (1 - g.vac / 100), noi = h.type === 'business' ? h.rent : egi - (h.tax + h.ins + h.hoa + g.maint / 100 * h.price / 12 + g.mgmt / 100 * egi), cfs = Math.max(0, noi - P - (h.mipAnn > 0 ? L * h.mipAnn / 1200 : 0));
-  for (let k = 0; k <= 600; k++) { const val = h.price * Math.pow(1 + gr / 100, (k0 + k) / 12); const head = Math.max(0, g.cap / 100 * (1 - g.haircut / 100) * val - bal - (h.liens || 0)); /* appraisal cut is taken off the VALUE (matches the Assumptions text and the glossary); changed from headroom x (1 - cut) after the logic audit L3.1 */ if (head + cfs * k >= D) return k; bal = Math.max(0, bal * (1 + i) - (P + X)); }
+  const egi = h.rent * (1 - g.vac / 100), noi = h.type === 'business' ? h.rent : egi - (h.tax + h.ins + h.hoa + g.maint / 100 * h.price / 12 + g.mgmt / 100 * egi);
+  let cum = 0; const cap = (h.type === 'business' ? g.capBiz : g.cap) / 100;
+  for (let k = 0; k <= 600; k++) { const val = h.price * Math.pow(1 + gr / 100, (k0 + k) / 12); const head = Math.max(0, cap * (1 - g.haircut / 100) * val - bal - (h.liens || 0)); /* appraisal cut is taken off the VALUE; the business cap differs from the real-estate cap */ if (head + cum >= D) return k; /* the saved cash flow GROWS with the asset's income (same rate as its value) and stops while no loan payment is due */ cum += Math.max(0, noi * Math.pow(1 + gr / 100, k / 12) - (bal > 0.005 ? P + (h.mipAnn > 0 ? bal / (1 + (h.mipUp || 0) / 100) * h.mipAnn / 1200 : 0) : 0)); bal = Math.max(0, bal * (1 + i) - (P + X)); }
   return Infinity;
 }
 let seedR = 12345; const rnd = () => ((seedR = (seedR * 1664525 + 1013904223) % 4294967296) / 4294967296);
@@ -217,8 +221,8 @@ async function engineChecks() {
     const S = chain({}, 0), P = new Parts(); [[24, 1543.87], [36, 918.49]].forEach(([m, e]) => { const g = E.extraFor(S, S.houses[0], m); P.t(g != null && near(g, e, 0.05), 'months ' + m, 1, 'got ' + g + ' want ' + e); });
     const sol = E.extraFor(S, S.houses[0], 24); if (sol != null) P.t(simLoc(S.g ? S : S, S.houses[0], S.houses[1], sol + 0.5) <= 24 && simLoc(S, S.houses[0], S.houses[1], sol - 3) > 24, 'independent simulation confirms minimality', 1);
     return P; });
-  await check('B07', 'B', 'Growth 3%: LOC months extra 0/500 = 50/32 (growth on asset, or g.appr with growth null)', 1.5, 'Engine.locMonths with growth=3', () => {
-    const P = new Parts(); [[0, 50], [500, 32]].forEach(([x, e]) => { const S = chain({}, x, { growth: 3 }); const g = E.locMonths(S, S.houses[0], x); P.t(g === e, 'asset growth, extra ' + x, 1, 'got ' + g + ' want ' + e);
+  await check('B07', 'B', 'Growth 3%: LOC months extra 0/500 = 48/32 (growth on asset, or g.appr with growth null; the home\'s saved cash flow grows with its rent, so it starts saving once rent growth passes the payment)', 1.5, 'Engine.locMonths with growth=3', () => {
+    const P = new Parts(); [[0, 48], [500, 32]].forEach(([x, e]) => { const S = chain({}, x, { growth: 3 }); const g = E.locMonths(S, S.houses[0], x); P.t(g === e, 'asset growth, extra ' + x, 1, 'got ' + g + ' want ' + e);
       const S2 = chain({ appr: 3 }, x, { growth: null }); const g2 = E.locMonths(S2, S2.houses[0], x); P.t(g2 === e, 'g.appr, extra ' + x, 1, 'got ' + g2 + ' want ' + e); }); return P; });
   await check('B08', 'B', 'More extra never delays LOC (monotone, 0..3000 step 50)', 1, 'loop Engine.locMonths over X', () => {
     const P = new Parts(); const S = E.seed(); const h = S.houses.find((x) => x.id === 'maple'); let prev = Infinity, okm = true, bad = ''; for (let x = 0; x <= 3000; x += 50) { const m = E.locMonths(S, h, x); if (m > prev) { okm = false; bad = 'x=' + x + ' ' + m + '>' + prev; } prev = m; }
@@ -321,7 +325,8 @@ async function engineChecks() {
     const P = new Parts(), io = A('commercial', 'bridge', { id: 'a', price: 1000000, status: 'planned', buyIn: 0, closingPct: 0, growth: 0, rent: 12000, tax: 0, ins: 0, hoa: 0, target: '' });
     const pl = E.plan(mk({}, [io])), L = 700000;
     P.t(io.io === true && near(E.payment(io), L * 0.095 / 12, 0.01), 'payment = interest only', 0.5, E.payment(io));
-    P.t([0, 12, 36, 100].every((t) => near(pl.series.debt[t], L, 0.01)), 'balance flat for 100 months', 1, [0, 12, 36, 100].map((t) => pl.series.debt[t].toFixed(0)).join(','));
+    let rb = L; const ir = 7.5 / 1200, rp = ir * Math.pow(1 + ir, 300) / (Math.pow(1 + ir, 300) - 1) * L; for (let m = 36; m < 100; m++) rb = rb * (1 + ir) - rp; /* the loan comes due at its 36-month term: the balance is refinanced at 7.5% over 25 years */
+    P.t([0, 12, 35, 36].every((t) => near(pl.series.debt[t], L, 0.01)) && near(pl.series.debt[100], rb, 0.05), 'balance flat until the loan comes due at month 36, then amortizes after the refinance (month 100 = ' + rb.toFixed(0) + ')', 1, [0, 12, 36, 100].map((t) => pl.series.debt[t].toFixed(0)).join(','));
     const ex = E.plan(mk({}, [Object.assign({}, io, { extra: 1000 })])); P.t(ex.series.debt[12] < L - 11000 && ex.series.debt[24] < ex.series.debt[12], 'extra payment reduces balance', 0.5, ex.series.debt[12]); return P; });
   await check('B22', 'B', 'Portfolio rule: per-asset shares (snap/assetsAt) sum exactly to series nw/cf/monthly/debt/value at many months', 2, 'node: sample + small states', () => {
     const P = new Parts(); const tests = [['sample', E.seed()], ['small', SB()], ['sell+merge', sellS([TGT({ id: 'b', price: 100000, buyIn: 90, target: '' })])]];
@@ -346,7 +351,7 @@ async function engineChecks() {
     return P; });
   await check('B23', 'B', 'Sample portfolio: finite plan, none unfunded, DTI peak below limit, homes cash-flow positive, 20-year numbers sane', 2, 'node: Engine.seed() + plan', () => {
     const P = new Parts(), S = E.seed(), pl = E.plan(S); const ids = E.seed().houses.map((h) => h.id);
-    P.t(S.houses.length === NSEED && ids.every((i) => E.H(S, i)), NSEED + ' assets with the documented ids', 0.4, S.houses.map((h) => h.id).join(','));
+    P.t(S.houses.length === SEEDN && ids.every((i) => E.H(S, i)), SEEDN + ' assets with the documented ids', 0.4, S.houses.map((h) => h.id).join(','));
     P.t(['house', 'commercial', 'business'].every((t) => S.houses.some((h) => h.type === t)), 'all three types present', 0.2);
     P.t(!pl.unfunded.length, 'no unfunded assets', 0.4, pl.unfunded.join(','));
     P.t(pl.worst.dti < S.g.dti, 'DTI peak ' + pl.worst.dti.toFixed(1) + ' below limit ' + S.g.dti, 0.4);
@@ -375,7 +380,7 @@ async function reqChecks(page) {
         const okFill = /^#house-/.test(hash) && near(f.dp, lo.dp, 0.01) && near(f.rate, lo.rate, 0.001) && near(f.termY, lo.term / 12, 0.01) && near(f.cl, lo.closing, 0.01) && f.loan === lo.id && f.io === !!lo.io;
         if (!okFill) badFill.push(tp + '/' + lo.id + ' ' + JSON.stringify(f));
         const a = await snap(page);
-        const changed = a.rows.length === prev.rows.length + 1 && !!a.row(id) && (a.nw !== prev.nw || a.mon !== prev.mon || a.cf !== prev.cf || /unfunded|buy/.test(a.row(id).tag || '')); /* an add after the chain tail can be unfunded (waits for the previous asset's credit line): then the row says so */
+        const changed = a.rows.length === prev.rows.length + 1 && !!a.row(id) && (a.nw !== prev.nw || a.mon !== prev.mon || a.cf !== prev.cf || /Credit line|Bought in/.test(a.row(id).dp || '')); /* an add after the chain tail can be unfunded (waits for the previous asset's credit line): then the row says so */
         if (!changed) noChange.push(lo.id + ' rows ' + prev.rows.length + '->' + a.rows.length + ' nw ' + prev.nw + '->' + a.nw);
         if (okFill && changed) nOk++; prev = a;
       } }
@@ -439,7 +444,7 @@ async function reqChecks(page) {
     await edit(page, 'h.a.wait', '24'); const ex24 = money(await page.inputValue('[data-p="h.a.extra"]'));
     P.t(want != null && near(ex24, want, 1.01), 'wait=24 -> extra field = back-solved value', 1, `ui ${ex24} engine ${want && want.toFixed(2)}`);
     P.t(want != null && simLoc(S, a, E.H(S, 'b'), ex24 + 1) <= 24 && simLoc(S, a, E.H(S, 'b'), ex24 - 3) > 24, 'independent simulation agrees', 0.5);
-    const m = await snap(page); P.t(m.row('a').exN === Math.round(ex24) && /opens in 24 mo|opens now/.test(m.row('a').loc) || /24 mo/.test(m.row('a').loc), 'main row shows extra and "opens in 24 mo"', 0.5, m.row('a').exN + ' / ' + m.row('a').loc);
+    const m = await snap(page); P.t(m.row('a').exN === Math.round(ex24) && /Credit line opens in 24 mo/.test(m.row('b').dp), 'main shows the extra on the source row and "Credit line opens in 24 mo" on the asset it funds', 0.5, m.row('a').exN + ' / ' + m.row('b').dp);
     await edit(page, 'h.a.wait', '12'); const ex12 = money(await page.inputValue('[data-p="h.a.extra"]')); P.t(ex12 > ex24, 'shorter wait -> bigger extra', 0.2);
     await loadState(page, SB()); await edit(page, 'h.a.payoff', '120'); const exP = money(await page.inputValue('[data-p="h.a.extra"]'));
     const wantP = pmt(E.balToday(a), a.rate / 1200, 120) - E.payment(a); P.t(near(exP, wantP, 1.01), 'payoff=120 -> extra = amortization solve (~' + wantP.toFixed(0) + ')', 0.8, 'ui ' + exP);
@@ -465,14 +470,17 @@ async function reqChecks(page) {
     await page.click('[data-undo]'); await page.waitForTimeout(80); const u = await snap(page);
     P.t(u.rows.length === b.rows.length && !!u.row('a') && u.nw === b.nw && u.mon === b.mon, 'Undo restores the asset and the totals', 0.6, `${u.rows.length} rows nw ${u.nw} vs ${b.nw}`);
     return P; });
-  await check('A06', 'A', 'Main rows follow list order = buy order (sorted once on first load, owned first); tags match the engine\'s purchase months', 1.5, 'Main ledger on sample and on a small state', async () => {
-    const P = new Parts(); await reset(page); const s = await snap(page); const grpOf = (r) => (r.tag || '').split(' ')[0];
-    const okGroups = (rows) => ['Home', 'Comm.', 'Biz'].every((g) => { const q = rows.filter((r) => grpOf(r) === g && !r.sold).map((r) => r.buy); return q.every((v, i) => !isNaN(v) && (i === 0 || q[i - 1] <= v)); });
-    P.t(okGroups(s.rows), 'sample rows in each category are nondecreasing by purchase month', 0.7, s.rows.map((r) => r.buy).join(','));
-    const st = await store(page), plS = E.plan(st), q = st.houses.map((h) => plS.purchase[h.id]); P.t(st.orderV === 1 && q.every((v, i) => i === 0 || (isFinite(q[i - 1]) ? q[i - 1] <= v || !isFinite(v) : !isFinite(v))), 'saved list is in buy order and flagged (orderV = 1)', 0.3, q.join(','));
-    const own = s.rows.filter((r) => grpOf(r) === 'Home' && isOwnedTag(r.tag)).length; P.t(own === 2 && s.rows.filter((r) => grpOf(r) === 'Home').slice(0, 2).every((r) => isOwnedTag(r.tag)), 'owned homes come first in the Homes list (owned tag has no "· buy" part)', 0.3, own);
-    const pl = E.plan(E.seed()); P.t(s.rows.every((r) => { const m = pl.purchase[r.id]; return r.buy === (isFinite(m) ? m : Infinity); }), 'row tags equal Engine purchase months', 0.5);
-    await loadState(page, SB()); const t = await snap(page), pb = E.plan(SB()); P.t(okGroups(t.rows) && t.rows.every((r) => { const m = pb.purchase[r.id]; return r.buy === (isFinite(m) ? m : Infinity); }), 'small state: list order sorted by month once, tags equal the engine', 0.5, t.rows.map((r) => r.id + ':' + r.buy).join(',')); return P; });
+  await check('A06', 'A', 'Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset of a category has no wait line and every later one has', 1.5, 'Main ledger on the default plan and on a small state', async () => {
+    const P = new Parts(); await reset(page); const s = await snap(page); const st = await store(page), plS = E.plan(E.normalize(clone(st)));
+    const cats = ['house', 'commercial', 'business'], byCat = (rows) => cats.map((c) => rows.filter((r) => { const h = st.houses.find((x) => x.id === r.id); return h && h.type === c && !r.sold; }));
+    P.t(byCat(s.rows).every((q) => q.every((r, i) => i === 0 || q[i - 1].buy <= r.buy)), 'rows in each category are nondecreasing by purchase month', 0.4, s.rows.map((r) => r.buy).join(','));
+    const q = st.houses.map((h) => plS.purchase[h.id]); P.t(st.orderV === 1 && q.every((v, i) => i === 0 || (isFinite(q[i - 1]) ? q[i - 1] <= v || !isFinite(v) : !isFinite(v))), 'saved list is in buy order and flagged (orderV = 1)', 0.2, q.join(','));
+    const ordr = st.houses.map((h, i) => [h.id, i]).sort((a, b) => (isFinite(plS.purchase[a[0]]) ? plS.purchase[a[0]] : 1e9) - (isFinite(plS.purchase[b[0]]) ? plS.purchase[b[0]] : 1e9) || a[1] - b[1]).map((x) => x[0]), noOf = {}; ordr.forEach((id, k) => { noOf[id] = k + 1; });
+    P.t(s.rows.every((r) => +r.no === noOf[r.id]) && s.rows.length === st.houses.length, 'every row shows its buy number (badge before the name) = its place in buy order', 0.3, s.rows.map((r) => r.no).join(','));
+    P.t(s.rows.every((r) => !/\b(owned|planned)\b/i.test(r.text)) && (await page.locator('[data-row] [data-sel], [data-row] .tag').count()) === 0, 'no row says owned or planned, and rows have no Funds picker', 0.3);
+    const firsts = cats.map((c, i) => byCat(s.rows)[i][0]).filter(Boolean), laters = byCat(s.rows).flatMap((q2) => q2.slice(1));
+    P.t(firsts.every((r) => r.dp === '') && laters.length > 0 && laters.every((r) => /^(Credit line opens in|Bought in|Credit line not reachable)/.test(r.dp)), 'the first asset of each category shows no wait line; every later asset shows one', 0.5, 'firsts: ' + firsts.map((r) => r.id + ':' + r.dp.slice(0, 20)).join(' | ') + ' laters without: ' + laters.filter((r) => !r.dp).map((r) => r.id).join(','));
+    await loadState(page, SB()); const t = await snap(page), pb = E.plan(SB()); P.t(t.rows.every((r) => r.buy === (isFinite(pb.purchase[r.id]) ? pb.purchase[r.id] : Infinity)) && byCat(t.rows).length > 0, 'small state: buy months follow the engine', 0.2); return P; });
   await check('A07', 'A', 'No "Today" / "20 years" view toggle anywhere (single portfolio snapshot)', 1, 'Scan buttons on main, asset, assumptions, add pages', async () => {
     await reset(page); const P = new Parts(); let toggles = [], dv = 0;
     for (const h of ['#', '#house-maple', '#assumptions', '#add']) { await goHash(page, h); const r = await page.evaluate(() => ({ dv: document.querySelectorAll('[data-view]').length, b: [...document.querySelectorAll('#app button, #app [role=tab]')].map((e) => e.textContent.trim()).filter((t) => /^(today|now|20 ?y(ears?)?|20-year|in 20 years|20 yr)$/i.test(t)) })); dv += r.dv; toggles = toggles.concat(r.b); }
@@ -487,15 +495,15 @@ async function reqChecks(page) {
     await edit(page, 'h.' + id + '.rent', '6000'); P.t((await page.locator('[data-testid=home-loses]').count()) === 0, 'asset warning clears when rent raised', 0.3); await goMain(page); P.t((await page.locator('[data-testid=home-warning]').count()) === 0, 'main warning clears', 0.3);
     await goHash(page, '#add'); await page.click('[data-addtype=business]'); await page.click('[data-testid=confirm-add]'); await page.waitForTimeout(80); P.t((await page.locator('[data-testid=home-loses]').count()) === 0, 'business page never shows the home warning', 0.2); return P; });
   await check('A09', 'A', 'Per-row numbers sum to the portfolio headline (cash flow, monthly payments, net worth) on the sample, and match the engine', 3, 'Main page: sum row cash flows / payments / equity vs KPIs', async () => {
-    await reset(page); const P = new Parts(); const s = await snap(page); const pl = E.plan(E.seed()), h = pl.horizon;
-    P.t(nearRel(s.nw, h.nw, 1, 0.004) && nearRel(s.mon, h.monthly, 1, 0.002) && nearRel(s.cf, h.cf, 1, 0.002), 'KPIs equal Engine.plan(seed).horizon (net worth shown to $0.1M)', 0.7, `nw ${s.nw} vs ${Math.round(h.nw)}; mon ${s.mon} vs ${Math.round(h.monthly)}; cf ${s.cf} vs ${Math.round(h.cf)}`);
+    await reset(page); const P = new Parts(); const s = await snap(page); const pl = E.plan(E.seedPlan()), h = pl.horizon;
+    P.t(nearRel(s.nw, h.nw, 1, 0.004) && nearRel(s.mon, h.monthly, 1, 0.002) && nearRel(s.cf, h.cf, 1, 0.002), 'KPIs equal Engine.plan(default plan).horizon (net worth shown to $0.1M)', 0.7, `nw ${s.nw} vs ${Math.round(h.nw)}; mon ${s.mon} vs ${Math.round(h.monthly)}; cf ${s.cf} vs ${Math.round(h.cf)}`);
     const cfSum = s.rows.reduce((a, r) => a + (r.cfN || 0), 0); P.t(near(cfSum, s.cf, 0.5 * s.rows.length + 1 + Math.abs(s.cf) * 0.001), 'sum of row cash flows = Cash flow / mo KPI', 0.8, `${Math.round(cfSum)} vs ${s.cf}`);
     const paySum = s.rows.reduce((a, r) => a + (r.sold || !isFinite(r.payN) ? 0 : r.payN), 0); P.t(near(paySum, s.mon, 0.5 * s.rows.length + 1 + Math.abs(s.mon) * 0.001), 'sum of row payments = Total monthly payments KPI', 0.8, `${Math.round(paySum)} vs ${s.mon}`);
     const eq = s.rows.reduce((a, r) => a + r.eqN, 0), cash = s.soldCash; const tot = eq + cash; /* row equity from data-equity; cash kept from sales is the breakdown Sold row */
     P.t(near(tot, s.nw, Math.abs(s.nw) * 0.004 + 1000), 'sum of row equity (+ cash from sales) = Net worth KPI', 0.8, `${Math.round(tot)} vs ${s.nw}`);
     const pr = s.bd['Portfolio']; P.t(!!pr && nearRel(money(pr[1]), s.nw, 1, 0.003) && nearRel(money(pr[2]), s.cf, 1, 0.003), 'breakdown table Portfolio row = KPIs', 0.4, JSON.stringify(pr));
     const exSum = s.rows.reduce((a, r) => a + r.exN, 0); P.t(near(exSum, s.totX, s.rows.length), 'total extra = sum of extra inputs', 0.3, `${exSum} vs ${s.totX}`);
-    await setExtra(page, 'maple', '1500'); const a = await snap(page); const S = E.seed(); E.H(S, 'maple').extra = 1500; const w = E.plan(S).horizon;
+    await setExtra(page, 'maple', '1500'); const a = await snap(page); const S = E.seedPlan(); E.H(S, 'maple').extra = 1500; const w = E.plan(S).horizon;
     P.t(near(a.totX - s.totX, 900, 1) && nearRel(a.mon, w.monthly, 1, 0.006) && nearRel(a.nw, w.nw, 1, 0.006), 'editing a row extra on main updates totals like the engine', 0.5, `monthly ${s.mon}->${a.mon} (engine ${Math.round(w.monthly)})`); return P; });
   await check('A10', 'A', 'Exit and improvements through the UI: Hold/Sell/Merge buttons and fields propagate to rows, KPIs and breakdown', 3.5, 'Asset page > Value-add & exit', async () => {
     await loadState(page, SB(), '#house-b'); const P = new Parts(); const S = SB();
@@ -513,14 +521,14 @@ async function reqChecks(page) {
     const s4 = await snap(page); P.t(nearRel(s4.nw, E.plan(S).horizon.nw) && /improve/.test(s4.row('c').exitline), 'improvement budget/lift propagate and show on the row', 0.8, s4.row('c').exitline); return P; });
   await check('A11', 'A', 'Sample portfolio on screen: all rows, three types, sane finite headline, no unfunded warning, no DTI warning', 2, 'Fresh load', async () => {
     await reset(page); const P = new Parts(); const s = await snap(page);
-    P.t(s.rows.length === NSEED, NSEED + ' ledger rows', 0.4, s.rows.length); P.t(['Home', 'Comm.', 'Biz'].every((t) => s.rows.some((r) => (r.tag || '').startsWith(t))), 'Home / Comm. / Biz rows present', 0.3);
+    P.t(s.rows.length === NSEED, NSEED + ' ledger rows', 0.4, s.rows.length); { const stt = await store(page); P.t(['house', 'commercial', 'business'].every((t) => stt.houses.some((h) => h.type === t && s.rows.some((r) => r.id === h.id))) && (await page.locator('[data-testid=cat-count-house]').count()) === 1 && (await page.locator('[data-testid=cat-count-commercial]').count()) === 1 && (await page.locator('[data-testid=cat-count-business]').count()) === 1, 'Home / Commercial / Business rows and category strips present', 0.3); }
     P.t(isFinite(s.nw) && isFinite(s.mon) && isFinite(s.cf) && isFinite(s.dscr) && s.nw > 0 && !BAD.test(s.body), 'KPIs finite and positive, no NaN text', 0.4, `${s.raw.nw} ${s.raw.mon} ${s.raw.cf} ${s.raw.dscr}`);
     P.t(!/never funded|Debt-to-income peaks/.test(s.body), 'no unfunded / DTI-peak warning', 0.5); P.t(/Next: buy/.test(s.headline || '') && /by/.test(s.headline || ''), 'plan headline names the next purchase and completion', 0.2, s.headline);
     P.t((await page.locator('[data-testid=outside-cash]').count()) <= 1, 'outside-cash warning renders at most once', 0.2); return P; });
-  await check('A12', 'A', 'Credit-line chain on screen: "opens in N mo" and buy months match the engine; raising source extra opens sooner', 2, 'Main rows on small state', async () => {
+  await check('A12', 'A', 'Credit-line chain on screen: the asset being bought shows "Credit line opens in N mo · down payment from X" (or "Bought in N mo with cash on hand"), N matches the engine; raising source extra opens sooner', 2, 'Main rows on small state', async () => {
     await loadState(page, SB()); const P = new Parts(); const s = await snap(page), S = SB(), pl = E.plan(S);
-    const okLoc = ['a', 'b'].every((id) => { const m = pl.purchase[id] + pl.V[id].locM, want = !isFinite(m) ? 'not reachable' : m <= 0 ? 'opens now' : 'opens in ' + m + ' mo'; return s.row(id).loc.includes(want); });
-    P.t(okLoc, 'loc-line equals engine purchase+locM', 1, s.row('a').loc + ' | ' + s.row('b').loc); P.t(s.row('b').buy === pl.purchase.b && s.row('c').buy === pl.purchase.c, 'buy months equal engine', 0.5);
+    const okLoc = [['a', 'b'], ['b', 'c']].every(([f, id]) => { const m = pl.purchase[f] + pl.V[f].locM, d = s.row(id).dp; return pl.funds[f] ? d.includes('Credit line opens in ' + m + ' mo') && d.includes('down payment from ' + S.houses.find((x) => x.id === f).addr) : /^Bought in/.test(d); });
+    P.t(okLoc, 'dp-line on the asset being bought equals engine funder purchase + locM', 1, s.row('b').dp + ' | ' + s.row('c').dp); P.t(s.row('b').buy === pl.purchase.b && s.row('c').buy === pl.purchase.c, 'buy months equal engine', 0.5);
     await setExtra(page, 'a', '2000'); const a = await snap(page); P.t(a.row('b').buy < s.row('b').buy && a.row('c').buy <= s.row('c').buy, 'more extra on source -> targets bought sooner', 0.5, `b ${s.row('b').buy}->${a.row('b').buy}`); return P; });
 }
 
@@ -534,11 +542,11 @@ async function uxChecks(page) {
     P.t(r.nw < 844 && r.mon < 844 && r.cf < 844 && r.dscr < 844, 'four KPIs in first viewport', 0.8, JSON.stringify(r)); P.t(r.head < 844, 'plan headline visible', 0.5); P.t(r.row1 < 844, 'first ledger row visible', 0.7); return P; });
   await check('C02', 'C', 'Main page keeps text inputs out of the list: no inputs until a row is selected, then exactly one extra field (none for a sold row)', 1.5, 'Count visible <input> on main before / after selecting a row (sample, and after adding 3)', async () => {
     const P = new Parts(); await reset(page); const cnt = () => page.evaluate(() => [...document.querySelectorAll('#app input')].filter((i) => i.type !== 'hidden' && i.offsetParent).length);
-    const plS = E.plan(E.seed()), sold = E.seed().houses.filter((h) => plS.exits[h.id] && plS.sellAt[h.id] <= plS.planM)[0];
+    const plS = E.plan(E.seedPlan()), sold = E.seedPlan().houses.filter((h) => plS.exits[h.id] && plS.sellAt[h.id] <= plS.planM)[0];
     P.t((await cnt()) === 0, 'no text input anywhere on the Portfolio page until a row is selected', 0.6, await cnt());
     await selRow(page, 'maple'); P.t((await cnt()) === 1 && (await page.locator('[data-for=maple] [data-testid=extra-input]').count()) === 1, 'selecting an asset shows exactly one extra-payment field, inside its panel', 0.6);
-    await selRow(page, 'maple'); await page.click('[data-row=maple] .addrbtn'); await page.waitForTimeout(50); P.t((await cnt()) === 0, 'tapping the row again closes the panel', 0.2);
-    if (sold) { await selRow(page, sold.id); P.t((await cnt()) === 0, 'a sold asset has no extra field', 0.2); }
+    await selRow(page, 'maple'); await page.click('[data-row=maple] [data-testid=row-extra-toggle]'); await page.waitForTimeout(50); P.t((await cnt()) === 0, 'tapping the row again closes the panel', 0.2);
+    if (sold) { P.t((await page.locator(`[data-row=${sold.id}] [data-testid=row-extra-toggle]`).count()) === 0 && (await cnt()) === 0, 'a sold asset has no Extra button and no extra field', 0.2); }
     for (let i = 0; i < 3; i++) { await goHash(page, '#add'); await page.click('[data-testid=confirm-add]'); await goMain(page); } P.t((await page.locator('[data-testid=ledger-row]').count()) === NSEED + 3, (NSEED + 3) + ' rows after adding 3', 0.2); return P; });
   await check('C03', 'C', 'No horizontal overflow at 320/390/430 on main, asset, assumptions, add, import', 2, 'Resize, check scrollWidth and element rects', async () => {
     const P = new Parts(); await reset(page);
@@ -557,7 +565,7 @@ async function uxChecks(page) {
     return { ratio: tot ? ok / tot : 0, detail: `${ok}/${tot} ok ${bad.slice(0, 5).join(',')}` }; });
   await check('C06', 'C', 'Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps', 2, 'Tap row, Back; Add > Add (defaults)', async () => {
     await reset(page); await goMain(page); const P = new Parts();
-    await page.locator('[data-testid=ledger-row] .addr').first().click(); await page.waitForTimeout(100); await page.click('[data-testid=open-details]'); await page.waitForTimeout(100); const h1 = await page.evaluate(() => location.hash); P.t(/#house-maple/.test(h1), 'tap asset name (opens its panel) then Open details -> its page (2 taps)', 0.5, h1);
+    await page.locator('[data-testid=ledger-row] .addr').first().click(); await page.waitForTimeout(100); const h1 = await page.evaluate(() => location.hash); P.t(/#house-maple/.test(h1), 'one tap on the row opens its asset page', 0.5, h1);
     await page.locator('[aria-label=Back]').first().click(); await page.waitForTimeout(100); const h2 = await page.evaluate(() => location.hash); P.t(/^#?$/.test(h2) && (await page.locator('[data-testid=summary]').count()) === 1, 'one Back tap -> main', 0.5, h2);
     const n0 = (await store(page)).houses.length; await page.click('[data-testid=add-house]'); await page.click('[data-testid=confirm-add]'); await page.waitForTimeout(100); P.t((await store(page)).houses.length === n0 + 1 && /#house-/.test(await page.evaluate(() => location.hash)), 'Add + confirm = 2 taps to a new asset', 1); return P; });
   await check('C07', 'C', 'Main page stays compact: <= 150px per ledger row (sample), plan below the ledger', 1, 'Measure ledger rows', async () => {
@@ -565,7 +573,7 @@ async function uxChecks(page) {
     return { ratio: r.avg <= 150 ? 1 : r.avg <= 220 ? 1 - (r.avg - 150) / 70 : 0, detail: `avg row ${r.avg.toFixed(0)}px x ${r.n}, page ${r.h}px` }; });
   const contrast = async (scheme) => {
     await page.emulateMedia({ colorScheme: scheme }); const fails = []; let tot = 0, ok = 0;
-    const pages = [['main', '#'], ['main+chart', '#'], ['asset', '#house-ridge'], ['assumptions', '#assumptions'], ['add', '#add']];
+    const pages = [['main', '#'], ['main+chart', '#'], ['asset', '#house-birch'], ['assumptions', '#assumptions'], ['add', '#add']];
     for (const [n, h] of pages) { await goHash(page, h); if (n === 'main+chart') { const tg = page.locator('[data-testid=networth-toggle]'); if (await tg.count()) { await tg.click(); await page.waitForTimeout(80); } }
       const r = await page.evaluate(() => {
         const cv = document.createElement('canvas'); cv.width = cv.height = 1; const cx = cv.getContext('2d', { willReadFrequently: true });
@@ -652,34 +660,34 @@ async function robustChecks(page) {
   const cases = [['h.maple.price', '0'], ['h.maple.dp', '100'], ['h.maple.dp', '150'], ['h.maple.dp', '-20'], ['h.maple.rate', '0'], ['h.maple.rate', '1000'], ['h.maple.termY', '0'], ['h.maple.price', ''], ['h.maple.price', 'abc'], ['h.maple.price', '-500'], ['h.maple.price', '1e12'], ['h.maple.price', '1000000000000'],
     ['h.maple.extra', '1000000000000'], ['h.maple.rent', '1000000000000'], ['h.maple.tax', '-100'], ['h.maple.wait', '0'], ['h.maple.wait', '-5'], ['h.maple.wait', '999999'], ['h.maple.payoff', '0'], ['h.maple.payoff', '1'], ['h.maple.payoff', '9999'], ['h.maple.down', '0'], ['h.maple.down', '99999999'],
     ['h.maple.paid', '5000'], ['h.maple.liens', '99999999999'], ['h.maple.growth', '1000'], ['h.maple.growth', '-100'], ['h.maple.closingPct', '1000'],
-    ['h.ridge.capex', '1000000000000'], ['h.ridge.capexMonths', '-5'], ['h.ridge.capexMonths', '99999'], ['h.ridge.arv', '1000000000000'], ['h.ridge.arv', '-100'], ['h.ridge.liftIncome', '-1000'], ['h.ridge.exitMonth', '0'], ['h.ridge.exitMonth', '-9'], ['h.ridge.exitMonth', '99999'], ['h.ridge.sellCost', '100'], ['h.ridge.sellCost', '1000'],
-    ['h.keystone.exitLift', '10000'], ['h.keystone.exitLift', '-50'], ['h.keystone.exitMonth', '1'],
+    ['h.birch.capex', '1000000000000'], ['h.birch.capexMonths', '-5'], ['h.birch.capexMonths', '99999'], ['h.birch.arv', '1000000000000'], ['h.birch.arv', '-100'], ['h.birch.liftIncome', '-1000'], ['h.birch.exitMonth', '0'], ['h.birch.exitMonth', '-9'], ['h.birch.exitMonth', '99999'], ['h.birch.sellCost', '100'], ['h.birch.sellCost', '1000'],
+    ['h.keystonehv.exitLift', '10000'], ['h.keystonehv.exitLift', '-50'], ['h.keystonehv.exitMonth', '1'],
     ['g.cap', '0'], ['g.cap', '100'], ['g.cap', '1000'], ['g.dti', '0'], ['g.hrate', '0'], ['g.closing', '1000'], ['g.vac', '100'], ['g.vac', '1000'], ['g.mgmt', '1000'], ['g.appr', '1000'], ['g.appr', '-50'], ['g.haircut', '100'], ['g.haircut', '1000'], ['g.p1', '0'], ['g.rentCount', '1000'], ['g.planYears', '0'], ['g.planYears', '1000'], ['g.planYears', '-4']];
   await check('E01', 'E', 'Edge inputs (' + cases.length + ' cases + compound: zero, 100% down, blanks, garbage, negatives, 1e12, caps, sale/merge/improvement fields) leave no NaN/Infinity/undefined in any page or crash', 3, 'Type each value into the field; scan text + input values on all pages', async () => {
-    const P = new Parts(); await reset(page);
-    for (const [p, v] of cases) { let bad = []; try { const e0 = collect.errors.length; await edit(page, p, v); bad = await scanBad(page, ['#', '#house-maple', '#house-ridge', '#assumptions']); if (collect.errors.length > e0) bad.push('JS error: ' + collect.errors[collect.errors.length - 1].slice(0, 100)); } catch (e) { bad = ['threw ' + e.message.slice(0, 80)]; }
+    const P = new Parts(); await loadState(page, EDGE());
+    for (const [p, v] of cases) { let bad = []; try { const e0 = collect.errors.length; await edit(page, p, v); bad = await scanBad(page, ['#', '#house-maple', '#house-birch', '#assumptions']); if (collect.errors.length > e0) bad.push('JS error: ' + collect.errors[collect.errors.length - 1].slice(0, 100)); } catch (e) { bad = ['threw ' + e.message.slice(0, 80)]; }
       P.t(!bad.length, p + '=' + JSON.stringify(v), 1, bad[0]); }
-    await reset(page); await edit(page, 'h.maple.price', '0'); await edit(page, 'h.maple.down', '5000'); let b = await scanBad(page); P.t(!b.length, 'price 0 then down$ 5000 (0-division)', 1, b[0]);
-    await reset(page); await edit(page, 'g.p1', '0'); await edit(page, 'g.p2', '0'); await edit(page, 'g.rentCount', '0'); for (const id of ['maple', 'cedar', 'auto']) await edit(page, 'h.' + id + '.rent', '0'); b = await scanBad(page); P.t(!b.length, 'zero income everywhere', 1, b[0]);
-    await reset(page); await edit(page, 'h.maple.price', '300000'); await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('rep-v4')); s.houses.push({ id: 'x1', addr: 'Sparse' }, { id: 'x2', type: 'spaceship', exit: 'nuke', loanId: 5, price: 'abc' }); s.houses[0].target = 'ghost'; s.houses[1].mergeInto = 'ghost'; localStorage.setItem('rep-v4', JSON.stringify(s)); }); await page.reload(); await page.waitForSelector('#app > *'); b = await scanBad(page, ['#', '#house-x1', '#house-x2', '#assumptions']); P.t(!b.length, 'stored/imported state with missing/garbage fields + dangling refs', 1, b[0]);
+    await loadState(page, EDGE()); await edit(page, 'h.maple.price', '0'); await edit(page, 'h.maple.down', '5000'); let b = await scanBad(page); P.t(!b.length, 'price 0 then down$ 5000 (0-division)', 1, b[0]);
+    await loadState(page, EDGE()); await edit(page, 'g.p1', '0'); await edit(page, 'g.p2', '0'); await edit(page, 'g.rentCount', '0'); for (const id of ['maple', 'cedar', 'auto']) await edit(page, 'h.' + id + '.rent', '0'); b = await scanBad(page); P.t(!b.length, 'zero income everywhere', 1, b[0]);
+    await loadState(page, EDGE()); await edit(page, 'h.maple.price', '300000'); await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('rep-v4')); s.houses.push({ id: 'x1', addr: 'Sparse' }, { id: 'x2', type: 'spaceship', exit: 'nuke', loanId: 5, price: 'abc' }); s.houses[0].target = 'ghost'; s.houses[1].mergeInto = 'ghost'; localStorage.setItem('rep-v4', JSON.stringify(s)); }); await page.reload(); await page.waitForSelector('#app > *'); b = await scanBad(page, ['#', '#house-x1', '#house-x2', '#assumptions']); P.t(!b.length, 'stored/imported state with missing/garbage fields + dangling refs', 1, b[0]);
     await reset(page); await page.evaluate(() => localStorage.setItem('rep-v4', '{not json')); await page.reload(); await page.waitForSelector('#app > *'); P.t((await page.locator('[data-testid=summary]').count()) === 1, 'corrupt localStorage falls back to sample data', 1);
-    await reset(page); await goHash(page, '#house-nonexistent'); P.t((await page.evaluate(() => document.getElementById('app').innerText.length)) > 0 && !BAD.test(await page.evaluate(() => document.getElementById('app').innerText)), 'unknown asset route renders something sane', 0.5);
+    await loadState(page, EDGE()); await goHash(page, '#house-nonexistent'); P.t((await page.evaluate(() => document.getElementById('app').innerText.length)) > 0 && !BAD.test(await page.evaluate(() => document.getElementById('app').innerText)), 'unknown asset route renders something sane', 0.5);
     return P; });
   await check('E02', 'E', 'Remove all assets (main page) -> clean empty state with add action; can add again', 1.5, 'Edit > Remove each row', async () => {
     await loadState(page, SB()); const P = new Parts(); await goMain(page); let guard = 0;
-    while ((await page.locator('[data-testid=ledger-row]').count()) && guard++ < 12) { await page.locator('[data-testid=ledger-row] .addrbtn').first().click(); await page.locator('[data-testid=row-remove]').first().click(); await page.locator('[data-del-yes]').first().click(); await page.waitForTimeout(60); }
+    while ((await page.locator('[data-testid=ledger-row]').count()) && guard++ < 12) { if (await page.locator('[data-testid=ledger-row] [data-testid=row-extra-toggle]').count()) { await page.locator('[data-testid=ledger-row] [data-testid=row-extra-toggle]').first().click(); await page.locator('[data-testid=row-remove]').first().click(); } else { /* a sold row has no Extra button: tapping it opens its page, which has Remove */ await page.locator('[data-testid=ledger-row] .addr').first().click(); await page.waitForTimeout(80); await page.locator('[data-testid=h-delete]').click(); } await page.locator('[data-del-yes]').first().click(); await page.waitForTimeout(60); await goHash(page, '#'); }
     const t = await page.evaluate(() => document.getElementById('app').innerText); P.t(/none yet/i.test(t) && (await page.locator('[data-testid^=cat-header-]').count()) === 3 && !BAD.test(t) && (await page.locator('[data-testid=ledger-row]').count()) === 0, 'empty state message, no NaN', 0.6, t.slice(0, 80).replace(/\n/g, ' '));
     P.t((await page.locator('[data-testid=add-house]').count()) === 1 && (await page.locator('[data-testid=undo-banner]').count()) === 1, 'Add action and Undo available', 0.3);
     await page.click('[data-testid=add-house]'); await page.click('[data-testid=confirm-add]'); await page.waitForTimeout(80); await goMain(page); P.t((await page.locator('[data-testid=ledger-row]').count()) === 1, 'add after empty works', 0.3); return P; });
   await check('E03', 'E', 'Deleting a funding target clears references (select, storage, plan, merge-into)', 1.5, 'Remove Bravo; Alpha target must reset', async () => {
     await loadState(page, SB()); const P = new Parts(); await goMain(page); await selRow(page, 'b'); await page.click('[data-for="b"] [data-testid=row-remove]'); await page.click('[data-for="b"] [data-del-yes]'); await page.waitForTimeout(100);
     const s = await store(page); P.t(s.houses.every((h) => h.target !== 'b'), 'no asset still targets the deleted id', 0.4, JSON.stringify(s.houses.map((h) => h.target)));
-    const v = await page.inputValue('[data-row="a"] [data-sel=a]'); const s3 = await store(page); P.t(v !== 'b' && v === (s3.houses.find((h) => h.id === 'a').target || ''), 'Alpha funding select no longer points at the deleted asset (relinked to the next home or cleared)', 0.3, v); const m = await snap(page); P.t(!/Bravo/.test(m.body.replace(/Removed Bravo House\./, '')), 'no mention of deleted asset on main (besides Undo banner)', 0.3);
+    const s3 = await store(page); const v = (s3.houses.find((h) => h.id === 'a').target || ''); P.t(v !== 'b' && v === (s3.houses.find((h) => h.id === 'a').target || ''), 'Alpha funding select no longer points at the deleted asset (relinked to the next home or cleared)', 0.3, v); const m = await snap(page); P.t(!/Bravo/.test(m.body.replace(/Removed Bravo House\./, '')), 'no mention of deleted asset on main (besides Undo banner)', 0.3);
     await goHash(page, '#house-e'); await page.click('[data-del=e]'); await page.click('[data-del-yes=e]'); await page.waitForTimeout(80); const s2 = await store(page); P.t(s2.houses.every((h) => h.mergeInto !== 'e'), 'merge-into reference cleared too', 0.2);
     await goHash(page, '#house-b'); P.t(!BAD.test(await page.evaluate(() => document.getElementById('app').innerText)), 'visiting a deleted asset URL is safe', 0.3); return P; });
   await check('E04', 'E', 'Every input/select/button has an accessible name (main, asset, assumptions, add, import)', 1, 'aria-label / label / text on all pages', async () => {
     await reset(page); let tot = 0, ok = 0; const bad = [];
-    for (const h of ['#', '#house-maple', '#house-ridge', '#house-keystone', '#assumptions', '#add', '#import-new']) { await goHash(page, h); if (h === '#') await selRow(page, 'maple'); const r = await page.evaluate(() => [...document.querySelectorAll('#app input, #app select, #app button, #app textarea')].filter((e) => e.type !== 'hidden' && !e.hidden).map((e) => { const al = e.getAttribute('aria-label'), lb = e.getAttribute('aria-labelledby'), l = e.labels && e.labels.length ? [...e.labels].map((x) => x.textContent).join('').trim() : '', tx = e.tagName === 'BUTTON' ? e.textContent.trim() : '', ti = e.getAttribute('title'); return { n: !!((al && al.trim()) || lb || l || tx || ti), d: e.tagName + (e.dataset.p || e.dataset.testid || '') }; })); 
+    for (const h of ['#', '#house-maple', '#house-birch', '#house-keystonehv', '#assumptions', '#add', '#import-new']) { await goHash(page, h); if (h === '#') await selRow(page, 'maple'); const r = await page.evaluate(() => [...document.querySelectorAll('#app input, #app select, #app button, #app textarea')].filter((e) => e.type !== 'hidden' && !e.hidden).map((e) => { const al = e.getAttribute('aria-label'), lb = e.getAttribute('aria-labelledby'), l = e.labels && e.labels.length ? [...e.labels].map((x) => x.textContent).join('').trim() : '', tx = e.tagName === 'BUTTON' ? e.textContent.trim() : '', ti = e.getAttribute('title'); return { n: !!((al && al.trim()) || lb || l || tx || ti), d: e.tagName + (e.dataset.p || e.dataset.testid || '') }; })); 
       r.forEach((x) => { tot++; if (x.n) ok++; else bad.push(h + ' ' + x.d); }); }
     const names = await page.evaluate(() => 0); return { ratio: tot ? ok / tot : 0, detail: `${ok}/${tot} named. unnamed: ${bad.slice(0, 5).join(', ')}` }; });
   await check('E05', 'E', 'Typing 5 digits sequentially keeps focus + full value (re-render safe) on main, asset, assumptions, text field', 1, 'page.keyboard.type("12345") with delay', async () => {
@@ -689,10 +697,10 @@ async function robustChecks(page) {
         const r = await page.evaluate((s) => { const a = document.activeElement; return { same: !!(a && a.matches && a.matches(s)), v: a ? a.value : null }; }, sel); P.t(r.same && String(r.v).replace(/[,$\s]/g, '') === want, label, 1, `focus kept=${r.same} value=${r.v}`);
         await page.evaluate(() => document.activeElement && document.activeElement.blur()); } catch (e) { P.t(false, label, 1, 'threw ' + e.message.slice(0, 60)); } };
     await tryType('#', '[data-testid=extra-input]', '12345', '12345', 'main extra field'); await tryType('#house-maple', '[data-p="h.maple.price"]', '12345', '12345', 'asset price'); await tryType('#assumptions', '[data-p="g.cap"]', '1234', '1234', 'assumptions field');
-    await tryType('#house-maple', '[data-p="h.maple.addr"]', 'Abcde', 'Abcde', 'address text'); await tryType('#house-ridge', '[data-p="h.ridge.capex"]', '12345', '12345', 'improvement budget'); return P; });
+    await tryType('#house-maple', '[data-p="h.maple.addr"]', 'Abcde', 'Abcde', 'address text'); await tryType('#house-birch', '[data-p="h.birch.capex"]', '12345', '12345', 'improvement budget'); return P; });
   await check('E08', 'E', 'No render storm: DOM settles when an input is focused (no endless re-render loop)', 1, 'Type one char into any input (no blur), count #app mutations over 600ms (Chromium)', async () => {
     const P = new Parts(); await reset(page);
-    for (const [n, h, sel] of [['main extra', '#', '[data-testid=extra-input]'], ['asset price', '#house-maple', '[data-p="h.maple.price"]'], ['assumptions cap', '#assumptions', '[data-p="g.cap"]'], ['exit field', '#house-ridge', '[data-p="h.ridge.exitMonth"]']]) {
+    for (const [n, h, sel] of [['main extra', '#', '[data-testid=extra-input]'], ['asset price', '#house-maple', '[data-p="h.maple.price"]'], ['assumptions cap', '#assumptions', '[data-p="g.cap"]'], ['exit field', '#house-birch', '[data-p="h.birch.exitMonth"]']]) {
       await goHash(page, h); if (h === '#') await selRow(page, 'maple'); await page.waitForSelector(sel);
       const r = await page.evaluate(async (sel) => { const el = document.querySelector(sel); el.focus(); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(el, el.value.replace(/,/g, '') || '1'); el.dispatchEvent(new Event('input', { bubbles: true })); await new Promise((r) => setTimeout(r, 80)); let n = 0; const mo = new MutationObserver((m) => { n += m.length; }); mo.observe(document.getElementById('app'), { childList: true, subtree: true }); await new Promise((r) => setTimeout(r, 600)); mo.disconnect(); const a = document.activeElement; if (a && a.blur) a.blur(); return n; }, sel);
       P.t(r <= 20, n + ' (mutations in 600ms while focused)', 1, r); } return P; });
