@@ -274,3 +274,9 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
 .card.cat.open .cathw .cats{padding-bottom:8px}
 
 .xtog{display:block;margin:4px 0 0 auto;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:18px;background:none;color:var(--acc);font-size:13px;font-weight:600}
+
+.cathw .cats{display:grid;grid-template-columns:30px repeat(5,minmax(0,1fr));gap:4px;align-items:end;white-space:normal;color:var(--ink)}
+.cathw .cats .cnt{font-size:22px;font-weight:700;line-height:1}
+.cathw .cats .sc{display:flex;flex-direction:column;min-width:0}.cathw .cats .sc b{font-size:13px;font-weight:700;white-space:nowrap}.cathw .cats .sc b.bad{color:var(--bad)}
+.cathw .cats .sc small{font-size:10px;color:var(--mut);white-space:nowrap}
+.cathw .cats:not(:has(.sc)){display:block}
