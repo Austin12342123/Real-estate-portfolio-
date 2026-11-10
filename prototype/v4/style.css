@@ -283,3 +283,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
 
 .xtog{min-height:32px;padding:0 10px;font-size:12px;font-weight:600;border-color:transparent;color:var(--mut)}
 .row .locline{font-size:13px}
+.row .fcol{flex:1 1 0;min-width:0}
+.row .fcol .locline{white-space:normal;overflow-wrap:anywhere;margin-top:0;font-size:13px;line-height:1.3}
+.row .r2{align-items:flex-start;flex-wrap:nowrap}
+.row .xtog{flex:none;margin:0}
