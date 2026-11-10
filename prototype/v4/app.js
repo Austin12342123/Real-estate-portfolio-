@@ -3,10 +3,10 @@
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
   let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan' };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  const DATA_V = 11; /* bump when the sample portfolio changes so old saved samples are replaced */
+  const DATA_V = 12; /* bump when the sample portfolio changes so old saved samples are replaced */
   if (S && Array.isArray(S.houses) && S.g && S.v === 8) { S.p = S.p || E.samplePersonal(); S.v = DATA_V; } /* v8 saves keep their assets and gain a finance profile */
   let switched = null;
-  if (S && Array.isArray(S.houses) && S.g && (S.v === 9 || S.v === 10)) { switched = JSON.stringify(S); const keepP = S.p, plan = E.seedPlan(); if (keepP) plan.p = Object.assign({}, keepP, { capital: plan.p.capital }); S = plan; S.v = DATA_V; } /* v9 saves switch to the $125M plan once; Undo brings the old one back */
+  if (S && Array.isArray(S.houses) && S.g && (S.v === 9 || S.v === 10 || S.v === 11)) { switched = JSON.stringify(S); const keepP = S.p, plan = E.seedPlan(); if (keepP) plan.p = Object.assign({}, keepP, { capital: plan.p.capital }); S = plan; S.v = DATA_V; } /* v9 saves switch to the $125M plan once; Undo brings the old one back */
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seedPlan();
   E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
   /* a new asset is funded by the asset right before it in its category: only that one link is added; every other link stays as it was */
@@ -16,7 +16,7 @@
   fixOrder(S);
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
   let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
-  if (switched) undo = { text: 'Switched to the smooth $125M plan (28 years).', label: 'old portfolio', snap: switched };
+  if (switched) undo = { text: 'Switched to the self-funded $125M plan (28 years).', label: 'old portfolio', snap: switched };
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
@@ -197,7 +197,7 @@
       ${bRow('Portfolio', { value: pl.snap.reduce((a, x) => a + x.value, 0), equity: sn.nw, cf: sn.cf }, 'tot')}</tbody></table>`;
     const warn = pl.unfunded.length ? `<div class="warnbox">⚠ ${pl.unfunded.length} planned asset${pl.unfunded.length > 1 ? 's are' : ' is'} never funded under the current numbers.</div>` : '';
     const health = pl.worst.dti > g.dti ? `<div class="warnbox">⚠ Debt-to-income peaks at ${r(pl.worst.dti)}% in ${mo(pl.worst.month)} (limit ${g.dti}%).</div>` : '';
-    const outside = pl.outsideTotal > 0 ? `<div class="warnbox" data-testid="outside-cash">Needs <b>${$f(pl.outsideTotal)}</b> of outside cash (partners, investors, savings).<br><button class="chip link" data-go="finances" style="float:right">Details ›</button></div>` : '';
+    const outside = pl.outsideTotal > 0 ? `<div class="warnbox" data-testid="outside-cash">${S.p && S.p.capital.some((c) => c.amount > 0) ? `Needs <b>${$f(pl.outsideTotal)}</b> of cash beyond sale proceeds and credit lines (partners, investors, savings).` : `Down payments beyond sale proceeds and credit lines total <b>${$f(pl.outsideTotal)}</b> over the plan, paid from your own savings and monthly cash flow.`}<br><button class="chip link" data-go="finances" style="float:right">Details ›</button></div>` : '';
     const badHomes = S.houses.filter((h) => (h.type || 'house') === 'house' && pl.V[h.id].cf < 0);
     const homeWarn = badHomes.length ? `<div class="warnbox" data-testid="home-warning">⚠ Homes must cash flow positive. Losing money each month at today's terms: ${badHomes.map((h) => esc(h.addr)).join(', ')}.</div>` : '';
     const tab = UI.tab, nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0];
@@ -333,7 +333,7 @@
     <div class="sec">Cash over time</div><section class="card" data-testid="cash-card">${finChart(f)}
       <div class="f"><span class="lb">Lowest cash</span><b data-testid="lowest-cash">${$f(k.minLiquid)} · month ${k.minLiquidMonth}</b></div>
       <div class="f stack"><span class="lb">Months you could last without a paycheck</span><b>${isFinite(k.minRunway) ? r(k.minRunway, 1) : 'No limit — portfolio income covers it'}</b></div>
-      <p class="note" data-testid="funding-line">The plan needs ${$f(pl.outsideTotal)} of outside cash over time. Partners and investors cover ${$f(Math.min(k.totalOutside, k.capitalTotal))}; the rest comes out of your savings and monthly income.</p>
+      <p class="note" data-testid="funding-line">Down payments beyond sale proceeds and credit lines total ${$f(pl.outsideTotal)} over the plan. ${k.capitalTotal > 0 ? `Partners and investors you listed cover ${$f(Math.min(k.totalOutside, k.capitalTotal))}; the rest` : 'All of it'} comes out of your savings and monthly income.</p>
       ${calls ? `<p class="note" style="margin-top:8px">Biggest cash calls</p>${calls}` : ''}</section>
     ${colSec('fin-tax', 'Taxes', p.portfolioTaxPct + '% / ' + p.salesTaxPct + '%', `<section class="card">${field('Tax on portfolio income', 'p.portfolioTaxPct', r(p.portfolioTaxPct, 1), { suf: '%' })}${field('Tax on gains when you sell', 'p.salesTaxPct', r(p.salesTaxPct, 1), { suf: '%' })}<p class="note">Rough effective rates. Short-term gains from flips are taxed like ordinary income.</p></section>`, true)}
     ${colSec('fin-time', 'Time and managers', p.operating + ' run by you', `<section class="card">${field('Businesses you run yourself', 'p.operating', p.operating)}${field('Hours / week each takes', 'p.bizHours', r(p.bizHours, 0))}${field('Manager pay per other business / mo', 'p.gmMonthly', grp(p.gmMonthly), { pre: '$' })}<p class="note">A business profit figure assumes the owner does the work. Businesses beyond the ones you run need a paid manager.</p></section>`, true)}
