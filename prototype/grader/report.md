@@ -1,12 +1,12 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-10T21:03:45.382Z  |  263s
+Target: `prototype/v4`  |  Run: 2026-11-10T21:23:43.018Z  |  262s
 
-## Automated score: **84.94 / 84.99900000000001** (a separate design review adds 15)
+## Automated score: **84.74 / 84.99900000000001** (a separate design review adds 15)
 
 | Category | Score |
 |---|---|
-| A. Requirement / propagation | 18.00 / 18.00 |
+| A. Requirement / propagation | 17.81 / 18.00 |
 | B. Engine correctness | 12.00 / 12.00 |
 | C. UX conciseness & usability | 9.94 / 10.00 |
 | D. PWA / local-first | 8.00 / 8.00 |
@@ -22,7 +22,7 @@ Target: `prototype/v4`  |  Run: 2026-11-10T21:03:45.382Z  |  263s
 | A03 | Edit matrix: every input (43 edits incl. improvements/exit/loan/assumptions) moves the main-page KPIs exactly as the engine says | 2.92 | 2.92 | 44/44 sub-checks pass |
 | A04 | Two-way back-solves: payoff->extra, down$->%, and main page follows | 1.46 | 1.46 | 6/6 sub-checks pass |
 | A05 | Remove from the MAIN page: Edit mode, confirm, Undo, totals update; removing a funding source leaves the target listed | 1.95 | 1.95 | 10/10 sub-checks pass |
-| A06 | Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has | 0.73 | 0.73 | 6/6 sub-checks pass |
+| A06 | Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has | 0.73 | 0.54 | 5/6 sub-checks pass. FAIL: the very first asset in the list shows no wait line; every later asset shows one (Funded in N mo by the trust / Owned today / Bought in / Not funded) [first:  later without: ] |
 | A07 | No "Today" / "20 years" view toggle anywhere (single portfolio snapshot) | 0.49 | 0.49 | 3/3 sub-checks pass |
 | A08 | Homes cannot cash-flow negative: warning on the asset page and on the main page; clears when fixed; not shown for non-homes | 1.22 | 1.22 | 7/7 sub-checks pass |
 | A09 | Per-row numbers sum to the portfolio headline (cash flow, monthly payments, net worth) on the sample, and match the engine | 1.46 | 1.46 | 7/7 sub-checks pass |
@@ -42,7 +42,7 @@ Target: `prototype/v4`  |  Run: 2026-11-10T21:03:45.382Z  |  263s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 8.8ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 10.1ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.48 | 0.48 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |
@@ -60,8 +60,8 @@ Target: `prototype/v4`  |  Run: 2026-11-10T21:03:45.382Z  |  263s
 | C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.27 | 181/187 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32 |
 | C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 42/42 ok  |
 | C06 | Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps | 1.33 | 1.33 | 3/3 sub-checks pass |
-| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 133px x 19, page 4629px |
-| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 1137/1137 text elements pass (light 566/566, dark 571/571).  |
+| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 150px x 19, page 4946px |
+| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 1141/1141 text elements pass (light 568/568, dark 573/573).  |
 | C09 | Summary-first: one concise summary card (single snapshot, short text), plan card collapsible | 1.00 | 1.00 | 3/3 sub-checks pass |
 | D01 | Manifest valid; icons load with true declared dimensions | 1.14 | 1.14 | 8/8 sub-checks pass |
 | D02 | Service worker (index.html) registers, activates, controls page after reload; precache complete | 1.14 | 1.14 | 3/3 sub-checks pass |
@@ -92,7 +92,10 @@ Target: `prototype/v4`  |  Run: 2026-11-10T21:03:45.382Z  |  263s
 
 ## Top failures
 
-1. **C04 Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)** (-0.06)
+1. **A06 Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has** (-0.19)
+   - Detail: 5/6 sub-checks pass. FAIL: the very first asset in the list shows no wait line; every later asset shows one (Funded in N mo by the trust / Owned today / Bought in / Not funded) [first:  later without: ]
+   - Reproduce: Main ledger on the default plan and on a small state
+2. **C04 Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)** (-0.06)
    - Detail: 181/187 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32
    - Reproduce: Measure interactive elements on main/asset/assumptions/add
 
@@ -146,7 +149,7 @@ None.
 
 None.
 
-## I. Portfolio sections, gestures and funding order: **100.00 / 100** (separate scale; not included in A-E + R, F, G or H)
+## I. Portfolio sections, gestures and funding order: **97.50 / 100** (separate scale; not included in A-E + R, F, G or H)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -154,7 +157,7 @@ None.
 | I2 | Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel | 14.00 | 14.00 | 13/13 sub-checks pass |
 | I3 | Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open | 8.00 | 8.00 | 7/7 sub-checks pass |
 | I4 | Funding follows the list order by itself: the trust funds each asset from everything before it (1,2,3 and 1,3,2), the wait lines and purchase months re-work after each move, nothing is stored per asset, no per-asset Funds picker, no re-link on plain load | 16.00 | 16.00 | 10/10 sub-checks pass |
-| I5 | Duplicate: from the row panel and the asset page; copy sits right after the original, named "(copy)", planned, funded by the trust like any later asset | 10.00 | 10.00 | 6/6 sub-checks pass |
+| I5 | Duplicate: from the row panel and the asset page; copy sits right after the original, named "(copy)", planned, funded by the trust like any later asset | 10.00 | 7.50 | 5/6 sub-checks pass. FAIL: no links to relink: the copy shows its own trust wait line (planned, funded by everything before it); the numbers are copied [18 mo after #1 (1412 Maple Ridge Dr) was bought · Funded now by the trust: all earlier assets (cash flow $16,595/mo + borrowing room $44,649) · pool of 3 assets] |
 | I6 | Portfolio = total row + Homes / Commercial / Businesses dropdowns (name left, chevron right, stat strip: count, before/after loan, worth, DSCR, lasts), empty sections, Sold section only when something sold | 12.00 | 12.00 | 12/12 sub-checks pass |
 | I7 | Selecting a row opens a nested panel with the extra payment and live effects: loan term, monthly payment, next down payment (with cash flow); all match the engine and the asset page | 12.00 | 12.00 | 24/24 sub-checks pass |
 | I8 | Rent & expenses shows the loan payment (P&I + mortgage insurance, extra) and the cash flow after the loan, in sync with Payment now / Cash flow now | 6.00 | 6.00 | 6/6 sub-checks pass |
@@ -163,4 +166,5 @@ None.
 
 ### I failures
 
-None.
+- **I5 Duplicate: from the row panel and the asset page; copy sits right after the original, named "(copy)", planned, funded by the trust like any later asset** (-2.50): 5/6 sub-checks pass. FAIL: no links to relink: the copy shows its own trust wait line (planned, funded by everything before it); the numbers are copied [18 mo after #1 (1412 Maple Ridge Dr) was bought · Funded now by the trust: all earlier assets (cash flow $16,595/mo + borrowing room $44,649) · pool of 3 assets]
+  - Reproduce: Panel > Duplicate; asset page > Duplicate
