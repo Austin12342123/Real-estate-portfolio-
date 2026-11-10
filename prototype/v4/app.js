@@ -361,7 +361,8 @@
     ${colSec('samples', 'Sample portfolios', 'replace your assets', `<section class="card">${ask === 'reset' ? confirmBox('Replace your assets with the realistic sample?', 'data-reset-yes', 'Yes, replace') : '<button class="btn plain" style="color:var(--bad)" data-reset data-testid="load-realistic">Load realistic sample</button>'}
       ${ask === 'stretch' ? confirmBox('Replace your assets with the $540M stretch scenario?', 'data-stretch-yes', 'Yes, load it') : '<button class="btn plain" style="color:var(--bad)" data-stretch data-testid="load-stretch">Load $540M stretch scenario</button>'}
       ${ask === 'big' ? confirmBox('Replace your assets with the $130M scenario?', 'data-big-yes', 'Yes, load it') : '<button class="btn plain" style="color:var(--bad)" data-big data-testid="load-big">Load $130M scenario (affords a $35M house)</button>'}
-      <p class="note">These replace your current assets. The realistic sample uses market-checked prices, loans and growth. The stretch scenario reaches about $540M and +$1.4M a month, but needs 21-25% yearly business growth for nearly 20 years and about $21M of outside cash. The $130M scenario keeps business growth at 8% a year, uses about $39M of outside money (partner capital early on), and its own cash buys a $35M waterfront estate in month 200.</p></section>`, true)}`;
+      ${ask === 'stradella' ? confirmBox('Replace your assets with the $38.7M house scenario?', 'data-stradella-yes', 'Yes, load it') : '<button class="btn plain" style="color:var(--bad)" data-stradella data-testid="load-stradella">Load $38.7M house scenario (900 Stradella Rd)</button>'}
+      <p class="note">These replace your current assets. The realistic sample uses market-checked prices, loans and growth. The stretch scenario reaches about $540M and +$1.4M a month, but needs 21-25% yearly business growth for nearly 20 years and about $21M of outside cash. The $38.7M house scenario builds about $170M of net worth and $1.26M a month of cash flow with seller financing, SBA, bridge, DSCR and bank loans plus partner capital, then buys 900 Stradella Rd for cash in month 200. The $130M scenario keeps business growth at 8% a year, uses about $39M of outside money (partner capital early on), and its own cash buys a $35M waterfront estate in month 200.</p></section>`, true)}`;
   }
 
   /* ---------- import from listing ---------- */
@@ -518,6 +519,8 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
     if (t.dataset.importYes !== undefined) { S = E.normalize(pendingImport); if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; fixOrder(S); pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     if (t.dataset.reset !== undefined) { ask = 'reset'; render(); return; }
+    if (t.dataset.stradella !== undefined) { ask = 'stradella'; render(); return; }
+    if (t.dataset.stradellaYes !== undefined) { S = E.seedStradella(); S.v = DATA_V; fixOrder(S); ask = null; save(); render(); return; }
     if (t.dataset.big !== undefined) { ask = 'big'; render(); return; }
     if (t.dataset.bigYes !== undefined) { S = E.seedBig(); S.v = DATA_V; fixOrder(S); ask = null; save(); render(); return; }
     if (t.dataset.stretch !== undefined) { ask = 'stretch'; render(); return; }
