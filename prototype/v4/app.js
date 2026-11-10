@@ -3,10 +3,10 @@
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
   let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan' };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  const DATA_V = 10; /* bump when the sample portfolio changes so old saved samples are replaced */
+  const DATA_V = 11; /* bump when the sample portfolio changes so old saved samples are replaced */
   if (S && Array.isArray(S.houses) && S.g && S.v === 8) { S.p = S.p || E.samplePersonal(); S.v = DATA_V; } /* v8 saves keep their assets and gain a finance profile */
   let switched = null;
-  if (S && Array.isArray(S.houses) && S.g && S.v === 9) { switched = JSON.stringify(S); const keepP = S.p, plan = E.seedPlan(); if (keepP) plan.p = Object.assign({}, keepP, { capital: plan.p.capital }); S = plan; S.v = DATA_V; } /* v9 saves switch to the $125M plan once; Undo brings the old one back */
+  if (S && Array.isArray(S.houses) && S.g && (S.v === 9 || S.v === 10)) { switched = JSON.stringify(S); const keepP = S.p, plan = E.seedPlan(); if (keepP) plan.p = Object.assign({}, keepP, { capital: plan.p.capital }); S = plan; S.v = DATA_V; } /* v9 saves switch to the $125M plan once; Undo brings the old one back */
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seedPlan();
   E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
   /* a new asset is funded by the asset right before it in its category: only that one link is added; every other link stays as it was */
@@ -16,7 +16,7 @@
   fixOrder(S);
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
   let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
-  if (switched) undo = { text: 'Switched to the $125M plan.', label: 'old portfolio', snap: switched };
+  if (switched) undo = { text: 'Switched to the smooth $125M plan (28 years).', label: 'old portfolio', snap: switched };
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
