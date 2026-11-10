@@ -31,6 +31,7 @@
     proceeds: { t: 'Net proceeds', b: 'What you keep after a sale: the sale price, minus selling costs, minus the loan and any liens paid off.' },
     creditline: { t: 'Line of credit', b: 'A loan you can borrow against the value you already own in an asset, usually up to 85% of its value minus what you owe (also called a HELOC for homes). The app uses it to pay for the next purchase.' },
     debtcap: { t: 'Max debt on a house', b: 'Lenders limit total borrowing to a share of an asset’s value, often 80% to 85%. The loan, any liens and the line of credit together must stay under it.', e: 'At 85% on a $200,000 home, total debt can be up to $170,000.' },
+    nextdp: { t: 'Next down payment', b: 'How soon you can pay for the next asset this one funds. Three things add up. The loan balance goes down. The value rises. And the cash this asset earns each month, after costs and its loan payment, is saved toward the down payment. An extra payment makes the wait shorter.', e: 'A home that nets $300 a month saves $3,600 in a year.' },
     locmonths: { t: 'Months until the credit line', b: 'How long until you have paid the loan down, and the value has grown, enough to borrow what the next purchase needs. Type a number to see how much extra you would need to pay.' },
     cashneeded: { t: 'Cash needed', b: 'The down payment and closing costs for the asset this credit line will pay for.' },
     dti: { t: 'Debt-to-income (DTI)', b: 'Your monthly debt payments divided by the monthly income a lender counts. Lenders usually want 43% or less.' },

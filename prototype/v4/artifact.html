@@ -223,6 +223,51 @@ select.notarget{max-width:9em}
 .row .nm .pay{font-size:11.5px!important}
 .row .ex{gap:4px}.row .ex .iw{width:84px;min-width:0}.row .ex .iw input{width:100%}
 
+/* ---- portfolio sections: Homes / Commercial / Businesses / Sold, row selection panel, drag to reorder ---- */
+.card.cat{padding:0;overflow:hidden}
+.cath{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:60px;padding:10px 14px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.cath:focus-visible{outline:2px solid var(--acc);outline-offset:-2px;border-radius:14px}
+.catt{display:flex;flex-direction:column;min-width:0;gap:1px}.catt b{font-size:17px}
+.cats{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chev{flex:none;font-size:26px;line-height:1;color:var(--acc);transition:transform .18s;transform:rotate(0)}
+.cat.open .chev{transform:rotate(90deg)}
+.catbody{padding:0 14px 4px;border-top:1px solid var(--line)}
+.none{margin:0;padding:14px 0 6px;text-align:center;color:var(--mut);font-size:14px}
+.hold{margin:4px 0 8px;text-align:center}
+.soldcat .catt b{color:var(--mut)}.soldcat .row{opacity:.8}
+.rw+.rw{border-top:1px solid var(--line)}
+.rw>.row{border-top:0!important}
+.row{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.row.totrow{cursor:default}
+.row.sel{background:color-mix(in srgb,var(--acc) 6%,var(--card));box-shadow:inset 3px 0 0 var(--acc);padding-left:8px;border-radius:8px}
+.addrbtn{display:block;max-width:100%;padding:0;margin:0;border:0;background:none;color:var(--ink);text-align:left;font:inherit;-webkit-user-select:none;user-select:none}
+.addrbtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
+.panel{background:color-mix(in srgb,var(--acc) 5%,var(--card));border-radius:12px;margin:2px 0 10px;padding:6px 12px 10px}
+.panel .f.ex{border-top:0;min-height:52px}
+.eff{margin:2px 0 4px}
+.el{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:0 10px;padding:8px 0;border-top:1px solid var(--line)}
+.elk{font-size:13px;color:var(--mut);display:inline-flex;align-items:center;flex-wrap:wrap;min-width:0}
+.el b{font-size:15px;text-align:right;font-variant-numeric:tabular-nums}
+.el small{grid-column:1/-1;font-size:12px;color:var(--mut);line-height:1.3;margin-top:1px}
+.el .info{margin:-13px -6px -13px 0}
+.pact{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.pbtn{min-height:44px;border:1px solid var(--line);background:var(--card);color:var(--acc);border-radius:10px;font-weight:600;font-size:14px}
+.pbtn:disabled{opacity:.4;cursor:default}
+.panel .rm{margin-top:8px}
+.rw{transition:transform .16s ease}
+.dragmode{-webkit-user-select:none;user-select:none}
+.dragmode .panel{display:none}
+.rw.lift{position:relative;z-index:6;transition:none;background:var(--card);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.28),0 0 0 2px var(--acc);transform-origin:center}
+.rw.lift .row{padding-left:8px;padding-right:8px}
+@media(prefers-reduced-motion:reduce){.rw,.chev{transition:none}}
+.loanlines{margin-top:8px;border-top:2px solid var(--line);padding-top:2px}
+.loanlines .f.totl{font-weight:700}.loanlines b.bad{color:var(--bad)}
+.empty-add{margin-top:0}
+
+.addrbtn .pay,.addrbtn .exitline,.addrbtn .addr{display:block}
+.addrbtn{width:100%;min-height:44px}
+.row .addrbtn .addr{font-weight:600}
+
 </style>
 <main id="app" aria-live="polite"></main>
 <script>
@@ -299,6 +344,10 @@ select.notarget{max-width:9em}
   const valAt = (S, h, k) => { const cm = Math.max(0, h.capexMonths || 0);
     return +h.arv > 0 && k >= cm ? h.arv * Math.pow(1 + gr(S, h) / 100, (k - cm) / 12) : valK(S, h, k); };
   const need = (S, h) => { const t = H(S, h.target); return t ? downAmt(t) + (t.price * clPct(S, t)) / 100 : 0; };
+  /* operating income per month (rent or owner profit minus operating costs), before any loan payment */
+  const noiOf = (S, h) => { const g = S.g; if ((h.type || 'house') === 'business') return h.rent; const egi = h.rent * (1 - g.vac / 100); return egi - (h.tax + h.ins + h.hoa + (g.maint / 100) * h.price / 12 + (g.mgmt / 100) * egi); };
+  /* The home's own monthly cash flow (income minus costs, loan payment and mortgage insurance, before any extra payment) is saved toward the next down payment while it waits. Only a positive cash flow adds money. */
+  const cfSaved = (S, h) => Math.max(0, noiOf(S, h) - payment(h) - mipMonthly(h));
 
   function payoffN(h, X) {
     const B0 = balToday(h), i = mi(h), A = payment(h) + X;
@@ -306,13 +355,14 @@ select.notarget{max-width:9em}
     if (A <= i * B0 + 1e-9) return Infinity;
     return Math.ceil((i ? -Math.log(1 - (i * B0) / A) / Math.log(1 + i) : B0 / A) - 1e-7);
   }
-  /* months (from the asset's own start) until cap*value - balance - other liens >= cash needed for its target */
-  function locMonths(S, h, X) {
+  /* months (from the asset's own start) until the cash for its target is there: borrowing room (cap*value - balance - other liens, after the appraisal cut)
+     plus the cash flow this asset has saved up (cfSaved x months) reaches the cash needed. o.noCash leaves the saved cash flow out (to show what it contributes). */
+  function locMonths(S, h, X, o) {
     if (!H(S, h.target)) return Infinity;
-    const D = need(S, h), B0 = balToday(h), i = mi(h), A = payment(h) + X, g = S.g;
+    const D = need(S, h), B0 = balToday(h), i = mi(h), A = payment(h) + X, g = S.g, cs = o && o.noCash ? 0 : cfSaved(S, h);
     for (let k = 0; k <= 600; k++) {
       const head = g.cap / 100 * valAt(S, h, k) - balK(B0, i, A, k) - (h.liens || 0);
-      if (Math.max(0, head) * (1 - g.haircut / 100) >= D) return k;
+      if (Math.max(0, head) * (1 - g.haircut / 100) + cs * k >= D) return k;
     }
     return Infinity;
   }
@@ -327,17 +377,13 @@ select.notarget{max-width:9em}
     const g = S.g, L = loan(h), P = payment(h), B0 = balToday(h), i = mi(h), type = h.type || 'house';
     let X = h.extra, infeasible = false;
     if (h.driver === 'months' && H(S, h.target)) { const x = extraFor(S, h, h.wait); if (x == null) infeasible = true; else X = x; }
-    let egi, noi, escrow;
-    if (type === 'business') { egi = h.rent; noi = h.rent; escrow = 0; }
-    else {
-      egi = h.rent * (1 - g.vac / 100); escrow = h.tax + h.ins + h.hoa;
-      noi = egi - (escrow + (g.maint / 100) * h.price / 12 + (g.mgmt / 100) * egi);
-    }
-    const lm = locMonths(S, h, X), A = P + X;
-    const cltvAtLoc = H(S, h.target) && isFinite(lm) ? ((balK(B0, i, A, lm) + (h.liens || 0) + need(S, h)) / valAt(S, h, lm)) * 100 : null;
+    let egi, escrow; const noi = noiOf(S, h);
+    if (type === 'business') { egi = h.rent; escrow = 0; } else { egi = h.rent * (1 - g.vac / 100); escrow = h.tax + h.ins + h.hoa; }
+    const lm = locMonths(S, h, X), A = P + X, Dn = need(S, h), cashDP = H(S, h.target) && isFinite(lm) ? Math.min(Dn, cfSaved(S, h) * lm) : 0, draw = Dn - cashDP;
+    const cltvAtLoc = H(S, h.target) && isFinite(lm) ? ((balK(B0, i, A, lm) + (h.liens || 0) + draw) / valAt(S, h, lm)) * 100 : null;
     const down = downAmt(h), closingCost = (h.price * clPct(S, h)) / 100, mip = mipMonthly(h);
     return { cltvAtLoc, L, B0, P, mip, X, infeasible, egi, noi, cf: noi - P - mip, escrow, pitia: P + escrow + mip, payment: P + X + escrow + mip,
-      D: need(S, h), down, closingCost, invested: down + closingCost, payoff: payoffN(h, X), locM: lm,
+      D: Dn, cashDP, draw, cfSaved: cfSaved(S, h), down, closingCost, invested: down + closingCost, payoff: payoffN(h, X), locM: lm,
       head0: Math.max(0, g.cap / 100 * h.price - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
       valueNow: valAt(S, h, 0), valueGain: +h.arv > 0 ? h.arv - h.price - (h.capex || 0) : 0, capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
   }
@@ -393,6 +439,7 @@ select.notarget{max-width:9em}
     const funds = {}; hs.forEach((h) => { const t = H(S, h.target);
       funds[h.id] = !!(t && t.status === 'planned' && isFinite(P0[h.id] + V[h.id].locM) && P0[t.id] === P0[h.id] + V[h.id].locM); });
     const fundedByLOC = {}; hs.forEach((h) => { if (funds[h.id]) fundedByLOC[h.target] = true; });
+    const dpCashBy = {}; hs.forEach((h) => { if (funds[h.id] && V[h.id].cashDP > 0) dpCashBy[h.target] = (dpCashBy[h.target] || 0) + V[h.id].cashDP; }); /* saved cash flow that goes into a purchase, by target id */
     /* exits: a sale ends ownership at sellAt; a merge applies a synergy lift at mergeAt */
     const sellAt = {}, mergeAt = {};
     hs.forEach((h) => { sellAt[h.id] = Infinity; mergeAt[h.id] = Infinity; const p = P0[h.id]; if (!isFinite(p)) return;
@@ -413,11 +460,12 @@ select.notarget{max-width:9em}
       const improved = (+h.arv > 0 || h.liftIncome) && age >= Math.max(0, h.capexMonths || 0), merged = t >= mergeAt[h.id];
       const fv = merged ? 1 + (h.exitLift || 0) / 100 : 1;
       const fi = (improved ? 1 + (h.liftIncome || 0) / 100 : 1) * (merged ? 1 + (h.exitLift || 0) / 100 : 1);
-      const val = valAt(S, h, age) * fv, heloc = funds[h.id] && age >= v.locM ? v.D : 0;
+      const val = valAt(S, h, age) * fv, heloc = funds[h.id] && age >= v.locM ? v.draw : 0;
       return { v, age, live, B, val, heloc, gfi: (h.price > 0 ? valK(S, h, age) / h.price : 1) * fi };
     }
     const held = (h, t) => t < sellAt[h.id];
-    const exits = {}; let cashBal = 0, outsideCum = 0;
+    const exits = {}; let cashBal = 0, outsideCum = 0; const dpCash = new Array(T + 1).fill(0);
+    hs.forEach((h) => { if (dpCashBy[h.id] && isFinite(P0[h.id]) && P0[h.id] <= T) dpCash[P0[h.id]] += dpCashBy[h.id]; });
     for (let t = 0; t <= T; t++) {
       /* 1) sales put net proceeds in cash */
       for (const h of hs) if (sellAt[h.id] === t) {
@@ -459,7 +507,7 @@ select.notarget{max-width:9em}
       end: P0[h.id] + V[h.id].locM, ok: isFinite(P0[h.id] + V[h.id].locM), funds: funds[h.id] }));
     let worst = { dti: 0, month: 0 }; for (let t = 0; t <= T; t++) if (s.dti[t] > worst.dti) worst = { dti: s.dti[t], month: t };
     let extraLater = 0; hs.forEach((h) => { const v = V[h.id]; if (isFinite(P0[h.id]) && P0[h.id] > 0 && v.L > 0 && v.payoff > 0) extraLater += v.X; });
-    return { outsideTotal: s.outside[T], extraNow: s.extra[0], extraLater, purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
+    return { dpCash, outsideTotal: s.outside[T], extraNow: s.extra[0], extraLater, purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
       at, assetsAt, snap: assetsAt(Math.min(T, planM)), rows, funds, fundedByLOC, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id) };
   }
 
@@ -481,7 +529,7 @@ select.notarget{max-width:9em}
       R.outsideCall[t] = t === 0 ? s.outside[0] : s.outside[t] - s.outside[t - 1];
       R.net[t] = R.income[t] + R.portfolio[t] - R.portTax[t] - R.gm[t] - R.extra[t] - R.living[t] - R.debts[t];
       R.interest[t] = t > 0 ? Math.max(0, liq + s.cash[t - 1]) * apy : 0;
-      liq += R.net[t] + R.interest[t] + R.capitalIn[t] - R.outsideCall[t] - R.oneTime[t] - R.saleTax[t];
+      liq += R.net[t] + R.interest[t] + R.capitalIn[t] - R.outsideCall[t] - R.oneTime[t] - R.saleTax[t] - (pl.dpCash[t] || 0);
       R.liquid[t] = liq; R.total[t] = liq + s.cash[t];
       R.reserve[t] = (p.emergencyMonths || 0) * (R.living[t] + R.debts[t]);
       R.burn[t] = R.living[t] + R.debts[t] + R.extra[t] + R.gm[t] - Math.max(0, R.portfolio[t] - R.portTax[t]);
@@ -612,7 +660,38 @@ select.notarget{max-width:9em}
     A('business', 'sba7a', { id: 'freight', buyIn: 62, growth: 8, addr: 'Summit Freight & Logistics', price: 1800000, rent: 41650 }),
     A('house', 'dscr', { id: 'linden', buyIn: 84, growth: 3.5, addr: '2914 Linden Way', price: 175000, rent: 1850, tax: 195, ins: 85 }),
     A('commercial', undefined, { id: 'lake', buyIn: 100, loanId: 'custom', dp: 35, addr: 'Lakeview Medical Office', price: 1800000, rent: 17450, tax: 1000, ins: 800, hoa: 500 })] }); };
-  const E = { estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  /* ---------- list order = buy order; the asset right before another one in its category funds it ---------- */
+  const catOf = (h) => h.type || 'house';
+  /* Sort the list once into purchase order (owned first; ties keep their order). S.orderV marks it done so a saved order is never re-sorted. */
+  function orderByBuy(S) {
+    const pl = plan(S), rk = (h) => (isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9);
+    S.houses = S.houses.map((h, i) => [h, i]).sort((a, b) => rk(a[0]) - rk(b[0]) || a[1] - b[1]).map((x) => x[0]); S.orderV = 1; return S;
+  }
+  /* Relink every category: each asset funds the planned asset right after it. An in-category link that no longer matches is cleared; a link to another category is left alone. */
+  function relink(S) {
+    const cats = {}; S.houses.forEach((h) => { (cats[catOf(h)] = cats[catOf(h)] || []).push(h); });
+    Object.keys(cats).forEach((c) => { const L = cats[c];
+      L.forEach((a, i) => { const t = H(S, a.target), nxt = L[i + 1];
+        if (t && catOf(t) !== c) return;
+        if (nxt && nxt.status === 'planned') a.target = nxt.id; else a.target = ''; }); });
+    return S;
+  }
+  /* creation sequence: the latest asset added in a category is the one with the highest seq (assets from before this feature have none: list position decides) */
+  function register(S, h) { S.seq = (+S.seq || 0) + 1; h.seq = S.seq; h.created = Date.now(); return h; }
+  function latestOf(list) { let best = null, bs = -Infinity; list.forEach((h) => { const q = h.seq != null && isFinite(+h.seq) ? +h.seq : -1; if (q >= bs) { bs = q; best = h; } }); return best; }
+  function duplicate(S, id) {
+    const i = S.houses.findIndex((h) => h.id === id); if (i < 0) return null;
+    const o = S.houses[i], c = JSON.parse(JSON.stringify(o));
+    c.id = 'h' + Date.now().toString(36) + (uid++); c.addr = o.addr + ' (copy)'; c.status = 'planned'; c.paid = 0; c.target = ''; c.fresh = false; c.listingUrl = '';
+    register(S, c); S.houses.splice(i + 1, 0, c); relink(S); return c;
+  }
+  /* move an asset one step inside its category (visible = ids shown in the category, in order); returns true if the order changed */
+  function reorder(S, ids) {
+    const set = new Set(ids), slots = []; S.houses.forEach((h, i) => { if (set.has(h.id)) slots.push(i); });
+    const cur = slots.map((i) => S.houses[i].id); if (cur.join() === ids.join()) return false;
+    const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); relink(S); return true;
+  }
+  const E = { orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -651,6 +730,7 @@ select.notarget{max-width:9em}
     proceeds: { t: 'Net proceeds', b: 'What you keep after a sale: the sale price, minus selling costs, minus the loan and any liens paid off.' },
     creditline: { t: 'Line of credit', b: 'A loan you can borrow against the value you already own in an asset, usually up to 85% of its value minus what you owe (also called a HELOC for homes). The app uses it to pay for the next purchase.' },
     debtcap: { t: 'Max debt on a house', b: 'Lenders limit total borrowing to a share of an asset’s value, often 80% to 85%. The loan, any liens and the line of credit together must stay under it.', e: 'At 85% on a $200,000 home, total debt can be up to $170,000.' },
+    nextdp: { t: 'Next down payment', b: 'How soon you can pay for the next asset this one funds. Three things add up. The loan balance goes down. The value rises. And the cash this asset earns each month, after costs and its loan payment, is saved toward the down payment. An extra payment makes the wait shorter.', e: 'A home that nets $300 a month saves $3,600 in a year.' },
     locmonths: { t: 'Months until the credit line', b: 'How long until you have paid the loan down, and the value has grown, enough to borrow what the next purchase needs. Type a number to see how much extra you would need to pay.' },
     cashneeded: { t: 'Cash needed', b: 'The down payment and closing costs for the asset this credit line will pay for.' },
     dti: { t: 'Debt-to-income (DTI)', b: 'Your monthly debt payments divided by the monthly income a lender counts. Lenders usually want 43% or less.' },
@@ -731,8 +811,10 @@ select.notarget{max-width:9em}
   if (S && Array.isArray(S.houses) && S.g && S.v === 8) { S.p = S.p || E.samplePersonal(); S.v = DATA_V; } /* v8 saves keep their assets and gain a finance profile */
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seed();
   E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
+  const fixOrder = (s) => { s.seq = +s.seq || 0; if (s.orderV !== 1) E.orderByBuy(s); return s; }; /* list order = buy order, sorted once; after that the saved order is the truth */
+  fixOrder(S);
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
-  let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, editList = false, undo = null;
+  let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
@@ -752,6 +834,7 @@ select.notarget{max-width:9em}
   const grp = (n) => Math.round(num(n)).toLocaleString('en-US');
   const mo = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 24 ? m + ' mo' : Math.floor(m / 12) + 'y ' + (m % 12) + 'm');
   const mm = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m + ' mo'); /* credit-line timing: plain months */
+  const mmy = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 24 ? m + ' mo' : m + ' mo (' + Math.floor(m / 12) + 'y ' + (m % 12) + 'm)');
   const r = (n, d = 0) => (isFinite(n) ? String(+n.toFixed(d)) : '—');
   const GL = (window.Info && window.Info) || { INFO: {}, LABEL: {}, LOAN: {} }, INFO = GL.INFO;
   const infoBtn = (k) => (INFO[k] ? `<button type="button" class="info" data-info="${k}" aria-label="What does ${(INFO[k].t || '').replace(/"/g, '')} mean?"><span aria-hidden="true">i</span></button>` : '');
@@ -821,23 +904,59 @@ select.notarget{max-width:9em}
   function main() {
     const pl = E.plan(S), t0 = pl.today, tf = pl.final, th = pl.horizon, g = S.g, yrs = g.planYears, owned = S.houses.filter((h) => h.status === 'owned');
     const sn = th, snapBy = {}; pl.snap.forEach((x) => (snapBy[x.id] = x));
-    if (!S.houses.length) return `<h1>Portfolio <button class="ic" data-go="settings" aria-label="Settings">⚙</button></h1>${undo ? `<div class="warnbox okbox" data-testid="undo-banner">Removed ${esc(undo.label)}. <button class="chip link" data-undo>Undo</button></div>` : ''}<div class="card empty"><p><b>Nothing here yet</b></p><p>Add a home, a commercial property or a business to see your plan.</p><button class="btn" data-add data-testid="add-house" style="margin-top:8px">+ Add property or business</button><button class="linkbtn" data-go="import/new">Or import a home from a listing file</button></div>`;
     const tot = S.houses.reduce((s, h) => s + E.view(S, h).X, 0), totNow = pl.extraNow, totLater = pl.extraLater;
     const n = S.houses.length, sched = n - pl.unfunded.length;
-    const rowOf = (h) => {
-      const v = pl.V[h.id], t = H(h.target), p = pl.purchase[h.id], type = h.type || 'house';
+    const paySub = (h2, v2) => { const parts = []; if (v2.P > 0) parts.push((h2.io ? 'interest ' : 'P&amp;I ') + $f(v2.P)); if (v2.X > 0.5) parts.push('extra ' + $f(v2.X)); if (v2.escrow > 0) parts.push('costs ' + $f(v2.escrow)); if (v2.mip > 0) parts.push('insurance ' + $f(v2.mip)); return parts.length > 1 ? parts.join(' + ') : ''; };
+    /* the expanded panel under a selected row: the extra payment and what it does, plus move / duplicate / details / remove */
+    const panelOf = (h, soldBy, vis, ci) => {
+      const v = pl.V[h.id], t = H(h.target), X = v.X, P = 'h.' + h.id + '.';
+      let eff = '';
+      if (!soldBy) {
+        const pay0 = E.payoffN(h, 0), payX = v.payoff, hasLoan = v.L > 0;
+        const term = !hasLoan ? 'No loan on this asset' : !isFinite(payX) ? (h.io ? 'Interest-only: not paid off' : 'Payment does not cover interest') : 'Paid off in ' + mmy(payX);
+        const termSub = !hasLoan ? '' : X > 0.5 ? (!isFinite(pay0) ? (isFinite(payX) ? 'it never pays off without the extra' : '') : pay0 - payX > 0 ? mmy(pay0 - payX) + ' sooner than with no extra' : 'same as with no extra') : 'extra payments pay it off sooner';
+        let nxt, nxtSub = '', nxtAttr = '';
+        if (!t) { nxt = 'Pick what this funds'; nxtSub = 'Choose an asset in Funds above to see when its down payment can be afforded.'; }
+        else {
+          const open = pl.purchase[h.id] + v.locM, l0 = E.locMonths(S, h, 0), lnc = E.locMonths(S, h, X, { noCash: true }), soon = isFinite(l0) && isFinite(v.locM) ? l0 - v.locM : 0, cfm = isFinite(lnc) && isFinite(v.locM) ? lnc - v.locM : 0;
+          nxt = !isFinite(open) ? 'not reachable' : open <= 0 ? 'now' : 'in ' + mmy(open);
+          nxtSub = (X > 0.5 ? (soon > 0 ? mmy(soon) + ' sooner than with no extra' : 'no faster than with no extra') : 'extra payments make it sooner') + ' · ' + (v.cfSaved > 0.5 ? 'your ' + $f(v.cfSaved) + '/mo cash flow is saved toward it' + (cfm > 0 ? ' (' + mmy(cfm) + ' sooner)' : '') : 'cash flow is ' + $s(v.cf) + '/mo, so nothing is saved toward it') + (pl.funds[h.id] ? '' : ' · ' + esc(t.addr) + ' is bought sooner another way');
+          nxtAttr = ` data-open="${isFinite(open) ? open : ''}" data-sooner="${soon}" data-cf-sooner="${cfm}"`;
+        }
+        eff = `<div class="eff" data-testid="extra-effects">
+          <div class="el"><span class="elk">Loan</span><b data-testid="eff-term" data-k="eff-term-${h.id}" data-months="${isFinite(payX) ? payX : ''}" data-base="${isFinite(pay0) ? pay0 : ''}">${term}</b><small>${termSub}</small></div>
+          <div class="el"><span class="elk">Monthly payment</span><b data-testid="eff-payment" data-k="eff-pay-${h.id}">${$f(v.payment)}</b><small>${paySub(h, v) || 'no loan payment'}</small></div>
+          <div class="el"><span class="elk">Next down payment${t ? ' · ' + esc(t.addr) : ''}${infoBtn('nextdp')}</span><b data-testid="eff-next" data-k="eff-next-${h.id}"${nxtAttr}>${nxt}</b><small>${nxtSub}</small></div></div>`;
+      }
+      const mv = !soldBy && vis.length > 1;
+      return `<div class="panel" data-testid="asset-panel" data-for="${h.id}">
+        ${soldBy ? '<p class="note" style="margin:0 0 6px">Sold in this plan, so there is no extra payment to set.</p>' : `<label class="f ex ${h.driver === 'months' && t ? 'calc' : ''}"><span class="lb">Extra payment / month${infoBtn('extra')}</span><span class="iw"><em>$</em><input inputmode="decimal" data-testid="extra-input" data-p="${P}extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(X)}"></span></label>`}
+        ${eff}
+        <div class="pact">${mv ? `<button class="pbtn" data-move="${h.id}:-1" data-testid="move-up" ${ci === 0 ? 'disabled' : ''}>↑ Move up</button><button class="pbtn" data-move="${h.id}:1" data-testid="move-down" ${ci === vis.length - 1 ? 'disabled' : ''}>↓ Move down</button>` : ''}<button class="pbtn" data-dup="${h.id}" data-testid="row-duplicate">Duplicate</button><button class="pbtn" data-go="h/${h.id}" data-testid="open-details">Open details ›</button></div>
+        ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? Anything it funds loses its credit-line source.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="rm" data-del="${h.id}" data-testid="row-remove" aria-label="Remove ${esc(h.addr)}">Remove</button>`}</div>`;
+    };
+    const isSold = (h) => !!(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM);
+    const rowOf = (h, vis, ci) => {
+      const v = pl.V[h.id], t = H(h.target), p = pl.purchase[h.id], type = h.type || 'house', sel = selId === h.id;
       const tag = TS[type] + (h.status === 'owned' ? '' : ' · ' + (isFinite(p) ? 'buy ' + mm(p) : 'unfunded'));
       const exitTxt = h.exit === 'sell' && isFinite(pl.sellAt[h.id]) ? `sells in ${mm(pl.sellAt[h.id])}` : h.exit === 'merge' && isFinite(pl.mergeAt[h.id]) ? `merges${H(h.mergeInto) ? ' into ' + esc(H(h.mergeInto).addr) : ''} in ${mm(pl.mergeAt[h.id])}` : '';
-      const sp = snapBy[h.id], soldBy = pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM;
+      const sp = snapBy[h.id], soldBy = isSold(h);
       const loses = type === 'house' && v.cf < 0 ? '<span class="hi">loses money at today\'s terms</span>' : '';
       const loc = !t ? '' : !isFinite(p + v.locM) ? 'not reachable' : p + v.locM <= 0 ? 'opens now' : 'opens in ' + mm(p + v.locM);
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
-      return `<div class="row${soldBy ? ' sold' : ''}" data-go="h/${h.id}" data-testid="ledger-row"><div class="r1"><span class="nm"><span class="addr">${esc(h.addr)}</span><div class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}"><span class="tag">${tag}</span> ${soldBy ? 'sold' : sp ? (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : v.payment > 0.5 ? 'paid off by then' : 'no loan') + ' · equity ' + $k(sp.equity) : 'not in the totals yet'} ${hi}${loses}</div>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<div class="exitline">${parts.join(' · ')}</div>` : ''; })()}</span>
-        ${soldBy ? '' : `<span class="ex ${h.driver === 'months' && H(h.target) ? 'calc' : ''}">Extra<span class="iw"><em>$</em><input inputmode="decimal" data-testid="extra-input" data-p="h.${h.id}.extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(v.X)}"></span></span>`}</div>
-        <div class="r2">${soldBy ? `<div class="fcol"><span class="locline" data-testid="loc-line"></span></div>` : `<div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div>`}<span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy ? '+' + $c(pl.exits[h.id].proceeds) : !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'cash from sale' : !sp ? 'not counted' : 'cash flow'}</small></span></div>
-        ${editList ? (ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? Anything it funds loses its credit-line source.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="rm" data-del="${h.id}" data-testid="row-remove" aria-label="Remove ${esc(h.addr)}">Remove</button>`) : ''}</div>`; };
-    const rank = (h) => (isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9);
-    const rows = [...S.houses].sort((a, b) => rank(a) - rank(b) || S.houses.indexOf(a) - S.houses.indexOf(b)).map(rowOf).join('');
+      return `<div class="rw" data-rw="${h.id}"><div class="row${soldBy ? ' sold' : ''}${sel ? ' sel' : ''}" data-row="${h.id}" data-testid="ledger-row"${soldBy ? ' data-nodrag' : ''}><div class="r1"><span class="nm"><button type="button" class="addrbtn" aria-expanded="${sel}" data-testid="row-toggle"><span class="addr">${esc(h.addr)}</span><span class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}"><span class="tag">${tag}</span> ${soldBy ? 'sold' : sp ? (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : v.payment > 0.5 ? 'paid off by then' : 'no loan') + ' · equity ' + $k(sp.equity) : 'not in the totals yet'} ${hi}${loses}</span>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<span class="exitline">${parts.join(' · ')}</span>` : ''; })()}</button></span>
+        <span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy ? '+' + $c(pl.exits[h.id].proceeds) : !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'cash from sale' : !sp ? 'not counted' : 'cash flow'}</small></span></div>
+        <div class="r2">${soldBy ? `<div class="fcol"><span class="locline" data-testid="loc-line"></span></div>` : `<div class="fcol"><div class="frow"><span class="fund">Funds</span>${targetSel(h)}</div><span class="locline" data-testid="loc-line">${loc ? 'credit line ' + loc : ''}</span></div>`}</div></div>${sel ? panelOf(h, soldBy, vis, ci) : ''}</div>`; };
+    const NOUN = { house: ['home', 'homes'], commercial: ['commercial property', 'commercial properties'], business: ['business', 'businesses'] }, ADD = { house: 'home', commercial: 'commercial property', business: 'business' };
+    const empty = !S.houses.length;
+    const secOf = (id, title, list, tp) => {
+      CDEF[id] = id === 'cat-house' || empty ? false : true; const open = !(UI.coll[id] === undefined ? CDEF[id] : UI.coll[id]), tid = tp || 'sold', lt = E.latestOf(list);
+      const nn = tp ? NOUN[tp] : ['sold', 'sold'], sub = list.length ? `${list.length} ${list.length === 1 ? nn[0] : nn[1]} · latest: ${esc(lt.addr)}` : 'None yet';
+      return `<section class="card cat${open ? ' open' : ''}${tp ? '' : ' soldcat'}" data-testid="cat-${tid}"><div class="cath" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}" data-testid="cat-header-${tid}"><span class="catt"><b>${title}</b><span class="cats" data-testid="cat-sub-${tid}">${sub}</span></span><span class="chev" aria-hidden="true">›</span></div>
+        ${open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length > 1 && tp ? '<p class="note hold">Touch and hold a row, then drag to reorder. The asset above funds the one below it.</p>' : ''}</div>` : ''}</section>`; };
+    const soldList = S.houses.filter(isSold);
+    const sections = [['house', 'Homes'], ['commercial', 'Commercial'], ['business', 'Businesses']].map(([tp, title]) => secOf('cat-' + tp, title, S.houses.filter((h) => (h.type || 'house') === tp && !isSold(h)), tp)).join('') + (soldList.length ? secOf('cat-sold', 'Sold', soldList, null) : '');
+    if (empty) return `<h1>Portfolio <span class="hb"><button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>${undo ? `<div class="warnbox okbox" data-testid="undo-banner">Removed ${esc(undo.label)}. <button class="chip link" data-undo>Undo</button></div>` : ''}<p class="note" style="margin:0 4px 8px" data-testid="empty-note">Nothing added yet. Add a home, a commercial property or a business to see your plan.</p>${sections}<button class="linkbtn" data-go="import/new" data-testid="import-link">Import a home from a listing</button>`;
     const c3 = (label, a, b, c, f, cls) => `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td data-k="c-${label}-b">${f(b)}</td><td class="${cls || ''}" data-k="c-${label}-c"><b>${f(c)}</b></td></tr>`;
     const bt = (tp) => pl.snap.filter((x) => x.type === tp).reduce((a, x) => ({ n: a.n + 1, value: a.value + x.value, equity: a.equity + x.equity, cf: a.cf + x.cf }), { n: 0, value: 0, equity: 0, cf: 0 });
     const bRow = (label, o, cls) => `<tr class="${cls || ''}"><td>${label}</td><td>${$c(o.value)}</td><td>${$c(o.equity)}</td><td class="${o.cf < 0 ? 'bad' : ''}">${$cs(o.cf)}</td></tr>`;
@@ -868,7 +987,8 @@ select.notarget{max-width:9em}
       <div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
             <p class="plan-line" data-testid="plan-headline">${headline}</p>
       ${fin ? `<div class="vrow big ${fin.status}" data-go="finances" data-testid="afford-line" role="link"><span class="vq"><b>Can I afford this?</b><span class="note">${esc(fin.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, ''))}</span></span><span class="vgo"><span class="vchip ${fin.status}" data-testid="afford-chip">${VL[fin.status]}</span> ›</span></div>` : ''}</section>
-    <div class="sec"><span>Your assets</span><span class="secr"><button class="editlink" data-edit data-testid="edit-list">${editList ? 'Done' : 'Edit / remove'}</button></span></div><section class="card" id="ledger" data-testid="ledger"><div class="row totrow" data-testid="ledger-total"><div class="r1"><span class="nm"><span class="addr">Portfolio total</span><div class="pay">${$f(sn.monthly)}/mo payments<br><span data-testid="total-extra" data-k="tot">${$f(totNow)}/mo extra now${totLater > 0.5 ? ' · +' + $f(totLater) + ' later' : ''}</span></div></span><span class="cfl ${sn.cf < 0 ? 'bad' : 'ok'}"><b data-testid="total-cf">${$s(sn.cf)}/mo</b><small>cash flow</small></span></div></div>${rows}<button class="addrow" data-add data-testid="add-house">+ Add property or business</button></section>
+    <div class="sec"><span>Your assets</span></div><section class="card" id="ledger" data-testid="ledger"><div class="row totrow" data-testid="ledger-total"><div class="r1"><span class="nm"><span class="addr">Portfolio total</span><div class="pay">${$f(sn.monthly)}/mo payments<br><span data-testid="total-extra" data-k="tot">${$f(totNow)}/mo extra now${totLater > 0.5 ? ' · +' + $f(totLater) + ' later' : ''}</span></div></span><span class="cfl ${sn.cf < 0 ? 'bad' : 'ok'}"><b data-testid="total-cf">${$s(sn.cf)}/mo</b><small>cash flow</small></span></div></div></section>
+    ${sections}
     <button class="linkbtn" data-go="import/new" data-testid="import-link">Import from a listing</button>
     <section class="card" data-testid="plan-card"><b>Portfolio breakdown</b> <span class="note">${n} assets · last purchase ${mo(pl.lastBuy)}</span>
       ${breakdown}
@@ -905,6 +1025,12 @@ select.notarget{max-width:9em}
       : `${field(LB.rent, P + 'rent', grp(h.rent), { pre: '$' })}${field(type === 'commercial' ? 'Property tax / mo (your share)' : 'Property tax / mo', P + 'tax', grp(h.tax), { pre: '$' })}${field('Insurance / mo', P + 'ins', grp(h.ins), { pre: '$' })}${field(type === 'commercial' ? 'CAM & operating / mo' : 'HOA / mo', P + 'hoa', grp(h.hoa), { pre: '$' })}
       <button class="chip link" data-go="settings">Vacancy ${g.vac}%</button><button class="chip link" data-go="settings">Mgmt ${g.mgmt}%</button><button class="chip link" data-go="settings">Repairs ${g.maint}%/yr</button>
       <p class="note">Net operating income ${$f(v.noi)}/mo: rent minus operating costs, before the loan.</p>`;
+    const loanLines = `<div class="loanlines" data-testid="loan-lines"><div class="f"><span class="lb">${type === 'business' ? 'Owner profit' : 'Income after operating costs'}</span><b data-testid="rent-noi" data-k="rent-noi">${$s(v.noi)}</b></div>
+      <div class="f"><span class="lb">Loan payment${v.mip > 0 ? ' (P&amp;I + mortgage insurance)' : h.io ? ' (interest only)' : ' (P&amp;I)'}</span><b data-testid="rent-loan" data-k="rent-loan">${v.P + v.mip > 0.5 ? '−' + $f(v.P + v.mip) : 'no loan'}</b></div>
+      ${v.X > 0.5 ? `<div class="f"><span class="lb">Extra payment</span><b data-testid="rent-extra" data-k="rent-extra">−${$f(v.X)}</b></div>` : ''}
+      <div class="f totl"><span class="lb">Cash flow after the loan</span><b data-testid="rent-cf" data-k="rent-cf" class="${v.cf < 0 ? 'bad' : ''}">${$s(v.cf)}</b></div>
+      ${v.X > 0.5 ? `<div class="f"><span class="lb">After the extra payment too</span><b data-testid="rent-cf-x" data-k="rent-cf-x">${$s(v.cf - v.X)}</b></div>` : ''}
+      <p class="note">Rent and costs alone are not what you keep: the loan payment comes out of them. These match Payment now and Cash flow now at the top of this page.</p></div>`;
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Name or address" title="${esc(h.addr)}"></h2><span class="tag" style="margin:0">${TL[type]}</span></div>
     ${homeLoses}
     ${h.fresh && type === 'house' ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
@@ -919,14 +1045,15 @@ select.notarget{max-width:9em}
     ${colSec('loan', 'Loan option', (lo ? lo.name.replace(/\s*\(.*\)/, '') : 'Custom') + ' · ' + r(h.rate, 2) + '% · ' + r(h.term / 12, 0) + ' yr' + (lo ? '' : ' · tap to pick a loan'), `<section class="card">${loanSel}${lo || h.io ? `<p class="note">${lo ? esc(lo.note) + ' ' : ''}${h.io ? 'Interest-only: extra payments reduce the balance. Balloon at maturity is not modeled.' : ''}</p>` : '<p class="note">Custom terms. Pick a loan option to auto-fill them.</p>'}${h.ownerOcc ? '<span class="chip warnchip" data-testid="owner-occ">You must live here (owner-occupied)</span>' : ''}${h.loanId === 'k203' && h.capex > 75000 ? '<p class="note" data-testid="k203-cap">⚠ Over the $75,000 Limited 203(k) cap. This rehab needs a Standard 203(k) with a HUD consultant.</p>' : ''}
       ${field('Interest rate', P + 'rate', r(h.rate, 3), { suf: '%' })}${field('Term (years)', P + 'termY', r(h.term / 12, 2))}${field('Closing costs', P + 'closingPct', r(h.closingPct == null ? g.closing : h.closingPct, 2), { suf: '%' })}${field('Extra / month', P + 'extra', grp(v.X), { pre: '$', calc: h.driver === 'months' && !!t })}${field('Paid off in (months)', P + 'payoff', isFinite(v.payoff) ? v.payoff : '', { calc: 1 })}${field('Other liens', P + 'liens', grp(h.liens), { pre: '$' })}
       <p class="note">${isFinite(v.payoff) ? `Paid off in ${mo(v.payoff)}. ` : h.io ? 'Not paid off until you refinance or sell. ' : 'Payment does not cover interest. '}${v.mip > 0 ? 'Includes ' + $f(v.mip) + '/mo mortgage insurance. ' : ''}Debt now: ${$f(debt)} (${r((debt / (v.valueNow || h.price)) * 100)}% of today's value).${v.cltvAtLoc != null ? ` When its line of credit opens: ${r(v.cltvAtLoc)}% (cap ${g.cap}%).` : ''}</p>${v.cltvAtLoc != null && v.cltvAtLoc > g.cap + 0.01 ? '<span class="chip warnchip">Over the debt cap</span>' : ''}</section>`, true)}
-    ${colSec('rent', LB.sec, type === 'business' ? 'profit ' + $f(h.rent) : 'rent ' + $f(h.rent) + ' · costs ' + $f(h.tax + h.ins + h.hoa), `<section class="card">${income}</section>`, true)}
+    ${colSec('rent', LB.sec, (type === 'business' ? 'profit ' + $f(h.rent) : 'rent ' + $f(h.rent)) + ' · loan ' + (v.P + v.mip > 0.5 ? '−' + $f(v.P + v.mip) : 'none'), `<section class="card">${income}${loanLines}</section>`, true)}
     ${colSec('loc', 'Line of credit strategy', t ? 'opens ' + (isFinite(p0 + v.locM) ? mm(p0 + v.locM) : 'never') : 'not set', `<section class="card"><div class="f stack"><span class="lb">Funds</span>${targetSel(h)}</div>
       ${t ? `${field('Cash needed', P + 'need', grp(v.D), { pre: '$', calc: 1, ro: 1 })}${field('Months until LOC', P + 'wait', isFinite(v.locM) ? v.locM : '', { calc: h.driver === 'extra' })}
-      <div class="f"><span class="lb">Opens (from today)</span><b>${isFinite(p0 + v.locM) ? mm(p0 + v.locM) : 'never'}</b></div>
+      <div class="f"><span class="lb">Opens (from today)${infoBtn('nextdp')}</span><b>${isFinite(p0 + v.locM) ? mm(p0 + v.locM) : 'never'}</b></div>
+      ${isFinite(v.locM) ? `<p class="note" data-testid="loc-split">Of the cash needed, ${$f(v.cashDP)} comes from this asset's own cash flow (${$f(v.cfSaved)}/mo saved while it waits) and ${$f(v.draw)} from the line of credit.</p>` : ''}
       ${v.infeasible ? '<p class="note">⚠ That wait is not reachable, even with the loan fully paid.</p>' : ''}${a.cls === 'warn' || a.cls === 'bad' ? `<span class="chip warnchip" title="${esc(a.why || '')}">Debt-to-income ${a.cls === 'bad' ? 'over' : 'near'} your limit when ${esc(t.addr)} closes</span>` : ''}${sooner > 0 ? `<span class="chip">+$100/mo → ${sooner} mo sooner</span>` : ''}` : '<p class="note">Pick the asset this line of credit will fund.</p>'}</section>`, true)}
     ${exitSec}
     ${colSec('impact', 'Impact on your plan', impactLines.length ? impactLines.length + ' changes to this plan' : 'no change', `<section class="card" data-testid="impact">${impactLines.length ? impactLines.join('') : '<p class="note" style="margin:0">Adding or removing this does not change the numbers below.</p>'}<p class="note">Portfolio totals without this asset → with it.</p></section>`, true)}
-    ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? It is also cleared as a funding target.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="btn ghost" data-del="${h.id}" data-testid="h-delete">Remove</button>`}`;
+    ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? It is also cleared as a funding target.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="btn plain" data-dup="${h.id}" data-testid="h-duplicate">Duplicate this ${TL[type].toLowerCase()}</button><button class="btn ghost" data-del="${h.id}" data-testid="h-delete">Remove</button>`}`;
   }
 
   /* ---------- finances page: your jobs, cash and expenses, and whether the plan is affordable ---------- */
@@ -1059,7 +1186,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (!imp || !imp.res || !imp.res.ok) return;
     const x = imp.res, extra = { listingUrl: x.url || '', info: x.info || {}, fresh: false };
     let h = id === 'new' ? null : H(id);
-    if (h) Object.assign(h, x.patch, extra); else { h = E.newHouse(Object.assign({}, x.patch, extra)); S.houses.push(h); }
+    if (h) Object.assign(h, x.patch, extra); else { h = E.newHouse(Object.assign({}, x.patch, extra)); E.register(S, h); S.houses.push(h); E.relink(S); }
     imp = null; save(); goto('h/' + h.id);
   }
 
@@ -1072,7 +1199,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   let prev = {};
   function render() {
     const route = routeOf(), a = document.activeElement, id = a && a.dataset && (a.dataset.p || a.dataset.sel), typed = a && a.value, pos = a && a.selectionStart;
-    const app = document.getElementById('app');
+    const app = document.getElementById('app'); if (selId && !H(selId)) selId = null;
     app.innerHTML = '';
     app.innerHTML = route === 'finances' ? finances() : route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
     app.insertAdjacentHTML('beforeend', sheetHtml());
@@ -1088,7 +1215,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     prev = cur;
   }
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && infoKey) { infoKey = null; render(); } });
-  window.addEventListener('hashchange', () => { infoKey = null; infoFrom = null; prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
+  window.addEventListener('hashchange', () => { navSeen++; infoKey = null; infoFrom = null; prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
 
   /* ---------- editing: every field is an input; derived fields back-solve ---------- */
   function setField(p, s) {
@@ -1152,14 +1279,13 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.addcap !== undefined) { S.p.capital.push({ id: 'cap' + Date.now().toString(36), name: 'Partner or investor', amount: 100000, month: 12 }); save(); render(); return; }
     if (t.dataset.dp) { ask = 'dp:' + t.dataset.dp; render(); return; }
     if (t.dataset.dpYes) { const [kind, id] = t.dataset.dpYes.split(':'), key = { job: 'jobs', pl: 'planned', cap: 'capital' }[kind]; if (key) S.p[key] = S.p[key].filter((q) => q.id !== id); ask = null; save(); render(); return; }
-    if (t.dataset.add !== undefined) { goto('add'); return; }
+    if (t.dataset.add !== undefined) { if (E.TYPES[t.dataset.add]) { UI.addType = t.dataset.add; UI.addLoan = ''; } goto('add'); return; }
     const at = t.closest('[data-addtype]'); if (at) { UI.addType = at.dataset.addtype; UI.addLoan = ''; render(); return; }
     const pk = t.closest('[data-pickloan]'); if (pk) { UI.addLoan = pk.dataset.pickloan; render(); return; }
-    if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const h = E.newAsset(tp, lid, { fresh: true }); S.houses.push(h); save(); goto('h/' + h.id); return; }
+    if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const h = E.newAsset(tp, lid, { fresh: true }); E.register(S, h); S.houses.push(h); E.relink(S); UI.coll['cat-' + tp] = false; selId = null; save(); goto('h/' + h.id); return; }
     if (t.dataset.del) { ask = 'del:' + t.dataset.del; render(); return; }
-    if (t.dataset.delYes) { const gone = H(t.dataset.delYes); undo = gone ? { label: gone.addr, snap: JSON.stringify(S) } : null; S = E.without(S, t.dataset.delYes); ask = null; save(); goto(''); render(); return; }
+    if (t.dataset.delYes) { const gone = H(t.dataset.delYes); undo = gone ? { label: gone.addr, snap: JSON.stringify(S) } : null; S = E.without(S, t.dataset.delYes); E.relink(S); if (selId === t.dataset.delYes) selId = null; ask = null; save(); goto(''); render(); return; }
     if (t.dataset.undo !== undefined) { if (undo) { S = E.normalize(JSON.parse(undo.snap)); S.v = DATA_V; undo = null; save(); render(); } return; }
-    if (t.dataset.edit !== undefined) { editList = !editList; ask = null; render(); return; }
     if (t.dataset.askCancel !== undefined) { ask = null; pendingImport = null; render(); return; }
     if (t.dataset.hidelegend !== undefined) { UI.hideLegend = true; save(); render(); return; }
     if (t.dataset.togglepaste !== undefined) { UI.paste = !UI.paste; render(); return; }
@@ -1169,13 +1295,85 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.copybackup !== undefined) { const m = document.getElementById('cbm'), ta = document.getElementById('bkout'); const fail = () => { ta.focus(); ta.select(); m.textContent = 'Select the text above and copy it by hand.'; };
       try { navigator.clipboard.writeText(ta.value).then(() => { m.textContent = 'Copied.'; }, fail); } catch (x) { fail(); } return; }
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
-    if (t.dataset.importYes !== undefined) { S = E.normalize(pendingImport); if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
+    if (t.dataset.importYes !== undefined) { S = E.normalize(pendingImport); if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; fixOrder(S); pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     if (t.dataset.reset !== undefined) { ask = 'reset'; render(); return; }
     if (t.dataset.stretch !== undefined) { ask = 'stretch'; render(); return; }
-    if (t.dataset.stretchYes !== undefined) { S = E.seedStretch(); S.v = DATA_V; ask = null; save(); render(); return; }
-    if (t.dataset.resetYes !== undefined) { S = E.seed(); S.v = DATA_V; ask = null; save(); render(); return; }
+    if (t.dataset.stretchYes !== undefined) { S = E.seedStretch(); S.v = DATA_V; fixOrder(S); ask = null; save(); render(); return; }
+    if (t.dataset.resetYes !== undefined) { S = E.seed(); S.v = DATA_V; fixOrder(S); ask = null; save(); render(); return; }
+    const mvb = t.closest('[data-move]'); if (mvb) { const [id, d] = mvb.dataset.move.split(':'); moveBy(id, +d); return; }
+    const dpb = t.closest('[data-dup]'); if (dpb) { const c = E.duplicate(S, dpb.dataset.dup); if (c) { ask = null; UI.coll['cat-' + (c.type || 'house')] = false; save(); if (routeOf().startsWith('h/')) { selId = null; goto('h/' + c.id); } else { selId = c.id; render(); } } return; }
+    const rwEl = t.closest('[data-row]'); if (rwEl && !t.closest('[data-go]')) { if (Date.now() - lastDragEnd < 350) return; selId = selId === rwEl.dataset.row ? null : rwEl.dataset.row; ask = null; render(); return; }
     const go = t.closest('[data-go]'); if (go) goto(go.dataset.go);
   });
+  /* ---------- reorder: Move up/down buttons and press-and-hold drag. List order = buy order; funding is relinked after every change. ---------- */
+  let lastDragEnd = 0, drag = null, press = null, navSeen = 0;
+  const visibleIds = (tp) => { const pl = E.plan(S); return S.houses.filter((x) => (x.type || 'house') === tp && !(pl.exits[x.id] && pl.sellAt[x.id] <= pl.planM)).map((x) => x.id); };
+  function moveBy(id, d) {
+    const h = H(id); if (!h) return; const vis = visibleIds(h.type || 'house'), i = vis.indexOf(id), j = i + d; if (i < 0 || j < 0 || j >= vis.length) return;
+    [vis[i], vis[j]] = [vis[j], vis[i]]; E.reorder(S, vis); save(); render();
+    const nb = app.querySelector(`[data-move="${id}:${d}"]`) || app.querySelector(`[data-move="${id}:${-d}"]`); if (nb && !nb.disabled) nb.focus();
+  }
+  const LONG = 450;
+  function startDrag() {
+    if (!press) return; const row = press.el, wrap = row.closest('.rw'), body = wrap && wrap.parentElement; if (!body) { press = null; return; }
+    app.classList.add('dragmode'); /* open panels fold away so every row is the same size while it moves */
+    const items = [...body.children].filter((c) => c.classList && c.classList.contains('rw')), sy = window.scrollY;
+    const rects = items.map((el) => ({ el, top: el.getBoundingClientRect().top + sy, h: el.offsetHeight })), idx = items.indexOf(wrap);
+    drag = { id: press.id, items, rects, idx, to: idx, h: rects[idx].h, off: press.y + sy - rects[idx].top, y: press.y, wrap };
+    wrap.classList.add('lift'); try { row.setPointerCapture(press.pid); } catch (e) {}
+    selId = null; ask = null; press = null; dragLoop();
+  }
+  function dragUpdate() {
+    const d = drag; if (!d) return; const sy = window.scrollY, first = d.rects[0].top, last = d.rects[d.rects.length - 1].top + d.rects[d.rects.length - 1].h - d.h;
+    const top = Math.min(last, Math.max(first, d.y + sy - d.off)); d.wrap.style.transform = `translateY(${top - d.rects[d.idx].top}px)`;
+    const c = top + d.h / 2; let to = 0; d.rects.forEach((r, j) => { if (j !== d.idx && r.top + r.h / 2 < c) to++; }); d.to = to;
+    d.rects.forEach((r, j) => { if (j === d.idx) return; const sh = d.idx < to && j > d.idx && j <= to ? -d.h : d.idx > to && j >= to && j < d.idx ? d.h : 0; r.el.style.transform = sh ? `translateY(${sh}px)` : ''; });
+  }
+  function dragLoop() {
+    if (!drag) return; const z = 90, y = drag.y, H0 = window.innerHeight; let v = 0;
+    if (y < z) v = -Math.min(18, (z - y) / 4); else if (y > H0 - z) v = Math.min(18, (y - (H0 - z)) / 4);
+    if (v) window.scrollBy(0, v); dragUpdate(); drag.raf = requestAnimationFrame(dragLoop);
+  }
+  function endDrag(commit) {
+    const d = drag; drag = null; press = null; if (!d) return; cancelAnimationFrame(d.raf);
+    d.items.forEach((el) => { el.style.transform = ''; el.classList.remove('lift'); }); app.classList.remove('dragmode'); lastDragEnd = Date.now();
+    if (commit && d.to !== d.idx) { const ids = d.items.map((el) => el.dataset.rw); ids.splice(d.to, 0, ids.splice(d.idx, 1)[0]); E.reorder(S, ids); save(); }
+    render();
+  }
+  app.addEventListener('pointerdown', (e) => {
+    if (drag) return; if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const row = e.target.closest && e.target.closest('.row[data-row]'); if (!row || row.hasAttribute('data-nodrag') || e.target.closest('select,input,textarea,a,[data-info]')) return;
+    clearTimeout(press && press.timer); press = { id: row.dataset.row, el: row, x: e.clientX, y: e.clientY, pid: e.pointerId }; press.timer = setTimeout(startDrag, LONG);
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (drag) { drag.y = e.clientY; dragUpdate(); return; }
+    if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) { clearTimeout(press.timer); press = null; }
+  });
+  const pend = (commit) => (e) => { if (drag) { if (e.type === 'pointerup') { drag.y = e.clientY; dragUpdate(); } endDrag(commit); } else if (press) { clearTimeout(press.timer); press = null; } };
+  document.addEventListener('pointerup', pend(true)); document.addEventListener('pointercancel', pend(false));
+  document.addEventListener('touchmove', (e) => { if (drag && e.cancelable) e.preventDefault(); }, { passive: false }); /* iOS: stop the page scrolling under the dragged row */
+  app.addEventListener('contextmenu', (e) => { if (e.target.closest && e.target.closest('.row[data-row]')) e.preventDefault(); });
+
+  /* ---------- touch gestures: swipe right from the left edge = back; swipe down = close the keyboard ---------- */
+  function swipeBack() {
+    if (infoKey) { infoKey = null; render(); return; }
+    if (!routeOf()) return; if (navSeen > 0 && history.length > 1) history.back(); else goto('');
+  }
+  let sw = null, kb = null; const FIELD = 'input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select';
+  document.addEventListener('touchstart', (e) => {
+    const t = e.touches[0]; sw = null; kb = null; if (!t || e.touches.length !== 1) return;
+    if (t.clientX <= 24 && !drag && !(e.target.closest && e.target.closest('input,select,textarea,[type=range],.sheet'))) sw = { x: t.clientX, y: t.clientY };
+    if (!(e.target.closest && e.target.closest(FIELD))) kb = { y: t.clientY };
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    const t = e.touches[0]; if (!t) return;
+    if (sw && (Math.abs(t.clientY - sw.y) > 45 || drag)) sw = null;
+    const a = document.activeElement; if (kb && a && a.matches && a.matches(FIELD) && t.clientY - kb.y > 28 && !drag) { kb = null; a.blur(); }
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => { const t = e.changedTouches[0]; if (sw && t && t.clientX - sw.x > 70 && Math.abs(t.clientY - sw.y) < 45 && !drag) swipeBack(); sw = null; kb = null; }, { passive: true });
+  document.addEventListener('touchcancel', () => { sw = null; kb = null; }, { passive: true });
+  app.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && !/^(checkbox|radio|file|range)$/.test(e.target.type)) e.target.blur(); });
+
   render();
   /* local-first plumbing: ask the browser to keep our data, and cache the app for offline use */
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}

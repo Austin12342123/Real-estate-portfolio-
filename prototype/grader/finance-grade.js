@@ -61,7 +61,7 @@ exports.run = async function run(X) {
       const net = inc + port - ptax - gm - ex - liv - dbt;
       const intr = t > 0 ? Math.max(0, o.liquid[t - 1] + s.cash[t - 1]) * p.cashApy / 100 / 12 : 0;
       let cap = 0; for (const c of p.capital) if (c.month === t) cap += c.amount; let one = 0; for (const x of p.planned) if (x.month === t) one += x.amount;
-      liq = liq + net + intr + cap - oc - one - (saleTaxAt[t] || 0);
+      liq = liq + net + intr + cap - oc - one - (saleTaxAt[t] || 0) - (pl.dpCash ? pl.dpCash[t] || 0 : 0);
       const tot = liq + s.cash[t], res = p.emergencyMonths * (liv + dbt), burn = liv + dbt + ex + gm - Math.max(0, port - ptax);
       const vals = { income: inc, portfolio: port, portTax: ptax, extra: ex, living: liv, debts: dbt, gm, hours: hrs, nBiz: nb, outsideCall: oc, saleTax: saleTaxAt[t] || 0, net, interest: intr, liquid: liq, total: tot, reserve: res, burn, runway: burn > 0.5 ? Math.max(0, tot) / burn : Infinity, oneTime: one, capitalIn: cap };
       keys.forEach((k) => o[k].push(vals[k]));
@@ -334,7 +334,7 @@ exports.run = async function run(X) {
     const so = await appState(page); P.t(so.p && so.p.cash === 45000 && so.houses.length === old.houses.length, 'a backup without a profile restores the assets and gets the default profile', 0.4, so.p && so.p.cash);
     /* v8 migration */
     const v8 = E.seed(); delete v8.p; v8.v = 8; v8.houses[0].addr = 'Kept From V8'; v8.houses[0].extra = 4321;
-    await loadState(page, v8, '#finances'); const sm = await appState(page); const same = JSON.stringify(sm.houses.map((h) => h.id)) === JSON.stringify(v8.houses.map((h) => h.id)) && sm.houses[0].addr === 'Kept From V8' && sm.houses[0].extra === 4321;
+    await loadState(page, v8, '#finances'); const sm = await appState(page); const same = JSON.stringify(sm.houses.map((h) => h.id).sort()) === JSON.stringify(v8.houses.map((h) => h.id).sort()) && sm.houses.find((h) => h.id === v8.houses[0].id).addr === 'Kept From V8' && sm.houses.find((h) => h.id === v8.houses[0].id).extra === 4321; /* the list is sorted into buy order once on load */
     P.t(same && sm.v === DATA_V && sm.p && sm.p.cash === 45000 && sm.p.jobs.length === 1 && sm.p.jobs[0].gross === 96000, 'a saved v8 state (assets only) keeps its assets and gains the default profile at DATA_V', 1.2, `v=${sm.v} p=${sm.p && sm.p.cash} addr=${sm.houses[0].addr}`);
     matchUI(P, await rd(page), (() => { const S = clone(v8); S.v = DATA_V; S.p = E.samplePersonal(); return E.normalize(S); })(), 'migrated v8', 0.4);
     await loadState(page, Object.assign(clone(v8), { v: 7 }), '#finances'); P.t((await appState(page)).houses.length === E.seed().houses.length && (await appState(page)).p.cash === 45000, 'an older (v7) save is replaced by the current sample with a profile', 0.3);

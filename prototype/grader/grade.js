@@ -15,7 +15,7 @@ const results = [];
 const cats = { A: 'Requirement / propagation', B: 'Engine correctness', C: 'UX conciseness & usability', D: 'PWA / local-first', E: 'Robustness & accessibility', R: 'Realism & market accuracy' };
 const CATMAX = { A: 18, B: 12, C: 10, D: 8, E: 7, R: 30 };
 const KEY = 'rep-v4', DATA_V = +((/const DATA_V = (\d+)/.exec(fs.readFileSync(path.resolve(__dirname, '../v4/app.js'), 'utf8')) || [0, 0])[1]);
-const FIN_ONLY = process.env.FINANCE_ONLY === '1', SYNC_ONLY = process.env.SYNC_ONLY === '1', INFO_ONLY = process.env.INFO_ONLY === '1', MAIN_ONLY = process.env.MAIN_ONLY === '1';
+const FIN_ONLY = process.env.FINANCE_ONLY === '1', SYNC_ONLY = process.env.SYNC_ONLY === '1', INFO_ONLY = process.env.INFO_ONLY === '1', MAIN_ONLY = process.env.MAIN_ONLY === '1', GEST_ONLY = process.env.GEST_ONLY === '1';
 const NSEED = E.seed().houses.length; /* derived from the app, never hard-coded */
 
 /* ---------------------------------------------------------------- helpers */
@@ -90,7 +90,7 @@ let pageSeq = 0;
 async function mkPage(ctx, label) {
   const page = await ctx.newPage(); page.setDefaultTimeout(4000); page.__d = []; const tag = label || 'p' + pageSeq++;
   page.on('console', (m) => { if (m.type() === 'error' && !collect.paused) collect.errors.push(`[${tag}] console: ${m.text()}`); });
-  page.on('pageerror', (e) => collect.errors.push(`[${tag}] pageerror: ${e.message}`));
+  page.on('pageerror', (e) => collect.errors.push(`[${tag}] pageerror: ${e.message} @ ${String(e.stack || '').split('\n').slice(1, 3).join(' <- ').trim()}`));
   page.on('dialog', (d) => { page.__d.push(d.message()); d.accept().catch(() => {}); });
   return page;
 }
@@ -120,6 +120,9 @@ async function goHash(page, h) {
   await page.waitForTimeout(60);
   await expandAll(page);
 }
+/* Portfolio rows: tapping a row selects it and opens its panel (extra payment, effects, move / duplicate / details / remove) */
+async function selRow(page, id) { if (!(await page.$(`[data-for="${id}"]`))) { await page.click(`[data-row="${id}"] .addrbtn`); await page.waitForTimeout(60); } }
+async function setExtra(page, id, val) { await selRow(page, id); await setVal(page, `[data-for="${id}"] [data-testid=extra-input]`, val); }
 const goMain = async (page) => { await goHash(page, '#'); await page.waitForSelector('[data-testid=summary],.empty'); };
 /* Set a field like a user finishing an edit: native value set + 'input' event, then blur. */
 async function setVal(page, sel, val) {
@@ -137,7 +140,7 @@ async function snap(page) {
   const d = await page.evaluate(() => {
     const txt = (s) => { const e = document.querySelector(s); return e ? e.textContent.trim() : null; };
     const rows = [...document.querySelectorAll('[data-testid=ledger-row]')].map((r) => { const loc = r.querySelector('[data-testid=loc-line]'), inp = r.querySelector('input'), cf = r.querySelector('[data-testid=row-cashflow] b'), ex = r.querySelector('.exitline');
-      return { id: (r.dataset.go || '').replace('h/', ''), addr: (r.querySelector('.addr') || {}).textContent, tag: (r.querySelector('.tag') || {}).textContent, pay: (r.querySelector('[data-testid=row-payment]') || {}).textContent,
+      return { id: r.dataset.row || '', addr: (r.querySelector('.addr') || {}).textContent, tag: (r.querySelector('.tag') || {}).textContent, pay: (r.querySelector('[data-testid=row-payment]') || {}).textContent,
         extra: inp ? inp.value : null, eqA: (r.querySelector('[data-testid=row-payment]') || { dataset: {} }).dataset.equity, loc: loc ? loc.textContent.trim() : '', cf: cf ? cf.textContent.trim() : '', exitline: ex ? ex.textContent.trim() : '' }; });
     const bd = {}; document.querySelectorAll('[data-testid=breakdown] tbody tr').forEach((tr) => { const c = [...tr.children].map((x) => x.textContent.trim()); bd[c[0]] = c.slice(1); });
     return { nw: txt('[data-testid=kpi-networth]'), mon: txt('[data-testid=kpi-monthly]'), cf: txt('[data-testid=kpi-cashflow]'), dscr: txt('[data-testid=kpi-dscr]'), totX: txt('[data-testid=total-extra]'), headline: txt('[data-testid=plan-headline]'),
@@ -147,6 +150,7 @@ async function snap(page) {
   const s = { raw: d, nw: money(d.nw), mon: money(d.mon), cf: money(d.cf), dscr: parseFloat(d.dscr), totX: money(d.totX), headline: d.headline, rows: d.rows, bd: d.bd, body: d.body };
   s.rows.forEach((r) => { r.payN = (/\$([\d,.]+[MB]?)\/mo/.exec(r.pay) ? money('$' + /\$([\d,.]+[MB]?)\/mo/.exec(r.pay)[1]) : NaN); r.sold = /sold/.test(r.pay || ''); r.exN = r.extra == null ? 0 : money(r.extra); r.buy = buyOf(r.tag); r.cfN = /—/.test(r.cf) || r.sold ? 0 : money(r.cf); /* a sold row's cash cell shows the sale proceeds, not a monthly cash flow */ r.eqN = r.eqA ? +r.eqA : 0; });
   { const k = Object.keys(s.bd).find((x) => /^Sold\b/.test(x)); s.soldCash = k ? money(s.bd[k][1]) : 0; }
+  { const st = await store(page); if (st) s.rows.forEach((r) => { const h = (st.houses || []).find((x) => x.id === r.id); if (h && !r.sold) { const X = E.view(st, h).X; r.extra = Math.round(X).toLocaleString('en-US'); r.exN = Math.round(X); } }); }
   s.row = (id) => s.rows.find((r) => r.id === id);
   return s;
 }
@@ -186,7 +190,9 @@ function simLoc(S, h, t, X) {
   const L = h.price * (1 - h.dp / 100), i = h.rate / 1200, P = i ? L * i / (1 - Math.pow(1 + i, -h.term)) : L / h.term, k0 = h.status === 'owned' ? (h.paid || 0) : 0;
   let bal = L; for (let m = 0; m < k0; m++) bal = bal * (1 + i) - P; bal = Math.max(0, bal);
   const D = t.price * (t.dp / 100 + cl / 100);
-  for (let k = 0; k <= 600; k++) { const val = h.price * Math.pow(1 + gr / 100, (k0 + k) / 12); const head = Math.max(0, g.cap / 100 * val - bal - (h.liens || 0)) * (1 - g.haircut / 100); if (head >= D) return k; bal = Math.max(0, bal * (1 + i) - (P + X)); }
+  /* the funder's own monthly cash flow (income after costs and loan payment, before extra) is saved toward the down payment */
+  const egi = h.rent * (1 - g.vac / 100), noi = h.type === 'business' ? h.rent : egi - (h.tax + h.ins + h.hoa + g.maint / 100 * h.price / 12 + g.mgmt / 100 * egi), cfs = Math.max(0, noi - P - (h.mipAnn > 0 ? L * h.mipAnn / 1200 : 0));
+  for (let k = 0; k <= 600; k++) { const val = h.price * Math.pow(1 + gr / 100, (k0 + k) / 12); const head = Math.max(0, g.cap / 100 * val - bal - (h.liens || 0)) * (1 - g.haircut / 100); if (head + cfs * k >= D) return k; bal = Math.max(0, bal * (1 + i) - (P + X)); }
   return Infinity;
 }
 let seedR = 12345; const rnd = () => ((seedR = (seedR * 1664525 + 1013904223) % 4294967296) / 4294967296);
@@ -368,7 +374,7 @@ async function reqChecks(page) {
         const okFill = /^#house-/.test(hash) && near(f.dp, lo.dp, 0.01) && near(f.rate, lo.rate, 0.001) && near(f.termY, lo.term / 12, 0.01) && near(f.cl, lo.closing, 0.01) && f.loan === lo.id && f.io === !!lo.io;
         if (!okFill) badFill.push(tp + '/' + lo.id + ' ' + JSON.stringify(f));
         const a = await snap(page);
-        const changed = a.rows.length === prev.rows.length + 1 && !!a.row(id) && (a.nw !== prev.nw || a.mon !== prev.mon || a.cf !== prev.cf);
+        const changed = a.rows.length === prev.rows.length + 1 && !!a.row(id) && (a.nw !== prev.nw || a.mon !== prev.mon || a.cf !== prev.cf || /unfunded|buy/.test(a.row(id).tag || '')); /* an add after the chain tail can be unfunded (waits for the previous asset's credit line): then the row says so */
         if (!changed) noChange.push(lo.id + ' rows ' + prev.rows.length + '->' + a.rows.length + ' nw ' + prev.nw + '->' + a.nw);
         if (okFill && changed) nOk++; prev = a;
       } }
@@ -443,13 +449,13 @@ async function reqChecks(page) {
 
   await check('A05', 'A', 'Remove from the MAIN page: Edit mode, confirm, Undo, totals update; removing a funding source leaves the target listed', 4, 'Main > Edit > Remove > Yes; Undo', async () => {
     await loadState(page, SB()); const P = new Parts(); await goMain(page); const b = await snap(page);
-    P.t((await page.locator('[data-testid=row-remove]').count()) === 0, 'no Remove buttons until Edit is tapped', 0.3);
-    await page.click('[data-testid=edit-list]'); const nb = await page.locator('[data-testid=row-remove]').count(); P.t(nb === b.rows.length, 'Edit reveals a Remove button per row (' + nb + ')', 0.5);
-    await page.click('[data-go="h/a"] [data-testid=row-remove]'); await page.waitForTimeout(60);
-    const conf = await page.locator('[data-go="h/a"] .confirm [data-del-yes]').count(); P.t(conf === 1 && (await page.locator('.confirm [data-ask-cancel]').count()) >= 1, 'in-page confirm with Yes / Cancel', 0.5);
+    P.t((await page.locator('[data-testid=row-remove]').count()) === 0, 'no Remove buttons until a row is selected', 0.3);
+    await selRow(page, 'a'); const nb = await page.locator('[data-testid=row-remove]').count(); P.t(nb === 1 && (await page.locator('[data-for="a"] [data-testid=row-remove]').count()) === 1, 'selecting a row reveals its Remove button in the row panel (' + nb + ')', 0.5);
+    await page.click('[data-for="a"] [data-testid=row-remove]'); await page.waitForTimeout(60);
+    const conf = await page.locator('[data-for="a"] .confirm [data-del-yes]').count(); P.t(conf === 1 && (await page.locator('.confirm [data-ask-cancel]').count()) >= 1, 'in-page confirm with Yes / Cancel', 0.5);
     await page.click('.confirm [data-ask-cancel]'); P.t((await page.locator('[data-testid=ledger-row]').count()) === b.rows.length, 'Cancel keeps the asset', 0.3);
-    await page.click('[data-go="h/a"] [data-testid=row-remove]'); await page.click('[data-go="h/a"] [data-del-yes]'); await page.waitForTimeout(100);
-    const a = await snap(page); const S = clone(SB()); const w = E.plan(E.without(S, 'a')).horizon;
+    await page.click('[data-for="a"] [data-testid=row-remove]'); await page.click('[data-for="a"] [data-del-yes]'); await page.waitForTimeout(100);
+    const a = await snap(page); const S = clone(SB()); E.orderByBuy(S); const Sw = E.without(S, 'a'); E.relink(Sw); const w = E.plan(Sw).horizon; /* the app sorts into buy order once, then relinks funding around the removed asset */
     P.t(a.rows.length === b.rows.length - 1 && !a.row('a'), 'row removed', 0.5);
     P.t(!!a.row('b') && /Bravo/.test(a.row('b').addr), 'funding source removed: its target "Bravo House" is still listed', 0.6);
     P.t(nearRel(a.nw, w.nw) && nearRel(a.mon, w.monthly) && nearRel(a.cf, w.cf) && a.nw !== b.nw, 'KPIs now equal the engine on the portfolio without it', 0.6, `${a.nw} vs ${Math.round(w.nw)}`);
@@ -458,12 +464,14 @@ async function reqChecks(page) {
     await page.click('[data-undo]'); await page.waitForTimeout(80); const u = await snap(page);
     P.t(u.rows.length === b.rows.length && !!u.row('a') && u.nw === b.nw && u.mon === b.mon, 'Undo restores the asset and the totals', 0.6, `${u.rows.length} rows nw ${u.nw} vs ${b.nw}`);
     return P; });
-  await check('A06', 'A', 'Main rows are ordered by purchase month (owned first); tags match the engine\'s purchase months', 1.5, 'Main ledger on sample and on a small state', async () => {
-    const P = new Parts(); await reset(page); const s = await snap(page); const seq = s.rows.map((r) => r.buy);
-    P.t(seq.every((v, i) => !isNaN(v) && (i === 0 || seq[i - 1] <= v)), 'sample rows nondecreasing by purchase month', 0.7, seq.join(','));
-    const own = s.rows.filter((r) => isOwnedTag(r.tag)).length; P.t(own === 3 && s.rows.slice(0, 3).every((r) => isOwnedTag(r.tag)), 'owned rows come first (owned tag has no "· buy" part)', 0.3, own);
+  await check('A06', 'A', 'Main rows follow list order = buy order (sorted once on first load, owned first); tags match the engine\'s purchase months', 1.5, 'Main ledger on sample and on a small state', async () => {
+    const P = new Parts(); await reset(page); const s = await snap(page); const grpOf = (r) => (r.tag || '').split(' ')[0];
+    const okGroups = (rows) => ['Home', 'Comm.', 'Biz'].every((g) => { const q = rows.filter((r) => grpOf(r) === g && !r.sold).map((r) => r.buy); return q.every((v, i) => !isNaN(v) && (i === 0 || q[i - 1] <= v)); });
+    P.t(okGroups(s.rows), 'sample rows in each category are nondecreasing by purchase month', 0.7, s.rows.map((r) => r.buy).join(','));
+    const st = await store(page), plS = E.plan(st), q = st.houses.map((h) => plS.purchase[h.id]); P.t(st.orderV === 1 && q.every((v, i) => i === 0 || (isFinite(q[i - 1]) ? q[i - 1] <= v || !isFinite(v) : !isFinite(v))), 'saved list is in buy order and flagged (orderV = 1)', 0.3, q.join(','));
+    const own = s.rows.filter((r) => grpOf(r) === 'Home' && isOwnedTag(r.tag)).length; P.t(own === 2 && s.rows.filter((r) => grpOf(r) === 'Home').slice(0, 2).every((r) => isOwnedTag(r.tag)), 'owned homes come first in the Homes list (owned tag has no "· buy" part)', 0.3, own);
     const pl = E.plan(E.seed()); P.t(s.rows.every((r) => { const m = pl.purchase[r.id]; return r.buy === (isFinite(m) ? m : Infinity); }), 'row tags equal Engine purchase months', 0.5);
-    await loadState(page, SB()); const t = await snap(page), pb = E.plan(SB()); const seq2 = t.rows.map((r) => r.id), want = SB().houses.map((h) => h.id).sort((x, y) => pb.purchase[x] - pb.purchase[y]); P.t(JSON.stringify(seq2.map((i) => pb.purchase[i])) === JSON.stringify(want.map((i) => pb.purchase[i])), 'small state ordered by month', 0.5, seq2.join(',')); return P; });
+    await loadState(page, SB()); const t = await snap(page), pb = E.plan(SB()); P.t(okGroups(t.rows) && t.rows.every((r) => { const m = pb.purchase[r.id]; return r.buy === (isFinite(m) ? m : Infinity); }), 'small state: list order sorted by month once, tags equal the engine', 0.5, t.rows.map((r) => r.id + ':' + r.buy).join(',')); return P; });
   await check('A07', 'A', 'No "Today" / "20 years" view toggle anywhere (single portfolio snapshot)', 1, 'Scan buttons on main, asset, assumptions, add pages', async () => {
     await reset(page); const P = new Parts(); let toggles = [], dv = 0;
     for (const h of ['#', '#house-maple', '#assumptions', '#add']) { await goHash(page, h); const r = await page.evaluate(() => ({ dv: document.querySelectorAll('[data-view]').length, b: [...document.querySelectorAll('#app button, #app [role=tab]')].map((e) => e.textContent.trim()).filter((t) => /^(today|now|20 ?y(ears?)?|20-year|in 20 years|20 yr)$/i.test(t)) })); dv += r.dv; toggles = toggles.concat(r.b); }
@@ -479,14 +487,14 @@ async function reqChecks(page) {
     await goHash(page, '#add'); await page.click('[data-addtype=business]'); await page.click('[data-testid=confirm-add]'); await page.waitForTimeout(80); P.t((await page.locator('[data-testid=home-loses]').count()) === 0, 'business page never shows the home warning', 0.2); return P; });
   await check('A09', 'A', 'Per-row numbers sum to the portfolio headline (cash flow, monthly payments, net worth) on the sample, and match the engine', 3, 'Main page: sum row cash flows / payments / equity vs KPIs', async () => {
     await reset(page); const P = new Parts(); const s = await snap(page); const pl = E.plan(E.seed()), h = pl.horizon;
-    P.t(nearRel(s.nw, h.nw, 1, 0.002) && nearRel(s.mon, h.monthly, 1, 0.002) && nearRel(s.cf, h.cf, 1, 0.002), 'KPIs equal Engine.plan(seed).horizon', 0.7, `nw ${s.nw} vs ${Math.round(h.nw)}; mon ${s.mon} vs ${Math.round(h.monthly)}; cf ${s.cf} vs ${Math.round(h.cf)}`);
+    P.t(nearRel(s.nw, h.nw, 1, 0.004) && nearRel(s.mon, h.monthly, 1, 0.002) && nearRel(s.cf, h.cf, 1, 0.002), 'KPIs equal Engine.plan(seed).horizon (net worth shown to $0.1M)', 0.7, `nw ${s.nw} vs ${Math.round(h.nw)}; mon ${s.mon} vs ${Math.round(h.monthly)}; cf ${s.cf} vs ${Math.round(h.cf)}`);
     const cfSum = s.rows.reduce((a, r) => a + (r.cfN || 0), 0); P.t(near(cfSum, s.cf, 0.5 * s.rows.length + 1 + Math.abs(s.cf) * 0.001), 'sum of row cash flows = Cash flow / mo KPI', 0.8, `${Math.round(cfSum)} vs ${s.cf}`);
     const paySum = s.rows.reduce((a, r) => a + (r.sold || !isFinite(r.payN) ? 0 : r.payN), 0); P.t(near(paySum, s.mon, 0.5 * s.rows.length + 1 + Math.abs(s.mon) * 0.001), 'sum of row payments = Total monthly payments KPI', 0.8, `${Math.round(paySum)} vs ${s.mon}`);
     const eq = s.rows.reduce((a, r) => a + r.eqN, 0), cash = s.soldCash; const tot = eq + cash; /* row equity from data-equity; cash kept from sales is the breakdown Sold row */
     P.t(near(tot, s.nw, Math.abs(s.nw) * 0.004 + 1000), 'sum of row equity (+ cash from sales) = Net worth KPI', 0.8, `${Math.round(tot)} vs ${s.nw}`);
     const pr = s.bd['Portfolio']; P.t(!!pr && nearRel(money(pr[1]), s.nw, 1, 0.003) && nearRel(money(pr[2]), s.cf, 1, 0.003), 'breakdown table Portfolio row = KPIs', 0.4, JSON.stringify(pr));
     const exSum = s.rows.reduce((a, r) => a + r.exN, 0); P.t(near(exSum, s.totX, s.rows.length), 'total extra = sum of extra inputs', 0.3, `${exSum} vs ${s.totX}`);
-    await setVal(page, '[data-go="h/maple"] [data-testid=extra-input]', '1500'); const a = await snap(page); const S = E.seed(); E.H(S, 'maple').extra = 1500; const w = E.plan(S).horizon;
+    await setExtra(page, 'maple', '1500'); const a = await snap(page); const S = E.seed(); E.H(S, 'maple').extra = 1500; const w = E.plan(S).horizon;
     P.t(near(a.totX - s.totX, 900, 1) && nearRel(a.mon, w.monthly, 1, 0.006) && nearRel(a.nw, w.nw, 1, 0.006), 'editing a row extra on main updates totals like the engine', 0.5, `monthly ${s.mon}->${a.mon} (engine ${Math.round(w.monthly)})`); return P; });
   await check('A10', 'A', 'Exit and improvements through the UI: Hold/Sell/Merge buttons and fields propagate to rows, KPIs and breakdown', 3.5, 'Asset page > Value-add & exit', async () => {
     await loadState(page, SB(), '#house-b'); const P = new Parts(); const S = SB();
@@ -512,7 +520,7 @@ async function reqChecks(page) {
     await loadState(page, SB()); const P = new Parts(); const s = await snap(page), S = SB(), pl = E.plan(S);
     const okLoc = ['a', 'b'].every((id) => { const m = pl.purchase[id] + pl.V[id].locM, want = !isFinite(m) ? 'not reachable' : m <= 0 ? 'opens now' : 'opens in ' + m + ' mo'; return s.row(id).loc.includes(want); });
     P.t(okLoc, 'loc-line equals engine purchase+locM', 1, s.row('a').loc + ' | ' + s.row('b').loc); P.t(s.row('b').buy === pl.purchase.b && s.row('c').buy === pl.purchase.c, 'buy months equal engine', 0.5);
-    await setVal(page, '[data-go="h/a"] [data-testid=extra-input]', '2000'); const a = await snap(page); P.t(a.row('b').buy < s.row('b').buy && a.row('c').buy <= s.row('c').buy, 'more extra on source -> targets bought sooner', 0.5, `b ${s.row('b').buy}->${a.row('b').buy}`); return P; });
+    await setExtra(page, 'a', '2000'); const a = await snap(page); P.t(a.row('b').buy < s.row('b').buy && a.row('c').buy <= s.row('c').buy, 'more extra on source -> targets bought sooner', 0.5, `b ${s.row('b').buy}->${a.row('b').buy}`); return P; });
 }
 
 /* ================================================================ C: UX */
@@ -523,11 +531,14 @@ async function uxChecks(page) {
     await page.setViewportSize({ width: 390, height: 844 }); await reset(page); await goMain(page); const P = new Parts();
     const r = await page.evaluate(() => { const b = (s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect().bottom : 9999; }; return { nw: b('[data-testid=kpi-networth]'), mon: b('[data-testid=kpi-monthly]'), cf: b('[data-testid=kpi-cashflow]'), dscr: b('[data-testid=kpi-dscr]'), head: b('[data-testid=plan-headline]'), row1: b('[data-testid=ledger-row]') }; });
     P.t(r.nw < 844 && r.mon < 844 && r.cf < 844 && r.dscr < 844, 'four KPIs in first viewport', 0.8, JSON.stringify(r)); P.t(r.head < 844, 'plan headline visible', 0.5); P.t(r.row1 < 844, 'first ledger row visible', 0.7); return P; });
-  await check('C02', 'C', 'Main page has only the per-row extra fields as text inputs (one per asset)', 1.5, 'Count visible <input> on main (sample and after adding 3)', async () => {
+  await check('C02', 'C', 'Main page keeps text inputs out of the list: no inputs until a row is selected, then exactly one extra field (none for a sold row)', 1.5, 'Count visible <input> on main before / after selecting a row (sample, and after adding 3)', async () => {
     const P = new Parts(); await reset(page); const cnt = () => page.evaluate(() => [...document.querySelectorAll('#app input')].filter((i) => i.type !== 'hidden' && i.offsetParent).length);
-    const nSold = async () => page.evaluate(() => document.querySelectorAll('[data-testid=ledger-row].sold').length); const plS = E.plan(E.seed()), soldE = E.seed().houses.filter((h) => plS.exits[h.id] && plS.sellAt[h.id] <= plS.planM).length, s0 = await nSold();
-    const c0 = await cnt(); P.t(s0 === soldE && c0 === NSEED - soldE, NSEED + ' assets, ' + soldE + ' sold (no Extra field) -> ' + (NSEED - soldE) + ' inputs', 1, c0 + ' inputs, ' + s0 + ' sold rows');
-    for (let i = 0; i < 3; i++) { await goHash(page, '#add'); await page.click('[data-testid=confirm-add]'); await goMain(page); } const c3 = await cnt(); P.t(c3 === NSEED + 3 - soldE, (NSEED + 3) + ' assets -> ' + (NSEED + 3 - soldE) + ' inputs (one per unsold asset)', 0.5, c3); return P; });
+    const plS = E.plan(E.seed()), sold = E.seed().houses.filter((h) => plS.exits[h.id] && plS.sellAt[h.id] <= plS.planM)[0];
+    P.t((await cnt()) === 0, 'no text input anywhere on the Portfolio page until a row is selected', 0.6, await cnt());
+    await selRow(page, 'maple'); P.t((await cnt()) === 1 && (await page.locator('[data-for=maple] [data-testid=extra-input]').count()) === 1, 'selecting an asset shows exactly one extra-payment field, inside its panel', 0.6);
+    await selRow(page, 'maple'); await page.click('[data-row=maple] .addrbtn'); await page.waitForTimeout(50); P.t((await cnt()) === 0, 'tapping the row again closes the panel', 0.2);
+    if (sold) { await selRow(page, sold.id); P.t((await cnt()) === 0, 'a sold asset has no extra field', 0.2); }
+    for (let i = 0; i < 3; i++) { await goHash(page, '#add'); await page.click('[data-testid=confirm-add]'); await goMain(page); } P.t((await page.locator('[data-testid=ledger-row]').count()) === NSEED + 3, (NSEED + 3) + ' rows after adding 3', 0.2); return P; });
   await check('C03', 'C', 'No horizontal overflow at 320/390/430 on main, asset, assumptions, add, import', 2, 'Resize, check scrollWidth and element rects', async () => {
     const P = new Parts(); await reset(page);
     for (const w of [320, 390, 430]) { await page.setViewportSize({ width: w, height: 844 });
@@ -536,8 +547,7 @@ async function uxChecks(page) {
     await page.setViewportSize({ width: 390, height: 844 }); return P; });
   await check('C04', 'C', 'Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)', 2, 'Measure interactive elements on main/asset/assumptions/add', async () => {
     await reset(page); let tot = 0, ok = 0; const bad = [];
-    for (const [n, h] of routesC) { await goHash(page, h); if (n === 'main') { await page.click('[data-testid=edit-list]'); } const r = await page.evaluate(() => [...document.querySelectorAll('#app button, #app select, #app input, #app a[href], #app [role=button]')].filter((e) => !e.hidden && e.type !== 'hidden' && e.offsetParent).map((e) => { let b = e.getBoundingClientRect(); if (e.tagName === 'INPUT') { const l = e.closest('label'); if (l) b = l.getBoundingClientRect(); } return { w: b.width, h: b.height, d: e.tagName + (e.className ? '.' + String(e.className).split(' ')[0] : '') + '"' + (e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 18) + '"' }; }));
-      if (n === 'main') await page.click('[data-testid=edit-list]');
+    for (const [n, h] of routesC) { await goHash(page, h); if (n === 'main') { await selRow(page, 'maple'); } const r = await page.evaluate(() => [...document.querySelectorAll('#app button, #app select, #app input, #app a[href], #app [role=button]')].filter((e) => !e.hidden && e.type !== 'hidden' && e.offsetParent).map((e) => { let b = e.getBoundingClientRect(); if (e.tagName === 'INPUT') { const l = e.closest('label'); if (l) b = l.getBoundingClientRect(); } return { w: b.width, h: b.height, d: e.tagName + (e.className ? '.' + String(e.className).split(' ')[0] : '') + '"' + (e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 18) + '"' }; }));
       r.forEach((x) => { tot++; if (x.w >= 43.5 && x.h >= 43.5) ok++; else bad.push(`${n}:${x.d} ${Math.round(x.w)}x${Math.round(x.h)}`); }); }
     const uniq = [...new Set(bad)]; return { ratio: tot ? Math.pow(ok / tot, 1.5) : 0, detail: `${ok}/${tot} targets >=44px. Small: ${uniq.slice(0, 8).join('; ')}` }; });
   await check('C05', 'C', 'All inputs/selects use font-size >= 16px (no iOS zoom)', 1, 'computed font-size', async () => {
@@ -546,7 +556,7 @@ async function uxChecks(page) {
     return { ratio: tot ? ok / tot : 0, detail: `${ok}/${tot} ok ${bad.slice(0, 5).join(',')}` }; });
   await check('C06', 'C', 'Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps', 2, 'Tap row, Back; Add > Add (defaults)', async () => {
     await reset(page); await goMain(page); const P = new Parts();
-    await page.locator('[data-testid=ledger-row] .addr').first().click(); await page.waitForTimeout(100); const h1 = await page.evaluate(() => location.hash); P.t(/#house-maple/.test(h1), 'tap asset name -> its page', 0.5, h1);
+    await page.locator('[data-testid=ledger-row] .addr').first().click(); await page.waitForTimeout(100); await page.click('[data-testid=open-details]'); await page.waitForTimeout(100); const h1 = await page.evaluate(() => location.hash); P.t(/#house-maple/.test(h1), 'tap asset name (opens its panel) then Open details -> its page (2 taps)', 0.5, h1);
     await page.locator('[aria-label=Back]').first().click(); await page.waitForTimeout(100); const h2 = await page.evaluate(() => location.hash); P.t(/^#?$/.test(h2) && (await page.locator('[data-testid=summary]').count()) === 1, 'one Back tap -> main', 0.5, h2);
     const n0 = (await store(page)).houses.length; await page.click('[data-testid=add-house]'); await page.click('[data-testid=confirm-add]'); await page.waitForTimeout(100); P.t((await store(page)).houses.length === n0 + 1 && /#house-/.test(await page.evaluate(() => location.hash)), 'Add + confirm = 2 taps to a new asset', 1); return P; });
   await check('C07', 'C', 'Main page stays compact: <= 150px per ledger row (sample), plan below the ledger', 1, 'Measure ledger rows', async () => {
@@ -655,25 +665,25 @@ async function robustChecks(page) {
     await reset(page); await goHash(page, '#house-nonexistent'); P.t((await page.evaluate(() => document.getElementById('app').innerText.length)) > 0 && !BAD.test(await page.evaluate(() => document.getElementById('app').innerText)), 'unknown asset route renders something sane', 0.5);
     return P; });
   await check('E02', 'E', 'Remove all assets (main page) -> clean empty state with add action; can add again', 1.5, 'Edit > Remove each row', async () => {
-    await loadState(page, SB()); const P = new Parts(); await goMain(page); await page.click('[data-testid=edit-list]'); let guard = 0;
-    while ((await page.locator('[data-testid=ledger-row]').count()) && guard++ < 12) { await page.locator('[data-testid=row-remove]').first().click(); await page.locator('[data-del-yes]').first().click(); await page.waitForTimeout(60); }
-    const t = await page.evaluate(() => document.getElementById('app').innerText); P.t(/nothing here yet/i.test(t) && !BAD.test(t) && (await page.locator('[data-testid=ledger-row]').count()) === 0, 'empty state message, no NaN', 0.6, t.slice(0, 80).replace(/\n/g, ' '));
+    await loadState(page, SB()); const P = new Parts(); await goMain(page); let guard = 0;
+    while ((await page.locator('[data-testid=ledger-row]').count()) && guard++ < 12) { await page.locator('[data-testid=ledger-row] .addrbtn').first().click(); await page.locator('[data-testid=row-remove]').first().click(); await page.locator('[data-del-yes]').first().click(); await page.waitForTimeout(60); }
+    const t = await page.evaluate(() => document.getElementById('app').innerText); P.t(/none yet/i.test(t) && (await page.locator('[data-testid^=cat-header-]').count()) === 3 && !BAD.test(t) && (await page.locator('[data-testid=ledger-row]').count()) === 0, 'empty state message, no NaN', 0.6, t.slice(0, 80).replace(/\n/g, ' '));
     P.t((await page.locator('[data-testid=add-house]').count()) === 1 && (await page.locator('[data-testid=undo-banner]').count()) === 1, 'Add action and Undo available', 0.3);
     await page.click('[data-testid=add-house]'); await page.click('[data-testid=confirm-add]'); await page.waitForTimeout(80); await goMain(page); P.t((await page.locator('[data-testid=ledger-row]').count()) === 1, 'add after empty works', 0.3); return P; });
   await check('E03', 'E', 'Deleting a funding target clears references (select, storage, plan, merge-into)', 1.5, 'Remove Bravo; Alpha target must reset', async () => {
-    await loadState(page, SB()); const P = new Parts(); await goMain(page); await page.click('[data-testid=edit-list]'); await page.click('[data-go="h/b"] [data-testid=row-remove]'); await page.click('[data-go="h/b"] [data-del-yes]'); await page.waitForTimeout(100);
+    await loadState(page, SB()); const P = new Parts(); await goMain(page); await selRow(page, 'b'); await page.click('[data-for="b"] [data-testid=row-remove]'); await page.click('[data-for="b"] [data-del-yes]'); await page.waitForTimeout(100);
     const s = await store(page); P.t(s.houses.every((h) => h.target !== 'b'), 'no asset still targets the deleted id', 0.4, JSON.stringify(s.houses.map((h) => h.target)));
-    const v = await page.inputValue('[data-go="h/a"] [data-sel=a]'); P.t(v === '', 'Alpha funding select reset', 0.3, v); const m = await snap(page); P.t(!/Bravo/.test(m.body.replace(/Removed Bravo House\./, '')), 'no mention of deleted asset on main (besides Undo banner)', 0.3);
-    await page.click('[data-testid=edit-list]'); await goHash(page, '#house-e'); await page.click('[data-del=e]'); await page.click('[data-del-yes=e]'); await page.waitForTimeout(80); const s2 = await store(page); P.t(s2.houses.every((h) => h.mergeInto !== 'e'), 'merge-into reference cleared too', 0.2);
+    const v = await page.inputValue('[data-row="a"] [data-sel=a]'); const s3 = await store(page); P.t(v !== 'b' && v === (s3.houses.find((h) => h.id === 'a').target || ''), 'Alpha funding select no longer points at the deleted asset (relinked to the next home or cleared)', 0.3, v); const m = await snap(page); P.t(!/Bravo/.test(m.body.replace(/Removed Bravo House\./, '')), 'no mention of deleted asset on main (besides Undo banner)', 0.3);
+    await goHash(page, '#house-e'); await page.click('[data-del=e]'); await page.click('[data-del-yes=e]'); await page.waitForTimeout(80); const s2 = await store(page); P.t(s2.houses.every((h) => h.mergeInto !== 'e'), 'merge-into reference cleared too', 0.2);
     await goHash(page, '#house-b'); P.t(!BAD.test(await page.evaluate(() => document.getElementById('app').innerText)), 'visiting a deleted asset URL is safe', 0.3); return P; });
   await check('E04', 'E', 'Every input/select/button has an accessible name (main, asset, assumptions, add, import)', 1, 'aria-label / label / text on all pages', async () => {
     await reset(page); let tot = 0, ok = 0; const bad = [];
-    for (const h of ['#', '#house-maple', '#house-ridge', '#house-keystone', '#assumptions', '#add', '#import-new']) { await goHash(page, h); if (h === '#') await page.click('[data-testid=edit-list]'); const r = await page.evaluate(() => [...document.querySelectorAll('#app input, #app select, #app button, #app textarea')].filter((e) => e.type !== 'hidden' && !e.hidden).map((e) => { const al = e.getAttribute('aria-label'), lb = e.getAttribute('aria-labelledby'), l = e.labels && e.labels.length ? [...e.labels].map((x) => x.textContent).join('').trim() : '', tx = e.tagName === 'BUTTON' ? e.textContent.trim() : '', ti = e.getAttribute('title'); return { n: !!((al && al.trim()) || lb || l || tx || ti), d: e.tagName + (e.dataset.p || e.dataset.testid || '') }; })); if (h === '#') await page.click('[data-testid=edit-list]');
+    for (const h of ['#', '#house-maple', '#house-ridge', '#house-keystone', '#assumptions', '#add', '#import-new']) { await goHash(page, h); if (h === '#') await selRow(page, 'maple'); const r = await page.evaluate(() => [...document.querySelectorAll('#app input, #app select, #app button, #app textarea')].filter((e) => e.type !== 'hidden' && !e.hidden).map((e) => { const al = e.getAttribute('aria-label'), lb = e.getAttribute('aria-labelledby'), l = e.labels && e.labels.length ? [...e.labels].map((x) => x.textContent).join('').trim() : '', tx = e.tagName === 'BUTTON' ? e.textContent.trim() : '', ti = e.getAttribute('title'); return { n: !!((al && al.trim()) || lb || l || tx || ti), d: e.tagName + (e.dataset.p || e.dataset.testid || '') }; })); 
       r.forEach((x) => { tot++; if (x.n) ok++; else bad.push(h + ' ' + x.d); }); }
     const names = await page.evaluate(() => 0); return { ratio: tot ? ok / tot : 0, detail: `${ok}/${tot} named. unnamed: ${bad.slice(0, 5).join(', ')}` }; });
   await check('E05', 'E', 'Typing 5 digits sequentially keeps focus + full value (re-render safe) on main, asset, assumptions, text field', 1, 'page.keyboard.type("12345") with delay', async () => {
     await reset(page); const P = new Parts();
-    const tryType = async (route, sel, txt, want, label) => { try { await goHash(page, route); await page.waitForSelector(sel); await page.evaluate((s) => document.querySelector(s).scrollIntoView({ block: 'center' }), sel); const bb = await page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, sel);
+    const tryType = async (route, sel, txt, want, label) => { try { await goHash(page, route); if (route === '#') await selRow(page, 'maple'); await page.waitForSelector(sel); await page.evaluate((s) => document.querySelector(s).scrollIntoView({ block: 'center' }), sel); const bb = await page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, sel);
         await page.mouse.click(bb.x, bb.y); await page.keyboard.press('Control+A'); await page.keyboard.press('Backspace'); await page.keyboard.type(txt, { delay: 60 }); await page.waitForTimeout(150);
         const r = await page.evaluate((s) => { const a = document.activeElement; return { same: !!(a && a.matches && a.matches(s)), v: a ? a.value : null }; }, sel); P.t(r.same && String(r.v).replace(/[,$\s]/g, '') === want, label, 1, `focus kept=${r.same} value=${r.v}`);
         await page.evaluate(() => document.activeElement && document.activeElement.blur()); } catch (e) { P.t(false, label, 1, 'threw ' + e.message.slice(0, 60)); } };
@@ -682,7 +692,7 @@ async function robustChecks(page) {
   await check('E08', 'E', 'No render storm: DOM settles when an input is focused (no endless re-render loop)', 1, 'Type one char into any input (no blur), count #app mutations over 600ms (Chromium)', async () => {
     const P = new Parts(); await reset(page);
     for (const [n, h, sel] of [['main extra', '#', '[data-testid=extra-input]'], ['asset price', '#house-maple', '[data-p="h.maple.price"]'], ['assumptions cap', '#assumptions', '[data-p="g.cap"]'], ['exit field', '#house-ridge', '[data-p="h.ridge.exitMonth"]']]) {
-      await goHash(page, h); await page.waitForSelector(sel);
+      await goHash(page, h); if (h === '#') await selRow(page, 'maple'); await page.waitForSelector(sel);
       const r = await page.evaluate(async (sel) => { const el = document.querySelector(sel); el.focus(); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(el, el.value.replace(/,/g, '') || '1'); el.dispatchEvent(new Event('input', { bubbles: true })); await new Promise((r) => setTimeout(r, 80)); let n = 0; const mo = new MutationObserver((m) => { n += m.length; }); mo.observe(document.getElementById('app'), { childList: true, subtree: true }); await new Promise((r) => setTimeout(r, 600)); mo.disconnect(); const a = document.activeElement; if (a && a.blur) a.blur(); return n; }, sel);
       P.t(r <= 20, n + ' (mutations in 600ms while focused)', 1, r); } return P; });
   await check('E06', 'E', 'No layout shift while navigating and editing (CLS <= 0.05)', 0.5, 'PerformanceObserver layout-shift', async () => {
@@ -695,9 +705,9 @@ async function robustChecks(page) {
   const t0 = Date.now(); const { srv, port } = await startServer(); BASE = 'http://127.0.0.1:' + port;
   console.log('Serving', V4, 'on', BASE);
   browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
-  let finance = null, sync = null, info = null;
+  let finance = null, sync = null, info = null, gest = null;
   try {
-    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY) {
+    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !GEST_ONLY) {
     await engineChecks();
     const ctx = await mkCtx(); const page = await mkPage(ctx, 'main');
     await reqChecks(page); await uxChecks(page); await robustChecks(page);
@@ -710,22 +720,28 @@ async function robustChecks(page) {
     catch (e) { results.push({ id: 'R00', category: 'R', name: 'Realism module failed to run', points: 30, rawPoints: 30, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.message || e), repro: 'node -e "require(\'./realism.js\')"' }); console.log('  [0.00/30] R00 realism module error: ' + (e && e.message)); }
     }
     /* Category F: personal finances, scored separately on its own 90-point scale (does not touch the A-E + R total) */
-    if (!SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY) {
+    if (!SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY) {
     console.log('F. Personal finances');
     try { finance = await require('./finance-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS }); }
     catch (e) { finance = { earned: 0, max: 90, checks: [{ id: 'F00', category: 'F', name: 'Finance module failed to run', points: 90, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./finance-grade.js\')"' }] }; console.log('  [0.00/90] F00 finance module error: ' + (e && e.message)); }
     }
     /* Category G: number sync, scored separately on its own 100-point scale (does not touch the A-E + R total or F) */
-    if (!FIN_ONLY && !INFO_ONLY && !MAIN_ONLY) {
+    if (!FIN_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY) {
     console.log('G. Number sync');
     try { sync = await require('./sync-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS, base: () => BASE }); }
     catch (e) { sync = { earned: 0, max: 100, checks: [{ id: 'G00', category: 'G', name: 'Sync module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./sync-grade.js\')"' }] }; console.log('  [0.00/100] G00 sync module error: ' + (e && e.message)); }
     }
     /* Category H: plain-language help and hourly jobs, scored on its own 100-point scale (does not touch A-E + R, F or G) */
-    if (!FIN_ONLY && !SYNC_ONLY && !MAIN_ONLY) {
+    if (!FIN_ONLY && !SYNC_ONLY && !MAIN_ONLY && !GEST_ONLY) {
     console.log('H. Help (i) buttons and hourly jobs');
     try { info = await require('./info-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS, base: () => BASE }); }
     catch (e) { info = { earned: 0, max: 100, checks: [{ id: 'H00', category: 'H', name: 'Info module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./info-grade.js\')"' }] }; console.log('  [0.00/100] H00 info module error: ' + (e && e.message || e)); }
+    }
+    /* Category I: Portfolio sections, reorder, auto-funding, duplicate, extra panel, loan line, swipe back, keyboard dismiss (own 100-point scale) */
+    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY) {
+    console.log('I. Portfolio sections, gestures and funding order');
+    try { gest = await require('./gesture-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, collect, base: () => BASE }); }
+    catch (e) { gest = { earned: 0, max: 100, checks: [{ id: 'I00', category: 'I', name: 'Gesture module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./gesture-grade.js\')"' }] }; console.log('  I module failed: ' + (e && e.message)); }
     }
   } finally { await browser.close(); srv.close(); }
 
@@ -739,6 +755,14 @@ async function robustChecks(page) {
   const infoMd = () => { if (!info) return ''; let m = `\n## H. Help buttons and hourly jobs: **${fmt2(info.earned)} / ${info.max}** (separate scale; not included in the A-E + R total, F or G)\n\n| ID | Check | Pts | Earned | Detail |\n|---|---|---|---|---|\n`;
     info.checks.forEach((r) => (m += `| ${r.id} | ${r.name} | ${fmt2(r.points)} | ${fmt2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 1500)} |\n`));
     const ff = info.checks.filter((r) => r.earned < r.points - 0.001); m += `\n### H failures\n\n`; if (!ff.length) m += 'None.\n'; ff.forEach((r) => (m += `- **${r.id} ${r.name}** (-${fmt2(r.points - r.earned)}): ${String(r.detail).slice(0, 1500)}\n  - Reproduce: ${r.repro}\n`)); return m; };
+  const gestMd = () => { if (!gest) return ''; let m = `\n## I. Portfolio sections, gestures and funding order: **${fmt2(gest.earned)} / ${gest.max}** (separate scale; not included in A-E + R, F, G or H)\n\n| ID | Check | Pts | Earned | Detail |\n|---|---|---|---|---|\n`;
+    gest.checks.forEach((r) => (m += `| ${r.id} | ${r.name} | ${fmt2(r.points)} | ${fmt2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 1500)} |\n`));
+    const ff = gest.checks.filter((r) => r.earned < r.points - 0.001); m += `\n### I failures\n\n`; if (!ff.length) m += 'None.\n'; ff.forEach((r) => (m += `- **${r.id} ${r.name}** (-${fmt2(r.points - r.earned)}): ${String(r.detail).slice(0, 1500)}\n  - Reproduce: ${r.repro}\n`)); return m; };
+  if (GEST_ONLY) {
+    fs.writeFileSync(path.join(__dirname, 'report-gesture.md'), `# Portfolio gestures grader (GEST_ONLY)\n\nRun: ${new Date().toISOString()}  |  ${((Date.now() - t0) / 1000).toFixed(0)}s\n` + gestMd());
+    fs.writeFileSync(path.join(__dirname, 'result-gesture.json'), JSON.stringify({ gest }, null, 2));
+    console.log(`\nI Portfolio sections and gestures: ${fmt2(gest.earned)}/${gest.max}  (${((Date.now() - t0) / 1000).toFixed(0)}s)`); return;
+  }
   if (INFO_ONLY) {
     fs.writeFileSync(path.join(__dirname, 'report-info.md'), `# Help / hourly-job grader (INFO_ONLY)\n\nRun: ${new Date().toISOString()}  |  ${((Date.now() - t0) / 1000).toFixed(0)}s\n` + infoMd());
     fs.writeFileSync(path.join(__dirname, 'result-info.json'), JSON.stringify({ info }, null, 2));
@@ -769,12 +793,13 @@ async function robustChecks(page) {
   results.forEach((r) => (md += `| ${r.id} | ${r.name} | ${f2(r.points)} | ${f2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 400)} |\n`));
   const fails = results.filter((r) => r.earned < r.points - 0.001).sort((a, b) => (b.points - b.earned) - (a.points - a.earned));
   md += `\n## Top failures\n\n`; if (!fails.length) md += 'None.\n'; fails.slice(0, 15).forEach((r, i) => (md += `${i + 1}. **${r.id} ${r.name}** (-${f2(r.points - r.earned)})\n   - Detail: ${String(r.detail).slice(0, 500)}\n   - Reproduce: ${r.repro}\n`));
-  md += finMd() + syncMd() + infoMd();
+  md += finMd() + syncMd() + infoMd() + gestMd();
   fs.writeFileSync(path.join(__dirname, 'report.md'), md);
-  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results, finance, sync, info }, null, 2));
+  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results, finance, sync, info, gest }, null, 2));
   console.log('\nCategory scores:'); Object.keys(cats).forEach((c) => console.log(`  ${c}  ${f2(per[c].earned)} / ${f2(per[c].max)}  ${cats[c]}`));
   console.log(`\nTOTAL ${f2(total)} / ${max}`);
   if (finance) console.log(`\nF Personal finances: ${fmt2(finance.earned)}/${finance.max}`);
   if (sync) console.log(`\nG Number sync: ${fmt2(sync.earned)}/${sync.max}`);
   if (info) console.log(`\nH Help and hourly jobs: ${fmt2(info.earned)}/${info.max}`);
+  if (gest) console.log(`\nI Portfolio sections and gestures: ${fmt2(gest.earned)}/${gest.max}`);
 })().catch((e) => { console.error('GRADER CRASH', e); process.exit(2); });

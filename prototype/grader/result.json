@@ -11,7 +11,7 @@
       "max": 12.000000000000004
     },
     "C": {
-      "earned": 9.927,
+      "earned": 9.929,
       "max": 9.999
     },
     "D": {
@@ -86,12 +86,12 @@
     {
       "id": "A06",
       "category": "A",
-      "name": "Main rows are ordered by purchase month (owned first); tags match the engine's purchase months",
+      "name": "Main rows follow list order = buy order (sorted once on first load, owned first); tags match the engine's purchase months",
       "points": 0.73,
       "rawPoints": 1.5,
       "earned": 0.73,
       "ratio": 1,
-      "detail": "4/4 sub-checks pass",
+      "detail": "5/5 sub-checks pass",
       "repro": "Main ledger on sample and on a small state"
     },
     {
@@ -311,7 +311,7 @@
       "rawPoints": 0.5,
       "earned": 0.16,
       "ratio": 1,
-      "detail": "median 4.2ms",
+      "detail": "median 4.8ms",
       "repro": "node timing"
     },
     {
@@ -449,13 +449,13 @@
     {
       "id": "C02",
       "category": "C",
-      "name": "Main page has only the per-row extra fields as text inputs (one per asset)",
+      "name": "Main page keeps text inputs out of the list: no inputs until a row is selected, then exactly one extra field (none for a sold row)",
       "points": 1,
       "rawPoints": 1.5,
       "earned": 1,
       "ratio": 1,
-      "detail": "2/2 sub-checks pass",
-      "repro": "Count visible <input> on main (sample and after adding 3)"
+      "detail": "5/5 sub-checks pass",
+      "repro": "Count visible <input> on main before / after selecting a row (sample, and after adding 3)"
     },
     {
       "id": "C03",
@@ -474,9 +474,9 @@
       "name": "Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)",
       "points": 1.333,
       "rawPoints": 2,
-      "earned": 1.261,
-      "ratio": 0.9459534602244413,
-      "detail": "159/165 targets >=44px. Small: main:BUTTON.info\"What does Net wort\" 32x32; main:BUTTON.info\"What does Cash flo\" 32x32; main:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash flo\" 32x32; asset:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash-on-\" 32x32",
+      "earned": 1.263,
+      "ratio": 0.9475287363924306,
+      "detail": "164/170 targets >=44px. Small: main:BUTTON.info\"What does Net wort\" 32x32; main:BUTTON.info\"What does Cash flo\" 32x32; main:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash flo\" 32x32; asset:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash-on-\" 32x32",
       "repro": "Measure interactive elements on main/asset/assumptions/add"
     },
     {
@@ -487,7 +487,7 @@
       "rawPoints": 1,
       "earned": 0.667,
       "ratio": 1,
-      "detail": "61/61 ok ",
+      "detail": "51/51 ok ",
       "repro": "computed font-size"
     },
     {
@@ -509,7 +509,7 @@
       "rawPoints": 1,
       "earned": 0.667,
       "ratio": 1,
-      "detail": "avg row 111px x 14, page 2776px",
+      "detail": "avg row 97px x 14, page 3109px",
       "repro": "Measure ledger rows"
     },
     {
@@ -520,7 +520,7 @@
       "rawPoints": 2,
       "earned": 1.333,
       "ratio": 1,
-      "detail": "849/849 text elements pass (light 421/421, dark 428/428). ",
+      "detail": "877/877 text elements pass (light 435/435, dark 442/442). ",
       "repro": "emulate prefers-color-scheme; compute WCAG ratio for every text element"
     },
     {
@@ -663,7 +663,7 @@
       "rawPoints": 1,
       "earned": 0.636,
       "ratio": 1,
-      "detail": "279/279 named. unnamed: ",
+      "detail": "282/282 named. unnamed: ",
       "repro": "aria-label / label / text on all pages"
     },
     {
@@ -784,7 +784,7 @@
       "rawPoints": 4,
       "earned": 4,
       "ratio": 1,
-      "detail": "projected $17.6M vs $17.6M at realistic growth = 100%. Above ceiling: none",
+      "detail": "projected $17.7M vs $17.7M at realistic growth = 100%. Above ceiling: none",
       "repro": "Re-run the plan with every growth rate capped at the ceiling; score = capped net worth / projected net worth"
     },
     {
@@ -834,7 +834,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "node: simulate from the definitions, compare E.finance on 80 random states; hand-calculated cases; NaN scan",
-        "seconds": 0.2
+        "seconds": 0.3
       },
       {
         "id": "F2",
@@ -845,7 +845,7 @@
         "ratio": 1,
         "detail": "17/17 sub-checks pass",
         "repro": "node: constructed states for yes / tight (5 causes) / no; fix amounts; apply the fix; monotonicity; stretch",
-        "seconds": 0.4
+        "seconds": 0.5
       },
       {
         "id": "F3",
@@ -856,7 +856,7 @@
         "ratio": 1,
         "detail": "89/89 sub-checks pass",
         "repro": "Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states",
-        "seconds": 7.7
+        "seconds": 7.8
       },
       {
         "id": "F4",
@@ -917,7 +917,7 @@
         "ratio": 1,
         "detail": "35/35 sub-checks pass",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 2.7
+        "seconds": 3
       },
       {
         "id": "G4",
@@ -928,7 +928,7 @@
         "ratio": 1,
         "detail": "35/35 sub-checks pass",
         "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, wait, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status, target); every dependent field is re-derived independently after each edit",
-        "seconds": 34.7
+        "seconds": 35.8
       },
       {
         "id": "G5",
@@ -950,7 +950,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 9.9
+        "seconds": 9.8
       },
       {
         "id": "G7",
@@ -961,7 +961,7 @@
         "ratio": 1,
         "detail": "147/147 sub-checks pass",
         "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
-        "seconds": 6.4
+        "seconds": 6.5
       },
       {
         "id": "G8",
@@ -998,9 +998,9 @@
         "points": 16,
         "earned": 15.45,
         "ratio": 0.9659090909090909,
-        "detail": "82/83 sub-checks pass. FAIL: no orphan glossary entries: every definition can be opened from some page (80 entries) [10 never shown: noi, qualifying, ownerocc, mip, interestonly, equity, outsidecash, cashfromselling, planned, capital]",
+        "detail": "82/83 sub-checks pass. FAIL: no orphan glossary entries: every definition can be opened from some page (81 entries) [10 never shown: noi, qualifying, ownerocc, mip, interestonly, equity, outsidecash, cashfromselling, planned, capital]",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 3.4
+        "seconds": 3.5
       },
       {
         "id": "H3",
@@ -1011,7 +1011,7 @@
         "ratio": 1,
         "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 7.1
+        "seconds": 7.2
       },
       {
         "id": "H4",
@@ -1033,7 +1033,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 2.8
+        "seconds": 2.7
       },
       {
         "id": "H6",
@@ -1044,7 +1044,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 3.8
+        "seconds": 3.6
       },
       {
         "id": "H7",
@@ -1077,7 +1077,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 2
+        "seconds": 2.1
       },
       {
         "id": "H10",
@@ -1089,6 +1089,122 @@
         "detail": "2/2 sub-checks pass",
         "repro": "Collected over the whole H run",
         "seconds": 0
+      }
+    ]
+  },
+  "gest": {
+    "earned": 100,
+    "max": 100,
+    "checks": [
+      {
+        "id": "I1",
+        "category": "I",
+        "name": "Swipe right from the left edge goes back like iOS (touchstart within 24 px, dx > 70, |dy| < 45); ignored elsewhere",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
+        "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
+        "seconds": 4.4
+      },
+      {
+        "id": "I2",
+        "category": "I",
+        "name": "Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "13/13 sub-checks pass",
+        "repro": "Hold 600 ms, drag, release; check saved order",
+        "seconds": 5.3
+      },
+      {
+        "id": "I3",
+        "category": "I",
+        "name": "Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "7/7 sub-checks pass",
+        "repro": "Select row, press Move",
+        "seconds": 0.7
+      },
+      {
+        "id": "I4",
+        "category": "I",
+        "name": "Funding auto-assigns by list order: the asset before another funds it (1,2,3 and 1,3,2), stale in-category links clear, other categories untouched, no re-link on plain load",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "11/11 sub-checks pass",
+        "repro": "Reorder with Move buttons; read Funds selects + saved targets + plan",
+        "seconds": 1.4
+      },
+      {
+        "id": "I5",
+        "category": "I",
+        "name": "Duplicate: from the row panel and the asset page; copy sits right after the original, named \"(copy)\", planned, funding relinked",
+        "points": 10,
+        "earned": 10,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "Panel > Duplicate; asset page > Duplicate",
+        "seconds": 0.7
+      },
+      {
+        "id": "I6",
+        "category": "I",
+        "name": "Portfolio = total row + Homes / Commercial / Businesses dropdowns (name left, chevron right, \"N homes · latest: name\"), empty sections, Sold section only when something sold",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Headers, subtitles, collapse state, empty portfolio",
+        "seconds": 1.2
+      },
+      {
+        "id": "I7",
+        "category": "I",
+        "name": "Selecting a row opens a nested panel with the extra payment and live effects: loan term, monthly payment, next down payment (with cash flow); all match the engine and the asset page",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "25/25 sub-checks pass",
+        "repro": "Panel on maple, type extra, compare with engine + asset page",
+        "seconds": 0.9
+      },
+      {
+        "id": "I8",
+        "category": "I",
+        "name": "Rent & expenses shows the loan payment (P&I + mortgage insurance, extra) and the cash flow after the loan, in sync with Payment now / Cash flow now",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "Asset page > Rent & expenses",
+        "seconds": 1
+      },
+      {
+        "id": "I9",
+        "category": "I",
+        "name": "Swipe down closes the keyboard (blurs the focused field); Enter / Done also closes it; swipes inside the field or upward do not",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "Focus the extra field, swipe",
+        "seconds": 1.8
+      },
+      {
+        "id": "I10",
+        "category": "I",
+        "name": "Layout and hygiene: no sideways scroll at 320 / 390 / 430 with a panel open and while dragging, new buttons >= 44 px, no console errors or outside requests",
+        "points": 4,
+        "earned": 4,
+        "ratio": 1,
+        "detail": "4/4 sub-checks pass",
+        "repro": "Resize, measure, collected errors",
+        "seconds": 1.4
       }
     ]
   }

@@ -61,12 +61,12 @@ exports.run = async function run(X) {
     const tgt = (S, h) => S.houses.find((x) => x.id === h.target);
     const need = (S, h) => { const t = tgt(S, h); return t ? down(t) + t.price * cl(S, t) / 100 : 0; };
     const payoff = (h, X) => { let b = bal0(h); if (b <= 0.005) return 0; const i = h.rate / 1200, A = pay(h) + X; if (A <= i * b + 1e-9) return Infinity; for (let n = 1; n <= 2400; n++) { b = b * (1 + i) - A; if (b < 0.005 || b <= 1e-7) return n; } return Infinity; };
-    const loc = (S, h, X) => { if (!tgt(S, h)) return Infinity; const D = need(S, h), i = h.rate / 1200, A = pay(h) + X; let b = bal0(h);
-      for (let k = 0; k <= 600; k++) { const head = S.g.cap / 100 * val(S, h, k) - b - (h.liens || 0); if (Math.max(0, head) * (1 - S.g.haircut / 100) >= D) return k; b = Math.max(0, b * (1 + i) - A); } return Infinity; };
+    const loc = (S, h, X) => { if (!tgt(S, h)) return Infinity; const D = need(S, h), i = h.rate / 1200, A = pay(h) + X, cs = Math.max(0, cfv(S, h)); let b = bal0(h);
+      for (let k = 0; k <= 600; k++) { const head = S.g.cap / 100 * val(S, h, k) - b - (h.liens || 0); if (Math.max(0, head) * (1 - S.g.haircut / 100) + cs * k >= D) return k; b = Math.max(0, b * (1 + i) - A); } return Infinity; };
     const noi = (S, h) => { if (h.type === 'business') return h.rent; const egi = h.rent * (1 - S.g.vac / 100); return egi - (h.tax + h.ins + h.hoa + S.g.maint / 100 * h.price / 12 + S.g.mgmt / 100 * egi); };
-    const cf = (S, h) => noi(S, h) - pay(h) - mip(h);
+    const cf = (S, h) => noi(S, h) - pay(h) - mip(h), cfv = cf;
     const escrow = (h) => (h.type === 'business' ? 0 : h.tax + h.ins + h.hoa);
-    const cltvAtLoc = (S, h, X) => { const m = loc(S, h, X); if (!tgt(S, h) || !isFinite(m)) return null; const i = h.rate / 1200, A = pay(h) + X; let b = bal0(h); for (let k = 0; k < m; k++) b = Math.max(0, b * (1 + i) - A); return (b + (h.liens || 0) + need(S, h)) / val(S, h, m) * 100; };
+    const cltvAtLoc = (S, h, X) => { const m = loc(S, h, X); if (!tgt(S, h) || !isFinite(m)) return null; const i = h.rate / 1200, A = pay(h) + X; let b = bal0(h); for (let k = 0; k < m; k++) b = Math.max(0, b * (1 + i) - A); return (b + (h.liens || 0) + need(S, h) - Math.min(need(S, h), Math.max(0, cf(S, h)) * m)) / val(S, h, m) * 100; };
     return { gr, base, down, loan, pay, mip, bal0, val, cl, need, payoff, loc, noi, cf, escrow, cltvAtLoc, tgt };
   })();
 
@@ -96,7 +96,7 @@ exports.run = async function run(X) {
     document.querySelectorAll('#app .warnbox').forEach((n) => o.warns.push({ id: n.dataset.testid || '', t: clean(n.textContent) }));
     document.querySelectorAll('#app .chip,#app .warnchip').forEach((n) => o.chips.push({ t: clean(n.textContent), title: n.getAttribute('title') || '' }));
     document.querySelectorAll('#app [data-testid=ledger-row]').forEach((r) => { const loc = r.querySelector('[data-testid=loc-line]'), inp = r.querySelector('input'), cf = r.querySelector('[data-testid=row-cashflow] b'), ex = r.querySelector('.exitline'), pay = r.querySelector('[data-testid=row-payment]');
-      o.rows.push({ id: (r.dataset.go || '').replace('h/', ''), addr: clean((r.querySelector('.addr') || {}).textContent), tag: clean((r.querySelector('.tag') || {}).textContent), pay: clean(pay ? pay.textContent : ''), extra: inp ? inp.value : null, loc: clean(loc ? loc.textContent : ''), cf: clean(cf ? cf.textContent : ''), exit: clean(ex ? ex.textContent : ''), hi: [...r.querySelectorAll('.hi')].map((x) => clean(x.textContent)), eqAttr: pay ? pay.dataset.equity : null, hasExtra: !!inp }); });
+      o.rows.push({ id: r.dataset.row || '', addr: clean((r.querySelector('.addr') || {}).textContent), tag: clean((r.querySelector('.tag') || {}).textContent), pay: clean(pay ? pay.textContent : ''), extra: inp ? inp.value : null, loc: clean(loc ? loc.textContent : ''), cf: clean(cf ? cf.textContent : ''), exit: clean(ex ? ex.textContent : ''), hi: [...r.querySelectorAll('.hi')].map((x) => clean(x.textContent)), eqAttr: pay ? pay.dataset.equity : null, hasExtra: !!inp }); });
     document.querySelectorAll('#app [data-testid=impact] .f').forEach((f) => { const lb = f.querySelector('.lb'), b = f.querySelector('b'); o.impact.push({ lb: clean(lb ? lb.textContent : ''), t: clean(f.textContent.replace(lb ? lb.textContent : '', '')), to: clean(b ? b.textContent : '') }); });
     document.querySelectorAll('#app [data-testid=drivers] .drv').forEach((d) => { const sp = d.querySelectorAll('span'); o.drivers.push({ addr: clean(sp[0].textContent), t: clean(sp[1].textContent) }); });
     const svg = document.querySelector('#app svg.nw'); if (svg) o.chart = { nw: svg.dataset.nw.split(',').map(Number), t: +svg.dataset.t, label: svg.getAttribute('aria-label') };
@@ -213,7 +213,10 @@ exports.run = async function run(X) {
     T('outside-cash warning amount = engine outside total (shown iff > 0)', pl.outsideTotal > 0 ? !!oc && eq((/(\$[\d,.]+[MB]?)/.exec(oc.t) || [])[1], pl.outsideTotal) : !oc, 1, (oc ? oc.t : 'absent') + ' vs ' + $f(pl.outsideTotal));
     /* ordering */
     const rank = (h) => (isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9), want = [...S.houses].sort((a, b) => rank(a) - rank(b) || S.houses.indexOf(a) - S.houses.indexOf(b)).map((h) => h.id);
-    T('rows are ordered by purchase month', JSON.stringify(g.rows.map((r) => r.id)) === JSON.stringify(want), 0.5, g.rows.map((r) => r.id).join(',') + ' vs ' + want.join(','));
+    { /* the app sorts the saved list into buy order once; the page then shows list order inside Homes / Commercial / Businesses, with sold assets in their own Sold section */
+      const soldIn = (h) => !!(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM), byId2 = Object.fromEntries(S.houses.map((h) => [h.id, h])), cat = (id) => byId2[id].type || 'house';
+      const show = ['house', 'commercial', 'business'].flatMap((c) => want.filter((id) => cat(id) === c && !soldIn(byId2[id]))).concat(want.filter((id) => soldIn(byId2[id])));
+      T('rows are in list (= buy) order inside their category sections, sold assets last', JSON.stringify(g.rows.map((r) => r.id)) === JSON.stringify(show), 0.5, g.rows.map((r) => r.id).join(',') + ' vs ' + show.join(',')); }
     /* drivers */
     if (g.drivers.length) {
       const drv = pl.assetsAt(pl.planM).sort((a, b) => b.equity - a.equity).slice(0, 6); let ok = drv.length === g.drivers.length, info = '';

@@ -71,6 +71,10 @@
   const valAt = (S, h, k) => { const cm = Math.max(0, h.capexMonths || 0);
     return +h.arv > 0 && k >= cm ? h.arv * Math.pow(1 + gr(S, h) / 100, (k - cm) / 12) : valK(S, h, k); };
   const need = (S, h) => { const t = H(S, h.target); return t ? downAmt(t) + (t.price * clPct(S, t)) / 100 : 0; };
+  /* operating income per month (rent or owner profit minus operating costs), before any loan payment */
+  const noiOf = (S, h) => { const g = S.g; if ((h.type || 'house') === 'business') return h.rent; const egi = h.rent * (1 - g.vac / 100); return egi - (h.tax + h.ins + h.hoa + (g.maint / 100) * h.price / 12 + (g.mgmt / 100) * egi); };
+  /* The home's own monthly cash flow (income minus costs, loan payment and mortgage insurance, before any extra payment) is saved toward the next down payment while it waits. Only a positive cash flow adds money. */
+  const cfSaved = (S, h) => Math.max(0, noiOf(S, h) - payment(h) - mipMonthly(h));
 
   function payoffN(h, X) {
     const B0 = balToday(h), i = mi(h), A = payment(h) + X;
@@ -78,13 +82,14 @@
     if (A <= i * B0 + 1e-9) return Infinity;
     return Math.ceil((i ? -Math.log(1 - (i * B0) / A) / Math.log(1 + i) : B0 / A) - 1e-7);
   }
-  /* months (from the asset's own start) until cap*value - balance - other liens >= cash needed for its target */
-  function locMonths(S, h, X) {
+  /* months (from the asset's own start) until the cash for its target is there: borrowing room (cap*value - balance - other liens, after the appraisal cut)
+     plus the cash flow this asset has saved up (cfSaved x months) reaches the cash needed. o.noCash leaves the saved cash flow out (to show what it contributes). */
+  function locMonths(S, h, X, o) {
     if (!H(S, h.target)) return Infinity;
-    const D = need(S, h), B0 = balToday(h), i = mi(h), A = payment(h) + X, g = S.g;
+    const D = need(S, h), B0 = balToday(h), i = mi(h), A = payment(h) + X, g = S.g, cs = o && o.noCash ? 0 : cfSaved(S, h);
     for (let k = 0; k <= 600; k++) {
       const head = g.cap / 100 * valAt(S, h, k) - balK(B0, i, A, k) - (h.liens || 0);
-      if (Math.max(0, head) * (1 - g.haircut / 100) >= D) return k;
+      if (Math.max(0, head) * (1 - g.haircut / 100) + cs * k >= D) return k;
     }
     return Infinity;
   }
@@ -99,17 +104,13 @@
     const g = S.g, L = loan(h), P = payment(h), B0 = balToday(h), i = mi(h), type = h.type || 'house';
     let X = h.extra, infeasible = false;
     if (h.driver === 'months' && H(S, h.target)) { const x = extraFor(S, h, h.wait); if (x == null) infeasible = true; else X = x; }
-    let egi, noi, escrow;
-    if (type === 'business') { egi = h.rent; noi = h.rent; escrow = 0; }
-    else {
-      egi = h.rent * (1 - g.vac / 100); escrow = h.tax + h.ins + h.hoa;
-      noi = egi - (escrow + (g.maint / 100) * h.price / 12 + (g.mgmt / 100) * egi);
-    }
-    const lm = locMonths(S, h, X), A = P + X;
-    const cltvAtLoc = H(S, h.target) && isFinite(lm) ? ((balK(B0, i, A, lm) + (h.liens || 0) + need(S, h)) / valAt(S, h, lm)) * 100 : null;
+    let egi, escrow; const noi = noiOf(S, h);
+    if (type === 'business') { egi = h.rent; escrow = 0; } else { egi = h.rent * (1 - g.vac / 100); escrow = h.tax + h.ins + h.hoa; }
+    const lm = locMonths(S, h, X), A = P + X, Dn = need(S, h), cashDP = H(S, h.target) && isFinite(lm) ? Math.min(Dn, cfSaved(S, h) * lm) : 0, draw = Dn - cashDP;
+    const cltvAtLoc = H(S, h.target) && isFinite(lm) ? ((balK(B0, i, A, lm) + (h.liens || 0) + draw) / valAt(S, h, lm)) * 100 : null;
     const down = downAmt(h), closingCost = (h.price * clPct(S, h)) / 100, mip = mipMonthly(h);
     return { cltvAtLoc, L, B0, P, mip, X, infeasible, egi, noi, cf: noi - P - mip, escrow, pitia: P + escrow + mip, payment: P + X + escrow + mip,
-      D: need(S, h), down, closingCost, invested: down + closingCost, payoff: payoffN(h, X), locM: lm,
+      D: Dn, cashDP, draw, cfSaved: cfSaved(S, h), down, closingCost, invested: down + closingCost, payoff: payoffN(h, X), locM: lm,
       head0: Math.max(0, g.cap / 100 * h.price - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
       valueNow: valAt(S, h, 0), valueGain: +h.arv > 0 ? h.arv - h.price - (h.capex || 0) : 0, capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
   }
@@ -165,6 +166,7 @@
     const funds = {}; hs.forEach((h) => { const t = H(S, h.target);
       funds[h.id] = !!(t && t.status === 'planned' && isFinite(P0[h.id] + V[h.id].locM) && P0[t.id] === P0[h.id] + V[h.id].locM); });
     const fundedByLOC = {}; hs.forEach((h) => { if (funds[h.id]) fundedByLOC[h.target] = true; });
+    const dpCashBy = {}; hs.forEach((h) => { if (funds[h.id] && V[h.id].cashDP > 0) dpCashBy[h.target] = (dpCashBy[h.target] || 0) + V[h.id].cashDP; }); /* saved cash flow that goes into a purchase, by target id */
     /* exits: a sale ends ownership at sellAt; a merge applies a synergy lift at mergeAt */
     const sellAt = {}, mergeAt = {};
     hs.forEach((h) => { sellAt[h.id] = Infinity; mergeAt[h.id] = Infinity; const p = P0[h.id]; if (!isFinite(p)) return;
@@ -185,11 +187,12 @@
       const improved = (+h.arv > 0 || h.liftIncome) && age >= Math.max(0, h.capexMonths || 0), merged = t >= mergeAt[h.id];
       const fv = merged ? 1 + (h.exitLift || 0) / 100 : 1;
       const fi = (improved ? 1 + (h.liftIncome || 0) / 100 : 1) * (merged ? 1 + (h.exitLift || 0) / 100 : 1);
-      const val = valAt(S, h, age) * fv, heloc = funds[h.id] && age >= v.locM ? v.D : 0;
+      const val = valAt(S, h, age) * fv, heloc = funds[h.id] && age >= v.locM ? v.draw : 0;
       return { v, age, live, B, val, heloc, gfi: (h.price > 0 ? valK(S, h, age) / h.price : 1) * fi };
     }
     const held = (h, t) => t < sellAt[h.id];
-    const exits = {}; let cashBal = 0, outsideCum = 0;
+    const exits = {}; let cashBal = 0, outsideCum = 0; const dpCash = new Array(T + 1).fill(0);
+    hs.forEach((h) => { if (dpCashBy[h.id] && isFinite(P0[h.id]) && P0[h.id] <= T) dpCash[P0[h.id]] += dpCashBy[h.id]; });
     for (let t = 0; t <= T; t++) {
       /* 1) sales put net proceeds in cash */
       for (const h of hs) if (sellAt[h.id] === t) {
@@ -231,7 +234,7 @@
       end: P0[h.id] + V[h.id].locM, ok: isFinite(P0[h.id] + V[h.id].locM), funds: funds[h.id] }));
     let worst = { dti: 0, month: 0 }; for (let t = 0; t <= T; t++) if (s.dti[t] > worst.dti) worst = { dti: s.dti[t], month: t };
     let extraLater = 0; hs.forEach((h) => { const v = V[h.id]; if (isFinite(P0[h.id]) && P0[h.id] > 0 && v.L > 0 && v.payoff > 0) extraLater += v.X; });
-    return { outsideTotal: s.outside[T], extraNow: s.extra[0], extraLater, purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
+    return { dpCash, outsideTotal: s.outside[T], extraNow: s.extra[0], extraLater, purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
       at, assetsAt, snap: assetsAt(Math.min(T, planM)), rows, funds, fundedByLOC, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id) };
   }
 
@@ -253,7 +256,7 @@
       R.outsideCall[t] = t === 0 ? s.outside[0] : s.outside[t] - s.outside[t - 1];
       R.net[t] = R.income[t] + R.portfolio[t] - R.portTax[t] - R.gm[t] - R.extra[t] - R.living[t] - R.debts[t];
       R.interest[t] = t > 0 ? Math.max(0, liq + s.cash[t - 1]) * apy : 0;
-      liq += R.net[t] + R.interest[t] + R.capitalIn[t] - R.outsideCall[t] - R.oneTime[t] - R.saleTax[t];
+      liq += R.net[t] + R.interest[t] + R.capitalIn[t] - R.outsideCall[t] - R.oneTime[t] - R.saleTax[t] - (pl.dpCash[t] || 0);
       R.liquid[t] = liq; R.total[t] = liq + s.cash[t];
       R.reserve[t] = (p.emergencyMonths || 0) * (R.living[t] + R.debts[t]);
       R.burn[t] = R.living[t] + R.debts[t] + R.extra[t] + R.gm[t] - Math.max(0, R.portfolio[t] - R.portTax[t]);
@@ -384,6 +387,37 @@
     A('business', 'sba7a', { id: 'freight', buyIn: 62, growth: 8, addr: 'Summit Freight & Logistics', price: 1800000, rent: 41650 }),
     A('house', 'dscr', { id: 'linden', buyIn: 84, growth: 3.5, addr: '2914 Linden Way', price: 175000, rent: 1850, tax: 195, ins: 85 }),
     A('commercial', undefined, { id: 'lake', buyIn: 100, loanId: 'custom', dp: 35, addr: 'Lakeview Medical Office', price: 1800000, rent: 17450, tax: 1000, ins: 800, hoa: 500 })] }); };
-  const E = { estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  /* ---------- list order = buy order; the asset right before another one in its category funds it ---------- */
+  const catOf = (h) => h.type || 'house';
+  /* Sort the list once into purchase order (owned first; ties keep their order). S.orderV marks it done so a saved order is never re-sorted. */
+  function orderByBuy(S) {
+    const pl = plan(S), rk = (h) => (isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9);
+    S.houses = S.houses.map((h, i) => [h, i]).sort((a, b) => rk(a[0]) - rk(b[0]) || a[1] - b[1]).map((x) => x[0]); S.orderV = 1; return S;
+  }
+  /* Relink every category: each asset funds the planned asset right after it. An in-category link that no longer matches is cleared; a link to another category is left alone. */
+  function relink(S) {
+    const cats = {}; S.houses.forEach((h) => { (cats[catOf(h)] = cats[catOf(h)] || []).push(h); });
+    Object.keys(cats).forEach((c) => { const L = cats[c];
+      L.forEach((a, i) => { const t = H(S, a.target), nxt = L[i + 1];
+        if (t && catOf(t) !== c) return;
+        if (nxt && nxt.status === 'planned') a.target = nxt.id; else a.target = ''; }); });
+    return S;
+  }
+  /* creation sequence: the latest asset added in a category is the one with the highest seq (assets from before this feature have none: list position decides) */
+  function register(S, h) { S.seq = (+S.seq || 0) + 1; h.seq = S.seq; h.created = Date.now(); return h; }
+  function latestOf(list) { let best = null, bs = -Infinity; list.forEach((h) => { const q = h.seq != null && isFinite(+h.seq) ? +h.seq : -1; if (q >= bs) { bs = q; best = h; } }); return best; }
+  function duplicate(S, id) {
+    const i = S.houses.findIndex((h) => h.id === id); if (i < 0) return null;
+    const o = S.houses[i], c = JSON.parse(JSON.stringify(o));
+    c.id = 'h' + Date.now().toString(36) + (uid++); c.addr = o.addr + ' (copy)'; c.status = 'planned'; c.paid = 0; c.target = ''; c.fresh = false; c.listingUrl = '';
+    register(S, c); S.houses.splice(i + 1, 0, c); relink(S); return c;
+  }
+  /* move an asset one step inside its category (visible = ids shown in the category, in order); returns true if the order changed */
+  function reorder(S, ids) {
+    const set = new Set(ids), slots = []; S.houses.forEach((h, i) => { if (set.has(h.id)) slots.push(i); });
+    const cur = slots.map((i) => S.houses[i].id); if (cur.join() === ids.join()) return false;
+    const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); relink(S); return true;
+  }
+  const E = { orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

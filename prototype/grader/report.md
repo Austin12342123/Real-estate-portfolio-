@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-09T17:14:32.186Z  |  206s
+Target: `prototype/v4`  |  Run: 2026-11-10T06:00:54.693Z  |  228s
 
 ## Automated score: **84.93 / 84.99900000000001** (a separate design review adds 15)
 
@@ -22,7 +22,7 @@ Target: `prototype/v4`  |  Run: 2026-11-09T17:14:32.186Z  |  206s
 | A03 | Edit matrix: every input (43 edits incl. improvements/exit/loan/assumptions) moves the main-page KPIs exactly as the engine says | 2.92 | 2.92 | 44/44 sub-checks pass |
 | A04 | Two-way back-solves: wait-months->extra, payoff->extra, down$->%, and main page follows | 1.46 | 1.46 | 8/8 sub-checks pass |
 | A05 | Remove from the MAIN page: Edit mode, confirm, Undo, totals update; removing a funding source leaves the target listed | 1.95 | 1.95 | 10/10 sub-checks pass |
-| A06 | Main rows are ordered by purchase month (owned first); tags match the engine's purchase months | 0.73 | 0.73 | 4/4 sub-checks pass |
+| A06 | Main rows follow list order = buy order (sorted once on first load, owned first); tags match the engine's purchase months | 0.73 | 0.73 | 5/5 sub-checks pass |
 | A07 | No "Today" / "20 years" view toggle anywhere (single portfolio snapshot) | 0.49 | 0.49 | 3/3 sub-checks pass |
 | A08 | Homes cannot cash-flow negative: warning on the asset page and on the main page; clears when fixed; not shown for non-homes | 1.22 | 1.22 | 7/7 sub-checks pass |
 | A09 | Per-row numbers sum to the portfolio headline (cash flow, monthly payments, net worth) on the sample, and match the engine | 1.46 | 1.46 | 7/7 sub-checks pass |
@@ -42,7 +42,7 @@ Target: `prototype/v4`  |  Run: 2026-11-09T17:14:32.186Z  |  206s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok Infinity,Infinity/0/0,49,98/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 4.2ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 4.8ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: every credit-line funder stays within cap (loan + liens + drawn LOC) when its target closes | 0.48 | 0.48 | 3/3 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |
@@ -55,13 +55,13 @@ Target: `prototype/v4`  |  Run: 2026-11-09T17:14:32.186Z  |  206s
 | B23 | Sample portfolio: finite plan, none unfunded, DTI peak below limit, homes cash-flow positive, 20-year numbers sane | 0.64 | 0.64 | 7/7 sub-checks pass |
 | B24 | FHA 203(k): rehab is financed in the loan (down payment on price + rehab), upfront MIP financed, monthly MIP in cash flow, owner-occupied flag, closing cash excludes rehab | 0.64 | 0.64 | 8/8 sub-checks pass |
 | C01 | At 390x844: summary KPIs, plan headline and the first ledger rows are visible without scrolling | 1.33 | 1.33 | 3/3 sub-checks pass |
-| C02 | Main page has only the per-row extra fields as text inputs (one per asset) | 1.00 | 1.00 | 2/2 sub-checks pass |
+| C02 | Main page keeps text inputs out of the list: no inputs until a row is selected, then exactly one extra field (none for a sold row) | 1.00 | 1.00 | 5/5 sub-checks pass |
 | C03 | No horizontal overflow at 320/390/430 on main, asset, assumptions, add, import | 1.33 | 1.33 | 15/15 sub-checks pass |
-| C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.26 | 159/165 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32 |
-| C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 61/61 ok  |
+| C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.26 | 164/170 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32 |
+| C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 51/51 ok  |
 | C06 | Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps | 1.33 | 1.33 | 3/3 sub-checks pass |
-| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 111px x 14, page 2776px |
-| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 849/849 text elements pass (light 421/421, dark 428/428).  |
+| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 97px x 14, page 3109px |
+| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 877/877 text elements pass (light 435/435, dark 442/442).  |
 | C09 | Summary-first: one concise summary card (single snapshot, short text), plan card collapsible | 1.00 | 1.00 | 3/3 sub-checks pass |
 | D01 | Manifest valid; icons load with true declared dimensions | 1.14 | 1.14 | 8/8 sub-checks pass |
 | D02 | Service worker (index.html) registers, activates, controls page after reload; precache complete | 1.14 | 1.14 | 3/3 sub-checks pass |
@@ -74,7 +74,7 @@ Target: `prototype/v4`  |  Run: 2026-11-09T17:14:32.186Z  |  206s
 | E01 | Edge inputs (60 cases + compound: zero, 100% down, blanks, garbage, negatives, 1e12, caps, sale/merge/improvement fields) leave no NaN/Infinity/undefined in any page or crash | 1.91 | 1.91 | 65/65 sub-checks pass |
 | E02 | Remove all assets (main page) -> clean empty state with add action; can add again | 0.96 | 0.96 | 3/3 sub-checks pass |
 | E03 | Deleting a funding target clears references (select, storage, plan, merge-into) | 0.96 | 0.96 | 5/5 sub-checks pass |
-| E04 | Every input/select/button has an accessible name (main, asset, assumptions, add, import) | 0.64 | 0.64 | 279/279 named. unnamed:  |
+| E04 | Every input/select/button has an accessible name (main, asset, assumptions, add, import) | 0.64 | 0.64 | 282/282 named. unnamed:  |
 | E05 | Typing 5 digits sequentially keeps focus + full value (re-render safe) on main, asset, assumptions, text field | 0.64 | 0.64 | 5/5 sub-checks pass |
 | E06 | No layout shift while navigating and editing (CLS <= 0.05) | 0.32 | 0.32 | CLS 0.0000 |
 | E07 | No console errors or page errors during all flows | 0.96 | 0.96 | 0 errors:  |
@@ -85,7 +85,7 @@ Target: `prototype/v4`  |  Run: 2026-11-09T17:14:32.186Z  |  206s
 | R04 | [secondary] Business prices are realistic multiples of yearly owner profit (BizBuySell ~2.6-2.7x SDE; GF Data ~6-7x EBITDA at $10M+) | 3.50 | 3.50 | 3/3 sub-checks pass |
 | R05 | [secondary+judgment] Commercial cap rates are in a plausible band for the property type in secondary markets | 2.50 | 2.50 | 3/3 sub-checks pass |
 | R06 | [secondary] Leverage and loan type fit the asset (LTV, minimum down payments, FHA only if you live there) | 2.00 | 2.00 | 7/7 sub-checks pass |
-| R07 | [judgment] Projected net worth does not depend on growth above realistic ceilings (homes 4.5%, commercial 5.5%, businesses 12% a year) | 4.00 | 4.00 | projected $17.6M vs $17.6M at realistic growth = 100%. Above ceiling: none |
+| R07 | [judgment] Projected net worth does not depend on growth above realistic ceilings (homes 4.5%, commercial 5.5%, businesses 12% a year) | 4.00 | 4.00 | projected $17.7M vs $17.7M at realistic growth = 100%. Above ceiling: none |
 | R08 | [secondary] Flips and improvements have believable economics (ATTOM: ~21.5% gross margin on flips); lifts are bounded | 1.50 | 1.50 | 5/5 sub-checks pass |
 | R09 | [secondary] Selling and closing costs match market norms (agent 5-7%, commercial broker 2-6%, business broker ~Double Lehman, closing 1.5-5%) | 2.50 | 2.50 | 18/18 sub-checks pass |
 | R10 | [secondary+judgment] Financing capacity: each loan fits lender net-worth rules, outside cash stays small, deal pace is executable | 4.00 | 4.00 | 7/7 sub-checks pass |
@@ -93,7 +93,7 @@ Target: `prototype/v4`  |  Run: 2026-11-09T17:14:32.186Z  |  206s
 ## Top failures
 
 1. **C04 Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)** (-0.07)
-   - Detail: 159/165 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32
+   - Detail: 164/170 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32
    - Reproduce: Measure interactive elements on main/asset/assumptions/add
 
 ## F. Personal finances: **90.00 / 90** (separate scale; a design review adds 10 later; not included in the A-E + R total)
@@ -132,7 +132,7 @@ None.
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
 | H1 | Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained | 8.00 | 6.00 | 7/9 sub-checks pass. FAIL: every acronym used in a definition is itself explained (own entry, title or spelled out) [k203:HUD]; plain language: no sentence over 40 words and every body reads at about grade 12 or easier (Flesch-Kincaid) [long  hard noi=14.6] |
-| H2 | Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries | 16.00 | 15.45 | 82/83 sub-checks pass. FAIL: no orphan glossary entries: every definition can be opened from some page (80 entries) [10 never shown: noi, qualifying, ownerocc, mip, interestonly, equity, outsidecash, cashfromselling, planned, capital] |
+| H2 | Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries | 16.00 | 15.45 | 82/83 sub-checks pass. FAIL: no orphan glossary entries: every definition can be opened from some page (81 entries) [10 never shown: noi, qualifying, ownerocc, mip, interestonly, equity, outsidecash, cashfromselling, planned, capital] |
 | H3 | Info sheet: opens with the right content, closes by button / Escape / backdrop / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data | 16.00 | 16.00 | 22/22 sub-checks pass |
 | H4 | Definitions are accurate: numbers quoted match the engine constants and loan table, examples do their own arithmetic, stated rules behave that way in the engine | 16.00 | 16.00 | 42/42 sub-checks pass |
 | H5 | Hourly jobs: add, gross = (wage + tips) x hours x weeks, automatic vs typed tax, blank tax returns to automatic, temporary end month, switching kind, clamps, persistence | 12.00 | 12.00 | 28/28 sub-checks pass |
@@ -146,5 +146,24 @@ None.
 
 - **H1 Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained** (-2.00): 7/9 sub-checks pass. FAIL: every acronym used in a definition is itself explained (own entry, title or spelled out) [k203:HUD]; plain language: no sentence over 40 words and every body reads at about grade 12 or easier (Flesch-Kincaid) [long  hard noi=14.6]
   - Reproduce: node: inspect v4/info.js INFO / LABEL / LOAN
-- **H2 Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries** (-0.55): 82/83 sub-checks pass. FAIL: no orphan glossary entries: every definition can be opened from some page (80 entries) [10 never shown: noi, qualifying, ownerocc, mip, interestonly, equity, outsidecash, cashfromselling, planned, capital]
+- **H2 Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries** (-0.55): 82/83 sub-checks pass. FAIL: no orphan glossary entries: every definition can be opened from some page (81 entries) [10 never shown: noi, qualifying, ownerocc, mip, interestonly, equity, outsidecash, cashfromselling, planned, capital]
   - Reproduce: Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels
+
+## I. Portfolio sections, gestures and funding order: **100.00 / 100** (separate scale; not included in A-E + R, F, G or H)
+
+| ID | Check | Pts | Earned | Detail |
+|---|---|---|---|---|
+| I1 | Swipe right from the left edge goes back like iOS (touchstart within 24 px, dx > 70, |dy| < 45); ignored elsewhere | 12.00 | 12.00 | 9/9 sub-checks pass |
+| I2 | Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel | 14.00 | 14.00 | 13/13 sub-checks pass |
+| I3 | Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open | 8.00 | 8.00 | 7/7 sub-checks pass |
+| I4 | Funding auto-assigns by list order: the asset before another funds it (1,2,3 and 1,3,2), stale in-category links clear, other categories untouched, no re-link on plain load | 16.00 | 16.00 | 11/11 sub-checks pass |
+| I5 | Duplicate: from the row panel and the asset page; copy sits right after the original, named "(copy)", planned, funding relinked | 10.00 | 10.00 | 6/6 sub-checks pass |
+| I6 | Portfolio = total row + Homes / Commercial / Businesses dropdowns (name left, chevron right, "N homes · latest: name"), empty sections, Sold section only when something sold | 12.00 | 12.00 | 12/12 sub-checks pass |
+| I7 | Selecting a row opens a nested panel with the extra payment and live effects: loan term, monthly payment, next down payment (with cash flow); all match the engine and the asset page | 12.00 | 12.00 | 25/25 sub-checks pass |
+| I8 | Rent & expenses shows the loan payment (P&I + mortgage insurance, extra) and the cash flow after the loan, in sync with Payment now / Cash flow now | 6.00 | 6.00 | 6/6 sub-checks pass |
+| I9 | Swipe down closes the keyboard (blurs the focused field); Enter / Done also closes it; swipes inside the field or upward do not | 6.00 | 6.00 | 6/6 sub-checks pass |
+| I10 | Layout and hygiene: no sideways scroll at 320 / 390 / 430 with a panel open and while dragging, new buttons >= 44 px, no console errors or outside requests | 4.00 | 4.00 | 4/4 sub-checks pass |
+
+### I failures
+
+None.
