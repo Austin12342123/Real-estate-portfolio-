@@ -8,6 +8,7 @@
 const http = require('http'), fs = require('fs'), path = require('path'), os = require('os');
 const { spawnSync } = require('child_process');
 const { chromium } = require('playwright');
+if (process.env.LOGIC_ONLY) { require('./logic-grade.js'); return; } /* L1-L10 logic and math grader (node only): LOGIC_ONLY=1 node grade.js */
 
 const V4 = path.resolve(__dirname, '../v4');
 const E = require(path.join(V4, 'engine.js'));
@@ -192,7 +193,7 @@ function simLoc(S, h, t, X) {
   const D = t.price * (t.dp / 100 + cl / 100);
   /* the funder's own monthly cash flow (income after costs and loan payment, before extra) is saved toward the down payment */
   const egi = h.rent * (1 - g.vac / 100), noi = h.type === 'business' ? h.rent : egi - (h.tax + h.ins + h.hoa + g.maint / 100 * h.price / 12 + g.mgmt / 100 * egi), cfs = Math.max(0, noi - P - (h.mipAnn > 0 ? L * h.mipAnn / 1200 : 0));
-  for (let k = 0; k <= 600; k++) { const val = h.price * Math.pow(1 + gr / 100, (k0 + k) / 12); const head = Math.max(0, g.cap / 100 * val - bal - (h.liens || 0)) * (1 - g.haircut / 100); if (head + cfs * k >= D) return k; bal = Math.max(0, bal * (1 + i) - (P + X)); }
+  for (let k = 0; k <= 600; k++) { const val = h.price * Math.pow(1 + gr / 100, (k0 + k) / 12); const head = Math.max(0, g.cap / 100 * (1 - g.haircut / 100) * val - bal - (h.liens || 0)); /* appraisal cut is taken off the VALUE (matches the Assumptions text and the glossary); changed from headroom x (1 - cut) after the logic audit L3.1 */ if (head + cfs * k >= D) return k; bal = Math.max(0, bal * (1 + i) - (P + X)); }
   return Infinity;
 }
 let seedR = 12345; const rnd = () => ((seedR = (seedR * 1664525 + 1013904223) % 4294967296) / 4294967296);
@@ -337,7 +338,7 @@ async function engineChecks() {
     P.t(h.capex > 0 && h.arv > 0 && h.finCapex === true && h.ownerOcc === true, 'choosing the loan auto-fills a typical rehab and sets financed/owner-occupied flags', 0.4, h.capex + '/' + h.liftValue);
     const L = (150000 + h.capex) * (1 - 0.035) * 1.0175; P.t(near(v.L, L, 1), 'loan = (price + rehab) x 96.5% x 1.0175 = ' + Math.round(L), 0.5, Math.round(v.L));
     P.t(near(v.down, (150000 + h.capex) * 0.035, 0.5), 'down payment = 3.5% of price + rehab', 0.3, Math.round(v.down));
-    const mip = (v.L * 0.55) / 100 / 12; P.t(near(v.mip, mip, 0.5) && near(v.cf, v.noi - v.P - v.mip, 0.5), 'monthly MIP (0.55%/yr of loan) is deducted from cash flow', 0.4, v.mip.toFixed(1));
+    const mip = (v.L / 1.0175 * 0.55) / 100 / 12; P.t(near(v.mip, mip, 0.5) && near(v.cf, v.noi - v.P - v.mip, 0.5), 'monthly MIP (0.55%/yr of the loan without the financed upfront premium, 24 CFR 203.284) is deducted from cash flow', 0.4, v.mip.toFixed(1));
     const pl = E.plan(S), cash = (150000 * (h.closingPct / 100)) + v.down; P.t(near(pl.horizon.outside, cash, 1), 'cash at closing = down + closing costs only (rehab is financed)', 0.5, Math.round(pl.horizon.outside) + ' vs ' + Math.round(cash));
     const C = mkS({ closing: 3 }, [E.newAsset('house', 'conv30', { id: 'c', price: 150000, rent: 1900, tax: 170, ins: 80, growth: 0, buyIn: 12, capex: h.capex, capexMonths: h.capexMonths, arv: h.arv })]);
     P.t(E.plan(C).horizon.outside > pl.horizon.outside + h.capex * 0.9, 'same house on a conventional loan needs far more cash (rehab paid in cash)', 0.3);
@@ -802,4 +803,5 @@ async function robustChecks(page) {
   if (sync) console.log(`\nG Number sync: ${fmt2(sync.earned)}/${sync.max}`);
   if (info) console.log(`\nH Help and hourly jobs: ${fmt2(info.earned)}/${info.max}`);
   if (gest) console.log(`\nI Portfolio sections and gestures: ${fmt2(gest.earned)}/${gest.max}`);
+  try { delete require.cache[require.resolve('./logic-grade.js')]; const L = require('./logic-grade.js'); console.log(`\nL Logic and math: ${fmt2(L.total)}/${L.max} (details: grader/logic/report.md)`); } catch (e) { console.log('\nL Logic grader failed: ' + e.message); }
 })().catch((e) => { console.error('GRADER CRASH', e); process.exit(2); });

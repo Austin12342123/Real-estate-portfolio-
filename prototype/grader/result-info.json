@@ -1,6 +1,6 @@
 {
   "info": {
-    "earned": 97.45,
+    "earned": 98.45,
     "max": 100,
     "checks": [
       {
@@ -8,9 +8,9 @@
         "category": "H",
         "name": "Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained",
         "points": 8,
-        "earned": 6,
-        "ratio": 0.75,
-        "detail": "7/9 sub-checks pass. FAIL: every acronym used in a definition is itself explained (own entry, title or spelled out) [k203:HUD]; plain language: no sentence over 40 words and every body reads at about grade 12 or easier (Flesch-Kincaid) [long nextdp hard noi=14.6]",
+        "earned": 7,
+        "ratio": 0.875,
+        "detail": "8/9 sub-checks pass. FAIL: every acronym used in a definition is itself explained (own entry, title or spelled out) [k203:HUD]",
         "repro": "node: inspect v4/info.js INFO / LABEL / LOAN",
         "seconds": 0
       },
@@ -21,9 +21,9 @@
         "points": 16,
         "earned": 15.45,
         "ratio": 0.9659090909090909,
-        "detail": "82/83 sub-checks pass. FAIL: no orphan glossary entries: every definition can be opened from some page (81 entries) [11 never shown: noi, nextdp, qualifying, ownerocc, mip, interestonly, equity, outsidecash, cashfromselling, planned, capital]",
+        "detail": "82/83 sub-checks pass. FAIL: no orphan glossary entries: every definition can be opened from some page (81 entries) [10 never shown: noi, qualifying, ownerocc, mip, interestonly, equity, outsidecash, cashfromselling, planned, capital]",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 3.6
+        "seconds": 3.8
       },
       {
         "id": "H3",
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 7.1
+        "seconds": 7.5
       },
       {
         "id": "H4",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 2.6
+        "seconds": 2.7
       },
       {
         "id": "H6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 3.7
+        "seconds": 4.1
       },
       {
         "id": "H7",
@@ -78,12 +78,12 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Load crafted localStorage states; pasted old backup restore",
-        "seconds": 0.9
+        "seconds": 1
       },
       {
         "id": "H8",
         "category": "H",
-        "name": "Automatic tax estimate: matches an independent 2025 single-filer calculation (federal after standard deduction + Social Security + Medicare, no state tax), is monotone and bounded",
+        "name": "Automatic tax estimate: matches an independent 2026 single-filer calculation (IRS Rev. Proc. 2025-32, Pub. 15) (federal after standard deduction + Social Security + Medicare, no state tax), is monotone and bounded",
         "points": 6,
         "earned": 6,
         "ratio": 1,
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 1.8
+        "seconds": 2
       },
       {
         "id": "H10",

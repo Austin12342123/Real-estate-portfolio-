@@ -3,10 +3,10 @@
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
   let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan' };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  const DATA_V = 12; /* bump when the sample portfolio changes so old saved samples are replaced */
+  const DATA_V = 13; /* bump when the sample portfolio changes so old saved samples are replaced */
   if (S && Array.isArray(S.houses) && S.g && S.v === 8) { S.p = S.p || E.samplePersonal(); S.v = DATA_V; } /* v8 saves keep their assets and gain a finance profile */
   let switched = null;
-  if (S && Array.isArray(S.houses) && S.g && (S.v === 9 || S.v === 10 || S.v === 11)) { switched = JSON.stringify(S); const keepP = S.p, plan = E.seedPlan(); if (keepP) plan.p = Object.assign({}, keepP, { capital: plan.p.capital }); S = plan; S.v = DATA_V; } /* v9 saves switch to the $125M plan once; Undo brings the old one back */
+  if (S && Array.isArray(S.houses) && S.g && (S.v === 9 || S.v === 10 || S.v === 11 || S.v === 12)) { switched = JSON.stringify(S); const keepP = S.p, plan = E.seedPlan(); if (keepP) plan.p = Object.assign({}, keepP, { capital: plan.p.capital }); S = plan; S.v = DATA_V; } /* v9 saves switch to the $125M plan once; Undo brings the old one back */
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seedPlan();
   E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
   /* a new asset is funded by the asset right before it in its category: only that one link is added; every other link stays as it was */
@@ -16,7 +16,7 @@
   fixOrder(S);
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
   let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
-  if (switched) undo = { text: 'Switched to the self-funded $125M plan (28 years).', label: 'old portfolio', snap: switched };
+  if (switched) undo = { text: 'Switched to the updated self-funded $125M plan (28 years): loans now meet lender DSCR rules.', label: 'old portfolio', snap: switched };
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
@@ -168,16 +168,12 @@
     const statStrip = (tp, list) => {
       const sn2 = pl.snap.filter((x) => x.type === tp && list.some((h) => h.id === x.id)), n2 = list.length;
       if (!tp || !sn2.length) return `<span class="cnt" data-testid="cat-count-${tp || 'sold'}">${n2}</span>`;
-      const income = sn2.reduce((a, x) => a + x.income, 0), cf = sn2.reduce((a, x) => a + x.cf, 0), worth = sn2.reduce((a, x) => a + x.value, 0), ds = income - cf;
-      const dscr = ds > 0.5 ? income / ds : null;
-      const costOf = (x) => { const h = H(x.id); return h ? (+h.tax || 0) + (+h.ins || 0) + (+h.hoa || 0) : 0; };
-      const k = Math.max(1, Math.round(sn2.length * 0.45)), lostOf = (x) => x.income + costOf(x), byLoss = sn2.slice().sort((a, b) => lostOf(b) - lostOf(a));
-      const partial = cf - byLoss.slice(0, k).reduce((a, x) => a + lostOf(x), 0), allFail = -(ds + sn2.reduce((a, x) => a + costOf(x), 0));
-      const useAll = partial >= 0, stress = useAll ? allFail : partial, cash = fin ? Math.max(0, fin.series.liquid[Math.min(fin.T, pl.planM)] || 0) : S.p ? +S.p.cash || 0 : 0;
-      const last = stress >= -0.5 ? 'no bills' : cash <= 0 ? '0 mo' : cash / -stress >= 600 ? '50+ yr' : cash / -stress >= 24 ? r(cash / -stress / 12, 1) + ' yr' : Math.round(cash / -stress) + ' mo';
+      const cash = fin ? Math.max(0, fin.series.liquid[Math.min(fin.T, pl.planM)] || 0) : S.p ? +S.p.cash || 0 : 0;
+      const st = E.stress(S, pl, sn2, cash), income = st.income, cf = st.cf, worth = st.worth, dscr = st.dscr, useAll = st.useAll, stress = st.burn;
+      const last = stress >= -0.5 ? 'no bills' : cash <= 0 ? '0 mo' : st.months >= 600 ? '50+ yr' : st.months >= 24 ? r(st.months / 12, 1) + ' yr' : Math.round(st.months) + ' mo';
       const lastLab = useAll ? 'lasts, all fail' : 'lasts';
       const cell = (lab, val, tid, cls) => `<span class="sc"><b class="${cls || ''}" data-testid="${tid}-${tp}">${val}</b><small>${lab}</small></span>`;
-      return `<span class="cnt" data-testid="cat-count-${tp}">${n2}</span>${cell('before loan', cfk(income), 'cat-before', '')}${cell('after loan', cfk(cf), 'cat-after', cf < 0 ? 'bad' : '')}${cell('worth', $k(worth), 'cat-worth', '')}${cell('DSCR', dscr === null ? '—' : r(dscr, 2), 'cat-dscr', dscr !== null && dscr < 1 ? 'bad' : '')}${cell(lastLab, last, 'cat-lasts', stress < -0.5 && cash / -stress < 6 ? 'bad' : '')}`;
+      return `<span class="cnt" data-testid="cat-count-${tp}">${n2}</span>${cell('before loan', cfk(income), 'cat-before', '')}${cell('after loan', cfk(cf), 'cat-after', cf < 0 ? 'bad' : '')}${cell('worth', $k(worth), 'cat-worth', '')}${cell('DSCR', dscr === null ? '—' : r(dscr, 2), 'cat-dscr', dscr !== null && dscr < 1 ? 'bad' : '')}${cell(lastLab, last, 'cat-lasts', stress < -0.5 && st.months < 6 ? 'bad' : '')}`;
     };
     const secOf = (id, title, list, tp) => {
       CDEF[id] = id === 'cat-house' || empty ? false : true; const open = !(UI.coll[id] === undefined ? CDEF[id] : UI.coll[id]), tid = tp || 'sold', lt = E.latestOf(list);
@@ -356,6 +352,13 @@
     const g = S.g, F = (l, k, o) => field(l, 'g.' + k, o && o.pre === '$' ? grp(g[k]) : g[k], o);
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Assumptions</h2></div>
     <p class="note" style="margin:0 4px 6px">Defaults work for most people. Change them when you know your lender.</p>
+    <details class="card" data-testid="model-notes" style="margin:0 0 8px;padding:10px 12px"><summary style="cursor:pointer;font-weight:600">How the numbers are built</summary><ul class="note" style="margin:8px 0 0 16px;padding:0">
+      <li>All dollars are nominal (future) dollars, not adjusted for inflation. Living costs and manager pay rise by the cost-increase rate; loan payments stay fixed.</li>
+      <li>Rent, profit and costs of each asset grow at that asset's growth rate, the same rate as its value. Property taxes are assumed to rise with value (some states cap this).</li>
+      <li>Credit lines borrow up to the max loan vs value (85% is the regulators' ceiling for real estate) less the appraisal cut, the loan balance and other liens. The same cap is used for homes, commercial property and businesses.</li>
+      <li>Debt-to-income counts 75% of rent (minus the property's payment) and does not include your own rent or housing payment. Banks also look at each asset's DSCR (income over loan payment): about 1.25 for bank loans, 1.15 for SBA.</li>
+      <li>Taxes are flat rates you can change. Depreciation is not modeled. Closing costs are a percent of price. FHA insurance is charged on the falling loan balance.</li>
+      <li>Growth rates, vacancy, management and repair costs are assumptions, not forecasts.</li></ul></details>
     <div class="sec">Borrowing</div><section class="card">${F('Max loan vs value', 'cap', { suf: '%' })}${F('Appraisal cut', 'haircut', { suf: '%' })}${F('Closing costs', 'closing', { suf: '%' })}${F('Line of credit rate', 'hrate', { suf: '%' })}<p class="note">Appraisal cut: what lenders subtract from a home's value. Rent counted: the share of rent lenders accept as income.</p></section>
     <div class="sec">Who helps you qualify</div><section class="card">${F('Co-signer 1 / yr', 'p1', { pre: '$' })}${F('Co-signer 2 / yr', 'p2', { pre: '$' })}<p class="note">Leave 0 if none. Co-signers help you qualify for loans. Their income counts toward the lender's limit.</p>${F('Debt-to-income limit', 'dti', { suf: '%' })}${F('Rent counted', 'rentCount', { suf: '%' })}${F('Other monthly debts', 'otherDebt', { pre: '$' })}</section>
     <div class="sec">Operating costs</div><section class="card">${F('Vacancy', 'vac', { suf: '%' })}${F('Management (of rent)', 'mgmt', { suf: '%' })}${F('Repairs / yr', 'maint', { suf: '%' })}${F('Growth / yr', 'appr', { suf: '%' })}${F('Projection length (years)', 'planYears', {})}</section>

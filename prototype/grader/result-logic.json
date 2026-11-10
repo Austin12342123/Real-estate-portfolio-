@@ -1,0 +1,841 @@
+{
+ "run": "2026-11-10T09:35:46.508Z",
+ "total": 100,
+ "max": 100,
+ "categories": {
+  "L1": {
+   "name": "Loan / amortization / payoff math",
+   "earned": 14,
+   "max": 14
+  },
+  "L2": {
+   "name": "Income, expense and NOI model",
+   "earned": 14,
+   "max": 14
+  },
+  "L3": {
+   "name": "Leverage, LTV/CLTV and credit-line rules",
+   "earned": 12,
+   "max": 12
+  },
+  "L4": {
+   "name": "Lender qualification (DTI / DSCR / rental haircut)",
+   "earned": 10,
+   "max": 10
+  },
+  "L5": {
+   "name": "Loan-product terms vs sources (every LOANS preset)",
+   "earned": 12,
+   "max": 12
+  },
+  "L6": {
+   "name": "Appreciation, rent growth, inflation and time basis",
+   "earned": 10,
+   "max": 10
+  },
+  "L7": {
+   "name": "Taxes, selling costs and depreciation",
+   "earned": 8,
+   "max": 8
+  },
+  "L8": {
+   "name": "Business valuation, growth and operating model",
+   "earned": 8,
+   "max": 8
+  },
+  "L9": {
+   "name": "Plan integrity (ordering, funding chain, cash recycling, stress test)",
+   "earned": 7,
+   "max": 7
+  },
+  "L10": {
+   "name": "Disclosure, labels, units and glossary accuracy",
+   "earned": 5,
+   "max": 5
+  }
+ },
+ "checks": [
+  {
+   "cat": "L1",
+   "id": "L1.1",
+   "name": "Level payment equals the textbook formula AND a bisection on the balance (400 random loans incl. 0% rate, 12-480 months)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "0 / 400 disagree ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L1",
+   "id": "L1.2",
+   "name": "Balance today after m paid payments equals month-by-month recurrence (300 random owned loans)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "0 / 300 disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L1",
+   "id": "L1.3",
+   "name": "Portfolio debt series for a loan with extra payments equals the reference balance every month, and is 0 after payoff (60 random)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "0 / 60 scenarios disagree ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L1",
+   "id": "L1.4",
+   "name": "Months to pay off (payoffN) with extra payments equals month-by-month simulation (300 random incl. never-pays-off cases)",
+   "pts": 3,
+   "earned": 3,
+   "pass": true,
+   "detail": "0 / 300 disagree ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L1",
+   "id": "L1.5",
+   "name": "Interest-only: payment = balance x rate/12, balance never falls without extra, extra reduces it, 0% IO is a free payment of 0; no default-plan interest-only loan outlives its term (balloon not modeled)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "true,true,true,true",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L1",
+   "id": "L1.6",
+   "name": "FHA / 203(k): loan = (price + financed rehab) x (1 - down) x (1 + 1.75% upfront premium); down is 3.5% of price + rehab; cash at closing excludes rehab",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "255290.75 vs 255290.75",
+   "source": "S6,S7",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L1",
+   "id": "L1.7",
+   "name": "FHA annual premium is charged on the remaining balance EXCLUDING the financed upfront premium (24 CFR 203.284), so it falls as the loan is paid down",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "mip at month 240: engine 63.00 vs declining-balance 63.00",
+   "source": "S6,S8,S27",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L1",
+   "id": "L1.8",
+   "name": "Closing costs are a % of PRICE (not loan); cash needed at closing = down payment + closing costs; custom % overrides the global default",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "9000,15000,69000",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L1",
+   "id": "L1.9",
+   "name": "FHA premium rates match HUD (upfront 1.75%; annual 0.55% for >95% LTV, base loan <= $726,200, term > 15 yrs) and Limited 203(k) cap $75,000",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "[1.75,0.55,3.5]",
+   "source": "S6,S7",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L2",
+   "id": "L2.1",
+   "name": "noiOf equals the reference NOI (vacancy off rent, management on collected rent, repairs % of price, fixed costs) for 300 random homes and commercial; business NOI is the owner profit",
+   "pts": 3,
+   "earned": 3,
+   "pass": true,
+   "detail": "0 / 300 disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L2",
+   "id": "L2.2",
+   "name": "view(): cash flow = NOI - payment - mortgage insurance; cap rate = 12*NOI/price; price multiple = price/(12*NOI); DSCR basis (NOI / P+MIP) consistent (200 random)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "0 / 200 disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L2",
+   "id": "L2.3",
+   "name": "Portfolio NOI series = sum of asset NOI x growth factor: income and costs grow with the asset growth rate (checked at months 0, 60, 180 on 40 random assets)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "0 / 40 disagree ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L2",
+   "id": "L2.4",
+   "name": "Default vacancy vs Census HVS rental vacancy (US 7.1% in 2025, 7.4% in 2026 YTD, 8.2% avg 2000-2025): default must be >= 7% or the UI must name the Census figure and say why lower",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "default vac 5%; glossary mentions Census: true",
+   "source": "S18,S19",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L2",
+   "id": "L2.5",
+   "name": "Default management fee 8% and repairs 1%/yr are disclosed as rule-of-thumb assumptions (no fetched source; NARPM / NRC figures were not reachable)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "mgmt 8, maint 1",
+   "source": "",
+   "disclosedOnly": true
+  },
+  {
+   "cat": "L2",
+   "id": "L2.6",
+   "name": "Commercial rows state that rent is net of what tenants reimburse (tax/insurance/CAM): default commercial property tax + insurance are well below typical 1%+ of value, so the UI must say expense lines are net of NNN pass-throughs",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "tax+insurance = 0.70-0.70% of price per year; disclosed true",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L2",
+   "id": "L2.7",
+   "name": "Default portfolio cap rates and price multiples fall in the bands of the grader benchmark files (bench-cre.json / bench-business.json; secondary sources, flagged unverified there)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "all in band",
+   "source": "",
+   "disclosedOnly": true
+  },
+  {
+   "cat": "L3",
+   "id": "L3.1",
+   "name": "Months until the credit line (locMonths) equals an independent month-by-month simulation where the appraisal cut is taken off the VALUE (cap x value x (1 - cut) - balance - liens), incl. saved cash flow (120 random)",
+   "pts": 3,
+   "earned": 3,
+   "pass": true,
+   "detail": "0 / 120 disagree (cap,cut,liens,engine,ref) ",
+   "source": "S9,S12",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L3",
+   "id": "L3.2",
+   "name": "extraFor: the extra payment returned reaches the target month and 1 dollar less does not (40 random; null only when infeasible)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "0 / 40 wrong",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L3",
+   "id": "L3.3",
+   "name": "After the credit-line draw the combined loan (balance + other liens + draw) never exceeds cap x value x (1 - appraisal cut) (cltvAtLoc, 100 random)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "0 over the limit ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L3",
+   "id": "L3.4",
+   "name": "Default max combined loan-to-value (cap) does not exceed the 85% supervisory ceiling for improved property incl. non-owner-occupied 1-4 family (12 CFR 365 App. A); default credit-line rate sits between prime (7.00%, Fed H.15) and prime + 3.5",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "cap 85, credit-line rate 8.5",
+   "source": "S5,S14",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L3",
+   "id": "L3.5",
+   "name": "A credit line behind a BUSINESS (not real estate, no supervisory 85% limit) is disclosed as unrealistic at the same cap, or capped lower",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "glossary mentions business: true",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L3",
+   "id": "L3.6",
+   "name": "Credit-line interest: draw x line rate / 12 per month from the month the line is drawn, none before; the draw shows as debt then; draw = cash needed minus saved cash flow",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "1968.11 2399.36 431.25 230065.49 287325.29 57500",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L3",
+   "id": "L3.7",
+   "name": "Saved cash flow = max(0, NOI - payment - MIP), capped at the cash needed, and what is saved is deducted from liquid cash when the target closes (no double count)",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "403.89 403.89 7270 7270",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L4",
+   "id": "L4.1",
+   "name": "DTI at month 0 equals the reference (75% of gross rent minus the property payment: a positive net adds to income, a negative net adds to debts; plus co-signer and job income; 80 random portfolios)",
+   "pts": 3,
+   "earned": 3,
+   "pass": true,
+   "detail": "0 / 80 disagree ",
+   "source": "S11,S12",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L4",
+   "id": "L4.2",
+   "name": "DTI limit default 43% and rental haircut 75% are consistent with CFPB (43% was the old General QM cap, now replaced by price-based test) and the UI says lenders vary (up to ~50%); wording must not present 43% as a current legal rule",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "Your monthly debt payments divided by the monthly income a lender counts. Limits vary by loan and lender, often 43% to 50% at most. This app does not add your o",
+   "source": "S10,S11",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L4",
+   "id": "L4.3",
+   "name": "DTI includes the borrower's OWN housing payment (rent or mortgage) as a lender would, or the UI discloses that it does not",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "disclosed: true",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L4",
+   "id": "L4.4",
+   "name": "Every purchase in the default plan meets its lender's minimum DSCR at closing (SBA 7(a)/504 >= 1.15, bank loans >= 1.25 as the app states, DSCR loan >= 1.2 as the app states, bridge and seller notes >= 1.0)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "all meet minimums",
+   "source": "S3,S1",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L4",
+   "id": "L4.5",
+   "name": "No asset in the default plan cash-flows negative at its own purchase (owner requirement: homes never negative; commercial and businesses must at least pay their own loan)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "none negative",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L4",
+   "id": "L4.6",
+   "name": "Debt-to-income in the default plan stays at or under the limit at every month (no purchase that a lender would decline on DTI)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "peak DTI 0.9% at month 26 vs limit 43",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L4",
+   "id": "L4.7",
+   "name": "Default plan loan rules: each SBA 7(a) <= $5M and the 7(a) balances outstanding at once <= $5M (conservative reading: SBA aggregates a borrower and affiliates), 504 only for owner-occupied property, bank real-estate loans <= 85% LTV, no seller note above 50% of price",
+   "pts": 0.5,
+   "earned": 0.5,
+   "pass": true,
+   "detail": "ok; peak 7(a) outstanding $3481893 at month 92",
+   "source": "S2,S3,S4,S5",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L5",
+   "id": "L5.conv30",
+   "name": "Conventional 30-yr investor: 360 months, rate between PMMS 30-yr (7.18%) and PMMS + 1.0 (investor price adjustment), down >= 15%",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 20 rate 7.5 term 360 io false",
+   "source": "S13",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L5",
+   "id": "L5.conv15",
+   "name": "Conventional 15-yr: 180 months, rate between PMMS 15-yr (6.57%) and +1.0, down >= 15%",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 20 rate 7 term 180 io false",
+   "source": "S13",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L5",
+   "id": "L5.fha",
+   "name": "FHA 30-yr: 3.5% down, upfront 1.75%, annual 0.55%, owner-occupied flag, rate <= PMMS 30-yr",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 3.5 rate 6.9 term 360 io false",
+   "source": "S6,S7,S13",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L5",
+   "id": "L5.k203",
+   "name": "203(k): 3.5% down, same premiums, finances rehab, owner-occupied, Limited cap $75,000 stated, default rehab within it",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 3.5 rate 7.15 term 360 io false",
+   "source": "S6,S7",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L5",
+   "id": "L5.dscr",
+   "name": "DSCR investor loan: 30-yr, down 20-25%, rate above the conventional investor rate (7.18% PMMS + premium)",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 25 rate 7.75 term 360 io false",
+   "source": "S13",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L5",
+   "id": "L5.cashh",
+   "name": "Cash purchase (home): 100% down, 0% rate, no loan",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 100 rate 0 term 360 io false",
+   "source": "",
+   "disclosedOnly": true
+  },
+  {
+   "cat": "L5",
+   "id": "L5.comm25",
+   "name": "Commercial bank 25-yr: 300 months, down 20-35% (65-80% LTV; supervisory limit 85%), rate near prime (7.00%) +0 to +1.5",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 25 rate 7.25 term 300 io false",
+   "source": "S5,S14",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L5",
+   "id": "L5.sba504",
+   "name": "SBA 504: 25-yr real estate term allowed (10/20/25), down payment 10% standard, max debenture $5.5M, owner-occupancy stated",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 10 rate 6.75 term 300 io false",
+   "source": "S4,S3",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L5",
+   "id": "L5.bridge",
+   "name": "Bridge loan: interest-only, short term (<= 5 yrs), rate above prime (>= 8.5%)",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 30 rate 9.5 term 36 io true",
+   "source": "S14",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L5",
+   "id": "L5.sellerc",
+   "name": "Seller financing (commercial): negotiated; rate not below the 30-yr mortgage rate minus 2 pts, term <= 30 yrs, preset note says terms vary and typical share is partial",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 10 rate 6 term 240 io false",
+   "source": "",
+   "disclosedOnly": true
+  },
+  {
+   "cat": "L5",
+   "id": "L5.sba7a",
+   "name": "SBA 7(a) business: <= 10-year term for business acquisition (25 for real estate), max loan $5M stated, rate <= prime + 3.0 (10.00%) for loans over $350k, min 10% injection",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 10 rate 9.75 term 120 io false",
+   "source": "S2,S3,S14",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L5",
+   "id": "L5.bankbiz",
+   "name": "Bank term loan (business): 5-10 yr term, rate above prime, down >= 20%",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 25 rate 9 term 84 io false",
+   "source": "S14",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L5",
+   "id": "L5.sellerb",
+   "name": "Seller note (business): <= 10-yr term, note says the seller finances only part of the price and the share is limited",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 20 rate 7 term 60 io false",
+   "source": "",
+   "disclosedOnly": true
+  },
+  {
+   "cat": "L5",
+   "id": "L5.cashb",
+   "name": "Cash purchase (business): 100% down, 0% rate",
+   "pts": 0.8571428571428571,
+   "earned": 0.8571428571428571,
+   "pass": true,
+   "detail": "dp 100 rate 0 term 360 io false",
+   "source": "",
+   "disclosedOnly": true
+  },
+  {
+   "cat": "L6",
+   "id": "L6.1",
+   "name": "Value at month k = price x (1+g)^(k/12) (compound, months/12); after an improvement the appraisal replaces it and then compounds from completion (60 random)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "0 / 60 disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L6",
+   "id": "L6.2",
+   "name": "Living costs and manager pay inflate monthly-compounded by (1+inflation)^(t/12); job pay raises in whole years; income and costs share the same time base (nominal dollars, plan month t)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "true,true,true",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L6",
+   "id": "L6.3",
+   "name": "Default home appreciation (4%/yr; rent and costs grow with value) sits inside the observed range: FHFA purchase-only US HPI 1991-2026 grew 4.32%/yr, 20-year rolling windows 2.75%-4.38% (median 3.56%). The UI must state the FHFA figure, that rent and costs grow with value, and that dollars are nominal",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "home growth 4 vs FHFA 20y range 2.75-4.38; disclosed with FHFA figure: true",
+   "source": "S28",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L6",
+   "id": "L6.6",
+   "name": "Commercial growth defaults (4.5%/yr) are no higher than the best 20-year FHFA home-price window plus 0.25 pt, or the UI says commercial growth is an assumption with no fetched benchmark",
+   "pts": 0,
+   "earned": 0,
+   "pass": true,
+   "detail": "informational (weight 0): commercial growth 4.5%; no fetched commercial price index (NCREIF/CBRE blocked)",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L6",
+   "id": "L6.4",
+   "name": "Stress-test and totals use the same time base: category strip \"lasts\" costs are grown to the plan-end month like the income they offset (engine.stress exists and scales fixed costs by the growth factor)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "E.stress function",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L6",
+   "id": "L6.5",
+   "name": "Default business growth (7.5%/yr for 28 yrs) is above the long-run growth of the U.S. economy (~4% nominal); this must be disclosed as an assumption, not a forecast",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "max business growth 9%; glossary compares with economy growth: true",
+   "source": "",
+   "disclosedOnly": true
+  },
+  {
+   "cat": "L7",
+   "id": "L7.1",
+   "name": "Income tax estimate (estTaxPct) equals the 2026 single-filer reference: standard deduction $16,100, brackets 10% to 12,400 ... 37% over 640,600, Social Security 6.2% to $184,500, Medicare 1.45% (13 incomes)",
+   "pts": 2.5,
+   "earned": 2.5,
+   "pass": true,
+   "detail": "all match",
+   "source": "S1,S17",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L7",
+   "id": "L7.2",
+   "name": "Sale tax = max(0, sale price x (1 - selling cost) - original price - improvements) x sales-tax % (checked on 30 random sells)",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "0 / 30 disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L7",
+   "id": "L7.3",
+   "name": "Default sale-tax 25% sits in the federal range for a sale: 15-20% long-term capital gain + 3.8% NIIT (18.8-23.8%), unrecaptured depreciation up to 25%; text states these, and notes state tax",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "The tax owed on the profit from a sale. Profit on something held under a year is usually taxed like regular income. Longer-held gains are taxed federally at 15% or 20%, plus 3.8% for high earners, and",
+   "source": "S20,S21,S22",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L7",
+   "id": "L7.4",
+   "name": "Flat tax on portfolio income (default 20%) understates federal rates on large profits (32-37% over ~$200k, + 3.8% NIIT; IRS 2026 brackets): the glossary must say so",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "default 20%; says higher brackets: true",
+   "source": "S1,S22",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L7",
+   "id": "L7.5",
+   "name": "Depreciation (27.5 yrs residential, 39 yrs non-residential; IRS Pub. 946) is not modeled; the UI must say so (it lowers taxable income and creates recapture on sale)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "depreciation mentioned in both glossary entries: true",
+   "source": "S23,S24",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L7",
+   "id": "L7.6",
+   "name": "Selling-cost defaults (home 6%, commercial 5%, business 8%) are disclosed as typical ranges",
+   "pts": 0.5,
+   "earned": 0.5,
+   "pass": true,
+   "detail": "Agent or broker fees and closing costs when you sell. Homes are often 5% to 7%. Commercial properties and businesses var",
+   "source": "",
+   "disclosedOnly": true
+  },
+  {
+   "cat": "L8",
+   "id": "L8.1",
+   "name": "Business price multiples by size in the default plan: <$1.5M 2.0-3.8x, $1.5-5M 2.5-5.2x, >$5M 3.5-7x of owner profit (bench-business.json: BizBuySell avg ~2.6-2.7x SDE for small deals; larger deals higher; sources unverified, flagged)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "in band",
+   "source": "",
+   "disclosedOnly": true
+  },
+  {
+   "cat": "L8",
+   "id": "L8.2",
+   "name": "Manager cost for businesses you do not run = max(0, businesses held - run yourself) x monthly pay, inflated, only while the business is held and not sold or merged into another (random 30)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "0 disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L8",
+   "id": "L8.3",
+   "name": "Hours check: weekly hours = job hours (while the job runs) + min(run yourself, businesses held) x hours per business; flagged tight above 70 (random 30)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "0 / 30 disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L8",
+   "id": "L8.4",
+   "name": "Default plan: 28-year growth of 7.5%/yr per business is disclosed as an optimistic assumption in the UI, and the finance sim does not need outside capital",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "disclosed true, capital rows 0",
+   "source": "",
+   "disclosedOnly": true
+  },
+  {
+   "cat": "L8",
+   "id": "L8.5",
+   "name": "Sell / merge: sale proceeds = value x (1 - selling cost) - balance - liens - line draw; merge lift scales value and income by (1 + lift) from the merge month (random 20)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "0 disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.1",
+   "name": "Default plan: list order = buy order (owned first, then non-decreasing purchase months), every asset gets a purchase month inside the plan, no unfunded asset",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "0,0,0,15,26,28,42,46,56,74,92,110,128,146,164,182,200; verdict yes, lowest liquid cash $63302",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.2",
+   "name": "Combined portfolio total equals the sum of the rows at 12 months across the plan (net worth, value, debt, cash flow, payments)",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "0 months disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.3",
+   "name": "Funding chain: every credit-line funder closes the target exactly funder-purchase + months-to-line; the target buys at the earliest such month; no cycles",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "ok",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.4",
+   "name": "Cash recycling: sale proceeds go to cash, purchases use cash before outside money; cash never negative; outside draws only for the shortfall (random 25)",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "0 / 25 disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.5",
+   "name": "Stress test (\"lasts\"): the ~45% biggest earners fail (rent gone, fixed costs and loan payments still due), everything at plan-end values: re-derived independently on 30 random category sets, including that fixed costs have grown with the asset",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "0 / 30 disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L10",
+   "id": "L10.1",
+   "name": "Glossary numbers agree with sources: FHA 1.75% + 0.55% (HUD), Limited 203(k) $75,000 (ML 2024-13), SBA 7(a) $5M and 504 $5.5M (SBA.gov), DSCR 1.2/1.25 wording, 43% DTI wording",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "",
+   "source": "S2,S4,S6,S7",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L10",
+   "id": "L10.2",
+   "name": "The Assumptions page carries a \"how the numbers are built\" note: nominal dollars, rent and costs grow with value, payments are fixed, DTI excludes own housing, credit lines assume 85% cap, no depreciation, flat tax rates",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "model-notes block present: true",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L10",
+   "id": "L10.3",
+   "name": "Units and bases are stated (net worth definition says it is before selling costs/taxes and excludes personal savings): yearly inputs say \"/ yr\", monthly say \"/ mo\"; DTI limit, vacancy, management are percentages of the right base (vacancy and management of rent; repairs of value per year)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L10",
+   "id": "L10.4",
+   "name": "Preset notes that state a number or rule match LOANS fields (FHA/203(k)/SBA caps, owner-occupancy, interest-only) and the sellerb/sellerc notes say the share seller-financed is partial and negotiable",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "The seller finances part of the price. This preset has the seller carry 80%, which is aggressive; sellers usually carry 10% to 50%.",
+   "source": "",
+   "disclosedOnly": false
+  }
+ ],
+ "disclosedNotVerified": [
+  "L2.5",
+  "L2.7",
+  "L5.cashh",
+  "L5.sellerc",
+  "L5.sellerb",
+  "L5.cashb",
+  "L6.5",
+  "L7.6",
+  "L8.1",
+  "L8.4"
+ ]
+}

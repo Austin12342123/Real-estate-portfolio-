@@ -17,10 +17,10 @@
     { id: 'comm25', types: ['commercial'], name: 'Commercial bank, 25-year', dp: 25, rate: 7.25, term: 300, io: false, closing: 3, note: 'Typical bank loan on income property.' },
     { id: 'sba504', types: ['commercial'], name: 'SBA 504 (you operate in it)', dp: 10, rate: 6.75, term: 300, io: false, closing: 3.5, note: 'Low down payment. Needs owner-occupancy.' },
     { id: 'bridge', types: ['commercial'], name: 'Bridge loan, interest-only', dp: 30, rate: 9.5, term: 36, io: true, closing: 3, note: 'Payment covers interest only. Refinance at maturity.' },
-    { id: 'sellerc', types: ['commercial'], name: 'Seller financing', dp: 10, rate: 6.0, term: 240, io: false, closing: 2, note: 'Seller carries the loan. Terms vary.' },
+    { id: 'sellerc', types: ['commercial'], name: 'Seller financing', dp: 10, rate: 6.0, term: 240, io: false, closing: 2, note: 'Seller carries the loan. Terms vary, and sellers usually carry only part of the price.' },
     { id: 'sba7a', types: ['business'], name: 'SBA 7(a) loan (up to $5M)', dp: 10, rate: 9.75, term: 120, io: false, closing: 3, note: 'Common for buying a business. SBA caps 7(a) at $5M.' },
     { id: 'bankbiz', types: ['business'], name: 'Bank term loan', dp: 25, rate: 9.0, term: 84, io: false, closing: 2, note: 'Shorter term, bigger payment.' },
-    { id: 'sellerb', types: ['business'], name: 'Seller note', dp: 20, rate: 7.0, term: 60, io: false, closing: 1.5, note: 'The seller finances part of the price.' },
+    { id: 'sellerb', types: ['business'], name: 'Seller note', dp: 20, rate: 7.0, term: 60, io: false, closing: 1.5, note: 'The seller finances part of the price. This preset has the seller carry 80%, which is aggressive; sellers usually carry 10% to 50%.' },
     { id: 'cashb', types: ['business'], name: 'Cash purchase', dp: 100, rate: 0, term: 360, io: false, closing: 1.5, note: 'No loan.' }];
   const loansFor = (type) => LOANS.filter((l) => l.types.indexOf(type) >= 0);
   let uid = 0;
@@ -53,7 +53,7 @@
   const baseAmt = (h) => h.price + (h.finCapex ? Math.max(0, h.capex || 0) : 0);          /* price + a rehab financed in the same loan (203(k)) */
   const downAmt = (h) => (baseAmt(h) * h.dp) / 100;
   const loan = (h) => Math.max(0, baseAmt(h) - downAmt(h)) * (1 + (h.mipUp || 0) / 100);  /* upfront mortgage insurance is financed */
-  const mipMonthly = (h) => ((h.mipAnn || 0) > 0 ? (loan(h) * h.mipAnn) / 100 / 12 : 0);
+  const mipMonthly = (h) => ((h.mipAnn || 0) > 0 ? ((loan(h) / (1 + (h.mipUp || 0) / 100)) * h.mipAnn) / 100 / 12 : 0); /* annual MIP is on the loan WITHOUT the financed upfront premium (24 CFR 203.284) */
   const amort = (L, i, n) => (L <= 0 ? 0 : i ? (L * i) / (1 - Math.pow(1 + i, -n)) : L / n);
   const pmt = amort; /* kept for callers that back-solve a payoff */
   const payment = (h) => { const L = loan(h), i = mi(h); return L <= 0 ? 0 : h.io ? L * i : amort(L, i, h.term); };
@@ -82,14 +82,14 @@
     if (A <= i * B0 + 1e-9) return Infinity;
     return Math.ceil((i ? -Math.log(1 - (i * B0) / A) / Math.log(1 + i) : B0 / A) - 1e-7);
   }
-  /* months (from the asset's own start) until the cash for its target is there: borrowing room (cap*value - balance - other liens, after the appraisal cut)
+  /* months (from the asset's own start) until the cash for its target is there: borrowing room (cap * value * (1 - appraisal cut) - balance - other liens)
      plus the cash flow this asset has saved up (cfSaved x months) reaches the cash needed. o.noCash leaves the saved cash flow out (to show what it contributes). */
   function locMonths(S, h, X, o) {
     if (!H(S, h.target)) return Infinity;
     const D = need(S, h), B0 = balToday(h), i = mi(h), A = payment(h) + X, g = S.g, cs = o && o.noCash ? 0 : cfSaved(S, h);
     for (let k = 0; k <= 600; k++) {
-      const head = g.cap / 100 * valAt(S, h, k) - balK(B0, i, A, k) - (h.liens || 0);
-      if (Math.max(0, head) * (1 - g.haircut / 100) + cs * k >= D) return k;
+      const head = (g.cap / 100) * (1 - g.haircut / 100) * valAt(S, h, k) - balK(B0, i, A, k) - (h.liens || 0); /* the lender counts only (1 - cut) of the appraised value, then caps total debt at cap% of that */
+      if (Math.max(0, head) + cs * k >= D) return k;
     }
     return Infinity;
   }
@@ -111,19 +111,19 @@
     const down = downAmt(h), closingCost = (h.price * clPct(S, h)) / 100, mip = mipMonthly(h);
     return { cltvAtLoc, L, B0, P, mip, X, infeasible, egi, noi, cf: noi - P - mip, escrow, pitia: P + escrow + mip, payment: P + X + escrow + mip,
       D: Dn, cashDP, draw, cfSaved: cfSaved(S, h), down, closingCost, invested: down + closingCost, payoff: payoffN(h, X), locM: lm,
-      head0: Math.max(0, g.cap / 100 * h.price - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
+      head0: Math.max(0, (g.cap / 100) * (1 - g.haircut / 100) * h.price - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
       valueNow: valAt(S, h, 0), valueGain: +h.arv > 0 ? h.arv - h.price - (h.capex || 0) : 0, capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
   }
 
   /* ---------- personal finances: your jobs, savings and expenses ---------- */
   const samplePersonal = () => ({ cash: 45000, cashApy: 3, living: 3600, inflation: 3, emergencyMonths: 6, portfolioTaxPct: 20, salesTaxPct: 25, operating: 1, gmMonthly: 8000, bizHours: 20,
     jobs: [{ id: 'job1', name: 'Day job (salary)', kind: 'salary', gross: 96000, raise: 3, tax: 24, hours: 40, start: 0, end: null }], planned: [], capital: [] });
-  /* Rough U.S. single-filer estimate: federal income tax after a standard deduction, plus payroll tax. No state tax. It is only a starting point; the person can type their own rate. */
+  /* Rough U.S. single-filer estimate, tax year 2026 (IRS Rev. Proc. 2025-32: standard deduction $16,100, brackets below; IRS Pub. 15: Social Security 6.2% up to $184,500, Medicare 1.45%). No state tax, no 0.9% additional Medicare tax. It is only a starting point; the person can type their own rate. */
   function estTaxPct(gross) {
     if (!(gross > 0)) return 0;
-    const taxable = Math.max(0, gross - 15000), br = [[11925, 0.10], [48475, 0.12], [103350, 0.22], [197300, 0.24], [250525, 0.32], [626350, 0.35], [Infinity, 0.37]];
+    const taxable = Math.max(0, gross - 16100), br = [[12400, 0.10], [50400, 0.12], [105700, 0.22], [201775, 0.24], [256225, 0.32], [640600, 0.35], [Infinity, 0.37]];
     let fed = 0, lo = 0; for (const [hi, r] of br) { if (taxable > lo) fed += (Math.min(taxable, hi) - lo) * r; lo = hi; }
-    const fica = Math.min(gross, 176100) * 0.062 + gross * 0.0145;
+    const fica = Math.min(gross, 184500) * 0.062 + gross * 0.0145;
     return Math.round(((fed + fica) / gross) * 1000) / 10;
   }
   const num0 = (v, d) => (isFinite(+v) && v !== '' && v !== null ? +v : d);
@@ -145,6 +145,8 @@
   const taxPctFor = (j) => (j.tax === null || j.tax === undefined ? estTaxPct(j.gross) : j.tax);
   const jobsNet = (S, t) => (S.p ? S.p.jobs.reduce((a, j) => a + jobMonthly(j, t) * (1 - taxPctFor(j) / 100), 0) : 0);
 
+  /* FHA annual mortgage insurance is charged on the outstanding balance (HUD Handbook 4000.1: annual MIP on the average outstanding balance), so the monthly amount falls as the loan is paid down. The first-month figure (view().mip) is on the starting loan. */
+  const mipNow = (h, a) => ((h.mipAnn || 0) > 0 ? ((a.B / (1 + (h.mipUp || 0) / 100)) * h.mipAnn) / 100 / 12 : 0);
   /* The whole-portfolio plan: purchase months, sales, cash, month-by-month series, plan-level KPIs. */
   function plan(S) {
     const hs = S.houses, g = S.g, V = {};
@@ -188,7 +190,7 @@
       const fv = merged ? 1 + (h.exitLift || 0) / 100 : 1;
       const fi = (improved ? 1 + (h.liftIncome || 0) / 100 : 1) * (merged ? 1 + (h.exitLift || 0) / 100 : 1);
       const val = valAt(S, h, age) * fv, heloc = funds[h.id] && age >= v.locM ? v.draw : 0;
-      return { v, age, live, B, val, heloc, gfi: (h.price > 0 ? valK(S, h, age) / h.price : 1) * fi };
+      return { v, age, live, B, val, heloc, gfi: (h.price > 0 ? valK(S, h, age) / valK(S, h, 0) : 1) * fi }; /* income and costs grow from TODAY's entered rent: growth since the purchase (paid months) is already in today's rent */
     }
     const held = (h, t) => t < sellAt[h.id];
     const exits = {}; let cashBal = 0, outsideCum = 0; const dpCash = new Array(T + 1).fill(0);
@@ -210,7 +212,7 @@
       let incAdd = 0, debtAdd = 0;
       for (const h of hs) {
         if (!held(h, t)) continue; const a = st(h, t); if (!a) continue;
-        const { v } = a, hi = (a.heloc * g.hrate) / 1200, sched = a.live ? v.P + v.mip : 0, ex = a.live ? v.X : 0, rentG = h.rent * a.gfi;
+        const { v } = a, hi = (a.heloc * g.hrate) / 1200, sched = a.live ? v.P + mipNow(h, a) : 0, ex = a.live ? v.X : 0, rentG = h.rent * a.gfi;
         s.count[t]++; s.value[t] += a.val; s.debt[t] += a.B + (h.liens || 0) + a.heloc; s.nw[t] += a.val - a.B - (h.liens || 0) - a.heloc;
         s.noi[t] += v.noi * a.gfi; s.ds[t] += sched + hi; s.extra[t] += ex; s.rent[t] += rentG;
         s.monthly[t] += sched + ex + v.escrow + hi; s.dsti[t] += sched + v.escrow + hi;
@@ -226,7 +228,7 @@
       o.cltv = o.value ? (o.debt / o.value) * 100 : 0; o.dscr = o.ds ? o.noi / o.ds : 0; return o; };
     /* every asset's contribution to the portfolio totals at month t; the entries sum exactly to the series values */
     const assetsAt = (t) => { t = Math.min(T, Math.round(t)); const list = hs.map((h) => { if (!held(h, t)) return null; const a = st(h, t); if (!a) return null;
-      const v = a.v, hi = (a.heloc * g.hrate) / 1200, sched = a.live ? v.P + v.mip : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
+      const v = a.v, hi = (a.heloc * g.hrate) / 1200, sched = a.live ? v.P + mipNow(h, a) : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
       return { id: h.id, addr: h.addr, type: h.type || 'house', equity: a.val - a.B - (h.liens || 0) - a.heloc, value: a.val, debt: a.B + (h.liens || 0) + a.heloc,
         payment: sched + ex + v.escrow + hi, cf: inc - sched - hi, income: inc }; }).filter(Boolean);
       if (s.cash[t] > 0.5) list.push({ id: '__cash', addr: 'Cash from sales', type: 'cash', equity: s.cash[t], value: s.cash[t], debt: 0, payment: 0, cf: 0, income: 0 }); return list; };
@@ -238,6 +240,18 @@
       at, assetsAt, snap: assetsAt(Math.min(T, planM)), rows, funds, fundedByLOC, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id) };
   }
 
+
+  /* "Lasts" stress test for one category (rows = plan-end snapshot rows of that category): if about 45% of the assets (the biggest earners) stop earning, rent/profit is gone but the
+     fixed costs (tax, insurance, HOA) and the loan payments are still due. Everything is at plan-end values: the fixed costs grow with the asset exactly as its income does (income / today's NOI). */
+  function stress(S, pl, rows, cash) {
+    const income = rows.reduce((a, x) => a + x.income, 0), cf = rows.reduce((a, x) => a + x.cf, 0), worth = rows.reduce((a, x) => a + x.value, 0), ds = income - cf;
+    const costOf = (x) => { const h = H(S, x.id), v = pl.V[x.id]; if (!h || !v) return 0; const g = Math.abs(v.noi) > 1e-9 ? x.income / v.noi : 1; return ((+h.tax || 0) + (+h.ins || 0) + (+h.hoa || 0)) * g; };
+    const k = Math.max(1, Math.round(rows.length * 0.45)), lostOf = (x) => x.income + costOf(x), byLoss = rows.slice().sort((a, b) => lostOf(b) - lostOf(a));
+    const partial = cf - byLoss.slice(0, k).reduce((a, x) => a + lostOf(x), 0), allFail = -(ds + rows.reduce((a, x) => a + costOf(x), 0));
+    const useAll = partial >= 0, burn = useAll ? allFail : partial, c = Math.max(0, cash || 0);
+    return { income, cf, worth, ds, dscr: ds > 0.5 ? income / ds : null, k, partial, allFail, useAll, burn, months: burn >= -0.5 ? Infinity : c <= 0 ? 0 : c / -burn };
+  }
+
   /* Can you afford the plan? Rolls your personal cash forward month by month on top of the portfolio plan. */
   function finance(S, pl) {
     const p = S.p; if (!p) return null; pl = pl || plan(S);
@@ -246,7 +260,7 @@
     const R = { gm: N(T), hours: N(T), nBiz: N(T), income: N(T), portfolio: N(T), portTax: N(T), extra: N(T), living: N(T), debts: N(T), oneTime: N(T), capitalIn: N(T), outsideCall: N(T), saleTax: N(T), interest: N(T), net: N(T), liquid: N(T), total: N(T), reserve: N(T), burn: N(T), runway: N(T) };
     S.houses.forEach((h) => { const ex = pl.exits[h.id]; if (ex && ex.month <= T) { const gain = ex.price * (1 - (h.sellCost || 0) / 100) - h.price - (h.capex || 0); R.saleTax[ex.month] += (Math.max(0, gain) * (p.salesTaxPct || 0)) / 100; } });
     p.planned.forEach((x) => { if (x.month <= T) R.oneTime[x.month] += x.amount; }); p.capital.forEach((x) => { if (x.month <= T) R.capitalIn[x.month] += x.amount; });
-    S.houses.filter((h) => h.type === 'business').forEach((h) => { const a = pl.purchase[h.id], b = Math.min(T + 1, pl.sellAt[h.id]); if (isFinite(a)) for (let t = a; t < b && t <= T; t++) R.nBiz[t]++; });
+    S.houses.filter((h) => h.type === 'business').forEach((h) => { const a = pl.purchase[h.id], b = Math.min(T + 1, pl.sellAt[h.id], pl.mergeAt[h.id]); if (isFinite(a)) for (let t = a; t < b && t <= T; t++) R.nBiz[t]++; }); /* a business merged into another is one business afterwards: no second manager and no second set of hours */
     let liq = p.cash || 0;
     for (let t = 0; t <= T; t++) {
       const mgr = Math.max(0, R.nBiz[t] - (p.operating || 0)); R.gm[t] = mgr * (p.gmMonthly || 0) * Math.pow(1 + infl, t / 12);
@@ -414,28 +428,28 @@
     A('commercial', 'bridge', {id: 'river', addr: 'Riverside Flex Industrial', price: 14640000, rent: 148047, tax: 5307, ins: 4118, hoa: 2288, growth: 5, buyIn: 96, capex: 1200000, capexMonths: 12, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 160}),
     A('commercial', 'comm25', {id: 'west', addr: 'Westfield Office Park', price: 10065000, rent: 102480, tax: 3843, ins: 3020, hoa: 2196, growth: 5, buyIn: 120}),
     A('house', 'cashh', {id: 'stradella', addr: '900 Stradella Rd residence', price: 38731700, rent: 150000, tax: 35500, ins: 11000, growth: 3.5, buyIn: 200})] }); };
-  /* Default portfolio: smooth growth to about $125M of net worth. Purchases get bigger step by step (about 25% larger than the one before), financed with seller notes and financing, SBA 504 and 7(a), bridge, DSCR, bank loans and a credit-line chain. No partner or investor money: every down payment comes from loans listed here, sale proceeds, credit lines, your savings and the cash flow. */
-  const seedPlan = () => { const A = newAsset; const p = samplePersonal(); p.capital = []; return normalize({ g: Object.assign({}, GDEF, { otherDebt: 450, planYears: 28 }), p, houses: [
+  /* Default portfolio: smooth growth to about $125M of net worth (about $127M in this model). Purchases get bigger step by step (about 25% larger than the one before), financed with loans a lender would actually write: conventional and DSCR home loans, SBA 7(a) (never more than $5M outstanding at once), bank term loans and commercial loans at 60-75% loan-to-value so each loan's DSCR meets the lender minimum (1.15 SBA, 1.25 bank), and a credit-line chain. Business growth is 7.2%/yr (an optimistic assumption, see the Growth help). No partner or investor money: every down payment comes from loans listed here, sale proceeds, credit lines, your savings and the cash flow. */
+  const seedPlan = () => { const A = newAsset; const p = samplePersonal(); p.capital = []; return orderByBuy(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450, planYears: 28 }), p, houses: [
     A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4, target: 'birch'}),
     A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4, target: 'willow'}),
     A('business', 'sba7a', {id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 9}),
     A('house', 'conv30', {id: 'birch', addr: '908 Birchwood Ct', price: 195000, rent: 2000, tax: 220, ins: 90, growth: 4, capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8, exit: 'sell', exitMonth: 56}),
-    A('house', 'dscr', {id: 'willow', addr: '3350 Willow Bend Rd', price: 210000, rent: 2125, tax: 235, ins: 95, growth: 4, target: 'linden'}),
+    A('house', 'dscr', {id: 'willow', addr: '3350 Willow Bend Rd', price: 210000, rent: 2150, tax: 235, ins: 95, growth: 4, target: 'linden'}),
     A('house', 'conv30', {id: 'linden', addr: '2914 Linden Way', price: 175000, rent: 1825, tax: 195, ins: 85, growth: 4}),
-    A('business', 'sba7a', {id: 'cornerston', addr: 'Cornerstone Plumbing Co', price: 1200000, rent: 30300, growth: 7.5, buyIn: 28}),
-    A('commercial', 'sba504', {id: 'northgater', addr: 'Northgate Retail Strip', price: 1500000, rent: 13510, tax: 500, ins: 375, hoa: 250, growth: 4.5, buyIn: 42}),
-    A('business', 'sellerb', {id: 'summitfrei', addr: 'Summit Freight & Logistics', price: 1880000, rent: 47470, growth: 7.5, buyIn: 56}),
-    A('commercial', 'comm25', {id: 'harborstse', addr: 'Harbor St Self-Storage', price: 2355000, rent: 21210, tax: 785, ins: 590, hoa: 395, growth: 4.5, buyIn: 74, capex: 140000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 146}),
-    A('business', 'sba7a', {id: 'keystonehv', addr: 'Keystone HVAC Services', price: 2950000, rent: 58530, growth: 7.5, buyIn: 92}),
-    A('commercial', 'comm25', {id: 'lakeviewme', addr: 'Lakeview Medical Office', price: 3700000, rent: 31540, tax: 1235, ins: 925, hoa: 615, growth: 4.5, buyIn: 110}),
-    A('business', 'sellerb', {id: 'apexproper', addr: 'Apex Property Services', price: 4625000, rent: 91770, growth: 7.5, buyIn: 128, exit: 'sell', exitMonth: 224}),
-    A('commercial', 'bridge', {id: 'westfieldo', addr: 'Westfield Office Park', price: 5775000, rent: 49240, tax: 1925, ins: 1445, hoa: 965, growth: 4.5, buyIn: 146}),
-    A('business', 'bankbiz', {id: 'meridianst', addr: 'Meridian Staffing Group', price: 7250000, rent: 120830, growth: 7.5, buyIn: 164}),
-    A('commercial', 'sellerc', {id: 'eastgatesh', addr: 'Eastgate Shopping Plaza', price: 9075000, rent: 73890, tax: 3025, ins: 2270, hoa: 1515, growth: 4.5, buyIn: 182, capex: 545000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 254}),
-    A('business', 'sellerb', {id: 'ironwoodma', addr: 'Ironwood Manufacturing', price: 11350000, rent: 163070, growth: 7.5, buyIn: 200})] }); };
+    A('business', 'sba7a', {id: 'cornerston', addr: 'Cornerstone Plumbing Co', price: 1200000, rent: 30300, growth: 7.2, buyIn: 28}),
+    A('commercial', 'comm25', {id: 'northgater', dp: 35, addr: 'Northgate Retail Strip', price: 1500000, rent: 13510, tax: 500, ins: 375, hoa: 250, growth: 4.5, buyIn: 42}),
+    A('business', 'bankbiz', {id: 'summitfrei', addr: 'Summit Freight & Logistics', price: 1880000, rent: 47470, growth: 7.2, buyIn: 56}),
+    A('commercial', 'comm25', {id: 'harborstse', dp: 35, addr: 'Harbor St Self-Storage', price: 2355000, rent: 21210, tax: 785, ins: 590, hoa: 395, growth: 4.5, buyIn: 74, capex: 140000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 146}),
+    A('business', 'sba7a', {id: 'keystonehv', addr: 'Keystone HVAC Services', price: 2950000, rent: 58530, growth: 7.2, buyIn: 92}),
+    A('commercial', 'comm25', {id: 'lakeviewme', dp: 40, addr: 'Lakeview Medical Office', price: 3700000, rent: 31540, tax: 1235, ins: 925, hoa: 615, growth: 4.5, buyIn: 110}),
+    A('business', 'bankbiz', {id: 'apexproper', addr: 'Apex Property Services', price: 4625000, rent: 91770, growth: 7.2, buyIn: 128, exit: 'sell', exitMonth: 224}),
+    A('commercial', 'comm25', {id: 'westfieldo', dp: 40, addr: 'Westfield Office Park', price: 5775000, rent: 49240, tax: 1925, ins: 1445, hoa: 965, growth: 4.5, buyIn: 146}),
+    A('business', 'bankbiz', {id: 'meridianst', addr: 'Meridian Staffing Group', price: 7250000, rent: 120830, growth: 7.2, buyIn: 164}),
+    A('commercial', 'comm25', {id: 'eastgatesh', dp: 40, addr: 'Eastgate Shopping Plaza', price: 9075000, rent: 73890, tax: 3025, ins: 2270, hoa: 1515, growth: 4.5, buyIn: 182, capex: 545000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 254}),
+    A('business', 'bankbiz', {id: 'ironwoodma', dp: 35, addr: 'Ironwood Manufacturing', price: 11350000, rent: 163070, growth: 7.2, buyIn: 200})] })); };
   /* DEFAULT sample (listed in the order the assets are bought). Every loan, price, cap rate, multiple and growth rate is checked against
      the grader's benchmark file (prototype/grader). Homes cash flow positive. Recycles sale cash; needs about $1.3M of outside cash. */
-  const seed = () => { const A = newAsset; return normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: samplePersonal(), houses: [
+  const seed = () => { const A = newAsset; return normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: Object.assign(samplePersonal(), { cash: 70000 }), houses: [
     A('house', undefined, { id: 'maple', status: 'owned', extra: 600, paid: 18, target: 'birch', growth: 3.5, loanId: 'custom', rate: 6.5, addr: '1412 Maple Ridge Dr', price: 185000, rent: 1900, tax: 215, ins: 90 }),
     A('house', undefined, { id: 'cedar', status: 'owned', extra: 400, paid: 30, target: 'willow', growth: 3.5, loanId: 'custom', rate: 6.75, addr: '2207 Cedar Hollow Ln', price: 165000, rent: 1750, tax: 180, ins: 85 }),
     A('business', undefined, { id: 'auto', status: 'owned', paid: 12, growth: 5, loanId: 'custom', rate: 9.5, addr: 'Precision Auto Care', price: 1100000, rent: 33950 }),
@@ -481,6 +495,6 @@
     const cur = slots.map((i) => S.houses[i].id); if (cur.join() === ids.join()) return false;
     const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); relink(S); return true;
   }
-  const E = { seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

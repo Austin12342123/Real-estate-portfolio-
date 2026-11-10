@@ -277,7 +277,7 @@ exports.run = async function run(X) {
         const eq0 = E.plan(mk(0)).snap, S1 = mk(20000); S1.houses[0].exit = 'hold'; const S0b = mk(0); S0b.houses[0].exit = 'hold'; const q1 = E.plan(S1).snap[0], q0 = E.plan(S0b).snap[0];
         P.t(Math.abs((q0.equity - q1.equity) - 20000) < 0.01, 'Equity and net worth: "what it is worth minus what you owe" - a $20,000 lien lowers equity by $20,000', 1, q0.equity - q1.equity); }
       { const vf = E.view(mkS({ closing: 0 }, [E.newAsset('house', 'fha', { id: 'f', price: 200000, status: 'planned' })]), E.newAsset('house', 'fha', { id: 'f', price: 200000, status: 'planned' })); const S = mkS({ closing: 0 }, [E.newAsset('house', 'fha', { id: 'f', price: 200000, status: 'planned' })]), h = S.houses[0], v = E.view(S, h);
-        P.t(Math.abs(v.L - 200000 * 0.965 * 1.0175) < 0.5 && v.mip > 0 && Math.abs(v.mip - v.L * 0.0055 / 12) < 0.01, 'Loan amount and MIP: FHA loan = price - 3.5% down + 1.75% added to the loan; 0.55% a year is paid monthly', 1.2, v.L + ' / ' + v.mip); }
+        P.t(Math.abs(v.L - 200000 * 0.965 * 1.0175) < 0.5 && v.mip > 0 && Math.abs(v.mip - v.L / 1.0175 * 0.0055 / 12) < 0.01, 'Loan amount and MIP: FHA loan = price - 3.5% down + 1.75% added to the loan; 0.55% a year of the loan without the added premium is paid monthly (24 CFR 203.284)', 1.2, v.L + ' / ' + v.mip); }
       { const S = mkS({}, [E.newAsset('house', 'conv30', { id: 'g', price: 200000, capex: 20000, arv: 260000, status: 'planned' })]); const v = E.view(S, S.houses[0]);
         P.t(Math.abs(v.valueGain - (260000 - 200000 - 20000)) < 0.01 && /minus \(price \+ repair cost\)/.test(INFO.gain.b), 'Value gained = new appraisal - (price + repair cost)', 0.7, v.valueGain); }
       { const hh = E.newAsset('house', 'conv30', { id: 'd', price: 250000, dp: 20, status: 'planned' }); const S = mkS({}, [hh]); const v = E.view(S, S.houses[0]);
@@ -426,13 +426,13 @@ exports.run = async function run(X) {
       return P; });
 
   /* ================================================================ H8 automatic tax estimate */
-  await hcheck('H8', 'Automatic tax estimate: matches an independent 2025 single-filer calculation (federal after standard deduction + Social Security + Medicare, no state tax), is monotone and bounded', 6,
+  await hcheck('H8', 'Automatic tax estimate: matches an independent 2026 single-filer calculation (IRS Rev. Proc. 2025-32, Pub. 15) (federal after standard deduction + Social Security + Medicare, no state tax), is monotone and bounded', 6,
     'node: E.estTaxPct against a separate implementation and properties', async () => {
       const P = new Parts();
       /* independent: marginal-rate table written as (threshold, rate-increase) pairs, summed */
-      const ref = (g) => { if (!(g > 0)) return 0; const t = Math.max(0, g - 15000); const steps = [[0, 0.10], [11925, 0.02], [48475, 0.10], [103350, 0.02], [197300, 0.08], [250525, 0.03], [626350, 0.02]]; let fed = 0; steps.forEach(([th, up], i) => { if (t > th) fed += (t - th) * up; });
-        const ss = Math.min(g, 176100) * 0.062, med = g * 0.0145; return Math.round((fed + ss + med) / g * 1000) / 10; };
-      const grid = [1, 5000, 10000, 15000, 18750, 25000, 30000, 36000, 50000, 75000, 96000, 120000, 176100, 200000, 250000, 400000, 626350, 1000000]; const diffs = grid.map((g) => [g, E.estTaxPct(g), ref(g)]).filter(([, a, b]) => Math.abs(a - b) > 0.051);
+      const ref = (g) => { if (!(g > 0)) return 0; const t = Math.max(0, g - 16100); const steps = [[0, 0.10], [12400, 0.02], [50400, 0.10], [105700, 0.02], [201775, 0.08], [256225, 0.03], [640600, 0.02]]; let fed = 0; steps.forEach(([th, up], i) => { if (t > th) fed += (t - th) * up; });
+        const ss = Math.min(g, 184500) * 0.062, med = g * 0.0145; return Math.round((fed + ss + med) / g * 1000) / 10; };
+      const grid = [1, 5000, 10000, 15000, 18750, 25000, 30000, 36000, 50000, 75000, 96000, 120000, 184500, 200000, 256225, 400000, 640600, 1000000]; const diffs = grid.map((g) => [g, E.estTaxPct(g), ref(g)]).filter(([, a, b]) => Math.abs(a - b) > 0.051);
       P.t(diffs.length === 0, 'rate equals the independent calculation at 18 incomes from $1 to $1M (within 0.05 points)', 2, JSON.stringify(diffs.slice(0, 3)));
       P.t(E.estTaxPct(0) === 0 && E.estTaxPct(-5) === 0 && E.estTaxPct(NaN) === 0 && E.estTaxPct(undefined) === 0, 'no income (zero, negative, NaN) -> 0%, never NaN', 0.5);
       let mono = true, bad = ''; let prev = -1; for (let g = 0; g <= 800000; g += 2500) { const r = E.estTaxPct(g); if (r + 1e-9 < prev) { mono = false; bad = g + ': ' + r + ' < ' + prev; } prev = r; }

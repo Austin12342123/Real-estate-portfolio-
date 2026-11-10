@@ -1,6 +1,6 @@
 {
   "sync": {
-    "earned": 97.38,
+    "earned": 96.7,
     "max": 100,
     "checks": [
       {
@@ -8,9 +8,9 @@
         "category": "G",
         "name": "Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine)",
         "points": 14,
-        "earned": 13.82,
-        "ratio": 0.9868421052631579,
-        "detail": "41/42 sub-checks pass. FAIL: rows are ordered by purchase month (2/26 ok) [sample: maple,cedar,birch,willow,linden,harbor,lake,auto,keystone,freight,ridge,north,syc,elm vs maple,cedar,auto,ridge,north,birch,syc,willow,keystone,elm,harbor,freight,linden,lake || rand#1: r1,r2,r0,r4,r3 vs r0,r1,r3,r2,r4 || rand#2: r1,r2,r3,r5,r4,r0 vs r0,r1,r4,r2,r3,r5]",
+        "earned": 14,
+        "ratio": 1,
+        "detail": "42/42 sub-checks pass",
         "repro": "Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)",
         "seconds": 0.4
       },
@@ -19,22 +19,22 @@
         "category": "G",
         "name": "Asset page <-> Portfolio sync (share line, hero, impact, edits propagate)",
         "points": 14,
-        "earned": 13.89,
-        "ratio": 0.9919614147909968,
-        "detail": "73/74 sub-checks pass. FAIL: rows are ordered by purchase month (0/39 ok) [sample after maple.rent=2600: maple,cedar,birch,willow,linden,harbor,lake,auto,keystone,freight,ridge,north,syc,elm vs maple,cedar,auto,ridge,birch,north,syc,willow,keystone,elm,harbor,freight,linden,lake || sample after maple.extra=900: maple,cedar,birch,willow,linden,harbor,lake,auto,keystone,freight,ridge,north,syc,elm vs maple,cedar,auto,ridge,birch,north,syc,willow,keystone,elm,harbor,freight,linden,lake || sample after cedar.price=190000: maple,cedar,birch,willow,linden,harbor,lake,auto,keystone,freight,ridge,north,syc,elm vs maple,cedar,auto,ridge,birch,north,syc,willow,keystone,elm,harbor,freight,linden,lake]",
+        "earned": 14,
+        "ratio": 1,
+        "detail": "74/74 sub-checks pass",
         "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
-        "seconds": 7.5
+        "seconds": 6.9
       },
       {
         "id": "G3",
         "category": "G",
         "name": "Portfolio <-> Finances sync (cash flow, funding, extra scope, verdict, edge cases)",
         "points": 14,
-        "earned": 14,
-        "ratio": 1,
-        "detail": "35/35 sub-checks pass",
+        "earned": 12.59,
+        "ratio": 0.898989898989899,
+        "detail": "32/35 sub-checks pass. FAIL: funding-line amount = outside-cash warning on Portfolio (0/40 ok) [sample: null vs $1,329,240 || rand#1: null vs $110,100 || rand#2: null vs $137,940]; funding-line amount = engine outside total (0/40 ok) [sample: null vs $1,329,240 || rand#1: null vs $110,100 || rand#2: null vs $137,940]; funding-line \"partners cover\" = min(outside, capital lined up) (2/40 ok) [sample: Down payments beyond sale proceeds and credit lines total $1,329,240 over the plan. All of it comes out of your savings and monthly income. || rand#1: Down payments beyond sale proceeds and credit lines total $110,100 over the plan. All of it comes out of your savings and monthly income. || rand#2: Down payments beyond sale proceeds and credit lines total $137,940 over the plan. All of it comes out of your savings and monthly income.]",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 3.5
+        "seconds": 2.9
       },
       {
         "id": "G4",
@@ -45,7 +45,7 @@
         "ratio": 1,
         "detail": "35/35 sub-checks pass",
         "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, wait, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status, target); every dependent field is re-derived independently after each edit",
-        "seconds": 41.2
+        "seconds": 38.8
       },
       {
         "id": "G5",
@@ -63,20 +63,20 @@
         "category": "G",
         "name": "Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light)",
         "points": 12,
-        "earned": 9.71,
-        "ratio": 0.8089171974522293,
-        "detail": "10/12 sub-checks pass. FAIL: after reload the Portfolio numbers still equal the engine (0/2 ok) [rows are ordered by purchase month: sample after reload: maple,cedar,birch,willow,linden,harbor,lake,auto,keystone,freight,ridge,north,syc,elm vs maple,cedar,auto,ridge,north,birch,syc,willow,keystone,elm,harbor,freight,linden,lake || rows are ordered by purchase month: random after reload: r0,r6,r5,r3,r1,r2,r4 vs r0,r1,r2,r5,r4,r6,r3]; after the v8 migration every Portfolio/Finances number equals the engine and each other (0/1 ok) [rows are ordered by purchase month: v8: maple,cedar,birch,willow,linden,harbor,lake,auto,keystone,freight,ridge,north,syc,elm vs maple,cedar,auto,ridge,north,birch,syc,willow,keystone,elm,harbor,freight,linden,lake]",
+        "earned": 10.47,
+        "ratio": 0.8726114649681529,
+        "detail": "11/12 sub-checks pass. FAIL: after the v8 migration every Portfolio/Finances number equals the engine and each other (0/1 ok) [funding-line amount = outside-cash warning on Portfolio: v8: null vs $1,329,240 | funding-line amount = engine outside total: v8: null vs $1,329,240]",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 10.1
+        "seconds": 10
       },
       {
         "id": "G7",
         "category": "G",
         "name": "Shared settings (g.* and p.*) propagate to every dependent display",
         "points": 10,
-        "earned": 9.96,
-        "ratio": 0.9955436720142603,
-        "detail": "146/147 sub-checks pass. FAIL: rows are ordered by purchase month (0/25 ok) [after g.cap=70: a,b,c,d vs a,d,c,b || after g.dti=25: a,b,c,d vs a,d,c,b || after g.closing=5: a,b,c,d vs a,d,c,b]",
+        "earned": 9.64,
+        "ratio": 0.96386630532972,
+        "detail": "141/145 sub-checks pass. FAIL: funding-line amount = outside-cash warning on Portfolio (0/25 ok) [after g.cap=70: null vs $317,000 || after g.dti=25: null vs $317,000 || after g.closing=5: null vs $345,000]; funding-line amount = engine outside total (0/25 ok) [after g.cap=70: null vs $317,000 || after g.dti=25: null vs $317,000 || after g.closing=5: null vs $345,000]; funding-line \"partners cover\" = min(outside, capital lined up) (0/25 ok) [after g.cap=70: Down payments beyond sale proceeds and credit lines total $317,000 over the plan. All of it comes out of your savings and monthly income. || after g.dti=25: Down payments beyond sale proceeds and credit lines total $317,000 over the plan. All of it comes out of your savings and monthly income. || after g.closing=5: Down payments beyond sale proceeds and credit lines total $345,000 over the plan. All of it comes out of your savings and monthly income.]; cap edit moves the credit-line date on the Portfolio row = engine (0/1 ok) [ vs 88]",
         "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
         "seconds": 6.7
       },

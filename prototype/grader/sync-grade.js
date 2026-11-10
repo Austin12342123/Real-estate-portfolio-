@@ -53,7 +53,7 @@ exports.run = async function run(X) {
     const down = (h) => base(h) * h.dp / 100;
     const loan = (h) => Math.max(0, base(h) - down(h)) * (1 + (h.mipUp || 0) / 100);
     const pay = (h) => { const L = loan(h); if (L <= 0) return 0; const i = h.rate / 1200; return h.io ? L * i : (i ? L * i / (1 - Math.pow(1 + i, -h.term)) : L / h.term); };
-    const mip = (h) => ((h.mipAnn || 0) > 0 ? loan(h) * h.mipAnn / 100 / 12 : 0);
+    const mip = (h) => ((h.mipAnn || 0) > 0 ? loan(h) / (1 + (h.mipUp || 0) / 100) * h.mipAnn / 100 / 12 : 0);
     const age0 = (h) => (h.status === 'owned' ? Math.max(0, h.paid || 0) : 0);
     const bal0 = (h) => { let b = loan(h); if (h.io) return b; const i = h.rate / 1200, P = pay(h); for (let k = 0; k < age0(h); k++) b = Math.max(0, b * (1 + i) - P); return b; };
     const val = (S, h, k) => { const cm = Math.max(0, h.capexMonths || 0); return +h.arv > 0 && k >= cm ? h.arv * Math.pow(1 + gr(S, h) / 100, (k - cm) / 12) : h.price * Math.pow(1 + gr(S, h) / 100, (age0(h) + k) / 12); };
@@ -62,7 +62,7 @@ exports.run = async function run(X) {
     const need = (S, h) => { const t = tgt(S, h); return t ? down(t) + t.price * cl(S, t) / 100 : 0; };
     const payoff = (h, X) => { let b = bal0(h); if (b <= 0.005) return 0; const i = h.rate / 1200, A = pay(h) + X; if (A <= i * b + 1e-9) return Infinity; for (let n = 1; n <= 2400; n++) { b = b * (1 + i) - A; if (b < 0.005 || b <= 1e-7) return n; } return Infinity; };
     const loc = (S, h, X) => { if (!tgt(S, h)) return Infinity; const D = need(S, h), i = h.rate / 1200, A = pay(h) + X, cs = Math.max(0, cfv(S, h)); let b = bal0(h);
-      for (let k = 0; k <= 600; k++) { const head = S.g.cap / 100 * val(S, h, k) - b - (h.liens || 0); if (Math.max(0, head) * (1 - S.g.haircut / 100) + cs * k >= D) return k; b = Math.max(0, b * (1 + i) - A); } return Infinity; };
+      for (let k = 0; k <= 600; k++) { const head = S.g.cap / 100 * (1 - S.g.haircut / 100) * val(S, h, k) - b - (h.liens || 0); if (Math.max(0, head) + cs * k >= D) return k; /* appraisal cut off the value (logic audit L3.1) */ b = Math.max(0, b * (1 + i) - A); } return Infinity; };
     const noi = (S, h) => { if (h.type === 'business') return h.rent; const egi = h.rent * (1 - S.g.vac / 100); return egi - (h.tax + h.ins + h.hoa + S.g.maint / 100 * h.price / 12 + S.g.mgmt / 100 * egi); };
     const cf = (S, h) => noi(S, h) - pay(h) - mip(h), cfv = cf;
     const escrow = (h) => (h.type === 'business' ? 0 : h.tax + h.ins + h.hoa);
