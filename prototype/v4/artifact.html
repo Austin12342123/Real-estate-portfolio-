@@ -1170,13 +1170,18 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     };
     const isSold = (h) => !!(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM);
     /* The wait line under each row. Every asset after the first in the list is funded by the trust: the pooled cash flow and borrowing room of everything before it. */
+    const bnoLate = () => bno;
     const waitOf = (h) => {
       const first = S.houses[0] === h, buy = pl.purchase[h.id], tr = pl.trust[h.id];
-      if (h.status === 'owned') return first ? null : { text: 'In the trust today · its borrowing room and cash flow fund the assets below it' };
+      /* time frame from the asset before it in the list: months between the two purchases (owned assets were bought 'paid' months ago) */
+      const at = (x) => (x.status === 'owned' ? -(+x.paid || 0) : pl.purchase[x.id]), ix = S.houses.indexOf(h), pv = ix > 0 ? S.houses[ix - 1] : null, pvNo = pv ? bnoLate()[pv.id] : 0;
+      const gap = pv && isFinite(at(h)) && isFinite(at(pv)) ? Math.round(at(h) - at(pv)) : null;
+      const after = gap === null ? '' : gap === 0 ? `bought the same month as #${pvNo} (${esc(pv.addr)}) · ` : gap > 0 ? `${gap} mo after #${pvNo} (${esc(pv.addr)}) was bought · ` : `bought ${mm(-gap)} before #${pvNo} · `;
+      if (h.status === 'owned') return first ? null : { text: `${after}In the trust today · its borrowing room and cash flow fund the assets below it` };
       if (!isFinite(buy)) return { text: first ? 'Not bought: no month works' : `Not funded: all ${S.houses.indexOf(h)} earlier assets cannot pay its ${$f(E.needFor(S, h))} in 50 years` };
       if (!tr || !tr.pooled) return first ? { text: `Bought in ${mm(buy)} with cash on hand` } : { text: `Bought in ${mm(buy)} with cash on hand · nothing earlier in the list to fund it` };
       const when = buy <= 0 ? 'now' : 'in ' + mm(buy), held = tr.ready < buy ? ` · held until your set month ${mm(Math.max(0, Math.round(h.buyIn || 0)))}` : '';
-      return { text: `Funded ${when} by the trust: all earlier assets (cash flow ${$f(tr.cf)}/mo + borrowing room ${$f(tr.room)}) · pool of ${tr.n} assets${held}` };
+      return { text: `${after}Funded ${when} by the trust: all earlier assets (cash flow ${$f(tr.cf)}/mo + borrowing room ${$f(tr.room)}) · pool of ${tr.n} assets${held}` };
     };
     const bno = buyOrder(pl);
     const rowOf = (h, vis, ci) => {

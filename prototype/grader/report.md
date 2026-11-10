@@ -1,12 +1,12 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-10T21:28:12.732Z  |  250s
+Target: `prototype/v4`  |  Run: 2026-11-10T21:32:32.592Z  |  244s
 
-## Automated score: **84.74 / 84.99900000000001** (a separate design review adds 15)
+## Automated score: **84.94 / 84.99900000000001** (a separate design review adds 15)
 
 | Category | Score |
 |---|---|
-| A. Requirement / propagation | 17.81 / 18.00 |
+| A. Requirement / propagation | 18.00 / 18.00 |
 | B. Engine correctness | 12.00 / 12.00 |
 | C. UX conciseness & usability | 9.94 / 10.00 |
 | D. PWA / local-first | 8.00 / 8.00 |
@@ -22,7 +22,7 @@ Target: `prototype/v4`  |  Run: 2026-11-10T21:28:12.732Z  |  250s
 | A03 | Edit matrix: every input (43 edits incl. improvements/exit/loan/assumptions) moves the main-page KPIs exactly as the engine says | 2.92 | 2.92 | 44/44 sub-checks pass |
 | A04 | Two-way back-solves: payoff->extra, down$->%, and main page follows | 1.46 | 1.46 | 6/6 sub-checks pass |
 | A05 | Remove from the MAIN page: Edit mode, confirm, Undo, totals update; removing a funding source leaves the target listed | 1.95 | 1.95 | 10/10 sub-checks pass |
-| A06 | Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has | 0.73 | 0.54 | 5/6 sub-checks pass. FAIL: the very first asset in the list shows no wait line; every later asset shows one (Funded in N mo by the trust / Owned today / Bought in / Not funded) [first:  later without: ] |
+| A06 | Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has | 0.73 | 0.73 | 6/6 sub-checks pass |
 | A07 | No "Today" / "20 years" view toggle anywhere (single portfolio snapshot) | 0.49 | 0.49 | 3/3 sub-checks pass |
 | A08 | Homes cannot cash-flow negative: warning on the asset page and on the main page; clears when fixed; not shown for non-homes | 1.22 | 1.22 | 7/7 sub-checks pass |
 | A09 | Per-row numbers sum to the portfolio headline (cash flow, monthly payments, net worth) on the sample, and match the engine | 1.46 | 1.46 | 7/7 sub-checks pass |
@@ -42,7 +42,7 @@ Target: `prototype/v4`  |  Run: 2026-11-10T21:28:12.732Z  |  250s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 6.7ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 6.5ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.48 | 0.48 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |
@@ -92,10 +92,7 @@ Target: `prototype/v4`  |  Run: 2026-11-10T21:28:12.732Z  |  250s
 
 ## Top failures
 
-1. **A06 Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has** (-0.19)
-   - Detail: 5/6 sub-checks pass. FAIL: the very first asset in the list shows no wait line; every later asset shows one (Funded in N mo by the trust / Owned today / Bought in / Not funded) [first:  later without: ]
-   - Reproduce: Main ledger on the default plan and on a small state
-2. **C04 Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)** (-0.06)
+1. **C04 Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)** (-0.06)
    - Detail: 181/187 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32
    - Reproduce: Measure interactive elements on main/asset/assumptions/add
 
