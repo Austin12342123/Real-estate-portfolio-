@@ -146,14 +146,15 @@
       /* time frame from the asset before it in the list: months between the two purchases (owned assets were bought 'paid' months ago) */
       const at = (x) => (x.status === 'owned' ? -(+x.paid || 0) : pl.purchase[x.id]), ix = S.houses.indexOf(h), pv = ix > 0 ? S.houses[ix - 1] : null, pvNo = pv ? bnoLate()[pv.id] : 0;
       const gap = pv && isFinite(at(h)) && isFinite(at(pv)) ? Math.round(at(h) - at(pv)) : null;
-      const after = gap === null ? '' : gap === 0 ? `bought the same month as #${pvNo} (${esc(pv.addr)}) · ` : gap > 0 ? `${gap} mo after #${pvNo} (${esc(pv.addr)}) was bought · ` : `bought ${mm(-gap)} before #${pvNo} · `;
-      if (h.status === 'owned') return first ? null : { text: `${after}In the trust today · its borrowing room and cash flow fund the assets below it` };
+      const after = gap === null ? '' : gap === 0 ? `bought the same month as #${pvNo} · ` : gap > 0 ? `${gap} mo after #${pvNo} · ` : `bought ${mm(-gap)} before #${pvNo} · `;
+      if (h.status === 'owned') return first ? null : { text: `${after}In the trust · funds the assets below it` };
       if (!isFinite(buy)) return { text: first ? 'Not bought: no month works' : `Not funded: all ${S.houses.indexOf(h)} earlier assets cannot pay its ${$f(E.needFor(S, h))} in 50 years` };
       if (!tr || !tr.pooled) return first ? { text: `Bought in ${mm(buy)} with cash on hand` } : { text: `Bought in ${mm(buy)} with cash on hand · nothing earlier in the list to fund it` };
       const when = buy <= 0 ? 'now' : 'in ' + mm(buy), held = tr.ready < buy ? ` · held until your set month ${mm(Math.max(0, Math.round(h.buyIn || 0)))}` : '';
-      return { text: `${after}Funded ${when} by the trust: all earlier assets (cash flow ${$f(tr.cf)}/mo + borrowing room ${$f(tr.room)}) · pool of ${tr.n} assets${held}` };
+      return { text: `${after}Funded ${when} by the trust: cash flow ${$f(tr.cf)}/mo + borrowing room ${$f(tr.room)} · pool of ${tr.n} assets${held}` };
     };
     const bno = buyOrder(pl);
+    const endYr = Math.round(pl.planM / 12); /* the row shows cash flow at the end of the plan, and the asset's own cash flow on today's terms */
     const rowOf = (h, vis, ci) => {
       const v = pl.V[h.id], type = h.type || 'house', sel = selId === h.id;
       const exitTxt = h.exit === 'sell' && isFinite(pl.sellAt[h.id]) ? `sells in ${mm(pl.sellAt[h.id])}` : h.exit === 'merge' && isFinite(pl.mergeAt[h.id]) ? `merges${H(h.mergeInto) ? ' into ' + esc(H(h.mergeInto).addr) : ''} in ${mm(pl.mergeAt[h.id])}` : '';
@@ -161,7 +162,7 @@
       const loses = type === 'house' && v.cf < 0 ? '<span class="hi">loses money at today\'s terms</span>' : '';
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
       return `<div class="rw" data-rw="${h.id}"><div class="row${soldBy ? ' sold' : ''}${sel ? ' sel' : ''}" data-row="${h.id}" data-testid="ledger-row"${soldBy ? ' data-nodrag' : ''}><div class="r1"><span class="nm"><button type="button" class="addrbtn" aria-expanded="${sel}" data-testid="row-toggle"><span class="addr" data-go="h/${h.id}" data-testid="row-edit" title="Edit ${esc(h.addr)}"><b class="bn" data-testid="buy-no" aria-label="Buy number ${bno[h.id]}">${bno[h.id]}</b>${esc(h.addr)} <i class="ed" aria-hidden="true">edit ›</i></span><span class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}">${soldBy ? 'sold' : sp ? (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : v.payment > 0.5 ? 'paid off by then' : 'no loan') + ' · equity ' + $k(sp.equity) : 'not in the totals yet'} ${hi}${loses}</span>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<span class="exitline">${parts.join(' · ')}</span>` : ''; })()}</button></span>
-        <span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy ? '+' + $c(pl.exits[h.id].proceeds) : !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'cash from sale' : !sp ? 'not counted' : 'cash flow'}</small></span></div>
+        <span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="Cash flow = income minus expenses and loan payments, before extra payments. Big number: at the end of the plan (rent has grown, loans may be paid off). Small: today, on the asset's own terms."><b data-k="cf-${h.id}">${soldBy ? '+' + $c(pl.exits[h.id].proceeds) : !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'cash from sale' : !sp ? 'not counted' : `year ${endYr} · now ${$s(pl.V[h.id].cf)}`}</small></span></div>
         <div class="r2"><div class="fcol">${(() => { const w = waitOf(h); return w ? `<span class="locline" data-testid="dp-line">${w.text}</span>` : ''; })()}</div>${soldBy ? '' : `<button type="button" class="xtog" data-panel="${h.id}" aria-expanded="${sel}" data-testid="row-extra-toggle" aria-label="Extra payment">Extra ${sel ? '▴' : '▾'}</button>`}</div></div>${sel ? panelOf(h, soldBy, vis, ci) : ''}</div>`; };
     const NOUN = { house: ['home', 'homes'], commercial: ['commercial property', 'commercial properties'], business: ['business', 'businesses'] }, ADD = { house: 'home', commercial: 'commercial property', business: 'business' };
     const empty = !S.houses.length;
