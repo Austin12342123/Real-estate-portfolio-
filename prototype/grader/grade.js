@@ -76,7 +76,7 @@ const INIT = () => {
 /* Sections are collapsed by default (see EXPAND_JS below). The A-G graders need every field reachable, so they run with this observer that opens
    any collapsed section as soon as it renders, exactly like a user tapping the header. Category H runs without it (autoExpand: false). */
 const AUTO_EXPAND = () => {
-  const open = () => { try { const b = [...document.querySelectorAll('#app [data-coll][aria-expanded=false]')].filter((e) => e.dataset.coll !== 'drivers')[0]; if (b && !window.__noExpand) b.click(); } catch (e) {} };
+  const open = () => { try { const b = [...document.querySelectorAll('#app [data-coll][aria-expanded=false]')].filter((e) => e.dataset.coll !== 'drivers' && e.dataset.coll !== 'tgt')[0]; if (b && !window.__noExpand) b.click(); } catch (e) {} };
   let q = false; const go = () => { if (q) return; q = true; setTimeout(() => { q = false; open(); }, 0); };
   const start = () => { const a = document.getElementById('app'); if (!a) return setTimeout(start, 5); new MutationObserver(go).observe(a, { childList: true, subtree: true }); go(); };
   start();
@@ -100,7 +100,7 @@ let rn = 0;
 /* Sections are collapsed by default (Asset: loan/rent/loc/exit/impact; Assumptions: backup/samples; Finances: tax/time; job 'More details').
    The graders reach every field the way a user would after tapping a section header, so open every collapsed section on the current page.
    (Category H and C07 test the collapsed defaults themselves with expand:false.) */
-const EXPAND_JS = () => { let n = 0; for (let i = 0; i < 30; i++) { const b = [...document.querySelectorAll('#app [data-coll][aria-expanded=false]')].filter((e) => e.dataset.coll !== 'drivers')[0]; if (!b) break; b.click(); n++; } return n; };
+const EXPAND_JS = () => { let n = 0; for (let i = 0; i < 30; i++) { const b = [...document.querySelectorAll('#app [data-coll][aria-expanded=false]')].filter((e) => e.dataset.coll !== 'drivers' && e.dataset.coll !== 'tgt')[0]; if (!b) break; b.click(); n++; } return n; };
 async function expandAll(page) { try { await page.evaluate(EXPAND_JS); } catch (e) {} }
 async function reset(page, hash) {
   await page.goto(BASE + '/index.html?r=' + rn++);

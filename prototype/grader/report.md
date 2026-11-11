@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-11T03:46:59.860Z  |  256s
+Target: `prototype/v4`  |  Run: 2026-11-11T03:51:21.446Z  |  252s
 
 ## Automated score: **83.39 / 84.99900000000001** (a separate design review adds 15)
 
@@ -42,7 +42,7 @@ Target: `prototype/v4`  |  Run: 2026-11-11T03:46:59.860Z  |  256s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 8.0ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 10.7ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.48 | 0.48 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |

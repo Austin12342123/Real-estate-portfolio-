@@ -92,7 +92,7 @@ exports.run = async function run(X) {
     await page.evaluate(async ([h, ex]) => { const cur = location.hash; if (cur === h || (h === '#' && cur === '')) window.dispatchEvent(new Event('hashchange')); else location.hash = h; await new Promise((r) => setTimeout(r, 25)); eval('(' + ex + ')')(); }, [h, EXPAND_JS.toString()]);
   }
   const GRAB = () => {
-    for (let i = 0; i < 30; i++) { const b = [...document.querySelectorAll('#app [data-coll][aria-expanded=false]')].filter((e) => e.dataset.coll !== 'drivers')[0]; if (!b) break; b.click(); } /* graders open every collapsed section first */
+    for (let i = 0; i < 30; i++) { const b = [...document.querySelectorAll('#app [data-coll][aria-expanded=false]')].filter((e) => e.dataset.coll !== 'drivers' && e.dataset.coll !== 'tgt')[0]; if (!b) break; b.click(); } /* graders open every collapsed section first */
     const clean = (s) => (s || '').replace(/\s+/g, ' ').trim();
     const o = { hash: location.hash, state: JSON.parse(JSON.stringify(window.__app.state)), t: {}, kv: [], kpis: [], tables: {}, notes: [], warns: [], chips: [], rows: [], impact: [], drivers: [], chart: null, text: document.getElementById('app').innerText };
     document.querySelectorAll('#app [data-testid]').forEach((e) => { const k = e.dataset.testid; if (!(k in o.t)) o.t[k] = clean(e.textContent); });
