@@ -311,7 +311,7 @@
       "rawPoints": 0.5,
       "earned": 0.16,
       "ratio": 1,
-      "detail": "median 7.8ms",
+      "detail": "median 8.0ms",
       "repro": "node timing"
     },
     {
@@ -475,8 +475,8 @@
       "points": 1.333,
       "rawPoints": 2,
       "earned": 1.271,
-      "ratio": 0.9532515974500685,
-      "detail": "185/191 targets >=44px. Small: main:BUTTON.info\"What does Net wort\" 32x32; main:BUTTON.info\"What does Cash flo\" 32x32; main:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash flo\" 32x32; asset:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash-on-\" 32x32",
+      "ratio": 0.9534931409936177,
+      "detail": "186/192 targets >=44px. Small: main:BUTTON.info\"What does Net wort\" 32x32; main:BUTTON.info\"What does Cash flo\" 32x32; main:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash flo\" 32x32; asset:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash-on-\" 32x32",
       "repro": "Measure interactive elements on main/asset/assumptions/add"
     },
     {
@@ -509,7 +509,7 @@
       "rawPoints": 1,
       "earned": 0.667,
       "ratio": 1,
-      "detail": "avg row 125px x 19, page 4629px",
+      "detail": "avg row 125px x 19, page 4662px",
       "repro": "Measure ledger rows"
     },
     {
@@ -663,7 +663,7 @@
       "rawPoints": 1,
       "earned": 0.636,
       "ratio": 1,
-      "detail": "308/308 named. unnamed: ",
+      "detail": "309/309 named. unnamed: ",
       "repro": "aria-label / label / text on all pages"
     },
     {
@@ -822,7 +822,7 @@
     }
   ],
   "finance": {
-    "earned": 90,
+    "earned": 88.62,
     "max": 90,
     "checks": [
       {
@@ -852,11 +852,11 @@
         "category": "F",
         "name": "UI features",
         "points": 24,
-        "earned": 24,
-        "ratio": 1,
-        "detail": "89/89 sub-checks pass",
+        "earned": 22.62,
+        "ratio": 0.9425998874507597,
+        "detail": "84/89 sub-checks pass. FAIL: no jobs/planned/capital: verdict chip + headline equal the engine (Not yet) [Yes / Yes. You can carry this plan. vs Not yet / Not yet. You run short of cash in month 32.]; no jobs/planned/capital: monthly picture rows equal the engine [6080,16561,0,-1000,-3600,-450,17591 vs 0,18221,0,-1000,-3600,-450,13171]; no jobs/planned/capital: lowest cash + month equal the engine [$62,591 · month 0 vs -89819 m62]; no jobs/planned/capital: fix list equals the engine []; empty states (no jobs, no planned expenses, no capital) render without NaN and keep the add buttons []",
         "repro": "Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states",
-        "seconds": 8.5
+        "seconds": 8.9
       },
       {
         "id": "F4",
@@ -878,7 +878,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Playwright: edge inputs, names, tap targets, font size, overflow 320/390/430, chip contrast light+dark, typing, render storm, console errors",
-        "seconds": 20.3
+        "seconds": 20.6
       }
     ]
   },
@@ -906,7 +906,7 @@
         "ratio": 1,
         "detail": "72/72 sub-checks pass",
         "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
-        "seconds": 8
+        "seconds": 7.4
       },
       {
         "id": "G3",
@@ -917,7 +917,7 @@
         "ratio": 1,
         "detail": "35/35 sub-checks pass",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 2.9
+        "seconds": 3
       },
       {
         "id": "G4",
@@ -928,7 +928,7 @@
         "ratio": 1,
         "detail": "33/33 sub-checks pass",
         "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit",
-        "seconds": 43
+        "seconds": 41.4
       },
       {
         "id": "G5",
@@ -939,7 +939,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
-        "seconds": 4.2
+        "seconds": 3.9
       },
       {
         "id": "G6",
@@ -950,7 +950,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 10.3
+        "seconds": 9.8
       },
       {
         "id": "G7",
@@ -961,7 +961,7 @@
         "ratio": 1,
         "detail": "149/149 sub-checks pass",
         "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
-        "seconds": 6.6
+        "seconds": 6.4
       },
       {
         "id": "G8",
@@ -1000,7 +1000,7 @@
         "ratio": 1,
         "detail": "86/86 sub-checks pass",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 4.3
+        "seconds": 4.1
       },
       {
         "id": "H3",
@@ -1011,7 +1011,7 @@
         "ratio": 1,
         "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 10.4
+        "seconds": 9.5
       },
       {
         "id": "H4",
@@ -1033,7 +1033,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 2.8
+        "seconds": 2.7
       },
       {
         "id": "H6",
@@ -1044,7 +1044,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 4
+        "seconds": 3.7
       },
       {
         "id": "H7",
@@ -1055,7 +1055,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Load crafted localStorage states; pasted old backup restore",
-        "seconds": 1
+        "seconds": 0.9
       },
       {
         "id": "H8",
@@ -1077,7 +1077,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 2
+        "seconds": 2.1
       },
       {
         "id": "H10",
@@ -1093,7 +1093,7 @@
     ]
   },
   "gest": {
-    "earned": 97.2,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
@@ -1105,18 +1105,18 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
-        "seconds": 4.6
+        "seconds": 4.7
       },
       {
         "id": "I2",
         "category": "I",
         "name": "Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel",
         "points": 14,
-        "earned": 11.2,
-        "ratio": 0.8,
-        "detail": "12/13 sub-checks pass. FAIL: drop puts maple after cedar in the list [cedar,birch,willow,linden,maple]",
+        "earned": 14,
+        "ratio": 1,
+        "detail": "13/13 sub-checks pass",
         "repro": "Hold 600 ms, drag, release; check saved order",
-        "seconds": 5.4
+        "seconds": 5.3
       },
       {
         "id": "I3",
@@ -1138,7 +1138,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Reorder with Move buttons; read wait lines + saved state + plan",
-        "seconds": 1.9
+        "seconds": 1.7
       },
       {
         "id": "I5",
@@ -1160,7 +1160,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Headers, subtitles, collapse state, empty portfolio",
-        "seconds": 1.2
+        "seconds": 1.1
       },
       {
         "id": "I7",
@@ -1171,7 +1171,7 @@
         "ratio": 1,
         "detail": "24/24 sub-checks pass",
         "repro": "Panel on maple, type extra, compare with engine + asset page",
-        "seconds": 1.2
+        "seconds": 1.1
       },
       {
         "id": "I8",
@@ -1182,7 +1182,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Asset page > Rent & expenses",
-        "seconds": 1.1
+        "seconds": 0.9
       },
       {
         "id": "I9",

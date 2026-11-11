@@ -294,6 +294,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
 .bn{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;margin-right:6px;border-radius:11px;background:var(--acc);color:#fff;font-size:12px;font-weight:700;vertical-align:2px}
 :root[data-theme=dark] .bn{color:#06121f}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]) .bn{color:#06121f}}
+.tgt{margin-top:4px}.tgtb{font-size:13px;min-height:44px}.tgtf{display:grid;grid-template-columns:1fr;gap:0}.tgt .note{margin:6px 0 0;font-size:12px}
 
 </style>
 <main id="app" aria-live="polite"></main>
@@ -983,7 +984,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     cashflow: { t: 'Cash flow', b: 'The money left each month after the loan payment and costs. Positive means the asset pays for itself.' },
     outsidecash: { t: 'Outside cash', b: 'Money the plan needs that the trust does not cover. The trust pays with its cash flow, its line of credit and sale proceeds. Outside cash is anything else, such as the first purchase when nothing comes before it, or a loss at a sale. It comes from savings, partners or investors.' },
     cashfromselling: { t: 'Trust cash', b: 'Cash the trust holds: what you keep after a sale (the price, minus selling costs, minus the loan paid off) and pooled cash flow not yet spent. It counts toward net worth and pays for later purchases first.' },
-    projection: { t: 'Projection length', b: 'How many years ahead the plan looks. The Portfolio totals show where you would stand at the end of this period.' },
+    projection: { t: 'Years until your target', b: 'How many years ahead the plan looks. Portfolio totals show where you stand at the end. A longer period means more inflation, so the same dollars buy less: the page also shows net worth in today\'s dollars.' },
     emergency: { t: 'Emergency reserve', b: 'Cash you want to keep in case your income stops or a repair hits, counted as months of living costs plus debts. Many people aim for 3 to 6 months.' },
     liquid: { t: 'Liquid cash', b: 'Money you can use right away, like savings and checking. Not retirement accounts or the value of a home.' },
     cashapy: { t: 'Cash interest', b: 'The yearly percent your savings earn. High-yield savings accounts pay a few percent. Enter 0 if unsure.' },
@@ -1176,14 +1177,15 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       /* time frame from the asset before it in the list: months between the two purchases (owned assets were bought 'paid' months ago) */
       const at = (x) => (x.status === 'owned' ? -(+x.paid || 0) : pl.purchase[x.id]), ix = S.houses.indexOf(h), pv = ix > 0 ? S.houses[ix - 1] : null, pvNo = pv ? bnoLate()[pv.id] : 0;
       const gap = pv && isFinite(at(h)) && isFinite(at(pv)) ? Math.round(at(h) - at(pv)) : null;
-      const after = gap === null ? '' : gap === 0 ? `bought the same month as #${pvNo} (${esc(pv.addr)}) · ` : gap > 0 ? `${gap} mo after #${pvNo} (${esc(pv.addr)}) was bought · ` : `bought ${mm(-gap)} before #${pvNo} · `;
-      if (h.status === 'owned') return first ? null : { text: `${after}In the trust today · its borrowing room and cash flow fund the assets below it` };
+      const after = gap === null ? '' : gap === 0 ? `bought the same month as #${pvNo} · ` : gap > 0 ? `${gap} mo after #${pvNo} · ` : `bought ${mm(-gap)} before #${pvNo} · `;
+      if (h.status === 'owned') return first ? null : { text: `${after}In the trust · funds the assets below it` };
       if (!isFinite(buy)) return { text: first ? 'Not bought: no month works' : `Not funded: all ${S.houses.indexOf(h)} earlier assets cannot pay its ${$f(E.needFor(S, h))} in 50 years` };
       if (!tr || !tr.pooled) return first ? { text: `Bought in ${mm(buy)} with cash on hand` } : { text: `Bought in ${mm(buy)} with cash on hand · nothing earlier in the list to fund it` };
       const when = buy <= 0 ? 'now' : 'in ' + mm(buy), held = tr.ready < buy ? ` · held until your set month ${mm(Math.max(0, Math.round(h.buyIn || 0)))}` : '';
-      return { text: `${after}Funded ${when} by the trust: all earlier assets (cash flow ${$f(tr.cf)}/mo + borrowing room ${$f(tr.room)}) · pool of ${tr.n} assets${held}` };
+      return { text: `${after}Funded ${when} by the trust: cash flow ${$f(tr.cf)}/mo + borrowing room ${$f(tr.room)} · pool of ${tr.n} assets${held}` };
     };
     const bno = buyOrder(pl);
+    const endYr = Math.round(pl.planM / 12); /* the row shows cash flow at the end of the plan, and the asset's own cash flow on today's terms */
     const rowOf = (h, vis, ci) => {
       const v = pl.V[h.id], type = h.type || 'house', sel = selId === h.id;
       const exitTxt = h.exit === 'sell' && isFinite(pl.sellAt[h.id]) ? `sells in ${mm(pl.sellAt[h.id])}` : h.exit === 'merge' && isFinite(pl.mergeAt[h.id]) ? `merges${H(h.mergeInto) ? ' into ' + esc(H(h.mergeInto).addr) : ''} in ${mm(pl.mergeAt[h.id])}` : '';
@@ -1191,7 +1193,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       const loses = type === 'house' && v.cf < 0 ? '<span class="hi">loses money at today\'s terms</span>' : '';
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
       return `<div class="rw" data-rw="${h.id}"><div class="row${soldBy ? ' sold' : ''}${sel ? ' sel' : ''}" data-row="${h.id}" data-testid="ledger-row"${soldBy ? ' data-nodrag' : ''}><div class="r1"><span class="nm"><button type="button" class="addrbtn" aria-expanded="${sel}" data-testid="row-toggle"><span class="addr" data-go="h/${h.id}" data-testid="row-edit" title="Edit ${esc(h.addr)}"><b class="bn" data-testid="buy-no" aria-label="Buy number ${bno[h.id]}">${bno[h.id]}</b>${esc(h.addr)} <i class="ed" aria-hidden="true">edit ›</i></span><span class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}">${soldBy ? 'sold' : sp ? (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : v.payment > 0.5 ? 'paid off by then' : 'no loan') + ' · equity ' + $k(sp.equity) : 'not in the totals yet'} ${hi}${loses}</span>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<span class="exitline">${parts.join(' · ')}</span>` : ''; })()}</button></span>
-        <span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="This asset's share of the portfolio cash flow: income minus expenses and loan payments, before extra payments"><b data-k="cf-${h.id}">${soldBy ? '+' + $c(pl.exits[h.id].proceeds) : !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'cash from sale' : !sp ? 'not counted' : 'cash flow'}</small></span></div>
+        <span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="Cash flow = income minus expenses and loan payments, before extra payments. Big number: at the end of the plan (rent has grown, loans may be paid off). Small: today, on the asset's own terms."><b data-k="cf-${h.id}">${soldBy ? '+' + $c(pl.exits[h.id].proceeds) : !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'cash from sale' : !sp ? 'not counted' : `year ${endYr} · now ${$s(pl.V[h.id].cf)}`}</small></span></div>
         <div class="r2"><div class="fcol">${(() => { const w = waitOf(h); return w ? `<span class="locline" data-testid="dp-line">${w.text}</span>` : ''; })()}</div>${soldBy ? '' : `<button type="button" class="xtog" data-panel="${h.id}" aria-expanded="${sel}" data-testid="row-extra-toggle" aria-label="Extra payment">Extra ${sel ? '▴' : '▾'}</button>`}</div></div>${sel ? panelOf(h, soldBy, vis, ci) : ''}</div>`; };
     const NOUN = { house: ['home', 'homes'], commercial: ['commercial property', 'commercial properties'], business: ['business', 'businesses'] }, ADD = { house: 'home', commercial: 'commercial property', business: 'business' };
     const empty = !S.houses.length;
@@ -1242,6 +1244,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       ${kpi('kpi-dscr', 'DSCR', r(sn.dscr, 2), sn.dscr >= 1.25 ? 'income ÷ loan payments (1.25+ is healthy)' : sn.dscr >= 1 ? 'thin (1.25+ is healthy)' : 'below 1.0', sn.dscr && sn.dscr < 1 ? 'bad' : '', 1)}</div>
       <div class="bar"><i class="${sn.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (sn.cltv / g.cap) * 100)}%"></i></div>
       <div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
+      ${(() => { const pp = S.p || {}, inf = +pp.inflation || 0, real = sn.nw / Math.pow(1 + inf / 100, yrs), open = !!UI.coll.tgt; return `<div class="tgt" data-testid="target-years"><button type="button" class="linkbtn leftbtn tgtb" data-coll="tgt" aria-expanded="${open}" data-testid="target-toggle">${yrs}-year target · ${$f(real)} in today's dollars ${open ? '▾' : '▸'}</button>${open ? `<div class="tgtf">${field('Years to reach this net worth', 'g.planYears', g.planYears, { info: 'projection' })}${S.p ? field('Inflation / year', 'p.inflation', r(pp.inflation, 2), { suf: '%', info: 'inflation' }) : ''}</div><p class="note" data-testid="real-nw">${$f(sn.nw)} in ${yrs} years at ${r(inf, 1)}% inflation buys what ${$f(real)} buys today. Change the years to move the target date.</p>` : ''}</div>`; })()}
             <p class="plan-line" data-testid="plan-headline">${headline}</p>
       ${fin ? `<div class="vrow big ${fin.status}" data-go="finances" data-testid="afford-line" role="link"><span class="vq"><b>Can I afford this?</b><span class="note">${esc(fin.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, ''))}</span></span><span class="vgo"><span class="vchip ${fin.status}" data-testid="afford-chip">${VL[fin.status]}</span> ›</span></div>` : ''}</section>
     <div class="sec"><span>Your assets</span></div><section class="card" id="ledger" data-testid="ledger"><div class="row totrow" data-testid="ledger-total"><div class="r1"><span class="nm"><span class="addr">Portfolio total</span><div class="pay">${$f(sn.monthly)}/mo payments<br><span data-testid="total-extra" data-k="tot">${$f(totNow)}/mo extra now${totLater > 0.5 ? ' · +' + $f(totLater) + ' later' : ''}</span></div></span><span class="cfl ${sn.cf < 0 ? 'bad' : 'ok'}"><b data-testid="total-cf">${$s(sn.cf)}/mo</b><small>cash flow</small></span></div></div></section>
