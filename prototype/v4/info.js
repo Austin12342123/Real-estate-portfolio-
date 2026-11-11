@@ -66,7 +66,7 @@
     cashflow: { t: 'Cash flow', b: 'The money left each month after the loan payment and costs. Positive means the asset pays for itself.' },
     outsidecash: { t: 'Outside cash', b: 'Money the plan needs that the trust does not cover. The trust pays with its cash flow, its line of credit and sale proceeds. Outside cash is anything else, such as the first purchase when nothing comes before it, or a loss at a sale. It comes from savings, partners or investors.' },
     cashfromselling: { t: 'Trust cash', b: 'Cash the trust holds: what you keep after a sale (the price, minus selling costs, minus the loan paid off) and pooled cash flow not yet spent. It counts toward net worth and pays for later purchases first.' },
-    projection: { t: 'Projection length', b: 'How many years ahead the plan looks. The Portfolio totals show where you would stand at the end of this period.' },
+    projection: { t: 'Years until your target', b: 'How many years ahead the plan looks. Portfolio totals show where you stand at the end. A longer period means more inflation, so the same dollars buy less: the page also shows net worth in today\'s dollars.' },
     emergency: { t: 'Emergency reserve', b: 'Cash you want to keep in case your income stops or a repair hits, counted as months of living costs plus debts. Many people aim for 3 to 6 months.' },
     liquid: { t: 'Liquid cash', b: 'Money you can use right away, like savings and checking. Not retirement accounts or the value of a home.' },
     cashapy: { t: 'Cash interest', b: 'The yearly percent your savings earn. High-yield savings accounts pay a few percent. Enter 0 if unsure.' },
