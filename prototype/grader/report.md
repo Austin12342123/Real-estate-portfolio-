@@ -1,14 +1,14 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-11T03:51:21.446Z  |  252s
+Target: `prototype/v4`  |  Run: 2026-11-11T04:00:15.226Z  |  243s
 
-## Automated score: **83.39 / 84.99900000000001** (a separate design review adds 15)
+## Automated score: **84.94 / 84.99900000000001** (a separate design review adds 15)
 
 | Category | Score |
 |---|---|
-| A. Requirement / propagation | 17.81 / 18.00 |
+| A. Requirement / propagation | 18.00 / 18.00 |
 | B. Engine correctness | 12.00 / 12.00 |
-| C. UX conciseness & usability | 8.58 / 10.00 |
+| C. UX conciseness & usability | 9.94 / 10.00 |
 | D. PWA / local-first | 8.00 / 8.00 |
 | E. Robustness & accessibility | 7.00 / 7.00 |
 | R. Realism & market accuracy | 30.00 / 30.00 |
@@ -22,7 +22,7 @@ Target: `prototype/v4`  |  Run: 2026-11-11T03:51:21.446Z  |  252s
 | A03 | Edit matrix: every input (43 edits incl. improvements/exit/loan/assumptions) moves the main-page KPIs exactly as the engine says | 2.92 | 2.92 | 44/44 sub-checks pass |
 | A04 | Two-way back-solves: payoff->extra, down$->%, and main page follows | 1.46 | 1.46 | 6/6 sub-checks pass |
 | A05 | Remove from the MAIN page: Edit mode, confirm, Undo, totals update; removing a funding source leaves the target listed | 1.95 | 1.95 | 10/10 sub-checks pass |
-| A06 | Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has | 0.73 | 0.54 | 5/6 sub-checks pass. FAIL: the very first asset in the list shows no wait line; every later asset shows one (Funded in N mo by the trust / Owned today / Bought in / Not funded) [first:  later without: ] |
+| A06 | Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has | 0.73 | 0.73 | 6/6 sub-checks pass |
 | A07 | No "Today" / "20 years" view toggle anywhere (single portfolio snapshot) | 0.49 | 0.49 | 3/3 sub-checks pass |
 | A08 | Homes cannot cash-flow negative: warning on the asset page and on the main page; clears when fixed; not shown for non-homes | 1.22 | 1.22 | 7/7 sub-checks pass |
 | A09 | Per-row numbers sum to the portfolio headline (cash flow, monthly payments, net worth) on the sample, and match the engine | 1.46 | 1.46 | 7/7 sub-checks pass |
@@ -42,7 +42,7 @@ Target: `prototype/v4`  |  Run: 2026-11-11T03:51:21.446Z  |  252s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 10.7ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 8.6ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.48 | 0.48 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |
@@ -54,14 +54,14 @@ Target: `prototype/v4`  |  Run: 2026-11-11T03:51:21.446Z  |  252s
 | B22 | Portfolio rule: per-asset shares (snap/assetsAt) sum exactly to series nw/cf/monthly/debt/value at many months | 0.64 | 0.64 | 6/6 sub-checks pass |
 | B23 | Sample portfolio: finite plan, none unfunded, DTI peak below limit, homes cash-flow positive, 20-year numbers sane | 0.64 | 0.64 | 7/7 sub-checks pass |
 | B24 | FHA 203(k): rehab is financed in the loan (down payment on price + rehab), upfront MIP financed, monthly MIP in cash flow, owner-occupied flag, closing cash excludes rehab | 0.64 | 0.64 | 8/8 sub-checks pass |
-| C01 | At 390x844: summary KPIs, plan headline and the first ledger rows are visible without scrolling | 1.33 | 0.87 | 2/3 sub-checks pass. FAIL: first ledger row visible |
-| C02 | Main page keeps text inputs out of the list: no inputs until a row is selected, then exactly one extra field (none for a sold row) | 1.00 | 0.11 | 1/5 sub-checks pass. FAIL: no text input anywhere on the Portfolio page until a row is selected [2]; selecting an asset shows exactly one extra-payment field, inside its panel; tapping the row again closes the panel; a sold asset has no Extra button and no extra field |
+| C01 | At 390x844: summary KPIs, plan headline and the first ledger rows are visible without scrolling | 1.33 | 1.33 | 3/3 sub-checks pass |
+| C02 | Main page keeps text inputs out of the list: no inputs until a row is selected, then exactly one extra field (none for a sold row) | 1.00 | 1.00 | 5/5 sub-checks pass |
 | C03 | No horizontal overflow at 320/390/430 on main, asset, assumptions, add, import | 1.33 | 1.33 | 15/15 sub-checks pass |
-| C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.27 | 186/192 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32 |
-| C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 44/44 ok  |
+| C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.27 | 182/188 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32 |
+| C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 42/42 ok  |
 | C06 | Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps | 1.33 | 1.33 | 3/3 sub-checks pass |
-| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 125px x 19, page 4662px |
-| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 1173/1173 text elements pass (light 584/584, dark 589/589).  |
+| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 125px x 19, page 4526px |
+| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 1149/1149 text elements pass (light 572/572, dark 577/577).  |
 | C09 | Summary-first: one concise summary card (single snapshot, short text), plan card collapsible | 1.00 | 1.00 | 3/3 sub-checks pass |
 | D01 | Manifest valid; icons load with true declared dimensions | 1.14 | 1.14 | 8/8 sub-checks pass |
 | D02 | Service worker (index.html) registers, activates, controls page after reload; precache complete | 1.14 | 1.14 | 3/3 sub-checks pass |
@@ -74,7 +74,7 @@ Target: `prototype/v4`  |  Run: 2026-11-11T03:51:21.446Z  |  252s
 | E01 | Edge inputs (57 cases + compound: zero, 100% down, blanks, garbage, negatives, 1e12, caps, sale/merge/improvement fields) leave no NaN/Infinity/undefined in any page or crash | 1.91 | 1.91 | 62/62 sub-checks pass |
 | E02 | Remove all assets (main page) -> clean empty state with add action; can add again | 0.96 | 0.96 | 3/3 sub-checks pass |
 | E03 | Deleting a funding target clears references (select, storage, plan, merge-into) | 0.96 | 0.96 | 5/5 sub-checks pass |
-| E04 | Every input/select/button has an accessible name (main, asset, assumptions, add, import) | 0.64 | 0.64 | 309/309 named. unnamed:  |
+| E04 | Every input/select/button has an accessible name (main, asset, assumptions, add, import) | 0.64 | 0.64 | 305/305 named. unnamed:  |
 | E05 | Typing 5 digits sequentially keeps focus + full value (re-render safe) on main, asset, assumptions, text field | 0.64 | 0.64 | 5/5 sub-checks pass |
 | E06 | No layout shift while navigating and editing (CLS <= 0.05) | 0.32 | 0.32 | CLS 0.0000 |
 | E07 | No console errors or page errors during all flows | 0.96 | 0.96 | 0 errors:  |
@@ -92,33 +92,23 @@ Target: `prototype/v4`  |  Run: 2026-11-11T03:51:21.446Z  |  252s
 
 ## Top failures
 
-1. **C02 Main page keeps text inputs out of the list: no inputs until a row is selected, then exactly one extra field (none for a sold row)** (-0.89)
-   - Detail: 1/5 sub-checks pass. FAIL: no text input anywhere on the Portfolio page until a row is selected [2]; selecting an asset shows exactly one extra-payment field, inside its panel; tapping the row again closes the panel; a sold asset has no Extra button and no extra field
-   - Reproduce: Count visible <input> on main before / after selecting a row (sample, and after adding 3)
-2. **C01 At 390x844: summary KPIs, plan headline and the first ledger rows are visible without scrolling** (-0.47)
-   - Detail: 2/3 sub-checks pass. FAIL: first ledger row visible
-   - Reproduce: Open main at 390x844
-3. **A06 Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has** (-0.19)
-   - Detail: 5/6 sub-checks pass. FAIL: the very first asset in the list shows no wait line; every later asset shows one (Funded in N mo by the trust / Owned today / Bought in / Not funded) [first:  later without: ]
-   - Reproduce: Main ledger on the default plan and on a small state
-4. **C04 Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)** (-0.06)
-   - Detail: 186/192 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32
+1. **C04 Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)** (-0.06)
+   - Detail: 182/188 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32
    - Reproduce: Measure interactive elements on main/asset/assumptions/add
 
-## F. Personal finances: **88.62 / 90** (separate scale; a design review adds 10 later; not included in the A-E + R total)
+## F. Personal finances: **90.00 / 90** (separate scale; a design review adds 10 later; not included in the A-E + R total)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
 | F1 | Engine correctness: independent month-by-month simulation + hand cases + edge values | 26.00 | 26.00 | 16/16 sub-checks pass |
 | F2 | Verdict logic and advice | 16.00 | 16.00 | 17/17 sub-checks pass |
-| F3 | UI features | 24.00 | 22.62 | 84/89 sub-checks pass. FAIL: no jobs/planned/capital: verdict chip + headline equal the engine (Not yet) [Yes / Yes. You can carry this plan. vs Not yet / Not yet. You run short of cash in month 32.]; no jobs/planned/capital: monthly picture rows equal the engine [6080,16561,0,-1000,-3600,-450,17591 vs 0,18221,0,-1000,-3600,-450,13171]; no jobs/planned/capital: lowest cash + month equal the engine [$62,591 · month 0 vs -89819 m62]; no jobs/planned/capital: fix list equals the engine []; empty states (no jobs, no planned expenses, no capital) render without NaN and keep the add buttons [] |
+| F3 | UI features | 24.00 | 24.00 | 89/89 sub-checks pass |
 | F4 | Factor coverage: every input moves the answer in the right direction | 14.00 | 14.00 | 23/23 sub-checks pass |
 | F5 | Robustness and accessibility | 10.00 | 10.00 | 10/10 sub-checks pass |
 
 ### F failures
 
-- **F3 UI features** (-1.38): 84/89 sub-checks pass. FAIL: no jobs/planned/capital: verdict chip + headline equal the engine (Not yet) [Yes / Yes. You can carry this plan. vs Not yet / Not yet. You run short of cash in month 32.]; no jobs/planned/capital: monthly picture rows equal the engine [6080,16561,0,-1000,-3600,-450,17591 vs 0,18221,0,-1000,-3600,-450,13171]; no jobs/planned/capital: lowest cash + month equal the engine [$62,591 · month 0 vs -89819 m62]; no jobs/planned/capital: fix list equals the engine []; empty states (no jobs, no planned expenses, no capital) render without NaN and keep the add buttons []
-  - Reproduce: Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states
+None.
 
 ## G. Number sync: **100.00 / 100** (separate scale; not included in the A-E + R total or in F)
 
