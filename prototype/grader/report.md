@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-12T01:39:42.964Z  |  271s
+Target: `prototype/v4`  |  Run: 2026-11-12T01:47:26.000Z  |  272s
 
 ## Automated score: **84.94 / 84.99900000000001** (a separate design review adds 15)
 
@@ -42,7 +42,7 @@ Target: `prototype/v4`  |  Run: 2026-11-12T01:39:42.964Z  |  271s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 9.1ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 12.7ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.48 | 0.48 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |
@@ -96,19 +96,20 @@ Target: `prototype/v4`  |  Run: 2026-11-12T01:39:42.964Z  |  271s
    - Detail: 182/188 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32
    - Reproduce: Measure interactive elements on main/asset/assumptions/add
 
-## F. Personal finances: **90.00 / 90** (separate scale; a design review adds 10 later; not included in the A-E + R total)
+## F. Personal finances: **88.62 / 90** (separate scale; a design review adds 10 later; not included in the A-E + R total)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
 | F1 | Engine correctness: independent month-by-month simulation + hand cases + edge values | 26.00 | 26.00 | 16/16 sub-checks pass |
 | F2 | Verdict logic and advice | 16.00 | 16.00 | 17/17 sub-checks pass |
-| F3 | UI features | 24.00 | 24.00 | 89/89 sub-checks pass |
+| F3 | UI features | 24.00 | 22.62 | 84/89 sub-checks pass. FAIL: no jobs/planned/capital: verdict chip + headline equal the engine (Not yet) [Yes / Yes. You can carry this plan. vs Not yet / Not yet. You run short of cash in month 32.]; no jobs/planned/capital: monthly picture rows equal the engine [6080,16561,0,-1000,-3600,-450,17591 vs 0,18221,0,-1000,-3600,-450,13171]; no jobs/planned/capital: lowest cash + month equal the engine [$62,591 · month 0 vs -89819 m62]; no jobs/planned/capital: fix list equals the engine []; empty states (no jobs, no planned expenses, no capital) render without NaN and keep the add buttons [] |
 | F4 | Factor coverage: every input moves the answer in the right direction | 14.00 | 14.00 | 23/23 sub-checks pass |
 | F5 | Robustness and accessibility | 10.00 | 10.00 | 10/10 sub-checks pass |
 
 ### F failures
 
-None.
+- **F3 UI features** (-1.38): 84/89 sub-checks pass. FAIL: no jobs/planned/capital: verdict chip + headline equal the engine (Not yet) [Yes / Yes. You can carry this plan. vs Not yet / Not yet. You run short of cash in month 32.]; no jobs/planned/capital: monthly picture rows equal the engine [6080,16561,0,-1000,-3600,-450,17591 vs 0,18221,0,-1000,-3600,-450,13171]; no jobs/planned/capital: lowest cash + month equal the engine [$62,591 · month 0 vs -89819 m62]; no jobs/planned/capital: fix list equals the engine []; empty states (no jobs, no planned expenses, no capital) render without NaN and keep the add buttons []
+  - Reproduce: Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states
 
 ## G. Number sync: **100.00 / 100** (separate scale; not included in the A-E + R total or in F)
 
