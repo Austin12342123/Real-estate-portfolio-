@@ -12,7 +12,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
-        "seconds": 4.8
+        "seconds": 5.1
       },
       {
         "id": "I2",
@@ -21,9 +21,9 @@
         "points": 14,
         "earned": 14,
         "ratio": 1,
-        "detail": "13/13 sub-checks pass",
+        "detail": "14/14 sub-checks pass",
         "repro": "Hold 600 ms, drag, release; check saved order",
-        "seconds": 5.4
+        "seconds": 6.7
       },
       {
         "id": "I3",
@@ -32,9 +32,9 @@
         "points": 8,
         "earned": 8,
         "ratio": 1,
-        "detail": "7/7 sub-checks pass",
+        "detail": "8/8 sub-checks pass",
         "repro": "Select row, press Move",
-        "seconds": 0.9
+        "seconds": 1.4
       },
       {
         "id": "I4",
@@ -45,7 +45,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Reorder with Move buttons; read wait lines + saved state + plan",
-        "seconds": 1.9
+        "seconds": 2
       },
       {
         "id": "I5",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Panel > Duplicate; asset page > Duplicate",
-        "seconds": 0.9
+        "seconds": 1.2
       },
       {
         "id": "I6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Headers, subtitles, collapse state, empty portfolio",
-        "seconds": 1.1
+        "seconds": 1.4
       },
       {
         "id": "I7",
@@ -78,7 +78,7 @@
         "ratio": 1,
         "detail": "24/24 sub-checks pass",
         "repro": "Panel on maple, type extra, compare with engine + asset page",
-        "seconds": 1.2
+        "seconds": 1.7
       },
       {
         "id": "I8",
@@ -89,7 +89,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Asset page > Rent & expenses",
-        "seconds": 1
+        "seconds": 1.2
       },
       {
         "id": "I9",
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Focus the extra field, swipe",
-        "seconds": 2.1
+        "seconds": 2.3
       },
       {
         "id": "I10",
@@ -111,7 +111,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "Resize, measure, collected errors",
-        "seconds": 1.4
+        "seconds": 1.6
       }
     ]
   }

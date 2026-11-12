@@ -24,7 +24,7 @@ function chk(cat, id, name, pts, fn, src) {
   if (r.disclosedOnly) unverified.push(id);
   checks.push(rec);
 }
-const mk = (g, houses) => E.normalize({ g: Object.assign({}, E.GDEF, { closing: 0, appr: 0 }, g || {}), houses });
+const mk = (g, houses) => E.normalize({ g: Object.assign({}, E.GDEF, { closing: 0, appr: 0, autoPay: false }, g || {}), houses });
 const A = E.newAsset, rnd = R.rng(20261110);
 const pick = (a) => a[Math.floor(rnd() * a.length)];
 const U = (lo, hi) => lo + rnd() * (hi - lo);
@@ -176,7 +176,7 @@ chk('L3', 'L3.5', 'A credit line against a BUSINESS uses its own lower, editable
   const mkS = (capBiz) => mk({ cap: 85, capBiz, haircut: 0 }, [A('business', 'sba7a', { id: 's', status: 'owned', paid: 12, price: 1500000, dp: 45, rent: 30000, growth: 4, target: 't' }), A('house', 'conv30', { id: 't', price: 400000 })]);
   const S50 = mkS(50), S70 = mkS(70), hs = A('house', 'conv30', { id: 's', status: 'owned', paid: 12, price: 1500000, dp: 45, rent: 30000, tax: 0, ins: 0, hoa: 0, growth: 4, target: 't' });
   const v50 = E.view(S50, S50.houses[0]), v70 = E.view(S70, S70.houses[0]); const Sh = mk({ cap: 85, capBiz: 50 }, [Object.assign(hs, { type: 'house' }), A('house', 'conv30', { id: 't', price: 400000 })]);
-  const refHead = (S, h) => R.headroom(h.price, h.type === 'business' ? S.g.capBiz : S.g.cap, S.g.haircut, R.balanceAfter(E.loan(h), h.rate, E.payment(h), h.paid), h.liens);
+  const refHead = (S, h) => R.headroom(h.price * Math.pow(1 + (h.growth == null ? S.g.appr : h.growth) / 100, (h.status === 'owned' ? h.paid : 0) / 12) /* value today: it has grown since the purchase, like the trust's pool room */, h.type === 'business' ? S.g.capBiz : S.g.cap, S.g.haircut, R.balanceAfter(E.loan(h), h.rate, E.payment(h), h.paid), h.liens);
   const ok = E.GDEF.capBiz < E.GDEF.cap && E.GDEF.capBiz > 0 && v50.cap === 50 && v70.cap === 70 && near(v50.head0, refHead(S50, S50.houses[0]), 0.01) && near(v70.head0, refHead(S70, S70.houses[0]), 0.01) && v70.head0 > v50.head0
     && E.locMonths(S70, S70.houses[0], 0) < E.locMonths(S50, S50.houses[0], 0) && E.plan(S70).purchase.t < E.plan(S50).purchase.t && E.capOf(Sh, Sh.houses[0]) === 85 && E.capOf(S50, S50.houses[0]) === 50
     && /capBiz/.test(APP) && /Max loan vs value \(business\)/.test(APP) && !!INFO.debtcapbiz && /business/i.test(infoText('creditline', 'debtcapbiz')) && /lower cap/i.test(APP.replace(/\s+/g, ' '));

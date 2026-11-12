@@ -146,7 +146,7 @@ exports.run = async function run(X) {
     T('KPI net worth = engine plan-horizon value', eq(nw.v, sn.nw), 1, nw.v + ' vs ' + $f(sn.nw));
     T('KPI monthly payments = engine', eq(mon.v, sn.monthly), 1, mon.v + ' vs ' + $f(sn.monthly));
     T('KPI cash flow = engine', eq(cf.v, sn.cf), 1, cf.v + ' vs ' + $f(sn.cf));
-    T('KPI DSCR = engine (2 dp)', Math.abs(parseFloat(ds.v) - sn.dscr) <= 0.0051, 0.5, ds.v + ' vs ' + R(sn.dscr, 2));
+    T('KPI DSCR = engine (2 dp), or a dash when no loan payment is left', sn.ds > 0.5 ? Math.abs(parseFloat(ds.v) - sn.dscr) <= 0.0051 : ds.v === '—', 0.5, ds.v + ' vs ' + R(sn.dscr, 2));
     T('engine: sum of per-asset shares = KPI numbers', Math.abs(pl.snap.reduce((a, x) => a + x.equity, 0) - sn.nw) < 1 && Math.abs(pl.snap.reduce((a, x) => a + x.payment, 0) - sn.monthly) < 1 && Math.abs(pl.snap.reduce((a, x) => a + x.cf, 0) - sn.cf) < 1, 0.5, 'snapshot entries do not sum to the KPI totals');
     /* ledger total row */
     const tp = g.t['ledger-total'] || '', m = /(−?\$[\d,.]+[MB]?)\/mo payments/.exec(tp);
@@ -206,8 +206,9 @@ exports.run = async function run(X) {
     }
     /* headline */
     const nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0], hl = g.t['plan-headline'] || '';
-    T('headline "Next: buy" = next planned purchase in the engine', nb ? hl.includes('Next: buy ' + nb.addr + ' in ' + mm(pl.purchase[nb.id])) : !/Next: buy/.test(hl), 1, hl);
-    T('headline asset count / last purchase = engine', pl.unfunded.length ? hl.includes(pl.unfunded.length + ' not funded yet') : hl.includes('All ' + S.houses.length + ' assets by ' + mo(pl.lastBuy)), 1, hl + ' | lastBuy ' + mo(pl.lastBuy));
+    { const pq = S.houses.filter((h) => h.status !== 'owned'), nOwn = S.houses.length - pq.length, lastR = Math.max(0, ...pq.map((h) => pl.purchase[h.id]).filter(isFinite)), monw = (m) => (m <= 0 ? 'now' : 'month ' + m), unf = pq.filter((h) => !isFinite(pl.purchase[h.id])).length;
+      const want = !pq.length ? 'All ' + S.houses.length + ' assets are bought.' : unf ? nOwn + ' bought. ' + (pq.length - unf) + ' of ' + pq.length + ' planned can be paid for; ' + unf + ' cannot.' : nOwn + ' bought. All ' + pq.length + ' planned assets are possible; the trust can pay for the last one at ' + monw(lastR) + '.';
+      T('headline = bought count, whether every planned asset is possible, and the month (from today) the trust can pay for the last', hl.replace(/\s+/g, ' ').trim() === want, 2, hl + ' | want ' + want); }
     /* extra now / later */
     const X0 = pl.extraNow, Xall = pl.extraNow + pl.extraLater, te = g.t['total-extra'] || '';
     const mx = /(\$[\d,.]+[MB]?)\/mo extra now/.exec(te), ml = /\+ ?(\$[\d,.]+[MB]?) later/.exec(te);
@@ -222,8 +223,9 @@ exports.run = async function run(X) {
     const rank = (h) => (isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9), want = [...S.houses].sort((a, b) => rank(a) - rank(b) || S.houses.indexOf(a) - S.houses.indexOf(b)).map((h) => h.id);
     { /* the app sorts the saved list into buy order once; the page then shows list order inside Homes / Commercial / Businesses, with sold assets in their own Sold section */
       const soldIn = (h) => !!(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM), byId2 = Object.fromEntries(S.houses.map((h) => [h.id, h])), cat = (id) => byId2[id].type || 'house';
-      const show = ['house', 'commercial', 'business'].flatMap((c) => want.filter((id) => cat(id) === c && !soldIn(byId2[id]))).concat(want.filter((id) => soldIn(byId2[id])));
-      T('rows are in list (= buy) order inside their category sections, sold assets last', JSON.stringify(g.rows.map((r) => r.id)) === JSON.stringify(show), 0.5, g.rows.map((r) => r.id).join(',') + ' vs ' + show.join(',')); }
+      const own = (id) => byId2[id].status === 'owned', secs = [true, false].flatMap((o) => ['house', 'commercial', 'business'].flatMap((c) => want.filter((id) => cat(id) === c && !soldIn(byId2[id]) && own(id) === o)));
+      const show = secs.concat(want.filter((id) => soldIn(byId2[id])));
+      T('rows are in list (= buy) order inside their category sections (Bought first, then Planned), sold assets last', JSON.stringify(g.rows.map((r) => r.id)) === JSON.stringify(show), 0.5, g.rows.map((r) => r.id).join(',') + ' vs ' + show.join(',')); }
     /* drivers */
     if (g.drivers.length) {
       const drv = pl.assetsAt(pl.planM).sort((a, b) => b.equity - a.equity).slice(0, 6); let ok = drv.length === g.drivers.length, info = '';
@@ -436,7 +438,7 @@ exports.run = async function run(X) {
     if (h.status === 'planned') {
       const plE = E.plan(E.normalize(JSON.parse(JSON.stringify(S)))), m = plE.purchase[h.id], need = I.down(h) + h.price * I.cl(S, h) / 100 + (h.finCapex ? 0 : Math.max(0, h.capex || 0)), tm = g.t['trust-months'];
       g1('need', need, 0.51, '"Cash needed" = down payment + closing costs + improvements paid in cash');
-      add('"Funded in" = the purchase month the plan gives', isFinite(m) ? (m <= 0 ? tm === 'now' : tm === m + ' mo') : tm === 'never', tm + ' vs ' + m);
+      { const trx = plE.trust[h.id], rd = isFinite(m) ? (isFinite(trx.ready) ? trx.ready : m) : Infinity; add('"Trust can pay at" = the month the pool can pay (one clock: months from today; the purchase month if nothing holds it)', isFinite(rd) ? (rd <= 0 ? tm === 'now' : tm === 'month ' + rd) : tm === 'never', tm + ' vs ' + rd); }
       const tr = plE.trust[h.id]; if (isFinite(m) && tr.pooled) add('trust split: cash held + line drawn = cash needed', /\$([\d,]+) of cash the trust already holds .* and \$([\d,]+) drawn/.test(g.t['loc-split'] || '') && Math.abs(fnum((/\$([\d,]+) of cash/.exec(g.t['loc-split']) || [])[1]) + fnum((/and \$([\d,]+) drawn/.exec(g.t['loc-split']) || [])[1]) - need) <= 1.01, (g.t['loc-split'] || 'missing') + ' vs need ' + R(need));
     }
     add('gain/appraisal relation: value gained = appraisal - price - rehab', h.arv > 0 ? close(fnum(f('gain')), h.arv - h.price - (h.capex || 0), 0.51) : f('gain') === '', 'gain field ' + f('gain') + ', arv ' + h.arv + ', price ' + h.price + ', rehab ' + h.capex);
@@ -464,7 +466,7 @@ exports.run = async function run(X) {
     add('loan note "Debt now" = balance + liens', !!dn && eq(dn[1], debt), (dn && dn[1]) + ' vs ' + $f(debt));
     const valNow = I.val(S, h, 0); add('loan note "% of value" divides by the CURRENT value (not the purchase price)', !!dn && Math.abs(+dn[2] - debt / valNow * 100) <= 0.51, (dn && dn[2]) + '% shown; debt ' + $f(debt) + ' / value now ' + $f(valNow) + ' = ' + R(debt / valNow * 100) + '% (price ' + $f(h.price) + ' gives ' + R(debt / h.price * 100) + '%)');
     const cm = /When its line of credit opens: (\d+)% \(cap (\d+(?:\.\d+)?)%\)/.exec(loanNote), cv = I.cltvAtLoc(S, h, X);
-    if (cv != null) add('loan note "when its line opens: N% (cap C%)" = independent CLTV and Assumptions cap', !!cm && Math.abs(+cm[1] - cv) <= 0.51 && +cm[2] === (h.type === 'business' ? S.g.capBiz : S.g.cap), (cm && cm[0]) + ' vs ' + R(cv) + '% cap ' + S.g.cap + ' [X ' + R(X, 2) + ' driver ' + h.driver + ' wait ' + h.wait + ' price ' + h.price + ' arv ' + h.arv + ' capexM ' + h.capexMonths + ' liens ' + h.liens + ' lm ' + I.loc(S, h, X) + ']');
+    add('no per-asset "When its line of credit opens" note (one clock: the trust decides; old links never show a second month)', !cm, (cm && cm[0]) || '');
     const noiNote = g.notes.find((n) => /^Net operating income/.test(n));
     if (h.type !== 'business') add('NOI note = independent NOI (cash flow is shown once, in the header, so it is not restated here)', !!noiNote && eq((/income (−?\$[\d,.]+[MB]?)\/mo/.exec(noiNote) || [])[1], noi) && !/payment [−+]\$/.test(noiNote), (noiNote || 'missing') + ' vs ' + $f(noi));
     return out;
@@ -604,7 +606,7 @@ exports.run = async function run(X) {
         A.t('setting stored (' + p + ')', S.g[key] === v, 0.2, p + ' ' + S.g[key]);
         const { mg, fg, hg } = await full(S, 'after ' + p + '=' + v, ['a']);
         const pl = E.plan(clone(S)), ag = await grab(page, '#house-a'), bg = await grab(page, '#house-b'), cg = await grab(page, '#house-c');
-        if (key === 'cap') { const n = ag.notes.find((x) => /When its line of credit opens/.test(x)) || ''; A.t('cap edit shows on the asset page note (cap N%)', new RegExp('cap ' + v + '%').test(n) || !/When its line/.test(n), 1, n.slice(-60)); const lr = mg.rows.find((r) => r.id === 'b'); A.t('cap edit moves the funding date on the Portfolio row of the next asset (b) = engine', !!lr && (isFinite(pl.purchase.b) ? lr.loc.includes('Funded in ' + pl.purchase.b + ' mo by the trust') || (pl.purchase.b <= 0 && /Funded now/.test(lr.loc)) : /Not funded/.test(lr.loc)), 1, lr && lr.loc + ' vs ' + pl.purchase.b); }
+        if (key === 'cap') { const n = ag.notes.find((x) => /When its line of credit opens/.test(x)) || ''; A.t('cap edit shows on the asset page note (cap N%)', new RegExp('cap ' + v + '%').test(n) || !/When its line/.test(n), 1, n.slice(-60)); const lr = mg.rows.find((r) => r.id === 'b'); A.t('cap edit moves the funding date on the Portfolio row of the next asset (b) = engine', !!lr && (isFinite(pl.purchase.b) ? (() => { const tb = pl.trust.b, rd = isFinite(tb.ready) ? tb.ready : pl.purchase.b; return /^Possible|^Not possible/.test(lr.loc) && lr.loc.includes(rd <= 0 ? 'funded by the trust at now' : 'funded by the trust at month ' + rd) || /own cash/.test(lr.loc); })() : /^Not possible/.test(lr.loc)), 1, lr && lr.loc + ' vs ' + pl.purchase.b); }
         if (key === 'dti') { const hw = mg.warns.find((w) => /Debt-to-income peaks/.test(w.t)); A.t('DTI limit shows in the Portfolio warning and the Finances reason', (pl.worst.dti > v ? !!hw && new RegExp('limit ' + v + '%').test(hw.t) : !hw) && (pl.worst.dti > v ? new RegExp('limit ' + v + '%').test(fg.text) /* passing reasons are shown as a short note without the limit */ : /lenders should approve/.test(fg.t['reasons-ok'] || '')), 1, (hw && hw.t) + ' | ' + (/limit \d+%/.exec(fg.text) || [])[0]); const ch = ag.chips.find((c) => /Debt-to-income/.test(c.t)); const af = E.afford(clone(S), S.houses.find((h) => h.id === 'a'), pl); A.t('DTI limit shows in the asset-page chip title', af.cls === 'ok' || af.cls === 'na' ? !ch : !!ch && new RegExp(v + '% limit').test(ch.title), 1, (ch && ch.title) + ' vs ' + af.why); }
         if (key === 'closing') { A.t('closing default shows on every asset with no own closing %', fnum(fld(ag, 'h.a.closingPct')) === v && fnum(fld(bg, 'h.b.closingPct')) === v && fnum(fld(cg, 'h.c.closingPct')) === v, 1, fld(ag, 'h.a.closingPct') + ',' + fld(bg, 'h.b.closingPct')); A.t('closing default changes "Cash needed" on the planned asset', close(fnum(fld(bg, 'h.b.need')), 240000 * 0.2 + 240000 * v / 100), 1, fld(bg, 'h.b.need') + ' vs ' + (48000 + 2400 * v)); }
         if (key === 'appr') A.t('appreciation default shows as the growth on assets with no own growth', [ag, bg, cg].every((x, i) => fnum(fld(x, 'h.' + 'abc'[i] + '.growth')) === v), 1, fld(ag, 'h.a.growth') + ',' + fld(bg, 'h.b.growth'));

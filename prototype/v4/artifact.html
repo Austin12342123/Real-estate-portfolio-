@@ -295,6 +295,20 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
 :root[data-theme=dark] .bn{color:#06121f}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]) .bn{color:#06121f}}
 .tgt{margin-top:4px}.tgtb{font-size:13px;min-height:44px}.tgtf{display:grid;grid-template-columns:1fr;gap:0}.tgt .note{margin:6px 0 0;font-size:12px}
+/* Bought / Planned sections */
+.vchip.ok{background:color-mix(in srgb,var(--ok) 7%,var(--card));color:var(--ok)}
+.vchip.warn{background:color-mix(in srgb,var(--warn) 7%,var(--card));color:var(--warn)}
+.vchip.bad{background:color-mix(in srgb,var(--bad) 7%,var(--card));color:var(--bad)}
+.vchip.sm{font-size:11px;padding:1px 7px;vertical-align:1px}
+.badtxt{color:var(--bad)}.warntxt{color:var(--warn)}
+.sech{display:flex;flex-direction:column;gap:1px;margin:16px 4px 6px}.sech b{font-size:18px}.sech .sechs{font-size:12px;color:var(--mut);line-height:1.3}
+.sectseg{margin:10px 0 0}
+.psum{padding:10px 12px}.psum .vrow{min-height:36px}.psum .vrow[data-go]{margin-top:6px;padding:6px 8px;border-radius:12px}
+.psum .vrow.yes{background:color-mix(in srgb,var(--ok) 7%,var(--card))}.psum .vrow.tight{background:color-mix(in srgb,var(--warn) 7%,var(--card))}.psum .vrow.no{background:color-mix(in srgb,var(--bad) 7%,var(--card))}
+.row .locline b{font-weight:600;color:var(--ink)}
+.sech .sechs b{font-size:inherit;font-weight:600;color:var(--ink)}
+.row .locline .fx{display:inline-block;white-space:nowrap}
+.sech{margin:8px 4px 4px}.sectseg{margin:8px 0 0}
 
 </style>
 <main id="app" aria-live="polite"></main>
@@ -305,7 +319,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
    Percentages are plain numbers (85 = 85%). Money is dollars. Time is months. */
 (function (root) {
   const GDEF = { cap: 85, capBiz: 50, haircut: 0, closing: 3, vac: 7, refiRate: 7.5, refiTerm: 300, mgmt: 8, maint: 1, appr: 0, hrate: 8.5, dti: 43,
-    p1: 200000, p2: 200000, rentCount: 75, otherDebt: 0, horizon: 480, planYears: 20 };
+    p1: 200000, p2: 200000, rentCount: 75, otherDebt: 0, horizon: 480, planYears: 20, autoPay: true };
   const TYPES = { house: { label: 'Single-family home', short: 'Home' }, commercial: { label: 'Commercial property', short: 'Commercial' }, business: { label: 'Business', short: 'Business' } };
   /* Loan options. term is in months. io = interest-only: the balance left at the end of the term is refinanced into a level-payment loan at the Assumptions refinance rate and term (loanPath). */
   const LOANS = [
@@ -442,7 +456,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const down = downAmt(h), closingCost = (h.price * clPct(S, h)) / 100, mip = mipMonthly(h), cap = capOf(S, h);
     return { cltvAtLoc, L, B0, P, mip, X, infeasible, egi, noi, reimb, cap, refi: pth.refi, cf: noi - P - mip, escrow, pitia: P + escrow + mip, path: pth, payment: P + X + escrow + mip,
       D: Dn, cashDP, draw, cfSaved: cfSaved(S, h), down, closingCost, invested: down + closingCost, payoff: payoffN(h, X, S), locM: lm,
-      head0: Math.max(0, (cap / 100) * (1 - g.haircut / 100) * h.price - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
+      head0: Math.max(0, (cap / 100) * (1 - g.haircut / 100) * valAt(S, h, 0) - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
       valueNow: valAt(S, h, 0), valueGain: +h.arv > 0 ? h.arv - h.price - (h.capex || 0) : 0, capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
   }
 
@@ -535,14 +549,13 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     hs.forEach((h) => (V[h.id] = view(S, h)));
     const planM = Math.round(Math.max(1, g.planYears || 20) * 12), hz = isFinite(+g.horizon) ? +g.horizon : GDEF.horizon, TS = Math.max(600, Math.min(2400, Math.round(hz)));
     const queue0 = hs.filter((h) => h.status !== 'owned'), skipped = {}, hel = isFinite(+g.hrate) ? +g.hrate : GDEF.hrate;
-    let P0, sellAt, mergeAt, dr, cur, exits, fund, readyAt, cashA, outsideA, reinv, bought, blocked;
+    let P0, sellAt, mergeAt, dr, cur, exits, fund, readyAt, cashA, outsideA, reinv, bought, blocked, BAL, PAY, RAT, LS, AUTO, JOBX, CALLS, FUT = null, JS, JU, JLN, JC, JLO, LQ, SALET, best;
     const exitTimes = (h) => { const p = P0[h.id]; sellAt[h.id] = Infinity; mergeAt[h.id] = Infinity; if (!isFinite(p)) return;
       const m = Math.max(Math.round(h.exitMonth || 0), p + 1); if (h.exit === 'sell') sellAt[h.id] = m; else if (h.exit === 'merge') mergeAt[h.id] = m; };
     /* state of an asset at month t, ignoring whether it has been sold (hl = its line draw this month) */
     function st(h, t, hl) {
       const p = P0[h.id]; if (!isFinite(p) || t < p) return null;
-      const v = V[h.id], age = t - p, live = age < v.payoff;
-      const B = live ? v.path.bal(age) : 0;
+      const v = V[h.id], age = t - p, B = BAL[h.id][t] || 0, live = B > 0.005; /* the balance is simulated month by month (scheduled payments, your extra, the profit and job money that go to the loan) */
       const improved = (+h.arv > 0 || h.liftIncome) && age >= Math.max(0, h.capexMonths || 0), merged = t >= mergeAt[h.id];
       const fv = merged ? 1 + (h.exitLift || 0) / 100 : 1;
       const fi = (improved ? 1 + (h.liftIncome || 0) / 100 : 1) * (merged ? 1 + (h.exitLift || 0) / 100 : 1);
@@ -554,8 +567,8 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     function snapOf(t) {
       const out = [];
       for (const h of bought) { if (!held(h, t)) continue; const a = st(h, t, cur[h.id]); if (!a) continue;
-        const v = a.v, hi = (cur[h.id] * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0;
-        const intr = (a.live ? a.B * v.path.rate(a.age) : 0) + hi, dep = depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge), biz = (h.type || 'house') === 'business';
+        const v = a.v, hi = (cur[h.id] * hel) / 1200, sched = a.live ? PAY[h.id][t] + mipNow(h, a) : 0;
+        const intr = (a.live ? a.B * RAT[h.id][t] : 0) + hi, dep = depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge), biz = (h.type || 'house') === 'business';
         out.push({ h, a, tx: v.noi * a.gfi - intr - dep, biz, live: t < mergeAt[h.id], inc: v.noi * a.gfi, sched, hi, draw: cur[h.id], room: Math.max(0, (capOf(S, h) / 100) * (1 - g.haircut / 100) * a.val - a.B - (h.liens || 0)) }); }
       return out;
     }
@@ -563,12 +576,35 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const pp = S.p || null;
     const sumSnap = (sn, t) => { let room = 0, draw = 0, cf = 0, re = 0, bz = 0, nb = 0; sn.forEach((x) => { room += x.room; draw += x.draw; cf += x.inc - x.sched - x.hi; if (x.biz) { bz += x.tx; if (x.live) nb++; } else re += x.tx; });
       const tax = pp ? portTaxAt(S, t, re, bz) : 0, gm = pp ? Math.max(0, nb - (pp.operating || 0)) * (pp.gmMonthly || 0) * Math.pow(1 + (pp.inflation || 0) / 100, t / 12) : 0;
-      return { n: sn.length, room, draw, head: room - draw, cf, tax, gm, sweep: Math.max(0, cf - tax - gm) }; };
+      return { n: sn.length, room, draw, head: room - draw, cf, tax, gm, re, bz, sweep: Math.max(0, cf - tax - gm) }; };
+    /* equal (or weighted) split of x over loans, each limited to what is still owed; what no loan can take comes back */
+    function spread(x, items) {
+      const got = {}; let rem = x, act = items.filter((i) => i.cap > 0.005 && i.w > 0);
+      for (let g2 = 0; g2 < 8 && rem > 0.005 && act.length; g2++) {
+        const W = act.reduce((a2, i) => a2 + i.w, 0), nxt = []; let used = 0;
+        act.forEach((i) => { const give = Math.min(i.cap - (got[i.id] || 0), (rem * i.w) / W); got[i.id] = (got[i.id] || 0) + give; used += give; if (i.cap - got[i.id] > 0.005) nxt.push(i); });
+        rem -= used; act = nxt;
+      }
+      return { got, left: Math.max(0, rem) };
+    }
+    /* the loan of asset h at month t starts from balance B (and refinances when it comes due) */
+    function setMonth(h, t, B) {
+      const id = h.id, L = LS[id], age = t - P0[id];
+      if (L.m === age && !L.refi && B > 0.005) { L.refi = true; L.ir = refiRateOf(S, h) / 1200; L.Pr = amort(B, L.ir, refiTermOf(S, h)); }
+      BAL[id][t] = B; PAY[id][t] = B > 0.005 ? (L.refi ? L.Pr : L.P) : 0; RAT[id][t] = L.refi ? L.ir : L.i;
+    }
+    const startLoan = (h, t) => { const B0 = balToday(h), m0 = matOf(h); LS[h.id] = { P: payment(h), i: mi(h), m: m0 > 0 && B0 > 0.005 ? Math.max(0, m0 - age0(h)) : Infinity, refi: false, ir: 0, Pr: 0 };
+      BAL[h.id] = new Array(TS + 2).fill(0); PAY[h.id] = new Array(TS + 2).fill(0); RAT[h.id] = new Array(TS + 2).fill(0); AUTO[h.id] = new Array(TS + 2).fill(0); JOBX[h.id] = new Array(TS + 2).fill(0); setMonth(h, t, B0); };
+    /* balance after month t's scheduled payment and the owner's extra payment (before any automatic extra) */
+    const nextBal = (h, t) => { const B = BAL[h.id][t]; return B > 0.005 ? Math.max(0, B * (1 + RAT[h.id][t]) - PAY[h.id][t] - V[h.id].X) : 0; };
     function run() {
-      P0 = {}; sellAt = {}; mergeAt = {}; dr = {}; cur = {}; exits = {}; fund = {}; readyAt = {}; bought = []; blocked = null;
+      P0 = {}; sellAt = {}; mergeAt = {}; dr = {}; cur = {}; exits = {}; fund = {}; readyAt = {}; bought = []; blocked = null; best = {};
+      BAL = {}; PAY = {}; RAT = {}; LS = {}; AUTO = {}; JOBX = {}; CALLS = new Array(TS + 1).fill(0);
       cashA = new Array(TS + 1).fill(0); outsideA = new Array(TS + 1).fill(0); reinv = new Array(TS + 1).fill(0);
-      hs.forEach((h) => { cur[h.id] = 0; P0[h.id] = h.status === 'owned' ? 0 : Infinity; exitTimes(h); if (h.status === 'owned') { bought.push(h); dr[h.id] = new Array(TS + 1).fill(0); } });
-      const queue = queue0.filter((h) => !skipped[h.id]); let C = 0, out = 0, qi = 0;
+      JS = new Array(TS + 1).fill(0); JU = new Array(TS + 1).fill(0); JLN = new Array(TS + 1).fill(0); JC = new Array(TS + 1).fill(0); JLO = new Array(TS + 1).fill(0); LQ = new Array(TS + 1).fill(0); SALET = new Array(TS + 1).fill(0);
+      hs.forEach((h) => { cur[h.id] = 0; P0[h.id] = h.status === 'owned' ? 0 : Infinity; exitTimes(h); if (h.status === 'owned') { bought.push(h); dr[h.id] = new Array(TS + 1).fill(0); startLoan(h, 0); } });
+      const queue = queue0.filter((h) => !skipped[h.id]); let C = 0, out = 0, qi = 0, L = pp ? +pp.cash || 0 : 0, outPrev = 0;
+      const autoPay = g.autoPay !== false, infl = pp ? (pp.inflation || 0) / 100 : 0, apy = pp ? (pp.cashApy || 0) / 1200 : 0;
       for (let t = 0; t <= TS; t++) {
         if (t === 0) hs.forEach((h) => { if (h.status === 'owned' && !h.finCapex && h.capex > 0) out += h.capex; }); /* improvements on assets owned today are paid with outside money */
         /* 1) sales put net proceeds (after the sold asset's own line draw) in the trust's cash */
@@ -576,34 +612,68 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
           const a = st(h, t, cur[h.id]); if (!a) continue;
           const proceeds = a.val * (1 - (h.sellCost || 0) / 100) - a.B - (h.liens || 0);
           exits[h.id] = { month: t, proceeds, price: a.val, net: a.val * (1 - (h.sellCost || 0) / 100), age: a.depAge, dep: depCum(S, h, a.depAge), cost: costBasis(S, h) };
+          if (pp) { const m0 = sumSnap(snapOf(t), t); SALET[t] += (saleTax(S, { exits, T: TS, series: { txRE: { [t]: m0.re }, txBiz: { [t]: m0.bz } } }, h) || { tax: 0 }).tax; } /* the tax on the sale comes out of your cash (used only to keep your reserve) */
           /* the proceeds (after the sold asset's own loan) go to the trust's cash; the sold asset's own line draw stays with the trust and moves to the oldest asset still held (with nothing left, cash pays it) */
           let x = proceeds; if (x < 0) { out += -x; x = 0; }
           const own = cur[h.id]; cur[h.id] = 0;
           if (own > 0.005) { const o = bought.find((q) => q !== h && held(q, t)); if (o) cur[o.id] += own; else { const p0 = Math.min(own, x); x -= p0; out += own - p0; } }
           C += x;
         }
-        /* 2) the next planned asset in the list is bought when the pool can pay for it */
+        /* 2) the next planned asset in the list is bought when the pool can pay for it. Nothing is ever bought before an asset above it in the list: the queue is walked in list order and stops at the first one that is not ready. */
         let snap = snapOf(t);
         while (qi < queue.length) {
           const N = queue[qi], pool = bought.length > 0, bi = Math.max(0, Math.round(N.buyIn || 0)), base = downAmt(N) + (N.price * clPct(S, N)) / 100;
-          const cap0 = N.finCapex ? 0 : Math.max(0, N.capex || 0), needAmt = base + cap0, sm = sumSnap(snap, t);
-          if (pool && readyAt[N.id] === undefined && Math.max(0, sm.head) + C >= needAmt - 1e-6) readyAt[N.id] = t;
+          const cap0 = N.finCapex ? 0 : Math.max(0, N.capex || 0), needAmt = base + cap0, sm = sumSnap(snap, t), avail = Math.max(0, sm.head) + C;
+          if (pool && (!best[N.id] || avail > best[N.id].avail)) best[N.id] = { avail, month: t };
+          if (pool && readyAt[N.id] === undefined && avail >= needAmt - 1e-6) readyAt[N.id] = t;
           if (t < bi || (pool && readyAt[N.id] === undefined)) break;
-          if (pool && Math.max(0, sm.head) + C < needAmt - 1e-6) break;
-          P0[N.id] = t; exitTimes(N); dr[N.id] = new Array(TS + 1).fill(0);
-          if (pool) { const useC = Math.min(C, needAmt); C -= useC; cur[N.id] = needAmt - useC; fund[N.id] = { pool: true, n: sm.n, room: Math.max(0, sm.head), cf: sm.sweep, gross: sm.cf, cash: useC, draw: needAmt - useC, need: needAmt }; }
+          if (pool && avail < needAmt - 1e-6) break;
+          P0[N.id] = t; exitTimes(N); dr[N.id] = new Array(TS + 1).fill(0); startLoan(N, t);
+          if (pool) { const C0 = C, useC = Math.min(C, needAmt); C -= useC; cur[N.id] = needAmt - useC; fund[N.id] = { pool: true, n: sm.n, room: Math.max(0, sm.head), heldCash: C0, have: avail, cf: sm.sweep, gross: sm.cf, cash: useC, draw: needAmt - useC, need: needAmt }; }
           else { const nd = (t > 0 ? base : 0) + cap0; out += nd; fund[N.id] = { pool: false, n: 0, room: 0, cf: 0, cash: 0, draw: 0, need: nd }; }
           bought.push(N); qi++; snap = snapOf(t);
         }
-        /* 3) record the state and sweep the month's pooled cash flow: first pay the line down (oldest draw first), then hold the rest as cash */
+        /* 3) record the state and sweep the month's pooled cash flow. Order of use: (a) pay the trust's line down (oldest draw first); (b) while a planned asset is still waiting, hold the rest as cash for it; (c) once nothing is left to buy, the rest goes to each
+           asset's own loan as an automatic extra payment, in proportion to the cash flow each asset earned. Your job money left after living costs and your cash cushion follows the same order, but is split equally across the loans. */
         snap.forEach((x) => { dr[x.h.id][t] = cur[x.h.id]; });
         cashA[t] = C; outsideA[t] = out;
-        const cf = sumSnap(snap, t).sweep, pending = qi < queue.length; /* once nothing is left to buy, only the line is paid down; after that you keep the cash flow */
-        if (cf > 0) { let x = cf; for (const h of bought) { if (x <= 0) break; if (!held(h, t) || !(cur[h.id] > 0)) continue; const pay = Math.min(cur[h.id], x); cur[h.id] -= pay; x -= pay; } reinv[t] = cf - (pending ? 0 : x); if (pending) C += x; }
+        const sm1 = sumSnap(snap, t), cf = sm1.sweep, pending = qi < queue.length, cap = {}; let anyLoan = false;
+        snap.forEach((x) => { const b = nextBal(x.h, t); if (b > 0.005) { cap[x.h.id] = b; anyLoan = true; } });
+        const payLine = (amt) => { let y = amt; for (const h of bought) { if (y <= 0) break; if (!held(h, t) || !(cur[h.id] > 0)) continue; const pay = Math.min(cur[h.id], y); cur[h.id] -= pay; y -= pay; } return y; };
+        let x = cf > 0 ? payLine(cf) : 0;
+        if (cf > 0 && pending) { C += x; x = 0; } /* x = the part of the pooled cash flow left once the line is paid and nothing is waiting: it is yours unless it can go to a loan */
+        let Xu = 0; snap.forEach((x2) => { if (x2.a.live) Xu += x2.a.v.X; });
+        const liv = pp ? (pp.living || 0) * Math.pow(1 + infl, t / 12) : 0, dbt = pp ? g.otherDebt || 0 : 0, inc = jobsNet(S, t), port = sm1.cf - sm1.tax - sm1.gm;
+        let intr = 0, cI = 0, oT = 0, pCand = x, jCand = 0, scale = autoPay ? 1 : 0;
+        if (pp) {
+          /* Your own month first: take-home pay minus living costs, other debts and your extra payments (a portfolio loss comes out of it too). If that is not enough to live on, the portfolio profit left over pays for living first. What is left after that
+             goes to the loans (profit in proportion to what each asset earned, job money equally), as long as your cash stays at or above the emergency cushion. */
+          intr = t > 0 ? Math.max(0, L + cashA[t - 1]) * apy : 0; cI = pp.capital.reduce((a2, c) => a2 + (c.month === t ? c.amount : 0), 0); oT = pp.planned.reduce((a2, c) => a2 + (c.month === t ? c.amount : 0), 0);
+          const calls = out - outPrev + oT + SALET[t] - cI - intr, G = inc - liv - dbt - Xu + Math.min(0, port), rsv = (pp.emergencyMonths || 0) * (liv + dbt);
+          CALLS[t] = Math.max(0, out - outPrev + oT + SALET[t]); /* one-time costs this month */
+          const cand = pending ? Math.max(0, G) : Math.max(0, G + x); pCand = pending ? 0 : Math.min(x, cand); jCand = cand - pCand;
+          scale = autoPay && cand > 0 ? Math.min(cand, Math.max(0, L + C + cand - calls - rsv - (FUT ? FUT[t] : 0))) / cand : 0; /* FUT = costs still to come (one-time expenses, sale taxes, outside cash for purchases): that money stays in your cash */ JS[t] = Math.max(0, G);
+        }
+        let pSpent = 0;
+        if (!pending && pCand > 0.005 && scale > 0 && anyLoan) { const r = spread(pCand * scale, snap.map((x2) => ({ id: x2.h.id, w: Math.max(0, x2.inc - x2.sched - x2.hi), cap: cap[x2.h.id] || 0 }))); Object.keys(r.got).forEach((id) => { AUTO[id][t] = r.got[id]; cap[id] -= r.got[id]; pSpent += r.got[id]; }); }
+        if (cf > 0) reinv[t] = cf - (x - pSpent);
+        if (jCand * scale > 0.005) {
+          const J = jCand * scale; let y = payLine(J); JLN[t] = J - y;
+          if (pending) { C += y; JC[t] = y; y = 0; }
+          else if (y > 0.005 && anyLoan) { const r = spread(y, snap.map((x2) => ({ id: x2.h.id, w: 1, cap: cap[x2.h.id] || 0 }))); Object.keys(r.got).forEach((id) => { JOBX[id][t] = r.got[id]; cap[id] -= r.got[id]; JLO[t] += r.got[id]; }); y = r.left; }
+          JU[t] = J - y;
+        }
+        if (pp) { L += inc - liv - dbt - Xu + port - (t > 0 ? reinv[t - 1] : 0) - JU[t] + intr + cI - oT - (out - outPrev) - SALET[t]; LQ[t] = L; }
+        outPrev = out;
+        /* 4) next month's loan balances: the scheduled payment, your extra, and the automatic extra from the asset's own profit and from your job */
+        for (const h of bought) { if (!held(h, t + 1) || !(BAL[h.id][t] > 0.005) || t + 1 > TS) continue; setMonth(h, t + 1, Math.max(0, nextBal(h, t) - (AUTO[h.id][t] || 0) - (JOBX[h.id][t] || 0))); }
       }
       blocked = qi < queue.length ? queue[qi] : null;
     }
-    for (let i = 0; i <= queue0.length + 1; i++) { run(); if (!blocked) break; skipped[blocked.id] = 1; }
+    const settle = () => { for (let i = 0; i <= queue0.length + 1; i++) { run(); if (!blocked) break; skipped[blocked.id] = 1; } };
+    settle();
+    if (pp && g.autoPay !== false && CALLS.some((c) => c > 0.5)) { /* second pass: now the costs still to come are known, so loan payments never use up the cash they need */
+      FUT = new Array(TS + 2).fill(0); for (let t = TS - 1; t >= 0; t--) FUT[t] = FUT[t + 1] + CALLS[t + 1]; settle(); }
     const sellKeys = hs.map((h) => (isFinite(sellAt[h.id]) ? sellAt[h.id] : 0)), mergeKeys = hs.map((h) => (isFinite(mergeAt[h.id]) ? mergeAt[h.id] : 0));
     const finiteBuys = hs.map((h) => P0[h.id]).filter(isFinite);
     const lastEvent = Math.max(0, ...finiteBuys, ...sellKeys, ...mergeKeys);
@@ -616,8 +686,8 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       let incAdd = 0, debtAdd = 0;
       for (const h of hs) {
         if (!held(h, t)) continue; const a = st(h, t); if (!a) continue;
-        const { v } = a, hi = (a.heloc * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0, ex = a.live ? v.X : 0, rentG = h.rent * a.gfi, reimbG = v.reimb * a.gfi;
-        const intr = (a.live ? a.B * v.path.rate(a.age) : 0) + hi, dep = depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge), tx = v.noi * a.gfi - intr - dep;
+        const { v } = a, hi = (a.heloc * hel) / 1200, sched = a.live ? PAY[h.id][t] + mipNow(h, a) : 0, ex = a.live ? v.X : 0, rentG = h.rent * a.gfi, reimbG = v.reimb * a.gfi;
+        const intr = (a.live ? a.B * RAT[h.id][t] : 0) + hi, dep = depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge), tx = v.noi * a.gfi - intr - dep;
         s.intr[t] += intr; s.dep[t] += dep; if ((h.type || 'house') === 'business') s.txBiz[t] += tx; else s.txRE[t] += tx;
         s.count[t]++; s.value[t] += a.val; s.debt[t] += a.B + (h.liens || 0) + a.heloc; s.nw[t] += a.val - a.B - (h.liens || 0) - a.heloc;
         s.noi[t] += v.noi * a.gfi; s.ds[t] += sched + hi; s.extra[t] += ex; s.rent[t] += rentG;
@@ -634,24 +704,31 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       o.cltv = o.value ? (o.debt / o.value) * 100 : 0; o.dscr = o.ds ? o.noi / o.ds : 0; return o; };
     /* every asset's contribution to the portfolio totals at month t; the entries sum exactly to the series values */
     const assetsAt = (t) => { t = Math.min(T, Math.round(t)); const list = hs.map((h) => { if (!held(h, t)) return null; const a = st(h, t); if (!a) return null;
-      const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
+      const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? PAY[h.id][t] + mipNow(h, a) : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
       return { id: h.id, addr: h.addr, type: h.type || 'house', equity: a.val - a.B - (h.liens || 0) - a.heloc, value: a.val, debt: a.B + (h.liens || 0) + a.heloc,
         payment: sched + ex + v.escrow + hi, cf: inc - sched - hi, income: inc }; }).filter(Boolean);
       if (s.cash[t] > 0.5) list.push({ id: '__cash', addr: 'Cash in the trust', type: 'cash', equity: s.cash[t], value: s.cash[t], debt: 0, payment: 0, cf: 0, income: 0 }); return list; };
     /* the pool at the END of month t: how many assets, borrowing room, line drawn, room left, pooled monthly cash flow, cash held */
-    const poolAt = (t) => { t = Math.max(0, Math.min(TS, Math.round(t))); const sn = []; for (const h of bought) { if (!held(h, t)) continue; const a = st(h, t); if (!a) continue; const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0;
-        sn.push({ inc: v.noi * a.gfi, sched, hi, draw: a.heloc, biz: (h.type || 'house') === 'business', live: t < mergeAt[h.id], tx: v.noi * a.gfi - ((a.live ? a.B * v.path.rate(a.age) : 0) + hi) - (depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge)), room: Math.max(0, (capOf(S, h) / 100) * (1 - g.haircut / 100) * a.val - a.B - (h.liens || 0)) }); }
+    const poolAt = (t) => { t = Math.max(0, Math.min(TS, Math.round(t))); const sn = []; for (const h of bought) { if (!held(h, t)) continue; const a = st(h, t); if (!a) continue; const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? PAY[h.id][t] + mipNow(h, a) : 0;
+        sn.push({ inc: v.noi * a.gfi, sched, hi, draw: a.heloc, biz: (h.type || 'house') === 'business', live: t < mergeAt[h.id], tx: v.noi * a.gfi - ((a.live ? a.B * RAT[h.id][t] : 0) + hi) - (depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge)), room: Math.max(0, (capOf(S, h) / 100) * (1 - g.haircut / 100) * a.val - a.B - (h.liens || 0)) }); }
       const m = sumSnap(sn, t); return { month: t, n: m.n, room: m.room, drawn: m.draw, head: Math.max(0, m.head), cf: m.cf, tax: m.tax, gm: m.gm, sweep: m.sweep, cash: cashA[t] }; };
     const order = queue0.filter((h) => !skipped[h.id]).concat(queue0.filter((h) => skipped[h.id]));
     const funds = {}; hs.forEach((h) => { funds[h.id] = !!(fund[h.id] && fund[h.id].pool); });
-    const trust = {}; let prevM = 0; hs.forEach((h) => { if (h.status === 'owned') return; const m = P0[h.id], f = fund[h.id] || null;
-      trust[h.id] = { month: m, ready: readyAt[h.id] === undefined ? Infinity : readyAt[h.id], ok: isFinite(m), pooled: funds[h.id], n: f ? f.n : 0, room: f ? f.room : 0, cf: f ? f.cf : 0, cash: f ? f.cash : 0, draw: f ? f.draw : 0, need: f ? f.need : 0 };
+    const trust = {}; let prevM = 0; hs.forEach((h) => { if (h.status === 'owned') return; const m = P0[h.id], f = fund[h.id] || null, bi = Math.max(0, Math.round(h.buyIn || 0)), rd = readyAt[h.id] === undefined ? Infinity : readyAt[h.id];
+      /* month = the one clock everywhere: months from today. ready = the first month the pool could pay (room + cash >= need); month = ready, or the 'not before' month if that is later (held = true). */
+      trust[h.id] = { month: m, ready: rd, held: isFinite(m) && isFinite(rd) && m > rd, buyIn: bi, ok: isFinite(m), pooled: funds[h.id], n: f ? f.n : 0, room: f ? f.room : 0, cf: f ? f.cf : 0, cash: f ? f.cash : 0, draw: f ? f.draw : 0, heldCash: f ? f.heldCash : 0, have: f ? f.have : 0, need: f ? f.need : needFor(S, h), gross: f ? f.gross : 0, best: best[h.id] || null };
     });
+    /* loans: balance at any month, and the month each loan is paid off (with the extra from your own profit and your job); 0 = no loan, Infinity = not within the plan horizon */
+    const loanEnd = {}, balAt = (id, t) => (BAL[id] ? BAL[id][Math.max(0, Math.min(TS, Math.round(t)))] || 0 : 0);
+    hs.forEach((h) => { const p = P0[h.id]; if (!isFinite(p)) { loanEnd[h.id] = Infinity; return; } let e = Infinity; for (let t = p; t <= TS; t++) if (!(BAL[h.id][t] > 0.005)) { e = t; break; } loanEnd[h.id] = e; });
+    const shareAt = (A) => (id, t) => (A[id] ? A[id][Math.max(0, Math.min(TS, Math.round(t)))] || 0 : 0);
+    const firstPos = (A) => (id) => { const a = A[id]; if (!a) return -1; for (let t = 0; t <= TS; t++) if (a[t] > 0.005) return t; return -1; };
+    const jobs = { surplus: JS.slice(0, T + 1), used: JU.slice(0, T + 1), line: JLN.slice(0, T + 1), cash: JC.slice(0, T + 1), loans: JLO.slice(0, T + 1), liquid: LQ.slice(0, T + 1) };
     const rows = queue0.map((h) => { const m = P0[h.id], r = { id: h.id, target: h.id, start: prevM, locM: isFinite(m) ? Math.max(0, m - prevM) : Infinity, end: m, ok: isFinite(m), funds: funds[h.id], ready: trust[h.id].ready }; if (isFinite(m)) prevM = Math.max(prevM, m); return r; });
     let worst = { dti: 0, month: 0 }; for (let t = 0; t <= T; t++) if (s.dti[t] > worst.dti) worst = { dti: s.dti[t], month: t };
     let extraLater = 0; hs.forEach((h) => { const v = V[h.id]; if (isFinite(P0[h.id]) && P0[h.id] > 0 && v.L > 0 && v.payoff > 0) extraLater += v.X; });
-    return { dpCash, outsideTotal: s.outside[T], extraNow: s.extra[0], extraLater, purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
-      at, assetsAt, poolAt, snap: assetsAt(Math.min(T, planM)), rows, funds, fundedByLOC: funds, trust, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id), skipped: Object.keys(skipped), queue: order.map((h) => h.id) };
+    return { dpCash, jobUsed: jobs.used, outsideTotal: s.outside[T], extraNow: s.extra[0], extraLater, purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
+      at, assetsAt, poolAt, snap: assetsAt(Math.min(T, planM)), rows, jobs, loanEnd, balAt, autoAt: shareAt(AUTO), jobAt: shareAt(JOBX), autoFrom: firstPos(AUTO), jobFrom: firstPos(JOBX), funds, fundedByLOC: funds, trust, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id), skipped: Object.keys(skipped), queue: order.map((h) => h.id) };
   }
 
 
@@ -671,7 +748,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const p = S.p; if (!p) return null; pl = pl || plan(S);
     const g = S.g, s = pl.series, T = pl.T, infl = (p.inflation || 0) / 100, apy = (p.cashApy || 0) / 1200;
     const N = (n) => new Array(n + 1).fill(0);
-    const R = { dep: N(T), taxable: N(T), gm: N(T), hours: N(T), nBiz: N(T), income: N(T), portfolio: N(T), portTax: N(T), extra: N(T), living: N(T), debts: N(T), oneTime: N(T), capitalIn: N(T), outsideCall: N(T), saleTax: N(T), interest: N(T), net: N(T), liquid: N(T), total: N(T), reserve: N(T), burn: N(T), runway: N(T) };
+    const R = { dep: N(T), taxable: N(T), gm: N(T), hours: N(T), nBiz: N(T), income: N(T), portfolio: N(T), portTax: N(T), extra: N(T), living: N(T), debts: N(T), oneTime: N(T), capitalIn: N(T), jobSplit: N(T), jobSurplus: N(T), outsideCall: N(T), saleTax: N(T), interest: N(T), net: N(T), liquid: N(T), total: N(T), reserve: N(T), burn: N(T), runway: N(T) };
     const saleInfo = {}; S.houses.forEach((h) => { const ex = pl.exits[h.id]; if (ex && ex.month <= T) { const st0 = saleTax(S, pl, h); saleInfo[h.id] = st0; R.saleTax[ex.month] += st0.tax; } });
     p.planned.forEach((x) => { if (x.month <= T) R.oneTime[x.month] += x.amount; }); p.capital.forEach((x) => { if (x.month <= T) R.capitalIn[x.month] += x.amount; });
     S.houses.filter((h) => h.type === 'business').forEach((h) => { const a = pl.purchase[h.id], b = Math.min(T + 1, pl.sellAt[h.id], pl.mergeAt[h.id]); if (isFinite(a)) for (let t = a; t < b && t <= T; t++) R.nBiz[t]++; }); /* a business merged into another is one business afterwards: no second manager and no second set of hours */
@@ -684,7 +761,8 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       R.outsideCall[t] = t === 0 ? s.outside[0] : s.outside[t] - s.outside[t - 1];
       R.net[t] = R.income[t] + R.portfolio[t] - R.portTax[t] - R.gm[t] - R.extra[t] - R.living[t] - R.debts[t];
       R.interest[t] = t > 0 ? Math.max(0, liq + s.cash[t - 1]) * apy : 0;
-      liq += R.net[t] + R.interest[t] + R.capitalIn[t] - R.outsideCall[t] - R.oneTime[t] - R.saleTax[t] - (pl.dpCash[t] || 0);
+      R.jobSplit[t] = (pl.jobUsed && pl.jobUsed[t]) || 0; R.jobSurplus[t] = (pl.jobs && pl.jobs.surplus[t]) || 0; /* job money that moved into the trust or the loans (never below your cash cushion) */
+      liq += R.net[t] + R.interest[t] + R.capitalIn[t] - R.outsideCall[t] - R.oneTime[t] - R.saleTax[t] - (pl.dpCash[t] || 0) - R.jobSplit[t];
       R.liquid[t] = liq; R.total[t] = liq + s.cash[t];
       R.reserve[t] = (p.emergencyMonths || 0) * (R.living[t] + R.debts[t]);
       R.burn[t] = R.living[t] + R.debts[t] + R.extra[t] + R.gm[t] - Math.max(0, R.portfolio[t] - R.portTax[t]);
@@ -718,7 +796,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const totalOutside = s.outside[T], capitalTotal = p.capital.reduce((a, x) => a + x.amount, 0);
     return { series: R, T, status, headline, saleInfo, reasons, fixes, calls: callsAll,
       kpis: { planEnd: { month: pe, cfBefore: R.portfolio[pe], tax: R.portTax[pe], cfAfter: R.portfolio[pe] - R.portTax[pe], net: R.net[pe] }, peakHours: peakH, peakHoursMonth: peakHM, managerCost0: R.gm[0], managerCostMax: gmMax, peakBusinesses: peakBiz, takeHome: R.income[0], portfolioAfterTax: R.portfolio[0] - R.portTax[0], extra: R.extra[0], living: R.living[0], debts: R.debts[0], net0: R.net[0], worstNet, cash0: p.cash, reserveMonths0: R.living[0] + R.debts[0] > 0 ? p.cash / (R.living[0] + R.debts[0]) : Infinity,
-        minLiquid: minT, minLiquidMonth: minM, shortAmount: short, firstShortMonth: firstShort, reserveTarget0: R.reserve[0], reserveGap, runway0: R.runway[0], minRunway: minRun, totalOutside, capitalTotal, savingsUsed: Math.min(p.cash, totalOutside), gap: Math.max(0, totalOutside - p.cash - capitalTotal), dtiPeak: pl.worst.dti } };
+        jobSurplus0: R.jobSurplus[0], jobSplit0: R.jobSplit[0], jobSurplusMax: Math.max.apply(null, R.jobSurplus), minLiquid: minT, minLiquidMonth: minM, shortAmount: short, firstShortMonth: firstShort, reserveTarget0: R.reserve[0], reserveGap, runway0: R.runway[0], minRunway: minRun, totalOutside, capitalTotal, savingsUsed: Math.min(p.cash, totalOutside), gap: Math.max(0, totalOutside - p.cash - capitalTotal), dtiPeak: pl.worst.dti } };
   }
 
   /* Can the lenders carry this purchase? Debt-to-income (including your own rent or mortgage) in the month the trust buys the asset. Assets owned today have nothing to afford. */
@@ -733,7 +811,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     return { cls, dti, txt: cls === 'ok' ? '✓ Afford' : cls === 'warn' ? '△ Tight' : '✗ Short', why: 'Debt-to-income ' + dti.toFixed(0) + '% (including your own rent or mortgage) vs ' + lim + '% limit when ' + h.addr + ' closes.' };
   }
   function normalize(S) {
-    S.g = Object.assign({}, GDEF, S.g || {});
+    S.g = Object.assign({}, GDEF, S.g || {}); S.g.autoPay = S.g.autoPay !== false;
     ['cap', 'capBiz', 'vac', 'refiRate', 'refiTerm'].forEach((k) => { if (!isFinite(+S.g[k])) S.g[k] = GDEF[k]; });
     if (S.p) S.p = normalizePersonal(S.p);
     S.houses = (S.houses || []).filter((h) => h && h.id).map((h) => { const type = TYPES[h.type] ? h.type : 'house'; return Object.assign(newAsset(type, undefined, { id: h.id }), h, { type }); });
@@ -855,19 +933,19 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     A('house', 'conv30', {id: 'birch', addr: '908 Birchwood Ct', price: 195000, rent: 2000, tax: 220, ins: 90, growth: 4, capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8, exit: 'sell', exitMonth: 56}),
     A('house', 'dscr', {id: 'willow', addr: '3350 Willow Bend Rd', price: 210000, rent: 2200, tax: 235, ins: 95, growth: 4}),
     A('house', 'conv30', {id: 'linden', addr: '2914 Linden Way', price: 175000, rent: 1825, tax: 195, ins: 85, growth: 4}),
-    A('business', 'sba7a', {id: "cornerston", addr: "Cornerstone Plumbing Co", price: 950000, rent: 23990, growth: 4, dp: 10, buyIn: 0}),
-    A('commercial', 'comm25', {id: "northgater", addr: "Northgate Retail Strip", price: 1190000, growth: 4, dp: 40, rent: 9700, tax: 744, ins: 298, hoa: 298, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "summitfrei", addr: "Summit Freight & Logistics", price: 1485000, rent: 37500, growth: 4, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "harborstse", addr: "Harbor St Self-Storage", price: 1855000, growth: 4, dp: 45, rent: 14220, tax: 1159, ins: 464, hoa: 464, nnn: 85, capex: 110000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 129, buyIn: 0}),
-    A('business', 'sba7a', {id: "keystonehv", addr: "Keystone HVAC Services", price: 2320000, rent: 48330, growth: 4, dp: 10, buyIn: 0}),
-    A('commercial', 'comm25', {id: "lakeviewme", addr: "Lakeview Medical Office", price: 2900000, growth: 4, dp: 40, rent: 23640, tax: 1813, ins: 725, hoa: 725, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "apexproper", addr: "Apex Property Services", price: 3625000, rent: 65670, growth: 4, exit: "sell", exitMonth: 166, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "westfieldo", addr: "Westfield Office Park", price: 4530000, growth: 4, dp: 35, rent: 41330, tax: 2831, ins: 1133, hoa: 1133, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "meridianst", addr: "Meridian Staffing Group", price: 5660000, rent: 102540, growth: 4, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "eastgatesh", addr: "Eastgate Shopping Plaza", price: 7080000, growth: 4, dp: 40, rent: 57700, tax: 4425, ins: 1770, hoa: 1770, nnn: 85, capex: 425000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 183, buyIn: 0}),
-    A('business', 'bankbiz', {id: "ironwoodma", addr: "Ironwood Manufacturing", price: 8850000, rent: 147500, growth: 4, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "redwoodlog", addr: "Redwood Logistics Center", price: 11060000, growth: 4, dp: 35, rent: 92840, tax: 6913, ins: 2765, hoa: 2765, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "graniteind", addr: "Granite Industrial Supply", price: 13825000, rent: 205730, growth: 4, dp: 30, buyIn: 0})] })); };
+    A('business', 'sba7a', {id: "cornerston", addr: "Cornerstone Plumbing Co", price: 850000, rent: 21460, growth: 4, dp: 10, buyIn: 0}),
+    A('commercial', 'comm25', {id: "northgater", addr: "Northgate Retail Strip", price: 1065000, growth: 4, dp: 40, rent: 8680, tax: 666, ins: 266, hoa: 266, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "summitfrei", addr: "Summit Freight & Logistics", price: 1330000, rent: 33590, growth: 4, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "harborstse", addr: "Harbor St Self-Storage", price: 1660000, growth: 4, dp: 45, rent: 12720, tax: 1038, ins: 415, hoa: 415, nnn: 85, capex: 100000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 125, buyIn: 0}),
+    A('business', 'sba7a', {id: "keystonehv", addr: "Keystone HVAC Services", price: 2075000, rent: 43230, growth: 4, dp: 10, buyIn: 0}),
+    A('commercial', 'comm25', {id: "lakeviewme", addr: "Lakeview Medical Office", price: 2595000, growth: 4, dp: 40, rent: 21150, tax: 1622, ins: 649, hoa: 649, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "apexproper", addr: "Apex Property Services", price: 3240000, rent: 67500, growth: 4, exit: "sell", exitMonth: 160, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "westfieldo", addr: "Westfield Office Park", price: 4055000, growth: 4, dp: 35, rent: 37000, tax: 2534, ins: 1014, hoa: 1014, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "meridianst", addr: "Meridian Staffing Group", price: 5065000, rent: 91760, growth: 4, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "eastgatesh", addr: "Eastgate Shopping Plaza", price: 6335000, growth: 4, dp: 40, rent: 51630, tax: 3959, ins: 1584, hoa: 1584, nnn: 85, capex: 380000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 175, buyIn: 0}),
+    A('business', 'bankbiz', {id: "ironwoodma", addr: "Ironwood Manufacturing", price: 7915000, rent: 131920, growth: 4, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "redwoodlog", addr: "Redwood Logistics Center", price: 9895000, growth: 4, dp: 35, rent: 83060, tax: 6184, ins: 2474, hoa: 2474, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "graniteind", addr: "Granite Industrial Supply", price: 12370000, rent: 184080, growth: 4, dp: 30, buyIn: 0}) ] })); };
   /* LEGACY small sample (the Load realistic sample button; the app's default is seedPlan above; listed in the order the assets are bought). Every loan, price, cap rate, multiple and growth rate is checked against
      the grader's benchmark file (prototype/grader). Homes cash flow positive. Recycles sale cash; needs about $1.3M of outside cash. */
   const seed = () => { const A = newAsset; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: Object.assign(samplePersonal(), { cash: 100000 }), houses: [
@@ -954,9 +1032,10 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     sellcost: { t: 'Selling costs', b: 'Agent or broker fees and closing costs when you sell. Homes are often 5% to 7%. Commercial properties and businesses vary with the size of the sale.' },
     merge: { t: 'Merge and synergy lift', b: 'Merging combines a business into another one you own. The synergy lift is the extra value and income you expect from running them together, as a percent.' },
     proceeds: { t: 'Net proceeds', b: 'What you keep after a sale: the sale price, minus selling costs, minus the loan and any liens paid off.' },
-    creditline: { t: 'Line of credit (the trust’s line)', b: 'Every asset sits in one trust, and the trust borrows against all of it. The line is what the trust can still draw. It is up to 85% of each real-estate asset’s value (50% for a business; you can change this under Assumptions), minus that asset’s loan and liens, minus what the trust already drew. Its cash flow pays the line down, which opens more room.' },
+    creditline: { t: 'Line of credit (the trust’s line)', b: 'Every asset sits in one trust, and the trust borrows against all of it. The credit line shown on a bought asset is the most you could take against it today: up to 85% of its value (50% for a business; you can change this under Assumptions), minus its loan and liens. The trust also subtracts what it already drew. Its cash flow pays the line down, which opens more room.' },
     debtcap: { t: 'Max debt on a house', b: 'Lenders limit total borrowing to a share of an asset’s value, often 80% to 85%. The loan, any liens and the line of credit together must stay under it.', e: 'At 85% on a $200,000 home, total debt can be up to $170,000.' },
-    nextdp: { t: 'Funded by the trust', b: 'When the trust can pay for an asset. Everything before it in the list (what you own today and the planned assets above it) forms one pool. The pool pays when its borrowing room plus its cash reaches the down payment, closing costs and improvements. Its cash flow, after loan payments, managers and taxes, pays the line down first, then is held. Extra payments add room sooner.', e: 'A pool earning $20,000 a month with $400,000 of room can fund a $600,000 need in about 10 months.' },
+    nextdp: { t: 'Funded by the trust', b: 'The month, counted from today, when the trust can pay for an asset. Everything above it in the list forms one pool. The pool pays when its borrowing room plus its cash reaches the cash the asset needs. Room counts as funding: the rest is drawn on the line of credit. An asset is never funded before the ones above it.', e: 'A pool with $126,000 of room and no cash can fund a $123,500 need.' },
+    autopay: { t: 'Profit and job money to loans', b: 'While a planned asset is waiting, pooled cash flow pays the line of credit and builds cash for it. After that, each asset’s profit pays down its own loan. Your job pay left after living costs and your cash cushion is split equally across the loans. Loans end sooner. Turn it off to keep that money as cash.', e: 'An asset that earns $1,000 a month after its loan payment sends it to its own loan.' },
     cashneeded: { t: 'Cash needed', b: 'The down payment, closing costs and any improvements paid in cash for the asset the trust is about to buy.' },
     dti: { t: 'Debt-to-income (DTI)', b: 'Your monthly debt payments divided by the monthly income a lender counts. Limits vary by loan and lender, often 43% to 50% at most. The app counts your other debts, your own rent or mortgage (set in Finances), and the payments on the loans in the plan, and it counts only part of the rent as income.' },
     qualifying: { t: 'Qualifying income', b: 'The income a lender counts to approve a loan: your jobs, a co-signer’s income, and part of rental income.' },
@@ -1032,23 +1111,26 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
-  let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan' };
+  let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan', sect: 'all', addOwned: false };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  const DATA_V = 15; /* bump when the sample portfolio changes so old saved samples are replaced */
+  const DATA_V = 16; /* bump when the sample portfolio changes so old saved samples are replaced */
   if (S && Array.isArray(S.houses) && S.g && S.v === 8) { S.p = S.p || E.samplePersonal(); S.v = DATA_V; } /* v8 saves keep their assets and gain a finance profile */
   let switched = null;
-  if (S && Array.isArray(S.houses) && S.g && (S.v === 9 || S.v === 10 || S.v === 11 || S.v === 12 || S.v === 13 || S.v === 14)) { switched = JSON.stringify(S); const keepP = S.p, plan = E.seedPlan(); if (keepP) plan.p = Object.assign({}, keepP, { capital: plan.p.capital }); S = plan; S.v = DATA_V; } /* v9-v14 saves switch to the trust-funded $125M plan once; Undo brings the old one back */
+  if (S && Array.isArray(S.houses) && S.g && (S.v === 9 || S.v === 10 || S.v === 11 || S.v === 12 || S.v === 13 || S.v === 14 || S.v === 15)) { switched = JSON.stringify(S); const keepP = S.p, plan = E.seedPlan(); if (keepP) plan.p = Object.assign({}, keepP, { capital: plan.p.capital }); S = plan; S.v = DATA_V; } /* v9-v15 saves switch to the current $125M plan once; Undo brings the old one back */
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seedPlan();
   E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
   /* the next planned asset below h in the list (the trust buys in list order), and the month it is bought if h's extra payment were x instead */
   const nextPlanned = (h) => { const i = S.houses.indexOf(h); for (let k = i + 1; k < S.houses.length; k++) if (S.houses[k].status === 'planned') return S.houses[k]; return null; };
-  const monthWith = (h, x, id) => { const c = JSON.parse(JSON.stringify(S)), q = c.houses.find((y) => y.id === h.id); q.extra = x; q.driver = 'extra'; return E.plan(c).purchase[id]; };
+  const planWith = (h, x) => { const c = JSON.parse(JSON.stringify(S)), q = c.houses.find((y) => y.id === h.id); q.extra = x; q.driver = 'extra'; return E.plan(c); };
+  const monthWith = (h, x, id) => planWith(h, x).purchase[id];
+  /* how long this asset's loan lasts in the plan (months from today when owned, months after it is bought when planned); it includes the automatic extra from its own profit and from your job */
+  const lifeOf = (pl2, h) => { const e = pl2.loanEnd[h.id], b = h.status === 'owned' ? 0 : pl2.purchase[h.id]; return isFinite(e) && isFinite(b) ? Math.max(0, e - b) : Infinity; };
   const buyKey = (h, pl) => (h.status === 'owned' ? -(+h.paid || 0) : isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9); const buyOrder = (pl) => { const no = {}; S.houses.map((h, i) => [h, i]).sort((a, b) => buyKey(a[0], pl) - buyKey(b[0], pl) || a[1] - b[1]).forEach(([h], k) => { no[h.id] = k + 1; }); return no; };
   const fixOrder = (s) => { s.seq = +s.seq || 0; s.houses.forEach((h) => { if (!h.created) h.created = Date.now(); }); if (s.orderV !== 2) E.orderByBuy(s); return s; }; /* list order = buy order, sorted once; after that the saved order is the truth */
   fixOrder(S);
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
   let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
-  if (switched) undo = { text: 'Switched to the trust-funded $125M plan (28 years): every asset is now paid for by the pooled cash flow and borrowing room of all the assets before it in the list, and that cash flow goes toward the line of credit. The old per-asset funding links are no longer used.', label: 'old portfolio', snap: switched };
+  if (switched) undo = { text: 'Switched to the updated $125M plan (28 years). The portfolio now has two sections, Bought and Planned: Bought rows show the loan still due, the line of credit and the payoff time; Planned rows show whether the plan is possible and the math. Profit and your job money now pay loans down automatically, and every time is counted from today.', label: 'old portfolio', snap: switched };
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
@@ -1068,6 +1150,10 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
   const grp = (n) => Math.round(num(n)).toLocaleString('en-US');
   const mo = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 24 ? m + ' mo' : Math.floor(m / 12) + 'y ' + (m % 12) + 'm');
   const mm = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m + ' mo'); /* credit-line timing: plain months */
+  /* ONE clock for every purchase and funding time: months from today. mon(): the month number itself; ym(): a length of time (a loan's remaining life). A gap between two assets is never shown. */
+  const mon = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : 'month ' + m);
+  const monY = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 24 ? 'month ' + m : 'month ' + m + ' (' + Math.floor(m / 12) + 'y ' + (m % 12) + 'm)');
+  const ym = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 12 ? m + ' mo' : Math.floor(m / 12) + ' yr' + (m % 12 ? ' ' + (m % 12) + ' mo' : ''));
   const mmy = (m) => (!isFinite(m) ? 'never' : m <= 0 ? 'now' : m < 24 ? m + ' mo' : m + ' mo (' + Math.floor(m / 12) + 'y ' + (m % 12) + 'm)');
   const r = (n, d = 0) => (isFinite(n) ? String(+n.toFixed(d)) : '—');
   const GL = (window.Info && window.Info) || { INFO: {}, LABEL: {}, LOAN: {} }, INFO = GL.INFO;
@@ -1093,9 +1179,9 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     for (let y = 0; y * 12 <= max; y += ys) tk.push(y);
     const grid = tk.map((y) => `<i class="tk" style="left:${pc(y * 12)}%"><span>${y ? y + 'y' : 'Now'}</span></i>`).join('');
     const rows = steps.map((x) => { const h = H(x.id), tr = pl.trust[x.id];
-      return `<div class="tr" data-go="h/${h.id}"><div class="tl">${esc(h.addr)}</div><div class="trk">${grid}${x.ok ? `<span class="seg2 pl" style="left:${pc(x.start)}%;width:${Math.max(1.5, pc(x.end - x.start))}%"></span><span class="dot" style="left:${pc(x.end)}%"></span>` : '<span class="nr">not reachable</span>'}</div>
-      <div class="tm">${x.ok ? `${tr && tr.pooled ? 'funded by the trust' : 'bought with cash on hand'} <b>${mm(x.end)}</b>${tr && tr.pooled ? ` · pool of ${tr.n} assets` : ''}` : 'the trust cannot pay for it within 50 years'}</div></div>`; }).join('');
-    return `<div class="tlw" data-testid="timeline">${rows}</div><p class="note">Bar = the wait since the asset before it was bought · ● = the month the trust (everything earlier in the list) can pay for it. Tap a row to edit.</p>`;
+      return `<div class="tr" data-go="h/${h.id}"><div class="tl">${esc(h.addr)}</div><div class="trk">${grid}${x.ok ? `<span class="seg2 pl" style="left:0%;width:${Math.max(1.5, pc(x.end))}%"></span><span class="dot" style="left:${pc(x.end)}%"></span>` : '<span class="nr">not reachable</span>'}</div>
+      <div class="tm">${x.ok ? `${tr && tr.pooled ? 'the trust can pay at' : 'paid from your own cash at'} <b>${mon(x.end)}</b>${tr && tr.pooled ? ` · pool of ${tr.n} assets` : ''}${tr && tr.held ? ` · held until your date, ${mon(tr.buyIn)}` : ''}` : 'the trust cannot pay for it within 50 years'}</div></div>`; }).join('');
+    return `<div class="tlw" data-testid="timeline">${rows}</div><p class="note">Every bar and dot counts months from today: ● = the month the trust (everything above it in the list) can pay for it. Assets are never funded before the ones above them. Tap a row to edit.</p>`;
   }
   function nwChart(pl) {
     const T = Math.max(12, Math.min(pl.T, pl.planM)), s = pl.series.nw.slice(0, T + 1);
@@ -1107,13 +1193,13 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const ys = T <= 60 ? 1 : T <= 120 ? 2 : T <= 240 ? 5 : 10; let ticks = '';
     for (let yr = 0; yr * 12 <= T; yr += ys) ticks += `<text x="${x(yr * 12)}" y="${Hh - 8}" text-anchor="${yr === 0 ? 'start' : 'middle'}">${yr ? yr + 'y' : 'Now'}</text>`;
     const buyList = S.houses.filter((h) => isFinite(pl.purchase[h.id]) && pl.purchase[h.id] > 0 && pl.purchase[h.id] <= T);
-    const buys = buyList.map((h) => `<circle cx="${x(pl.purchase[h.id])}" cy="${y(s[pl.purchase[h.id]])}" r="4.5" class="buy"><title>${esc(h.addr)} bought in ${mm(pl.purchase[h.id])}</title></circle>`).join('');
+    const buys = buyList.map((h) => `<circle cx="${x(pl.purchase[h.id])}" cy="${y(s[pl.purchase[h.id]])}" r="4.5" class="buy"><title>${esc(h.addr)} funded at ${mon(pl.purchase[h.id])}</title></circle>`).join('');
     const ev = buyList.map((h) => pl.purchase[h.id] + ':' + h.addr.replace(/[|:]/g, ' ')).join('|');
     return `<div class="chartwrap"><svg class="nw" data-testid="networth-chart" viewBox="0 0 ${W} ${Hh}" data-w="${W}" data-h="${Hh}" data-pad="${pad}" data-t="${T}" data-min="${min}" data-max="${max}" data-nw="${s.map((v) => Math.round(v)).join(',')}" data-ev="${esc(ev)}" role="img" aria-label="Net worth over time, ${$f(s[0])} now to ${$f(s[T])} in ${mo(T)}. Hover or drag to read values.">
       <line class="ax" x1="${pad}" x2="${W - pad}" y1="${y(0)}" y2="${y(0)}"/><path class="ar" d="${d}L${x(T)} ${y(0)}L${x(0)} ${y(0)}Z"/><path class="ln" d="${d}"/>${buys}${ticks}
       <text x="${pad}" y="12">${$f(max)}</text>${min < 0 ? `<text x="${pad}" y="${y(min) - 4}">${$f(min)}</text>` : ''}
       <line class="xh" id="nwx" y1="14" y2="${Hh - 24}" x1="0" x2="0" visibility="hidden"/><circle class="hv" id="nwd" r="5.5" cx="0" cy="0" visibility="hidden"/><rect class="hit" x="0" y="0" width="${W}" height="${Hh}"/></svg>
-      <div class="tip" id="nwtip" hidden></div></div><p class="note">Net worth = value − loans − other liens − lines of credit drawn. Hover or drag across the line to read it. ● = a house is bought.</p>`;
+      <div class="tip" id="nwtip" hidden></div></div><p class="note">Net worth = value − loans − other liens − lines of credit drawn. Hover or drag across the line to read it. ● = the trust can pay for an asset.</p>`;
   }
   function nwHover(e) {
     const svg = e.target.closest && e.target.closest('svg.nw'); if (!svg) return;
@@ -1123,7 +1209,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const ln = svg.querySelector('#nwx'), dot = svg.querySelector('#nwd'), tip = document.getElementById('nwtip');
     ln.setAttribute('x1', cx); ln.setAttribute('x2', cx); dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); ln.setAttribute('visibility', 'visible'); dot.setAttribute('visibility', 'visible');
     const hit = (d.ev || '').split('|').map((q) => q.split(':')).filter((q) => q[0] && +q[0] === t).map((q) => q[1]);
-    tip.innerHTML = `<b>${$f(v)}</b><span>${t === 0 ? 'today' : 'in ' + mm(t) + (t >= 24 ? ' (' + mo(t) + ')' : '')}${hit.length ? ' · bought ' + esc(hit.join(', ')) : ''}</span>`;
+    tip.innerHTML = `<b>${$f(v)}</b><span>${t === 0 ? 'today' : 'in ' + mm(t) + (t >= 24 ? ' (' + mo(t) + ')' : '')}${hit.length ? ' · funded: ' + esc(hit.join(', ')) : ''}</span>`;
     tip.hidden = false;
     const w = tip.offsetWidth, left = Math.min(Math.max(cx * sc - w / 2, 0), r0.width - w);
     tip.style.left = left + 'px'; tip.style.top = Math.max(cy * sc - tip.offsetHeight - 12, 0) + 'px';
@@ -1131,6 +1217,21 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
   function nwLeave(e) {
     const svg = e.target && e.target.closest && e.target.closest('svg.nw'); if (!svg) return;
     ['#nwx', '#nwd'].forEach((q) => svg.querySelector(q).setAttribute('visibility', 'hidden')); const tip = document.getElementById('nwtip'); if (tip) tip.hidden = true;
+  }
+
+  /* Can the plan buy this planned asset? One test, one clock (months from today): the pool of everything above it (what you own plus the planned assets above it) pays when its borrowing room + the cash it holds >= the cash the asset needs. */
+  function verdictFor(pl, h) {
+    const tr = pl.trust[h.id], a = E.afford(S, h, pl);
+    if (!tr.ok) return { cls: 'bad', word: 'Not possible', why: '' };
+    if (a.cls === 'bad') return { cls: 'bad', word: 'Not possible', why: a.dti >= 999 ? 'no qualifying income is set' : 'lenders would decline: debt-to-income ' + r(a.dti) + '% vs ' + S.g.dti + '% limit' };
+    if (a.cls === 'warn') return { cls: 'warn', word: 'Possible, tight', why: 'debt-to-income ' + r(a.dti) + '% is near the ' + S.g.dti + '% limit' };
+    return { cls: 'ok', word: 'Possible', why: '' };
+  }
+  function mathFor(pl, h) {
+    const tr = pl.trust[h.id], need = tr.need || E.needFor(S, h);
+    if (!tr.ok) return `needs ${$f(need)} cash · the pool of everything above it never gets there${tr.best ? ' (closest: ' + $f(tr.best.avail) + ' in ' + mon(tr.best.month) + ')' : ''}`;
+    if (!tr.pooled) return `needs ${$f(need)} cash · nothing above it to borrow against, so it is paid from your own cash`;
+    return `needs ${$f(need)} cash · pool of ${tr.n}: borrowing room ${$f(tr.room)} + cash ${$f(tr.heldCash)} = ${$f(tr.have)} · +${$f(tr.cf)}/mo reinvested · funded by the trust at ${mon(tr.ready)}${tr.held ? ', held until your date (' + mon(tr.buyIn) + ')' : ''}`;
   }
 
   /* ---------- main page ---------- */
@@ -1145,24 +1246,24 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       const v = pl.V[h.id], X = v.X, P = 'h.' + h.id + '.';
       let eff = '';
       if (!soldBy) {
-        const pay0 = E.payoffN(h, 0, S), payX = v.payoff, hasLoan = v.L > 0;
-        const term = !hasLoan ? 'No loan on this asset' : !isFinite(payX) ? (h.io ? 'Interest-only: not paid off' : 'Payment does not cover interest') : 'Paid off in ' + mmy(payX);
-        const termSub = !hasLoan ? '' : X > 0.5 ? (!isFinite(pay0) ? (isFinite(payX) ? 'it never pays off without the extra' : '') : pay0 - payX > 0 ? mmy(pay0 - payX) + ' sooner than with no extra' : 'same as with no extra') : 'extra payments pay it off sooner';
+        const p0 = X > 0.5 ? planWith(h, 0) : pl, pay0 = lifeOf(p0, h), payX = lifeOf(pl, h), hasLoan = v.L > 0;
+        const term = !hasLoan ? 'No loan on this asset' : !isFinite(payX) ? (h.io ? 'Interest-only: not paid off' : 'Not paid off in this plan') : 'Paid off in ' + ym(payX) + (h.status === 'owned' ? '' : ' after it is bought');
+        const termSub = !hasLoan ? '' : X > 0.5 ? (!isFinite(pay0) ? (isFinite(payX) ? 'it never pays off without the extra' : '') : pay0 - payX > 0 ? ym(pay0 - payX) + ' sooner than with no extra' : 'same as with no extra') : 'extra payments pay it off sooner';
         let nxt, nxtSub = '', nxtAttr = '';
         const nx = nextPlanned(h);
         if (!nx) { nxt = 'Nothing left to buy'; nxtSub = 'No planned asset below this one in the list, so no purchase is waiting on its cash flow.'; }
         else {
-          const open = pl.purchase[nx.id], m0 = monthWith(h, 0, nx.id), soon = isFinite(open) && isFinite(m0) ? m0 - open : 0, tr = pl.trust[nx.id];
-          nxt = !isFinite(open) ? 'not reachable' : open <= 0 ? 'now' : 'in ' + mmy(open);
-          nxtSub = (X > 0.5 ? (soon > 0 ? mmy(soon) + ' sooner than with no extra' : 'no faster than with no extra') : 'extra payments make it sooner') + ' · ' + (tr && tr.pooled ? 'the trust reinvests ' + $f(tr.cf) + '/mo of cash flow toward it' : 'bought with cash on hand');
+          const open = pl.purchase[nx.id], m0 = p0.purchase[nx.id], soon = isFinite(open) && isFinite(m0) ? m0 - open : 0, tr = pl.trust[nx.id];
+          nxt = !isFinite(open) ? 'not reachable' : open <= 0 ? 'now' : monY(open);
+          nxtSub = (X > 0.5 ? (soon > 0 ? ym(soon) + ' sooner than with no extra' : 'no faster than with no extra') : 'extra payments make it sooner') + ' · ' + (tr && tr.pooled ? 'the trust reinvests ' + $f(tr.cf) + '/mo of cash flow toward it' : 'bought with cash on hand');
           nxtAttr = ` data-open="${isFinite(open) ? open : ''}" data-sooner="${soon}"`;
         }
         eff = `<div class="eff" data-testid="extra-effects">
           <div class="el"><span class="elk">Loan</span><b data-testid="eff-term" data-k="eff-term-${h.id}" data-months="${isFinite(payX) ? payX : ''}" data-base="${isFinite(pay0) ? pay0 : ''}">${term}</b><small>${termSub}</small></div>
           <div class="el"><span class="elk">Payment now</span><b data-testid="eff-payment" data-k="eff-pay-${h.id}">${$f(v.payment)}</b><small>${paySub(h, v) || 'no loan payment'}</small></div>
-          <div class="el"><span class="elk">Next purchase${nx ? ' · ' + esc(nx.addr) : ''}${infoBtn('nextdp')}</span><b data-testid="eff-next" data-k="eff-next-${h.id}"${nxtAttr}>${nxt}</b><small>${nxtSub}</small></div></div>`;
+          <div class="el"><span class="elk">Next the trust funds${nx ? ' · ' + esc(nx.addr) : ''}${infoBtn('nextdp')}</span><b data-testid="eff-next" data-k="eff-next-${h.id}"${nxtAttr}>${nxt}</b><small>${nxtSub}</small></div></div>`;
       }
-      const mv = !soldBy && vis.length > 1;
+      const mv = !soldBy && h.status !== 'owned' && vis.length > 1; /* only planned assets have an order that matters; owned ones sit oldest first */
       return `<div class="panel" data-testid="asset-panel" data-for="${h.id}">
         ${soldBy ? '<p class="note" style="margin:0 0 6px">Sold in this plan, so there is no extra payment to set.</p>' : `<label class="f ex"><span class="lb">Extra payment / month${infoBtn('extra')}</span><span class="iw"><em>$</em><input inputmode="decimal" data-testid="extra-input" data-p="${P}extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(X)}"></span></label>`}
         ${eff}
@@ -1170,21 +1271,17 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
         ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? The trust re-works the funding of every asset after it.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="rm" data-del="${h.id}" data-testid="row-remove" aria-label="Remove ${esc(h.addr)}">Remove</button>`}</div>`;
     };
     const isSold = (h) => !!(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM);
-    /* The wait line under each row. Every asset after the first in the list is funded by the trust: the pooled cash flow and borrowing room of everything before it. */
-    const bnoLate = () => bno;
-    const waitOf = (h) => {
-      const first = S.houses[0] === h, buy = pl.purchase[h.id], tr = pl.trust[h.id];
-      /* time frame from the asset before it in the list: months between the two purchases (owned assets were bought 'paid' months ago) */
-      const at = (x) => (x.status === 'owned' ? -(+x.paid || 0) : pl.purchase[x.id]), ix = S.houses.indexOf(h), pv = ix > 0 ? S.houses[ix - 1] : null, pvNo = pv ? bnoLate()[pv.id] : 0;
-      const gap = pv && isFinite(at(h)) && isFinite(at(pv)) ? Math.round(at(h) - at(pv)) : null;
-      const after = gap === null ? '' : gap === 0 ? `bought the same month as #${pvNo} · ` : gap > 0 ? `${gap} mo after #${pvNo} · ` : `bought ${mm(-gap)} before #${pvNo} · `;
-      if (h.status === 'owned') return first ? null : { text: `${after}In the trust · funds the assets below it` };
-      if (!isFinite(buy)) return { text: first ? 'Not bought: no month works' : `Not funded: all ${S.houses.indexOf(h)} earlier assets cannot pay its ${$f(E.needFor(S, h))} in 50 years` };
-      if (!tr || !tr.pooled) return first ? { text: `Bought in ${mm(buy)} with cash on hand` } : { text: `Bought in ${mm(buy)} with cash on hand · nothing earlier in the list to fund it` };
-      const when = buy <= 0 ? 'now' : 'in ' + mm(buy), held = tr.ready < buy ? ` · held until your set month ${mm(Math.max(0, Math.round(h.buyIn || 0)))}` : '';
-      return { text: `${after}Funded ${when} by the trust: cash flow ${$f(tr.cf)}/mo + borrowing room ${$f(tr.room)} · pool of ${tr.n} assets${held}` };
-    };
     const bno = buyOrder(pl);
+    const verdictOf = (h) => verdictFor(pl, h), mathOf = (h) => mathFor(pl, h);
+    /* Planned rows show only whether the plan works and the math. Bought rows show the loan: what is still due, the credit line it opens, and when it is paid off. Neither says how long ago anything was bought, and no row compares itself with the asset before it. */
+    const factsOf = (h, soldBy) => {
+      if (soldBy) return null;
+      const v = pl.V[h.id];
+      if (h.status === 'owned') { const due = v.B0, end = pl.loanEnd[h.id];
+        return `<span class="fx" data-testid="loan-due" data-v="${Math.round(due)}">Loan due <b>${$f(due)}</b></span> · <span class="fx" data-testid="line-avail" data-v="${Math.round(v.head0)}">Credit line <b>${$f(v.head0)}</b></span> · <span class="fx" data-testid="payoff-in">${due <= 0.5 ? 'No loan to pay off' : 'Paid off in <b>' + ym(end) + '</b>'}</span>`; }
+      const vd = verdictOf(h);
+      return `<span class="vchip sm ${vd.cls}" data-testid="plan-verdict">${vd.word}</span> <span data-testid="plan-math">${mathOf(h)}</span>${vd.why ? ' · <span class="' + vd.cls + 'txt">' + esc(vd.why) + '</span>' : ''}`;
+    };
     const endYr = Math.round(pl.planM / 12); /* the row shows cash flow at the end of the plan, and the asset's own cash flow on today's terms */
     const rowOf = (h, vis, ci) => {
       const v = pl.V[h.id], type = h.type || 'house', sel = selId === h.id;
@@ -1192,31 +1289,46 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       const sp = snapBy[h.id], soldBy = isSold(h);
       const loses = type === 'house' && v.cf < 0 ? '<span class="hi">loses money at today\'s terms</span>' : '';
       const hi = v.X > 2000 && v.X > 3 * v.P ? '<span class="hi">unusually high extra</span>' : '';
-      return `<div class="rw" data-rw="${h.id}"><div class="row${soldBy ? ' sold' : ''}${sel ? ' sel' : ''}" data-row="${h.id}" data-testid="ledger-row"${soldBy ? ' data-nodrag' : ''}><div class="r1"><span class="nm"><button type="button" class="addrbtn" aria-expanded="${sel}" data-testid="row-toggle"><span class="addr" data-go="h/${h.id}" data-testid="row-edit" title="Edit ${esc(h.addr)}"><b class="bn" data-testid="buy-no" aria-label="Buy number ${bno[h.id]}">${bno[h.id]}</b>${esc(h.addr)} <i class="ed" aria-hidden="true">edit ›</i></span><span class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}">${soldBy ? 'sold' : sp ? (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : v.payment > 0.5 ? 'paid off by then' : 'no loan') + ' · equity ' + $k(sp.equity) : 'not in the totals yet'} ${hi}${loses}</span>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<span class="exitline">${parts.join(' · ')}</span>` : ''; })()}</button></span>
+      return `<div class="rw" data-rw="${h.id}"><div class="row${soldBy ? ' sold' : ''}${sel ? ' sel' : ''}" data-row="${h.id}" data-testid="ledger-row"${soldBy || h.status === 'owned' ? ' data-nodrag' : ''}><div class="r1"><span class="nm"><button type="button" class="addrbtn" aria-expanded="${sel}" data-testid="row-toggle"><span class="addr" data-go="h/${h.id}" data-testid="row-edit" title="Edit ${esc(h.addr)}"><b class="bn" data-testid="buy-no" aria-label="Buy number ${bno[h.id]}">${bno[h.id]}</b>${esc(h.addr)} <i class="ed" aria-hidden="true">edit ›</i></span><span class="pay" data-testid="row-payment" data-k="pay-${h.id}" data-equity="${sp ? Math.round(sp.equity) : ''}">${soldBy ? 'sold' : sp ? (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : v.payment > 0.5 ? 'paid off by then' : 'no loan') + ' · equity ' + $k(sp.equity) : 'not in the totals yet'} ${hi}${loses}</span>${(() => { const parts = []; if (h.capex) parts.push('improve ' + $c(h.capex)); if (soldBy) parts.push('sold for ' + $c(pl.exits[h.id].proceeds) + ' in ' + mm(pl.sellAt[h.id])); else if (exitTxt) parts.push(exitTxt); return parts.length ? `<span class="exitline">${parts.join(' · ')}</span>` : ''; })()}</button></span>
         <span class="cfl ${(sp ? sp.cf : 0) < 0 ? 'bad' : 'ok'}" data-testid="row-cashflow" title="Cash flow = income minus expenses and loan payments, before extra payments. Big number: at the end of the plan (rent has grown, loans may be paid off). Small: today, on the asset's own terms."><b data-k="cf-${h.id}">${soldBy ? '+' + $c(pl.exits[h.id].proceeds) : !sp ? '—' : $s(sp.cf) + '/mo'}</b><small>${soldBy ? 'cash from sale' : !sp ? 'not counted' : `year ${endYr} · now ${$s(pl.V[h.id].cf)}`}</small></span></div>
-        <div class="r2"><div class="fcol">${(() => { const w = waitOf(h); return w ? `<span class="locline" data-testid="dp-line">${w.text}</span>` : ''; })()}</div>${soldBy ? '' : `<button type="button" class="xtog" data-panel="${h.id}" aria-expanded="${sel}" data-testid="row-extra-toggle" aria-label="Extra payment">Extra ${sel ? '▴' : '▾'}</button>`}</div></div>${sel ? panelOf(h, soldBy, vis, ci) : ''}</div>`; };
+        <div class="r2"><div class="fcol">${(() => { const w = factsOf(h, soldBy); return w ? `<span class="locline" data-testid="dp-line">${w}</span>` : ''; })()}</div>${soldBy ? '' : `<button type="button" class="xtog" data-panel="${h.id}" aria-expanded="${sel}" data-testid="row-extra-toggle" aria-label="Extra payment">Extra ${sel ? '▴' : '▾'}</button>`}</div></div>${sel ? panelOf(h, soldBy, vis, ci) : ''}</div>`; };
     const NOUN = { house: ['home', 'homes'], commercial: ['commercial property', 'commercial properties'], business: ['business', 'businesses'] }, ADD = { house: 'home', commercial: 'commercial property', business: 'business' };
     const empty = !S.houses.length;
     const fin = S.p ? E.finance(S, pl) : null;
     /* the strip under a category name: number of assets, cash flow before and after the loans, total worth, DSCR, and how long cash lasts if ~45% of the assets stop earning (the biggest earners, rent gone, costs and loans still due) */
     const cfk = (n) => (n < 0 ? '−' : '+') + $k(Math.abs(n));
-    const statStrip = (tp, list) => {
+    const statStrip = (tp, list, key) => {
       const sn2 = pl.snap.filter((x) => x.type === tp && list.some((h) => h.id === x.id)), n2 = list.length;
-      if (!tp || !sn2.length) return `<span class="cnt" data-testid="cat-count-${tp || 'sold'}">${n2}</span>`;
+      if (!tp || !sn2.length) return `<span class="cnt" data-testid="cat-count-${key}">${n2}</span>`;
       const cash = fin ? Math.max(0, fin.series.liquid[Math.min(fin.T, pl.planM)] || 0) : S.p ? +S.p.cash || 0 : 0;
       const st = E.stress(S, pl, sn2, cash), income = st.income, cf = st.cf, worth = st.worth, dscr = st.dscr, useAll = st.useAll, stress = st.burn;
       const last = stress >= -0.5 ? 'no bills' : cash <= 0 ? '0 mo' : st.months >= 600 ? '50+ yr' : st.months >= 24 ? r(st.months / 12, 1) + ' yr' : Math.round(st.months) + ' mo';
       const lastLab = useAll ? 'lasts, all fail' : 'lasts';
-      const cell = (lab, val, tid, cls) => `<span class="sc"><b class="${cls || ''}" data-testid="${tid}-${tp}">${val}</b><small>${lab}</small></span>`;
-      return `<span class="cnt" data-testid="cat-count-${tp}">${n2}</span>${cell('before loan', cfk(income), 'cat-before', '')}${cell('after loan', cfk(cf), 'cat-after', cf < 0 ? 'bad' : '')}${cell('worth', $k(worth), 'cat-worth', '')}${cell('DSCR', dscr === null ? '—' : r(dscr, 2), 'cat-dscr', dscr !== null && dscr < 1 ? 'bad' : '')}${cell(lastLab, last, 'cat-lasts', stress < -0.5 && st.months < 6 ? 'bad' : '')}`;
+      const cell = (lab, val, tid, cls) => `<span class="sc"><b class="${cls || ''}" data-testid="${tid}-${key}">${val}</b><small>${lab}</small></span>`;
+      return `<span class="cnt" data-testid="cat-count-${key}">${n2}</span>${cell('before loan', cfk(income), 'cat-before', '')}${cell('after loan', cfk(cf), 'cat-after', cf < 0 ? 'bad' : '')}${cell('worth', $k(worth), 'cat-worth', '')}${cell('DSCR', dscr === null ? '—' : r(dscr, 2), 'cat-dscr', dscr !== null && dscr < 1 ? 'bad' : '')}${cell(lastLab, last, 'cat-lasts', stress < -0.5 && st.months < 6 ? 'bad' : '')}`;
     };
-    const secOf = (id, title, list, tp) => {
-      CDEF[id] = id === 'cat-house' || empty ? false : true; const open = !(UI.coll[id] === undefined ? CDEF[id] : UI.coll[id]), tid = tp || 'sold', lt = E.latestOf(list);
-      const nn = tp ? NOUN[tp] : ['sold', 'sold'], sub = list.length ? statStrip(tp, list) : 'None yet';
+    const secOf = (id, title, list, tp, pre) => {
+      CDEF[id] = id === 'cat-house' || id === 'cat-owned-house' || empty ? false : true; const open = !(UI.coll[id] === undefined ? CDEF[id] : UI.coll[id]), tid = (pre || '') + (tp || 'sold'), lt = E.latestOf(list);
+      const nn = tp ? NOUN[tp] : ['sold', 'sold'], sub = list.length ? statStrip(tp, list, tid) : 'None yet';
       return `<section class="card cat${open ? ' open' : ''}${tp ? '' : ' soldcat'}" data-testid="cat-${tid}"><div class="cathw"><div class="cath" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}" data-testid="cat-header-${tid}"><span class="catt"><b>${title}</b></span><span class="chev" aria-hidden="true">›</span></div><div class="cats" data-testid="cat-sub-${tid}" aria-label="Latest added, for information only">${sub}</div></div>
-        ${open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length && tp ? '<p class="note" data-testid="cat-stat-note">Top numbers are per month at plan end. Lasts = how long your cash (as projected at plan end) covers the shortfall if about 45% of these assets (the biggest earners) stop paying rent while loans, taxes and insurance keep coming. If the rest still cover everything, it assumes every asset fails (“lasts, all fail”).</p>' : ''}${list.length > 1 && tp ? '<p class="note hold">Hold and drag ⋮⋮ to reorder. The asset above funds the one below.</p>' : ''}</div>` : ''}</section>`; };
-    const soldList = S.houses.filter(isSold);
-    const sections = [['house', 'Homes'], ['commercial', 'Commercial'], ['business', 'Businesses']].map(([tp, title]) => secOf('cat-' + tp, title, S.houses.filter((h) => (h.type || 'house') === tp && !isSold(h)), tp)).join('') + (soldList.length ? secOf('cat-sold', 'Sold', soldList, null) : '');
+        ${open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp && !pre ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length && tp ? '<p class="note" data-testid="cat-stat-note">Top numbers are per month at plan end. Lasts = how long your cash (as projected at plan end) covers the shortfall if about 45% of these assets (the biggest earners) stop paying rent while loans, taxes and insurance keep coming. If the rest still cover everything, it assumes every asset fails (“lasts, all fail”).</p>' : ''}${list.length > 1 && tp && !pre ? '<p class="note hold">Hold and drag ⋮⋮ to reorder. An asset is never bought before the ones above it, and they fund it.</p>' : ''}</div>` : ''}</section>`; };
+    const soldList = S.houses.filter(isSold), CATS = [['house', 'Homes'], ['commercial', 'Commercial'], ['business', 'Businesses']];
+    const typeList = (tp, own) => S.houses.filter((h) => (h.type || 'house') === tp && (h.status === 'owned') === own && !isSold(h));
+    const ownedAll = S.houses.filter((h) => h.status === 'owned' && !isSold(h)), plannedAll = S.houses.filter((h) => h.status !== 'owned');
+    const ownedSecs = CATS.filter(([tp]) => typeList(tp, true).length).map(([tp, title]) => secOf('cat-owned-' + tp, title, typeList(tp, true), tp, 'owned-')).join('');
+    const plannedSecs = CATS.map(([tp, title]) => secOf('cat-' + tp, title, typeList(tp, false), tp, '')).join('');
+    const soldSec = soldList.length ? secOf('cat-sold', 'Sold', soldList, null) : '';
+    const sections = plannedSecs + soldSec;
+    const fin0 = fin, dueTot = ownedAll.reduce((a2, h) => a2 + pl.V[h.id].B0, 0), lineTot = ownedAll.reduce((a2, h) => a2 + pl.V[h.id].head0, 0);
+    const showB = UI.sect !== 'planned', showP = UI.sect !== 'bought';
+    const sectCtl = `<div class="seg sectseg" role="tablist" aria-label="Show bought or planned assets" data-testid="sect-control"><button role="tab" data-sect="all" class="${UI.sect === 'all' || !UI.sect ? 'on' : ''}" aria-selected="${UI.sect === 'all' || !UI.sect}" data-testid="sect-all">Both</button><button role="tab" data-sect="bought" class="${UI.sect === 'bought' ? 'on' : ''}" aria-selected="${UI.sect === 'bought'}" data-testid="sect-bought">Bought ${ownedAll.length}</button><button role="tab" data-sect="planned" class="${UI.sect === 'planned' ? 'on' : ''}" aria-selected="${UI.sect === 'planned'}" data-testid="sect-planned">Planned ${plannedAll.length}</button></div>`;
+    const boughtHead = `<div class="sech" data-testid="sec-bought"><b>Bought</b><span class="sechs" data-testid="bought-sum">${ownedAll.length} asset${ownedAll.length === 1 ? '' : 's'} · loans due <b>${$f(dueTot)}</b> · credit line <b>${$f(lineTot)}</b>${infoBtn('creditline')}</span></div>${ownedAll.length ? '' : '<p class="note" data-testid="bought-empty" style="margin:0 4px 8px">Nothing bought yet. Add something you already own, or plan a purchase below.</p>'}`;
+    const vds = plannedAll.map((h) => [h, verdictOf(h)]), okN = vds.filter((x) => x[1].cls !== 'bad').length, tightN = vds.filter((x) => x[1].cls === 'warn').length, pCls = !vds.length ? 'ok' : okN < vds.length ? 'bad' : tightN ? 'warn' : 'ok';
+    const pool0 = pl.poolAt(0), jobNote = fin ? fin.kpis.jobSplit0 : 0;
+    const plannedHead = `<div class="sech" data-testid="sec-planned"><b>Planned</b><span class="sechs">${plannedAll.length} asset${plannedAll.length === 1 ? '' : 's'}, in the order they are bought</span></div>
+      <section class="card psum" data-testid="planned-summary"><div class="vrow" style="cursor:default"><span class="vq"><b data-testid="planned-verdict">${!vds.length ? 'Nothing planned yet' : okN === vds.length ? (vds.length === 1 ? 'The planned asset is possible' : 'All ' + vds.length + ' planned assets are possible') : okN + ' of ' + vds.length + ' planned assets are possible'}</b></span><span class="vgo"><span class="vchip ${pCls}" data-testid="planned-chip">${!vds.length ? 'None' : pCls === 'bad' ? 'Not possible' : pCls === 'warn' ? 'Tight' : 'Possible'}</span></span></div>
+        <p class="note" data-testid="planned-math">${vds.length ? `The test for each one: the pool of assets above it (what you own plus the planned assets above it) must have borrowing room + cash of at least the cash it needs (down payment, closing costs and improvements). Today the pool is ${pool0.n} asset${pool0.n === 1 ? '' : 's'} with ${$f(pool0.head)} of borrowing room; its cash flow after loans, managers and taxes (${$f(pool0.sweep)}/mo)${jobNote > 0.5 ? ' and your job money (' + $f(jobNote) + '/mo)' : ''} pays the line down and builds cash. Months below count from today.` : 'Add a planned asset and the trust works out whether it can pay for it.'}</p>
+        ${fin ? `<div class="vrow ${fin.status}" data-go="finances" data-testid="planned-finance" role="link" style="min-height:44px"><span class="vq"><b>Your money</b><span class="note">${esc(fin.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, ''))} Debt-to-income peaks at ${r(pl.worst.dti)}% (limit ${g.dti}%).</span></span><span class="vgo"><span class="vchip ${fin.status}">${VL[fin.status]}</span> ›</span></div>` : ''}</section>`;
     if (empty) return `<h1>Portfolio <span class="hb"><button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>${undo ? `<div class="warnbox okbox" data-testid="undo-banner">Removed ${esc(undo.label)}. <button class="chip link" data-undo>Undo</button></div>` : ''}<p class="note" style="margin:0 4px 8px" data-testid="empty-note">Nothing added yet. Add a home, a commercial property or a business to see your plan.</p>${sections}<button class="linkbtn" data-go="import/new" data-testid="import-link">Import a home from a listing</button>`;
     const c3 = (label, a, b, c, f, cls) => `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td data-k="c-${label}-b">${f(b)}</td><td class="${cls || ''}" data-k="c-${label}-c"><b>${f(c)}</b></td></tr>`;
     const bt = (tp) => pl.snap.filter((x) => x.type === tp).reduce((a, x) => ({ n: a.n + 1, value: a.value + x.value, equity: a.equity + x.equity, cf: a.cf + x.cf }), { n: 0, value: 0, equity: 0, cf: 0 });
@@ -1231,7 +1343,8 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const badHomes = S.houses.filter((h) => (h.type || 'house') === 'house' && pl.V[h.id].cf < 0);
     const homeWarn = badHomes.length ? `<div class="warnbox" data-testid="home-warning">⚠ Homes must cash flow positive. Losing money each month at today's terms: ${badHomes.map((h) => esc(h.addr)).join(', ')}.</div>` : '';
     const tab = UI.tab, nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0];
-    const headline = (nb ? `Next: buy <b>${esc(nb.addr)}</b> in <b>${mm(pl.purchase[nb.id])}</b>. ` : '') + (pl.unfunded.length ? `${pl.unfunded.length} not funded yet. ` : `All ${n} assets by <b>${mo(pl.lastBuy)}</b>. `) + `${pl.snap.length > 1 ? '' : ''}`;
+    const nPl = S.houses.filter((h) => h.status !== 'owned').length, lastReady = Math.max(0, ...S.houses.filter((h) => h.status !== 'owned').map((h) => pl.purchase[h.id]).filter(isFinite));
+    const headline = nPl ? (pl.unfunded.length ? `${n - nPl} bought. ${nPl - pl.unfunded.length} of ${nPl} planned can be paid for; ${pl.unfunded.length} cannot. ` : `${n - nPl} bought. All ${nPl} planned assets are possible; the trust can pay for the last one at <b>${mon(lastReady)}</b>. `) : `All ${n} assets are bought. `;
     const drv = pl.assetsAt(pl.planM).sort((a, b) => b.equity - a.equity), drvOpen = !UI.coll.drivers;
     const drivers = `<button class="linkbtn leftbtn" data-coll="drivers" aria-expanded="${drvOpen}">What drives net worth ${drvOpen ? '▾' : '▸'}</button>${drvOpen ? `<div data-testid="drivers">${drv.slice(0, 6).map((d) => `<div class="drv"><span>${esc(d.addr)}</span><span><b>${$f(d.equity)}</b> <small>${th.nw > 0 ? r((d.equity / th.nw) * 100) : 0}%</small></span></div>`).join('')}<p class="note">Equity = value − loans − credit lines drawn. A sample like this leans on a few fast-growing businesses; check the growth rate on each.</p></div>` : ''}`;
     return `<h1>Portfolio <span class="hb"><button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>
@@ -1241,14 +1354,14 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       ${kpi('kpi-networth', 'Net worth', $f(sn.nw), `${n} assets · ${yrs}-yr plan`)}
       ${kpi('kpi-monthly', 'Total monthly payments', $f(sn.monthly), sn.extra > 0.5 ? `incl. ${$f(sn.extra)} extra` : 'sum of the rows below')}
       ${kpi('kpi-cashflow', 'Cash flow / mo', $s(sn.cf), sn.extra > 0.5 ? `${$s(sn.cfx)} after extra` : 'before tax · at plan end', sn.cf < 0 ? 'bad' : '', 1)}
-      ${kpi('kpi-dscr', 'DSCR', r(sn.dscr, 2), sn.dscr >= 1.25 ? 'income ÷ loan payments (1.25+ is healthy)' : sn.dscr >= 1 ? 'thin (1.25+ is healthy)' : 'below 1.0', sn.dscr && sn.dscr < 1 ? 'bad' : '', 1)}</div>
+      ${kpi('kpi-dscr', 'DSCR', sn.ds > 0.5 ? r(sn.dscr, 2) : '—', sn.ds <= 0.5 ? 'no loan payments left at plan end' : sn.dscr >= 1.25 ? 'income ÷ loan payments (1.25+ is healthy)' : sn.dscr >= 1 ? 'thin (1.25+ is healthy)' : 'below 1.0', sn.ds > 0.5 && sn.dscr < 1 ? 'bad' : '', 1)}</div>
       <div class="bar"><i class="${sn.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (sn.cltv / g.cap) * 100)}%"></i></div>
       <div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
       ${(() => { const pp = S.p || {}, inf = +pp.inflation || 0, real = sn.nw / Math.pow(1 + inf / 100, yrs), open = !!UI.coll.tgt; return `<div class="tgt" data-testid="target-years"><button type="button" class="linkbtn leftbtn tgtb" data-coll="tgt" aria-expanded="${open}" data-testid="target-toggle">${yrs}-year target · ${$f(real)} in today's dollars ${open ? '▾' : '▸'}</button>${open ? `<div class="tgtf">${field('Years to reach this net worth', 'g.planYears', g.planYears, { info: 'projection' })}${S.p ? field('Inflation / year', 'p.inflation', r(pp.inflation, 2), { suf: '%', info: 'inflation' }) : ''}</div><p class="note" data-testid="real-nw">${$f(sn.nw)} in ${yrs} years at ${r(inf, 1)}% inflation buys what ${$f(real)} buys today. Change the years to move the target date.</p>` : ''}</div>`; })()}
             <p class="plan-line" data-testid="plan-headline">${headline}</p>
       ${fin ? `<div class="vrow big ${fin.status}" data-go="finances" data-testid="afford-line" role="link"><span class="vq"><b>Can I afford this?</b><span class="note">${esc(fin.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, ''))}</span></span><span class="vgo"><span class="vchip ${fin.status}" data-testid="afford-chip">${VL[fin.status]}</span> ›</span></div>` : ''}</section>
-    <div class="sec"><span>Your assets</span></div><section class="card" id="ledger" data-testid="ledger"><div class="row totrow" data-testid="ledger-total"><div class="r1"><span class="nm"><span class="addr">Portfolio total</span><div class="pay">${$f(sn.monthly)}/mo payments<br><span data-testid="total-extra" data-k="tot">${$f(totNow)}/mo extra now${totLater > 0.5 ? ' · +' + $f(totLater) + ' later' : ''}</span></div></span><span class="cfl ${sn.cf < 0 ? 'bad' : 'ok'}"><b data-testid="total-cf">${$s(sn.cf)}/mo</b><small>cash flow</small></span></div></div></section>
-    ${sections}
+    <section class="card" id="ledger" style="margin-top:10px" data-testid="ledger"><div class="row totrow" data-testid="ledger-total"><div class="r1"><span class="nm"><span class="addr">Portfolio total</span><div class="pay">${$f(sn.monthly)}/mo payments<br><span data-testid="total-extra" data-k="tot">${$f(totNow)}/mo extra now${totLater > 0.5 ? ' · +' + $f(totLater) + ' later' : ''}</span></div></span><span class="cfl ${sn.cf < 0 ? 'bad' : 'ok'}"><b data-testid="total-cf">${$s(sn.cf)}/mo</b><small>cash flow</small></span></div></div></section>
+    ${sectCtl}${showB ? boughtHead + ownedSecs + '<button class="addrow" data-add-owned data-testid="add-owned">+ Add something you already own</button>' : ''}${showP ? plannedHead + plannedSecs : ''}${soldSec}
     <button class="linkbtn" data-go="import/new" data-testid="import-link">Import from a listing</button>
     <section class="card" data-testid="plan-card"><b>Portfolio breakdown</b> <span class="note">${n} assets · last purchase ${mo(pl.lastBuy)}</span>
       ${breakdown}
@@ -1277,7 +1390,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const L = [['Net worth', wo.horizon.nw, pl.horizon.nw, $f], ['Cash flow / mo', wo.horizon.cf, pl.horizon.cf, $s], ['Payments / mo', wo.horizon.monthly, pl.horizon.monthly, $f], ['Outside cash', wo.outsideTotal, pl.outsideTotal, $f]];
     const impactLines = L.filter((x) => Math.abs(x[1] - x[2]) > 0.5).map((x) => `<div class="f"><span class="lb">${x[0]}</span><span>${x[3](x[1])} → <b>${x[3](x[2])}</b></span></div>`);
     const timing = h.status === 'planned'
-      ? `${field('Not before (months)', P + 'buyIn', h.buyIn)}<p class="note" data-testid="buyin-note">${isFinite(p0) ? 'The trust buys it ' + (p0 <= 0 ? 'now' : 'in ' + mo(p0)) + (tr && tr.ready < p0 ? ' (it could pay earlier; you asked for no sooner than month ' + Math.max(0, Math.round(h.buyIn || 0)) + ')' : '') + '. Leave 0 to buy it as soon as the trust can pay.' : 'The trust cannot pay for it within 50 years.'}</p>`
+      ? `${field('Not before (months)', P + 'buyIn', h.buyIn)}<p class="note" data-testid="buyin-note">${isFinite(p0) ? (tr && tr.pooled ? 'The trust can pay for it at ' + monY(tr.ready) : 'It is paid from your own cash at ' + monY(p0)) + (tr && tr.held ? ', but you asked for no sooner than ' + mon(tr.buyIn) + ', so it waits for that month' : '') + '. Leave 0 to use the money as soon as the trust can pay.' : 'The trust cannot pay for it within 50 years.'}</p>`
       : field('Months already paid', P + 'paid', h.paid);
     const age0 = h.status === 'owned' ? Math.max(0, h.paid || 0) : 0, depM = (E.depCum(S, h, age0 + 13) - E.depCum(S, h, age0 + 1)) / 12, pp = S.p || E.samplePersonal();
     const depNote = type === 'business' ? `Tax write-off about ${$f(depM)}/mo: ${r(pp.bizIntPct, 0)}% of the price is goodwill amortized over 15 years, the rest equipment over 7 years. Edit the split in Finances under Taxes.` : `Tax depreciation about ${$f(depM)}/mo: ${type === 'house' ? '27.5' : '39'}-year straight line on ${r(100 - pp.landPct, 0)}% of price, closing costs and improvements (land is not depreciated). Edit the land share in Finances under Taxes.`;
@@ -1293,6 +1406,22 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       <div class="f totl"><span class="lb">Cash flow after the loan</span><b data-testid="rent-cf" data-k="rent-cf" class="${v.cf < 0 ? 'bad' : ''}">${$s(v.cf)}</b></div>
       ${v.X > 0.5 ? `<div class="f"><span class="lb">After the extra payment too</span><b data-testid="rent-cf-x" data-k="rent-cf-x">${$s(v.cf - v.X)}</b></div>` : ''}
       <p class="note">Rent and costs alone are not what you keep: the loan payment comes out of them. These match Payment now and Cash flow now at the top of this page.</p></div>`;
+    /* money that goes into this loan on its own: the asset's own profit, and your job money left after living costs. One clock: months from today. */
+    const life = lifeOf(pl, h), held0 = h.status === 'owned' ? 0 : p0, nowAt = isFinite(held0) ? held0 : null;
+    const splitLines = (() => {
+      if (nowAt === null || v.L <= 0 || !(pl.balAt(h.id, nowAt) > 0.005)) return v.L <= 0 ? '<p class="note" data-testid="h-auto">No loan, so no profit or job money goes to a loan here.</p>' : '';
+      if (g.autoPay === false) return '<p class="note" data-testid="h-auto">Automatic extra payments are switched off in Assumptions.</p>';
+      const a1 = pl.autoAt(h.id, nowAt), af = pl.autoFrom(h.id), j1 = pl.jobAt(h.id, nowAt), jf = pl.jobFrom(h.id);
+      const autoTxt = a1 > 0.5 ? '<b>' + $f(a1) + '/mo</b> now' : af >= 0 ? 'starts at ' + mon(af) + ' (about <b>' + $f(pl.autoAt(h.id, af)) + '/mo</b>), once the trust\'s line of credit is paid and nothing is left to buy' : 'none in this plan: its cash flow goes to the trust first (line of credit, then the next purchase)';
+      const jobTxt = j1 > 0.5 ? '<b>+' + $f(j1) + '/mo</b> now (your pay left after living costs, split equally across the loans)' : jf >= 0 ? 'starts at ' + mon(jf) + ' (about <b>+' + $f(pl.jobAt(h.id, jf)) + '/mo</b>), once nothing is left to buy' : S.p && S.p.jobs.length ? 'nothing yet: your job money goes to the trust for the next purchase first' : 'no job income is set';
+      return `<p class="note" data-testid="h-auto" data-v="${Math.round(a1)}">Automatic extra from its own profit: ${autoTxt}.</p><p class="note" data-testid="h-job" data-v="${Math.round(j1)}">From your job: ${jobTxt}.</p>`;
+    })();
+    const statusCard = h.status === 'owned'
+      ? `<section class="card" data-testid="payoff-card"><div class="f"><span class="lb">Loan still due</span><b data-testid="h-loan-due" data-k="h-loan-due">${$f(v.B0)}</b></div>
+        <div class="f"><span class="lb">Line of credit you can take against it</span><b data-testid="h-line" data-k="h-line">${$f(v.head0)}</b></div>
+        <div class="f"><span class="lb">Paid off in</span><b data-testid="h-payoff" data-k="h-payoff" data-months="${isFinite(life) ? life : ''}">${v.B0 <= 0.5 ? 'no loan' : isFinite(life) ? ym(life) : 'not within the plan'}</b></div>
+        <p class="note">Line of credit = ${v.cap}% of its value today (${$f(v.valueNow)})${S.g.haircut ? ' less the ' + S.g.haircut + '% appraisal cut' : ''}, minus the loan and other liens.${v.B0 > 0.5 ? ' The payoff time counts your extra payment and the automatic extra payments below.' : ''}</p>${splitLines}</section>`
+      : (() => { const vd = verdictFor(pl, h); return `<section class="card" data-testid="plan-card-asset"><div class="f"><span class="lb">Can the plan buy it?</span><span class="vchip ${vd.cls}" data-testid="plan-verdict">${vd.word}</span></div><p class="note" data-testid="plan-math">${mathFor(pl, h)}${vd.why ? ' · ' + esc(vd.why) : ''}</p>${splitLines}</section>`; })();
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Name or address" title="${esc(h.addr)}"></h2><span class="tag" style="margin:0" data-testid="asset-buy-no">#${buyOrder(pl)[h.id]} · ${TL[type]}</span></div>
     ${homeLoses}
     ${h.fresh && type === 'house' ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
@@ -1302,19 +1431,20 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       <div class="f" style="border-top:0;min-height:36px"><span class="lb">Plan for this asset${infoBtn('exit')}</span></div><div class="seg" style="margin-top:0" role="tablist"><button data-exit="hold" class="${h.exit === 'hold' ? 'on' : ''}">Hold</button><button data-exit="sell" class="${h.exit === 'sell' ? 'on' : ''}" data-testid="exit-sell">Sell</button><button data-exit="merge" class="${h.exit === 'merge' ? 'on' : ''}">Merge</button></div>
       <div class="f" style="border-top:0;min-height:30px"><span class="lb">Status</span></div><div class="seg" style="margin-top:0"><button class="${h.status === 'owned' ? 'on' : ''}" data-status="owned">Owned</button><button class="${h.status === 'planned' ? 'on' : ''}" data-status="planned">Planned</button></div>${timing}</section>
     ${h.listingUrl ? `<p class="note" style="margin:10px 4px 0">Imported from a listing${h.info && h.info.beds ? ' · ' + h.info.beds + ' bd / ' + h.info.baths + ' ba · ' + (h.info.sqft || '?') + ' sqft' : ''}.</p>` : ''}
+    ${statusCard}
     <div class="sec"><span>Purchase · <i class="auto">auto</i> = calculated${infoBtn('auto')}</span></div><section class="card">${field(LB.price, P + 'price', grp(h.price), { pre: '$' })}${field('Down payment', P + 'dp', r(h.dp, 2), { suf: '%' })}${field('Down payment $', P + 'down', grp(v.down), { pre: '$', calc: 1 })}${field('Loan amount', P + 'loan', grp(v.L), { pre: '$', calc: 1, ro: 1 })}${field(LB.growth, P + 'growth', r(v.growth, 2), { suf: '%' })}
       ${type === 'commercial' ? field('Cap rate', P + 'caprate', r(v.capRate, 1), { suf: '%', calc: 1, ro: 1 }) : ''}${type === 'business' ? field('Price ÷ yearly profit', P + 'mult', r(v.multiple, 1), { suf: '×', calc: 1, ro: 1 }) : ''}</section>
     ${colSec('loan', 'Loan option', (lo ? lo.name.replace(/\s*\(.*\)/, '') : 'Custom') + ' · ' + r(h.rate, 2) + '% · ' + r(h.term / 12, 0) + ' yr' + (lo ? '' : ' · tap to pick a loan'), `<section class="card">${loanSel}${lo || h.io ? `<p class="note">${lo ? esc(lo.note) + ' ' : ''}${h.io ? 'Interest-only: extra payments reduce the balance. At maturity the balance is refinanced (see below).' : ''}</p>` : '<p class="note">Custom terms. Pick a loan option to auto-fill them.</p>'}${h.ownerOcc ? '<span class="chip warnchip" data-testid="owner-occ">You must live here (owner-occupied)</span>' + infoBtn('ownerocc') : ''}${h.loanId === 'k203' && h.capex > 75000 ? '<p class="note" data-testid="k203-cap">⚠ Over the $75,000 Limited 203(k) cap. This rehab needs a Standard 203(k) with a HUD consultant.</p>' : ''}
       ${field('Interest rate', P + 'rate', r(h.rate, 3), { suf: '%' })}${field('Term (years)', P + 'termY', r(h.term / 12, 2))}${field('Closing costs', P + 'closingPct', r(h.closingPct == null ? g.closing : h.closingPct, 2), { suf: '%' })}${field('Extra / month', P + 'extra', grp(v.X), { pre: '$' })}${field('Paid off in (months)', P + 'payoff', isFinite(v.payoff) ? v.payoff : '', { calc: 1 })}${field('Other liens', P + 'liens', grp(h.liens), { pre: '$' })}
       ${field('Loan comes due in (months)', P + 'mat', E.matOf(h) || '', { ph: 'never', info: 'refi' })}${E.matOf(h) > 0 ? field('Refinance rate', P + 'refiRate', h.refiRate == null ? '' : r(h.refiRate, 2), { suf: '%', ph: 'auto ' + r(g.refiRate, 2), info: 'refi' }) + field('Refinance term (years)', P + 'refiTermY', h.refiTerm == null ? '' : r(h.refiTerm / 12, 1), { ph: 'auto ' + r(g.refiTerm / 12, 1), info: 'refi' }) : ''}
       ${v.refi ? `<p class="note" data-testid="refi-note">Comes due in ${v.refi.month} months with ${$f(v.refi.balance)} left. That balance is refinanced at ${r(v.refi.rate, 2)}% over ${r(v.refi.termMonths / 12, 1)} years, so the payment becomes ${$f(v.refi.payment)}/mo (DSCR then ${r(v.noi / Math.max(1, v.refi.payment + v.mip), 2)}). Cash flow now is shown before this change.</p>` : ''}
-      <p class="note">${isFinite(v.payoff) ? `Paid off in ${mo(v.payoff)}. ` : h.io ? 'Not paid off until you refinance or sell. ' : 'Payment does not cover interest. '}${v.mip > 0 ? 'Includes ' + $f(v.mip) + '/mo mortgage insurance' + infoBtn('mip') + '. ' : ''}${h.io ? 'Interest-only' + infoBtn('interestonly') + '. ' : ''}Debt now: ${$f(debt)} (${r((debt / (v.valueNow || h.price)) * 100)}% of today's value).${v.cltvAtLoc != null ? ` When its line of credit opens: ${r(v.cltvAtLoc)}% (cap ${v.cap}%).` : ''}</p>${v.cltvAtLoc != null && v.cltvAtLoc > v.cap + 0.01 ? '<span class="chip warnchip">Over the debt cap</span>' : ''}</section>`, true)}
+      <p class="note">${isFinite(v.payoff) ? `Paid off in ${mo(v.payoff)} with your scheduled payment and extra` : h.io ? 'Not paid off until you refinance or sell' : 'Payment does not cover interest'}${v.L > 0 && isFinite(life) && Math.abs(life - v.payoff) > 0.5 ? `; ${ym(life)} with the automatic extra from its own profit and your job` : ''}. ${v.mip > 0 ? 'Includes ' + $f(v.mip) + '/mo mortgage insurance' + infoBtn('mip') + '. ' : ''}${h.io ? 'Interest-only' + infoBtn('interestonly') + '. ' : ''}Debt now: ${$f(debt)} (${r((debt / (v.valueNow || h.price)) * 100)}% of today's value).</p></section>`, true)}
     ${colSec('rent', LB.sec, (type === 'business' ? 'profit ' + $f(h.rent) : 'rent ' + $f(h.rent)) + ' · loan ' + (v.P + v.mip > 0.5 ? '−' + $f(v.P + v.mip) : 'none'), `<section class="card">${income}${loanLines}</section>`, true)}
-    ${colSec('loc', 'Funded by the trust', h.status === 'owned' ? 'in the trust today' : isFinite(p0) ? (tr && tr.pooled ? 'funded ' + (p0 <= 0 ? 'now' : 'in ' + mm(p0)) : 'cash on hand ' + mm(p0)) : 'not funded', `<section class="card" data-testid="trust-section">${h.status === 'owned'
-      ? `<p class="note" data-testid="trust-owned">Owned today, so it is already in the trust. Its borrowing room (${$f(v.head0)} now, up to ${v.cap}% of its value less its loan and liens) and its cash flow (${$s(v.cf)}/mo) count toward paying for every planned asset below it in the list. Its cash flow goes toward the trust's line of credit and the next purchase.</p>${nx ? `<p class="note" data-testid="trust-next">Next purchase from the trust: ${esc(nx.addr)}, ${isFinite(nxOpen) ? (nxOpen <= 0 ? 'now' : 'in ' + mm(nxOpen)) : 'not reachable'}.</p>` : ''}${nxSooner > 0 ? `<span class="chip">+$100/mo extra → ${nxSooner} mo sooner</span>` : ''}`
-      : `${field('Cash needed', P + 'need', grp(E.needFor(S, h)), { pre: '$', calc: 1, ro: 1 })}<div class="f"><span class="lb">Funded in${infoBtn('nextdp')}</span><b data-testid="trust-months">${isFinite(p0) ? (p0 <= 0 ? 'now' : mm(p0)) : 'never'}</b></div>
-      ${tr && tr.pooled ? `<p class="note" data-testid="trust-pool">Paid for by the trust, the pool of the ${tr.n} asset${tr.n === 1 ? '' : 's'} before it (everything you own today and the planned assets above it). In that month the pool has ${$f(tr.room)} of borrowing room and ${$f(tr.cf)}/mo of cash flow that is reinvested (after loan payments${S.p ? ', managers and taxes' : ''}), first toward the line of credit, then held for the next purchase.</p>
-      <p class="note" data-testid="loc-split">Where the down payment comes from: ${$f(tr.cash)} of cash the trust already holds (reinvested cash flow and sale proceeds) and ${$f(tr.draw)} drawn on the trust's line of credit at ${r(g.hrate, 2)}%.</p>` : isFinite(p0) ? `<p class="note" data-testid="trust-pool">Nothing comes before it in the list, so there is no trust to borrow from: it is bought with cash on hand${p0 > 0 ? ' in month ' + p0 : ''}.</p>` : '<p class="note" data-testid="trust-pool">⚠ The pool of the assets before it cannot pay for this within 50 years, so it is not bought in this plan. Move it lower in the list, lower its down payment, or let the earlier assets grow.</p>'}
+    ${colSec('loc', 'Funded by the trust', h.status === 'owned' ? 'in the trust today' : isFinite(p0) ? verdictFor(pl, h).word + ' · ' + (tr && tr.pooled ? 'by ' + mon(tr.ready) : 'own cash ' + mon(p0)) : 'not possible', `<section class="card" data-testid="trust-section">${h.status === 'owned'
+      ? `<p class="note" data-testid="trust-owned">Owned today, so it is already in the trust. Its borrowing room (${$f(v.head0)} now: ${v.cap}% of its ${$f(v.valueNow)} value less its loan and liens) and its cash flow (${$s(v.cf)}/mo) count toward paying for every planned asset below it in the list. Its cash flow first pays the trust's line of credit, then builds cash for the next purchase; once nothing is left to buy it goes to its own loan.</p>${nx ? `<p class="note" data-testid="trust-next">Next asset the trust funds: ${esc(nx.addr)}, ${isFinite(nxOpen) ? (nxOpen <= 0 ? 'now' : 'at ' + mon(nxOpen)) : 'not reachable'}.</p>` : ''}${nxSooner > 0 ? `<span class="chip">+$100/mo extra → ${nxSooner} mo sooner</span>` : ''}`
+      : `${field('Cash needed', P + 'need', grp(E.needFor(S, h)), { pre: '$', calc: 1, ro: 1 })}<div class="f"><span class="lb">Trust can pay at${infoBtn('nextdp')}</span><b data-testid="trust-months">${isFinite(p0) ? mon(tr && isFinite(tr.ready) ? tr.ready : p0) : 'never'}</b></div>${tr && tr.held ? `<div class="f"><span class="lb">Held until your date</span><b data-testid="trust-held">${mon(tr.buyIn)}</b></div>` : ''}
+      ${tr && tr.pooled ? `<p class="note" data-testid="trust-pool">Paid for by the trust, the pool of the ${tr.n} asset${tr.n === 1 ? '' : 's'} before it (everything you own today and the planned assets above it). At ${mon(tr.ready)} the pool has ${$f(tr.room)} of borrowing room plus ${$f(tr.heldCash)} of cash = ${$f(tr.have)}, which covers the ${$f(tr.need)} it needs. It also reinvests ${$f(tr.cf)}/mo of cash flow (after loan payments${S.p ? ', managers and taxes' : ''}), first toward the line of credit, then held for the next purchase.${S.p ? ' Your job money left after living costs joins it the same way.' : ''}</p>
+      <p class="note" data-testid="loc-split">Where the down payment comes from: ${$f(tr.cash)} of cash the trust already holds (reinvested cash flow and sale proceeds) and ${$f(tr.draw)} drawn on the trust's line of credit at ${r(g.hrate, 2)}%. Borrowing room counts as funding: the trust does not need to have saved the whole amount.</p>` : isFinite(p0) ? `<p class="note" data-testid="trust-pool">Nothing comes before it in the list, so there is no trust to borrow from: it is paid with your own cash${p0 > 0 ? ' at ' + mon(p0) : ''}.</p>` : `<p class="note" data-testid="trust-pool">⚠ The pool of the assets before it cannot pay for this within 50 years${tr && tr.best ? ' (the closest it gets is ' + $f(tr.best.avail) + ' of the ' + $f(tr.need) + ' needed, at ' + mon(tr.best.month) + ')' : ''}, so it is not bought in this plan. Move it lower in the list, lower its down payment, or let the earlier assets grow.</p>`}
       <p class="note" data-testid="loc-cap">Borrowing cap used: ${g.cap}% of value for real estate, ${g.capBiz}% for businesses, less the appraisal cut, each loan balance and other liens.</p>
       ${a.cls === 'warn' || a.cls === 'bad' ? `<span class="chip warnchip" title="${esc(a.why || '')}">Debt-to-income ${a.cls === 'bad' ? 'over' : 'near'} your limit when ${esc(h.addr)} closes</span>` : ''}${nxSooner > 0 ? `<span class="chip">+$100/mo extra → ${esc(nx.addr)} ${nxSooner} mo sooner</span>` : ''}`}</section>`, false)}
     ${exitSec}
@@ -1355,6 +1485,17 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     const row = (label, v, cls, bold) => `<tr class="${bold ? 'tot' : ''}"><td>${label}</td><td class="${cls || ''}">${bold ? '<b>' + $s(v) + '</b>' : $s(v)}</td></tr>`;
     const picture = `<table class="cmp" data-testid="monthly-picture"><tbody>
       ${row('Your take-home pay', k.takeHome)}${row('Portfolio cash flow', k.portfolioAfterTax, k.portfolioAfterTax < 0 ? 'bad' : '')}${row('Managers (not you)', -k.managerCost0)}${row('Extra payments', -k.extra)}${row('Living costs', -k.living)}${row('Other debts', -k.debts)}${row('Left over each month', k.net0, k.net0 < 0 ? 'bad' : '', true)}</tbody></table>`;
+    /* where your job money goes: pay minus living costs, other debts and your extra payments is the job surplus; it is split across the assets (the trust while something is waiting, then the loans equally) and never takes your cash below the cushion */
+    const jobNote = (() => {
+      if (!p.jobs.length || !(R.income[0] > 0)) return '<p class="note" data-testid="job-split">You have no job income right now, so no job money is split between your assets.</p>';
+      const js = k.jobSurplus0, waiting = S.houses.some((h) => h.status !== 'owned' && isFinite(pl.purchase[h.id])), nLoans = S.houses.filter((h) => h.status === 'owned' && pl.balAt(h.id, 0) > 0.005).length, nPool = pl.poolAt(0).n;
+      if (g.autoPay === false) return `<p class="note" data-testid="job-split" data-v="${Math.round(js)}">Of your job income, ${$f(js)}/mo is left after living costs. Automatic payments are switched off in Assumptions, so it stays in your cash.</p>`;
+      const body = js <= 0.5 ? 'Nothing is left after living costs, other debts and your extra payments, so nothing is split.'
+        : k.jobSplit0 < js - 0.5 ? `Your cash is below your ${p.emergencyMonths}-month cushion, so only ${$f(k.jobSplit0)}/mo is split and the rest rebuilds it.`
+        : waiting ? `It is split across ${nPool} asset${nPool === 1 ? '' : 's'} (the trust's pool): first it pays down the trust's line of credit, then it builds cash for the next planned purchase. After the last purchase it is split equally across the loans of ${nLoans || 'your'} asset${nLoans === 1 ? '' : 's'}.`
+        : `It is split equally across ${nLoans} asset${nLoans === 1 ? '' : 's'} with a loan, as extra payments.`;
+      return `<p class="note" data-testid="job-split" data-v="${Math.round(js)}">Of your job income, <b>${$f(js)}/mo</b> is left after living costs; ${body} Your cash never drops below the cushion because of it.</p>`;
+    })();
     const taxEff = R.taxable[0] > 0 ? (R.portTax[0] / R.taxable[0]) * 100 : 0;
     const calls = f.calls.slice(0, 3).map((c) => `<div class="drv"><span>Month ${c.month}${c.assets.length ? ' · ' + esc(c.assets.join(', ')) : ''}</span><span><b>${$f(c.amount)}</b></span></div>`).join('');
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Finances</h2></div>
@@ -1364,7 +1505,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
       ${f.fixes.length ? `<div class="fixes" data-testid="fixes"><b>What would fix it</b><ul>${f.fixes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}</section>
     <div class="sec">Your income</div>${jobs}<button class="addrow cardbtn" data-addjob="salary" data-testid="add-job">+ Add a salaried job</button><button class="addrow cardbtn" data-addjob="hourly" data-testid="add-hourly-job">+ Add an hourly job (wage and tips)</button>
     <div class="sec">Your cash and expenses</div><section class="card">${field('Liquid cash you have', 'p.cash', grp(p.cash), { pre: '$' })}${field('Cash interest', 'p.cashApy', r(p.cashApy, 2), { suf: '%' })}${field('Cash cushion (months)', 'p.emergencyMonths', r(p.emergencyMonths, 1))}${field('Living costs / month', 'p.living', grp(p.living), { pre: '$' })}${field('Your own rent or mortgage / month', 'p.housing', grp(p.housing), { pre: '$' })}<p class="note">Already part of living costs. Lenders count it as a debt when they work out your debt-to-income.</p>${field('Cost increases / year', 'p.inflation', r(p.inflation, 1), { suf: '%' })}${field('Other debts / month', 'g.otherDebt', grp(g.otherDebt), { pre: '$' })}</section>
-    <div class="sec">Your month: now and at plan end</div><section class="card">${picture}
+    <div class="sec">Your month: now and at plan end</div><section class="card">${picture}${jobNote}<p class="note">Cash flow the trust reinvests, and the job money above, move out of your cash into the trust or its loans each month; that is already taken out under Cash over time.</p>
     ${(() => { const later = pl.extraLater, pe = k.planEnd; return `${later > 0.5 ? `<p class="note">Plus ${$f(later)}/mo of extra payments on assets you have not bought yet.</p>` : ''}
     <div data-testid="finances-sync" style="border-top:2px solid var(--line);margin-top:8px;padding-top:6px"><b>At plan end</b> <span class="note">(same as the Portfolio page)</span><div class="f"><span class="lb">Before tax</span><b data-testid="sync-cf">${$s(pe.cfBefore)}</b></div><div class="f"><span class="lb">After tax</span><b>${$s(pe.cfAfter)}</b></div><div class="f"><span class="lb">Left over each month</span><b>${$s(pe.net)}</b></div>
     </div>`; })()}</section>
@@ -1387,7 +1528,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
   function addPage() {
     const tp = E.TYPES[UI.addType] ? UI.addType : 'house', list = E.loansFor(tp), sel = list.find((l) => l.id === UI.addLoan) ? UI.addLoan : list[0].id;
     const blurb = { house: 'A single-family rental or primary home.', commercial: 'Retail, office, storage or industrial. Valued on rent and cap rate.', business: 'An operating business you buy. Valued on owner profit and growth.' }[tp];
-    return `<div class="top"><button class="ic" data-go="" aria-label="Cancel and go back">‹</button><h2>Add to portfolio</h2></div>
+    return `<div class="top"><button class="ic" data-go="" aria-label="Cancel and go back">‹</button><h2>${UI.addOwned ? 'Add something you own' : 'Add to portfolio'}</h2></div>${UI.addOwned ? '<p class="note" style="margin:0 4px 8px" data-testid="add-owned-note">It goes in the Bought section. Next you set the price, loan and how many months you have already paid.</p>' : ''}
     <section class="card"><div class="seg" role="tablist">${['house', 'commercial', 'business'].map((x) => `<button data-addtype="${x}" class="${x === tp ? 'on' : ''}">${TL[x]}</button>`).join('')}</div><p class="note">${blurb} You will set the price and income on the next screen.</p>${tp === 'house' ? '<button class="linkbtn" data-go="import/new">Have a Zillow listing? Import it</button>' : ''}</section>
     <div class="sec">Pick a loan option</div><section class="card" data-testid="loan-options">${(() => { const one = (l) => `<div class="loanrow"><button class="loanopt ${l.id === sel ? 'on' : ''}" data-pickloan="${l.id}" aria-pressed="${l.id === sel}"><b>${esc(l.name.replace(/\s*\(you live there\)/i, ''))}</b><span>${l.dp >= 100 ? 'No loan · pay the full price' : l.dp + '% down · ' + l.rate + '% · ' + (l.io ? 'interest-only, ' : '') + r(l.term / 12, 1) + ' yr'}</span>${l.dp >= 100 ? '' : `<small>${esc(l.note.split(/(?<=\.)\s/)[0])}</small>`}</button>${infoBtn(GL.LOAN[l.id])}</div>`; const inv = list.filter((l) => !l.ownerOcc), live = list.filter((l) => l.ownerOcc); return inv.map(one).join('') + (live.length ? `<p class="note" style="margin:10px 4px 2px"><b>If you will live there</b><br>FHA and 203(k) loans need you to move in.</p>` + live.map(one).join('') : ''); })()}</section>
     <button class="btn" style="width:100%" data-confirm-add="${tp}|${sel}" data-testid="confirm-add">Add ${TL[tp].toLowerCase()}</button>`;
@@ -1401,12 +1542,14 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
     <details class="card" data-testid="model-notes" style="margin:0 0 8px;padding:10px 12px"><summary style="cursor:pointer;font-weight:600">How the numbers are built</summary><ul class="note" style="margin:8px 0 0 16px;padding:0">
       <li>All dollars are nominal (future) dollars, not adjusted for inflation. Living costs and manager pay rise by the cost-increase rate; loan payments stay fixed.</li>
       <li>Rent, profit and costs of each asset grow at that asset's growth rate, the same rate as its value. Property taxes are assumed to rise with value (some states cap this).</li>
-      <li>Every asset sits in one trust and the trust borrows against all of it. Walking down the list, each planned asset is bought the first month the pool of everything before it (what you own today plus the planned assets above it) can pay its down payment, closing costs and improvements: the pool's borrowing room plus the cash it holds. Each asset adds room up to the max loan vs value (85% is the regulators' ceiling for real estate) less the appraisal cut, its own loan balance and other liens; a business is not backed by real estate, so it uses a separate, lower cap (50% by default, a conservative choice you can change). What the trust has already drawn on its line is subtracted. The pool's whole cash flow (income minus costs, loan payments and line interest, after the managers and taxes) goes first to paying the line down, which raises the room, then is held for the next purchase. Each asset's cash flow grows with its income, and extra payments still shorten loans and raise room. Move an asset up or down the list and the funding order changes with it. Savings are not counted; sale proceeds are held as cash.</li>
+      <li>Every asset sits in one trust and the trust borrows against all of it. Walking down the list, each planned asset is bought the first month the pool of everything before it (what you own today plus the planned assets above it) can pay its down payment, closing costs and improvements: the pool's borrowing room plus the cash it holds. Each asset adds room up to the max loan vs value (85% is the regulators' ceiling for real estate) less the appraisal cut, its own loan balance and other liens; a business is not backed by real estate, so it uses a separate, lower cap (50% by default, a conservative choice you can change). What the trust has already drawn on its line is subtracted. The pool's whole cash flow (income minus costs, loan payments and line interest, after the managers and taxes) goes first to paying the line down, which raises the room, then is held for the next purchase. Each asset's cash flow grows with its income, and extra payments still shorten loans and raise room. Move an asset up or down the list and the funding order changes with it. Savings are not counted; sale proceeds are held as cash. Planned assets are always funded in list order, so none is bought before one above it. Every time on screen is one clock: months from today.</li>
+      <li>Where the money goes, in order: (1) the trust's pooled cash flow pays the line of credit down; (2) while a planned asset is waiting, the rest is held as cash for it; (3) once nothing is left to buy, each asset's profit pays down its own loan as an automatic extra payment (in proportion to the profit it earned), so its payoff comes sooner. Your job's take-home pay minus living costs, other debts and your extra payments is split the same way (equally across the loans at the end), and it never takes your cash below the emergency cushion. Both can be switched off under Paying loans down.</li>
       <li>Debt-to-income counts 75% of rent (minus the property's payment) plus your other debts and your own rent or mortgage (set in Finances). Banks also look at each asset's DSCR (income over loan payment): about 1.25 for bank loans, 1.15 for SBA.</li>
       <li>Taxes are worked out: profit = net operating income - loan interest - depreciation (27.5 / 39 years for buildings, 15 years for business goodwill, 7 for equipment), taxed at the extra rate your wages plus the profit owe, plus 3.8% where it applies. Sales pay capital-gains rates, up to 25% on depreciation taken, and 3.8% where it applies. State tax is 0 until you enter it. You can type your own flat rates. Closing costs are a percent of price. FHA insurance is charged on the falling loan balance.</li>
       <li>Interest-only and short loans come due: the balance left is refinanced at the refinance rate and term below, so payments and DSCR change after that month. Commercial tenants repay part of tax, insurance and CAM (NNN %), set on each commercial asset.</li>
       <li>Vacancy defaults to 7%, about the Census Bureau's rental vacancy rate. Business growth defaults to 4% a year, about the Federal Reserve's long-run nominal growth of the economy. Growth rates, management and repair costs are assumptions, not forecasts.</li></ul></details>
     <div class="sec">Borrowing</div><section class="card">${F('Max loan vs value', 'cap', { suf: '%' })}${F('Max loan vs value (business)', 'capBiz', { suf: '%' })}${F('Appraisal cut', 'haircut', { suf: '%' })}${F('Closing costs', 'closing', { suf: '%' })}${F('Line of credit rate', 'hrate', { suf: '%' })}${F('Refinance rate', 'refiRate', { suf: '%' })}${field('Refinance term (years)', 'g.refiTermY', r(g.refiTerm / 12, 1), { info: 'refi' })}<p class="note">Appraisal cut: what lenders subtract from a home's value. Rent counted: the share of rent lenders accept as income.</p></section>
+    <div class="sec">Paying loans down${infoBtn('autopay')}</div><section class="card" data-testid="autopay-card"><div class="f" style="border-top:0;min-height:36px"><span class="lb">Send profit and job money to loans</span></div><div class="seg" style="margin-top:0" role="tablist" aria-label="Send profit and job money to loans"><button data-autopay="on" class="${g.autoPay !== false ? 'on' : ''}" data-testid="autopay-on">On</button><button data-autopay="off" class="${g.autoPay === false ? 'on' : ''}" data-testid="autopay-off">Off</button></div><p class="note">On: while a planned asset is waiting, the pooled cash flow (and your job money left after living costs and your cash cushion) pays the trust's line of credit and builds cash for it. Once nothing is left to buy, each asset's profit pays down its own loan, and your job money is split equally across the loans. Off: the old behavior, where only your typed extra payments reduce a loan.</p></section>
     <div class="sec">Who helps you qualify${infoBtn('qualifying')}</div><section class="card">${F('Co-signer 1 / yr', 'p1', { pre: '$' })}${F('Co-signer 2 / yr', 'p2', { pre: '$' })}<p class="note">Leave 0 if none. Co-signers help you qualify for loans. Their income counts toward the lender's limit.</p>${F('Debt-to-income limit', 'dti', { suf: '%' })}${F('Rent counted', 'rentCount', { suf: '%' })}${F('Other monthly debts', 'otherDebt', { pre: '$' })}</section>
     <div class="sec">Operating costs</div><section class="card">${F('Vacancy', 'vac', { suf: '%' })}${F('Management (of rent)', 'mgmt', { suf: '%' })}${F('Repairs / yr', 'maint', { suf: '%' })}${F('Growth / yr', 'appr', { suf: '%' })}${F('Projection length (years)', 'planYears', {})}</section>
     ${colSec('backup', 'Backup and restore', 'copy or restore', `<section class="card">
@@ -1555,6 +1698,9 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.copyprompt !== undefined) { const m = document.getElementById('cpm'); try { navigator.clipboard.writeText(PROMPT).then(() => { m.textContent = '✓ Copied. Paste it into a Claude chat.'; }, () => { m.textContent = 'Could not copy — open “Show the prompt” and copy it by hand.'; }); } catch (x) { m.textContent = 'Could not copy — open “Show the prompt” and copy it by hand.'; } return; }
     if (t.dataset.readListing !== undefined) { const ta = document.querySelector('[data-listing-text]'); readListing(ta ? ta.value : ''); return; }
     if (t.dataset.applyListing) { applyListing(t.dataset.applyListing); return; }
+    const ap = t.closest('[data-autopay]'); if (ap) { S.g.autoPay = ap.dataset.autopay === 'on'; undo = null; save(); render(); return; }
+    const sc = t.closest('[data-sect]'); if (sc) { UI.sect = sc.dataset.sect; selId = null; prev = {}; save(); render(); return; }
+    if (t.dataset.addOwned !== undefined) { UI.addOwned = true; UI.addType = 'house'; UI.addLoan = ''; goto('add'); return; }
     const vw = t.closest('[data-view]'); if (vw) { UI.view = vw.dataset.view; prev = {}; save(); render(); return; }
     const ex = t.closest('[data-exit]'); if (ex) { const hh = H(routeOf().slice(2)); if (hh) { hh.exit = ex.dataset.exit; save(); render(); } return; }
     if (t.dataset.tab) { if (t.dataset.tab === 'hide') UI.open = false; else { UI.open = true; UI.tab = t.dataset.tab; } save(); render(); return; }
@@ -1566,10 +1712,10 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.addcap !== undefined) { S.p.capital.push({ id: 'cap' + Date.now().toString(36), name: 'Partner or investor', amount: 100000, month: 12 }); save(); render(); return; }
     if (t.dataset.dp) { ask = 'dp:' + t.dataset.dp; render(); return; }
     if (t.dataset.dpYes) { const [kind, id] = t.dataset.dpYes.split(':'), key = { job: 'jobs', pl: 'planned', cap: 'capital' }[kind]; if (key) S.p[key] = S.p[key].filter((q) => q.id !== id); ask = null; save(); render(); return; }
-    if (t.dataset.add !== undefined) { if (E.TYPES[t.dataset.add]) { UI.addType = t.dataset.add; UI.addLoan = ''; } goto('add'); return; }
+    if (t.dataset.add !== undefined) { if (E.TYPES[t.dataset.add]) { UI.addType = t.dataset.add; UI.addLoan = ''; } UI.addOwned = false; goto('add'); return; }
     const at = t.closest('[data-addtype]'); if (at) { UI.addType = at.dataset.addtype; UI.addLoan = ''; render(); return; }
     const pk = t.closest('[data-pickloan]'); if (pk) { UI.addLoan = pk.dataset.pickloan; render(); return; }
-    if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const h = E.newAsset(tp, lid, { fresh: true }); E.register(S, h); S.houses.push(h); UI.coll['cat-' + tp] = false; selId = null; save(); goto('h/' + h.id); return; }
+    if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const own = !!UI.addOwned, h = E.newAsset(tp, lid, own ? { fresh: true, status: 'owned', paid: 12 } : { fresh: true }); UI.addOwned = false; E.register(S, h); S.houses.push(h); UI.coll[(own ? 'cat-owned-' : 'cat-') + tp] = false; selId = null; save(); goto('h/' + h.id); return; }
     if (t.dataset.del) { ask = 'del:' + t.dataset.del; render(); return; }
     if (t.dataset.delYes) { const gone = H(t.dataset.delYes); undo = gone ? { label: gone.addr, snap: JSON.stringify(S) } : null; S = E.without(S, t.dataset.delYes); E.relink(S); if (selId === t.dataset.delYes) selId = null; ask = null; save(); goto(''); render(); return; }
     if (t.dataset.undo !== undefined) { if (undo) { S = E.normalize(JSON.parse(undo.snap)); S.v = DATA_V; undo = null; save(); render(); } return; }
@@ -1598,9 +1744,9 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   });
   /* ---------- reorder: Move up/down buttons and press-and-hold drag. List order = buy order; the trust funds each asset from everything before it, so nothing needs relinking. ---------- */
   let lastDragEnd = 0, drag = null, press = null, navSeen = 0;
-  const visibleIds = (tp) => { const pl = E.plan(S); return S.houses.filter((x) => (x.type || 'house') === tp && !(pl.exits[x.id] && pl.sellAt[x.id] <= pl.planM)).map((x) => x.id); };
+  const visibleIds = (h0) => { const pl = E.plan(S); return S.houses.filter((x) => (x.type || 'house') === (h0.type || 'house') && (x.status === 'owned') === (h0.status === 'owned') && !(pl.exits[x.id] && pl.sellAt[x.id] <= pl.planM)).map((x) => x.id); }; /* the rows of one list: same kind of asset, bought or planned */
   function moveBy(id, d) {
-    const h = H(id); if (!h) return; const vis = visibleIds(h.type || 'house'), i = vis.indexOf(id), j = i + d; if (i < 0 || j < 0 || j >= vis.length) return;
+    const h = H(id); if (!h) return; const vis = visibleIds(h), i = vis.indexOf(id), j = i + d; if (i < 0 || j < 0 || j >= vis.length) return;
     [vis[i], vis[j]] = [vis[j], vis[i]]; E.reorder(S, vis); save(); render();
     const nb = app.querySelector(`[data-move="${id}:${d}"]`) || app.querySelector(`[data-move="${id}:${-d}"]`); if (nb && !nb.disabled) nb.focus();
   }

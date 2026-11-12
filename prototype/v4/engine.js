@@ -4,7 +4,7 @@
    Percentages are plain numbers (85 = 85%). Money is dollars. Time is months. */
 (function (root) {
   const GDEF = { cap: 85, capBiz: 50, haircut: 0, closing: 3, vac: 7, refiRate: 7.5, refiTerm: 300, mgmt: 8, maint: 1, appr: 0, hrate: 8.5, dti: 43,
-    p1: 200000, p2: 200000, rentCount: 75, otherDebt: 0, horizon: 480, planYears: 20 };
+    p1: 200000, p2: 200000, rentCount: 75, otherDebt: 0, horizon: 480, planYears: 20, autoPay: true };
   const TYPES = { house: { label: 'Single-family home', short: 'Home' }, commercial: { label: 'Commercial property', short: 'Commercial' }, business: { label: 'Business', short: 'Business' } };
   /* Loan options. term is in months. io = interest-only: the balance left at the end of the term is refinanced into a level-payment loan at the Assumptions refinance rate and term (loanPath). */
   const LOANS = [
@@ -141,7 +141,7 @@
     const down = downAmt(h), closingCost = (h.price * clPct(S, h)) / 100, mip = mipMonthly(h), cap = capOf(S, h);
     return { cltvAtLoc, L, B0, P, mip, X, infeasible, egi, noi, reimb, cap, refi: pth.refi, cf: noi - P - mip, escrow, pitia: P + escrow + mip, path: pth, payment: P + X + escrow + mip,
       D: Dn, cashDP, draw, cfSaved: cfSaved(S, h), down, closingCost, invested: down + closingCost, payoff: payoffN(h, X, S), locM: lm,
-      head0: Math.max(0, (cap / 100) * (1 - g.haircut / 100) * h.price - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
+      head0: Math.max(0, (cap / 100) * (1 - g.haircut / 100) * valAt(S, h, 0) - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
       valueNow: valAt(S, h, 0), valueGain: +h.arv > 0 ? h.arv - h.price - (h.capex || 0) : 0, capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
   }
 
@@ -234,14 +234,13 @@
     hs.forEach((h) => (V[h.id] = view(S, h)));
     const planM = Math.round(Math.max(1, g.planYears || 20) * 12), hz = isFinite(+g.horizon) ? +g.horizon : GDEF.horizon, TS = Math.max(600, Math.min(2400, Math.round(hz)));
     const queue0 = hs.filter((h) => h.status !== 'owned'), skipped = {}, hel = isFinite(+g.hrate) ? +g.hrate : GDEF.hrate;
-    let P0, sellAt, mergeAt, dr, cur, exits, fund, readyAt, cashA, outsideA, reinv, bought, blocked;
+    let P0, sellAt, mergeAt, dr, cur, exits, fund, readyAt, cashA, outsideA, reinv, bought, blocked, BAL, PAY, RAT, LS, AUTO, JOBX, CALLS, FUT = null, JS, JU, JLN, JC, JLO, LQ, SALET, best;
     const exitTimes = (h) => { const p = P0[h.id]; sellAt[h.id] = Infinity; mergeAt[h.id] = Infinity; if (!isFinite(p)) return;
       const m = Math.max(Math.round(h.exitMonth || 0), p + 1); if (h.exit === 'sell') sellAt[h.id] = m; else if (h.exit === 'merge') mergeAt[h.id] = m; };
     /* state of an asset at month t, ignoring whether it has been sold (hl = its line draw this month) */
     function st(h, t, hl) {
       const p = P0[h.id]; if (!isFinite(p) || t < p) return null;
-      const v = V[h.id], age = t - p, live = age < v.payoff;
-      const B = live ? v.path.bal(age) : 0;
+      const v = V[h.id], age = t - p, B = BAL[h.id][t] || 0, live = B > 0.005; /* the balance is simulated month by month (scheduled payments, your extra, the profit and job money that go to the loan) */
       const improved = (+h.arv > 0 || h.liftIncome) && age >= Math.max(0, h.capexMonths || 0), merged = t >= mergeAt[h.id];
       const fv = merged ? 1 + (h.exitLift || 0) / 100 : 1;
       const fi = (improved ? 1 + (h.liftIncome || 0) / 100 : 1) * (merged ? 1 + (h.exitLift || 0) / 100 : 1);
@@ -253,8 +252,8 @@
     function snapOf(t) {
       const out = [];
       for (const h of bought) { if (!held(h, t)) continue; const a = st(h, t, cur[h.id]); if (!a) continue;
-        const v = a.v, hi = (cur[h.id] * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0;
-        const intr = (a.live ? a.B * v.path.rate(a.age) : 0) + hi, dep = depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge), biz = (h.type || 'house') === 'business';
+        const v = a.v, hi = (cur[h.id] * hel) / 1200, sched = a.live ? PAY[h.id][t] + mipNow(h, a) : 0;
+        const intr = (a.live ? a.B * RAT[h.id][t] : 0) + hi, dep = depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge), biz = (h.type || 'house') === 'business';
         out.push({ h, a, tx: v.noi * a.gfi - intr - dep, biz, live: t < mergeAt[h.id], inc: v.noi * a.gfi, sched, hi, draw: cur[h.id], room: Math.max(0, (capOf(S, h) / 100) * (1 - g.haircut / 100) * a.val - a.B - (h.liens || 0)) }); }
       return out;
     }
@@ -262,12 +261,35 @@
     const pp = S.p || null;
     const sumSnap = (sn, t) => { let room = 0, draw = 0, cf = 0, re = 0, bz = 0, nb = 0; sn.forEach((x) => { room += x.room; draw += x.draw; cf += x.inc - x.sched - x.hi; if (x.biz) { bz += x.tx; if (x.live) nb++; } else re += x.tx; });
       const tax = pp ? portTaxAt(S, t, re, bz) : 0, gm = pp ? Math.max(0, nb - (pp.operating || 0)) * (pp.gmMonthly || 0) * Math.pow(1 + (pp.inflation || 0) / 100, t / 12) : 0;
-      return { n: sn.length, room, draw, head: room - draw, cf, tax, gm, sweep: Math.max(0, cf - tax - gm) }; };
+      return { n: sn.length, room, draw, head: room - draw, cf, tax, gm, re, bz, sweep: Math.max(0, cf - tax - gm) }; };
+    /* equal (or weighted) split of x over loans, each limited to what is still owed; what no loan can take comes back */
+    function spread(x, items) {
+      const got = {}; let rem = x, act = items.filter((i) => i.cap > 0.005 && i.w > 0);
+      for (let g2 = 0; g2 < 8 && rem > 0.005 && act.length; g2++) {
+        const W = act.reduce((a2, i) => a2 + i.w, 0), nxt = []; let used = 0;
+        act.forEach((i) => { const give = Math.min(i.cap - (got[i.id] || 0), (rem * i.w) / W); got[i.id] = (got[i.id] || 0) + give; used += give; if (i.cap - got[i.id] > 0.005) nxt.push(i); });
+        rem -= used; act = nxt;
+      }
+      return { got, left: Math.max(0, rem) };
+    }
+    /* the loan of asset h at month t starts from balance B (and refinances when it comes due) */
+    function setMonth(h, t, B) {
+      const id = h.id, L = LS[id], age = t - P0[id];
+      if (L.m === age && !L.refi && B > 0.005) { L.refi = true; L.ir = refiRateOf(S, h) / 1200; L.Pr = amort(B, L.ir, refiTermOf(S, h)); }
+      BAL[id][t] = B; PAY[id][t] = B > 0.005 ? (L.refi ? L.Pr : L.P) : 0; RAT[id][t] = L.refi ? L.ir : L.i;
+    }
+    const startLoan = (h, t) => { const B0 = balToday(h), m0 = matOf(h); LS[h.id] = { P: payment(h), i: mi(h), m: m0 > 0 && B0 > 0.005 ? Math.max(0, m0 - age0(h)) : Infinity, refi: false, ir: 0, Pr: 0 };
+      BAL[h.id] = new Array(TS + 2).fill(0); PAY[h.id] = new Array(TS + 2).fill(0); RAT[h.id] = new Array(TS + 2).fill(0); AUTO[h.id] = new Array(TS + 2).fill(0); JOBX[h.id] = new Array(TS + 2).fill(0); setMonth(h, t, B0); };
+    /* balance after month t's scheduled payment and the owner's extra payment (before any automatic extra) */
+    const nextBal = (h, t) => { const B = BAL[h.id][t]; return B > 0.005 ? Math.max(0, B * (1 + RAT[h.id][t]) - PAY[h.id][t] - V[h.id].X) : 0; };
     function run() {
-      P0 = {}; sellAt = {}; mergeAt = {}; dr = {}; cur = {}; exits = {}; fund = {}; readyAt = {}; bought = []; blocked = null;
+      P0 = {}; sellAt = {}; mergeAt = {}; dr = {}; cur = {}; exits = {}; fund = {}; readyAt = {}; bought = []; blocked = null; best = {};
+      BAL = {}; PAY = {}; RAT = {}; LS = {}; AUTO = {}; JOBX = {}; CALLS = new Array(TS + 1).fill(0);
       cashA = new Array(TS + 1).fill(0); outsideA = new Array(TS + 1).fill(0); reinv = new Array(TS + 1).fill(0);
-      hs.forEach((h) => { cur[h.id] = 0; P0[h.id] = h.status === 'owned' ? 0 : Infinity; exitTimes(h); if (h.status === 'owned') { bought.push(h); dr[h.id] = new Array(TS + 1).fill(0); } });
-      const queue = queue0.filter((h) => !skipped[h.id]); let C = 0, out = 0, qi = 0;
+      JS = new Array(TS + 1).fill(0); JU = new Array(TS + 1).fill(0); JLN = new Array(TS + 1).fill(0); JC = new Array(TS + 1).fill(0); JLO = new Array(TS + 1).fill(0); LQ = new Array(TS + 1).fill(0); SALET = new Array(TS + 1).fill(0);
+      hs.forEach((h) => { cur[h.id] = 0; P0[h.id] = h.status === 'owned' ? 0 : Infinity; exitTimes(h); if (h.status === 'owned') { bought.push(h); dr[h.id] = new Array(TS + 1).fill(0); startLoan(h, 0); } });
+      const queue = queue0.filter((h) => !skipped[h.id]); let C = 0, out = 0, qi = 0, L = pp ? +pp.cash || 0 : 0, outPrev = 0;
+      const autoPay = g.autoPay !== false, infl = pp ? (pp.inflation || 0) / 100 : 0, apy = pp ? (pp.cashApy || 0) / 1200 : 0;
       for (let t = 0; t <= TS; t++) {
         if (t === 0) hs.forEach((h) => { if (h.status === 'owned' && !h.finCapex && h.capex > 0) out += h.capex; }); /* improvements on assets owned today are paid with outside money */
         /* 1) sales put net proceeds (after the sold asset's own line draw) in the trust's cash */
@@ -275,34 +297,68 @@
           const a = st(h, t, cur[h.id]); if (!a) continue;
           const proceeds = a.val * (1 - (h.sellCost || 0) / 100) - a.B - (h.liens || 0);
           exits[h.id] = { month: t, proceeds, price: a.val, net: a.val * (1 - (h.sellCost || 0) / 100), age: a.depAge, dep: depCum(S, h, a.depAge), cost: costBasis(S, h) };
+          if (pp) { const m0 = sumSnap(snapOf(t), t); SALET[t] += (saleTax(S, { exits, T: TS, series: { txRE: { [t]: m0.re }, txBiz: { [t]: m0.bz } } }, h) || { tax: 0 }).tax; } /* the tax on the sale comes out of your cash (used only to keep your reserve) */
           /* the proceeds (after the sold asset's own loan) go to the trust's cash; the sold asset's own line draw stays with the trust and moves to the oldest asset still held (with nothing left, cash pays it) */
           let x = proceeds; if (x < 0) { out += -x; x = 0; }
           const own = cur[h.id]; cur[h.id] = 0;
           if (own > 0.005) { const o = bought.find((q) => q !== h && held(q, t)); if (o) cur[o.id] += own; else { const p0 = Math.min(own, x); x -= p0; out += own - p0; } }
           C += x;
         }
-        /* 2) the next planned asset in the list is bought when the pool can pay for it */
+        /* 2) the next planned asset in the list is bought when the pool can pay for it. Nothing is ever bought before an asset above it in the list: the queue is walked in list order and stops at the first one that is not ready. */
         let snap = snapOf(t);
         while (qi < queue.length) {
           const N = queue[qi], pool = bought.length > 0, bi = Math.max(0, Math.round(N.buyIn || 0)), base = downAmt(N) + (N.price * clPct(S, N)) / 100;
-          const cap0 = N.finCapex ? 0 : Math.max(0, N.capex || 0), needAmt = base + cap0, sm = sumSnap(snap, t);
-          if (pool && readyAt[N.id] === undefined && Math.max(0, sm.head) + C >= needAmt - 1e-6) readyAt[N.id] = t;
+          const cap0 = N.finCapex ? 0 : Math.max(0, N.capex || 0), needAmt = base + cap0, sm = sumSnap(snap, t), avail = Math.max(0, sm.head) + C;
+          if (pool && (!best[N.id] || avail > best[N.id].avail)) best[N.id] = { avail, month: t };
+          if (pool && readyAt[N.id] === undefined && avail >= needAmt - 1e-6) readyAt[N.id] = t;
           if (t < bi || (pool && readyAt[N.id] === undefined)) break;
-          if (pool && Math.max(0, sm.head) + C < needAmt - 1e-6) break;
-          P0[N.id] = t; exitTimes(N); dr[N.id] = new Array(TS + 1).fill(0);
-          if (pool) { const useC = Math.min(C, needAmt); C -= useC; cur[N.id] = needAmt - useC; fund[N.id] = { pool: true, n: sm.n, room: Math.max(0, sm.head), cf: sm.sweep, gross: sm.cf, cash: useC, draw: needAmt - useC, need: needAmt }; }
+          if (pool && avail < needAmt - 1e-6) break;
+          P0[N.id] = t; exitTimes(N); dr[N.id] = new Array(TS + 1).fill(0); startLoan(N, t);
+          if (pool) { const C0 = C, useC = Math.min(C, needAmt); C -= useC; cur[N.id] = needAmt - useC; fund[N.id] = { pool: true, n: sm.n, room: Math.max(0, sm.head), heldCash: C0, have: avail, cf: sm.sweep, gross: sm.cf, cash: useC, draw: needAmt - useC, need: needAmt }; }
           else { const nd = (t > 0 ? base : 0) + cap0; out += nd; fund[N.id] = { pool: false, n: 0, room: 0, cf: 0, cash: 0, draw: 0, need: nd }; }
           bought.push(N); qi++; snap = snapOf(t);
         }
-        /* 3) record the state and sweep the month's pooled cash flow: first pay the line down (oldest draw first), then hold the rest as cash */
+        /* 3) record the state and sweep the month's pooled cash flow. Order of use: (a) pay the trust's line down (oldest draw first); (b) while a planned asset is still waiting, hold the rest as cash for it; (c) once nothing is left to buy, the rest goes to each
+           asset's own loan as an automatic extra payment, in proportion to the cash flow each asset earned. Your job money left after living costs and your cash cushion follows the same order, but is split equally across the loans. */
         snap.forEach((x) => { dr[x.h.id][t] = cur[x.h.id]; });
         cashA[t] = C; outsideA[t] = out;
-        const cf = sumSnap(snap, t).sweep, pending = qi < queue.length; /* once nothing is left to buy, only the line is paid down; after that you keep the cash flow */
-        if (cf > 0) { let x = cf; for (const h of bought) { if (x <= 0) break; if (!held(h, t) || !(cur[h.id] > 0)) continue; const pay = Math.min(cur[h.id], x); cur[h.id] -= pay; x -= pay; } reinv[t] = cf - (pending ? 0 : x); if (pending) C += x; }
+        const sm1 = sumSnap(snap, t), cf = sm1.sweep, pending = qi < queue.length, cap = {}; let anyLoan = false;
+        snap.forEach((x) => { const b = nextBal(x.h, t); if (b > 0.005) { cap[x.h.id] = b; anyLoan = true; } });
+        const payLine = (amt) => { let y = amt; for (const h of bought) { if (y <= 0) break; if (!held(h, t) || !(cur[h.id] > 0)) continue; const pay = Math.min(cur[h.id], y); cur[h.id] -= pay; y -= pay; } return y; };
+        let x = cf > 0 ? payLine(cf) : 0;
+        if (cf > 0 && pending) { C += x; x = 0; } /* x = the part of the pooled cash flow left once the line is paid and nothing is waiting: it is yours unless it can go to a loan */
+        let Xu = 0; snap.forEach((x2) => { if (x2.a.live) Xu += x2.a.v.X; });
+        const liv = pp ? (pp.living || 0) * Math.pow(1 + infl, t / 12) : 0, dbt = pp ? g.otherDebt || 0 : 0, inc = jobsNet(S, t), port = sm1.cf - sm1.tax - sm1.gm;
+        let intr = 0, cI = 0, oT = 0, pCand = x, jCand = 0, scale = autoPay ? 1 : 0;
+        if (pp) {
+          /* Your own month first: take-home pay minus living costs, other debts and your extra payments (a portfolio loss comes out of it too). If that is not enough to live on, the portfolio profit left over pays for living first. What is left after that
+             goes to the loans (profit in proportion to what each asset earned, job money equally), as long as your cash stays at or above the emergency cushion. */
+          intr = t > 0 ? Math.max(0, L + cashA[t - 1]) * apy : 0; cI = pp.capital.reduce((a2, c) => a2 + (c.month === t ? c.amount : 0), 0); oT = pp.planned.reduce((a2, c) => a2 + (c.month === t ? c.amount : 0), 0);
+          const calls = out - outPrev + oT + SALET[t] - cI - intr, G = inc - liv - dbt - Xu + Math.min(0, port), rsv = (pp.emergencyMonths || 0) * (liv + dbt);
+          CALLS[t] = Math.max(0, out - outPrev + oT + SALET[t]); /* one-time costs this month */
+          const cand = pending ? Math.max(0, G) : Math.max(0, G + x); pCand = pending ? 0 : Math.min(x, cand); jCand = cand - pCand;
+          scale = autoPay && cand > 0 ? Math.min(cand, Math.max(0, L + C + cand - calls - rsv - (FUT ? FUT[t] : 0))) / cand : 0; /* FUT = costs still to come (one-time expenses, sale taxes, outside cash for purchases): that money stays in your cash */ JS[t] = Math.max(0, G);
+        }
+        let pSpent = 0;
+        if (!pending && pCand > 0.005 && scale > 0 && anyLoan) { const r = spread(pCand * scale, snap.map((x2) => ({ id: x2.h.id, w: Math.max(0, x2.inc - x2.sched - x2.hi), cap: cap[x2.h.id] || 0 }))); Object.keys(r.got).forEach((id) => { AUTO[id][t] = r.got[id]; cap[id] -= r.got[id]; pSpent += r.got[id]; }); }
+        if (cf > 0) reinv[t] = cf - (x - pSpent);
+        if (jCand * scale > 0.005) {
+          const J = jCand * scale; let y = payLine(J); JLN[t] = J - y;
+          if (pending) { C += y; JC[t] = y; y = 0; }
+          else if (y > 0.005 && anyLoan) { const r = spread(y, snap.map((x2) => ({ id: x2.h.id, w: 1, cap: cap[x2.h.id] || 0 }))); Object.keys(r.got).forEach((id) => { JOBX[id][t] = r.got[id]; cap[id] -= r.got[id]; JLO[t] += r.got[id]; }); y = r.left; }
+          JU[t] = J - y;
+        }
+        if (pp) { L += inc - liv - dbt - Xu + port - (t > 0 ? reinv[t - 1] : 0) - JU[t] + intr + cI - oT - (out - outPrev) - SALET[t]; LQ[t] = L; }
+        outPrev = out;
+        /* 4) next month's loan balances: the scheduled payment, your extra, and the automatic extra from the asset's own profit and from your job */
+        for (const h of bought) { if (!held(h, t + 1) || !(BAL[h.id][t] > 0.005) || t + 1 > TS) continue; setMonth(h, t + 1, Math.max(0, nextBal(h, t) - (AUTO[h.id][t] || 0) - (JOBX[h.id][t] || 0))); }
       }
       blocked = qi < queue.length ? queue[qi] : null;
     }
-    for (let i = 0; i <= queue0.length + 1; i++) { run(); if (!blocked) break; skipped[blocked.id] = 1; }
+    const settle = () => { for (let i = 0; i <= queue0.length + 1; i++) { run(); if (!blocked) break; skipped[blocked.id] = 1; } };
+    settle();
+    if (pp && g.autoPay !== false && CALLS.some((c) => c > 0.5)) { /* second pass: now the costs still to come are known, so loan payments never use up the cash they need */
+      FUT = new Array(TS + 2).fill(0); for (let t = TS - 1; t >= 0; t--) FUT[t] = FUT[t + 1] + CALLS[t + 1]; settle(); }
     const sellKeys = hs.map((h) => (isFinite(sellAt[h.id]) ? sellAt[h.id] : 0)), mergeKeys = hs.map((h) => (isFinite(mergeAt[h.id]) ? mergeAt[h.id] : 0));
     const finiteBuys = hs.map((h) => P0[h.id]).filter(isFinite);
     const lastEvent = Math.max(0, ...finiteBuys, ...sellKeys, ...mergeKeys);
@@ -315,8 +371,8 @@
       let incAdd = 0, debtAdd = 0;
       for (const h of hs) {
         if (!held(h, t)) continue; const a = st(h, t); if (!a) continue;
-        const { v } = a, hi = (a.heloc * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0, ex = a.live ? v.X : 0, rentG = h.rent * a.gfi, reimbG = v.reimb * a.gfi;
-        const intr = (a.live ? a.B * v.path.rate(a.age) : 0) + hi, dep = depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge), tx = v.noi * a.gfi - intr - dep;
+        const { v } = a, hi = (a.heloc * hel) / 1200, sched = a.live ? PAY[h.id][t] + mipNow(h, a) : 0, ex = a.live ? v.X : 0, rentG = h.rent * a.gfi, reimbG = v.reimb * a.gfi;
+        const intr = (a.live ? a.B * RAT[h.id][t] : 0) + hi, dep = depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge), tx = v.noi * a.gfi - intr - dep;
         s.intr[t] += intr; s.dep[t] += dep; if ((h.type || 'house') === 'business') s.txBiz[t] += tx; else s.txRE[t] += tx;
         s.count[t]++; s.value[t] += a.val; s.debt[t] += a.B + (h.liens || 0) + a.heloc; s.nw[t] += a.val - a.B - (h.liens || 0) - a.heloc;
         s.noi[t] += v.noi * a.gfi; s.ds[t] += sched + hi; s.extra[t] += ex; s.rent[t] += rentG;
@@ -333,24 +389,31 @@
       o.cltv = o.value ? (o.debt / o.value) * 100 : 0; o.dscr = o.ds ? o.noi / o.ds : 0; return o; };
     /* every asset's contribution to the portfolio totals at month t; the entries sum exactly to the series values */
     const assetsAt = (t) => { t = Math.min(T, Math.round(t)); const list = hs.map((h) => { if (!held(h, t)) return null; const a = st(h, t); if (!a) return null;
-      const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
+      const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? PAY[h.id][t] + mipNow(h, a) : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
       return { id: h.id, addr: h.addr, type: h.type || 'house', equity: a.val - a.B - (h.liens || 0) - a.heloc, value: a.val, debt: a.B + (h.liens || 0) + a.heloc,
         payment: sched + ex + v.escrow + hi, cf: inc - sched - hi, income: inc }; }).filter(Boolean);
       if (s.cash[t] > 0.5) list.push({ id: '__cash', addr: 'Cash in the trust', type: 'cash', equity: s.cash[t], value: s.cash[t], debt: 0, payment: 0, cf: 0, income: 0 }); return list; };
     /* the pool at the END of month t: how many assets, borrowing room, line drawn, room left, pooled monthly cash flow, cash held */
-    const poolAt = (t) => { t = Math.max(0, Math.min(TS, Math.round(t))); const sn = []; for (const h of bought) { if (!held(h, t)) continue; const a = st(h, t); if (!a) continue; const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? v.path.pay(a.age) + mipNow(h, a) : 0;
-        sn.push({ inc: v.noi * a.gfi, sched, hi, draw: a.heloc, biz: (h.type || 'house') === 'business', live: t < mergeAt[h.id], tx: v.noi * a.gfi - ((a.live ? a.B * v.path.rate(a.age) : 0) + hi) - (depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge)), room: Math.max(0, (capOf(S, h) / 100) * (1 - g.haircut / 100) * a.val - a.B - (h.liens || 0)) }); }
+    const poolAt = (t) => { t = Math.max(0, Math.min(TS, Math.round(t))); const sn = []; for (const h of bought) { if (!held(h, t)) continue; const a = st(h, t); if (!a) continue; const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? PAY[h.id][t] + mipNow(h, a) : 0;
+        sn.push({ inc: v.noi * a.gfi, sched, hi, draw: a.heloc, biz: (h.type || 'house') === 'business', live: t < mergeAt[h.id], tx: v.noi * a.gfi - ((a.live ? a.B * RAT[h.id][t] : 0) + hi) - (depCum(S, h, a.depAge + 1) - depCum(S, h, a.depAge)), room: Math.max(0, (capOf(S, h) / 100) * (1 - g.haircut / 100) * a.val - a.B - (h.liens || 0)) }); }
       const m = sumSnap(sn, t); return { month: t, n: m.n, room: m.room, drawn: m.draw, head: Math.max(0, m.head), cf: m.cf, tax: m.tax, gm: m.gm, sweep: m.sweep, cash: cashA[t] }; };
     const order = queue0.filter((h) => !skipped[h.id]).concat(queue0.filter((h) => skipped[h.id]));
     const funds = {}; hs.forEach((h) => { funds[h.id] = !!(fund[h.id] && fund[h.id].pool); });
-    const trust = {}; let prevM = 0; hs.forEach((h) => { if (h.status === 'owned') return; const m = P0[h.id], f = fund[h.id] || null;
-      trust[h.id] = { month: m, ready: readyAt[h.id] === undefined ? Infinity : readyAt[h.id], ok: isFinite(m), pooled: funds[h.id], n: f ? f.n : 0, room: f ? f.room : 0, cf: f ? f.cf : 0, cash: f ? f.cash : 0, draw: f ? f.draw : 0, need: f ? f.need : 0 };
+    const trust = {}; let prevM = 0; hs.forEach((h) => { if (h.status === 'owned') return; const m = P0[h.id], f = fund[h.id] || null, bi = Math.max(0, Math.round(h.buyIn || 0)), rd = readyAt[h.id] === undefined ? Infinity : readyAt[h.id];
+      /* month = the one clock everywhere: months from today. ready = the first month the pool could pay (room + cash >= need); month = ready, or the 'not before' month if that is later (held = true). */
+      trust[h.id] = { month: m, ready: rd, held: isFinite(m) && isFinite(rd) && m > rd, buyIn: bi, ok: isFinite(m), pooled: funds[h.id], n: f ? f.n : 0, room: f ? f.room : 0, cf: f ? f.cf : 0, cash: f ? f.cash : 0, draw: f ? f.draw : 0, heldCash: f ? f.heldCash : 0, have: f ? f.have : 0, need: f ? f.need : needFor(S, h), gross: f ? f.gross : 0, best: best[h.id] || null };
     });
+    /* loans: balance at any month, and the month each loan is paid off (with the extra from your own profit and your job); 0 = no loan, Infinity = not within the plan horizon */
+    const loanEnd = {}, balAt = (id, t) => (BAL[id] ? BAL[id][Math.max(0, Math.min(TS, Math.round(t)))] || 0 : 0);
+    hs.forEach((h) => { const p = P0[h.id]; if (!isFinite(p)) { loanEnd[h.id] = Infinity; return; } let e = Infinity; for (let t = p; t <= TS; t++) if (!(BAL[h.id][t] > 0.005)) { e = t; break; } loanEnd[h.id] = e; });
+    const shareAt = (A) => (id, t) => (A[id] ? A[id][Math.max(0, Math.min(TS, Math.round(t)))] || 0 : 0);
+    const firstPos = (A) => (id) => { const a = A[id]; if (!a) return -1; for (let t = 0; t <= TS; t++) if (a[t] > 0.005) return t; return -1; };
+    const jobs = { surplus: JS.slice(0, T + 1), used: JU.slice(0, T + 1), line: JLN.slice(0, T + 1), cash: JC.slice(0, T + 1), loans: JLO.slice(0, T + 1), liquid: LQ.slice(0, T + 1) };
     const rows = queue0.map((h) => { const m = P0[h.id], r = { id: h.id, target: h.id, start: prevM, locM: isFinite(m) ? Math.max(0, m - prevM) : Infinity, end: m, ok: isFinite(m), funds: funds[h.id], ready: trust[h.id].ready }; if (isFinite(m)) prevM = Math.max(prevM, m); return r; });
     let worst = { dti: 0, month: 0 }; for (let t = 0; t <= T; t++) if (s.dti[t] > worst.dti) worst = { dti: s.dti[t], month: t };
     let extraLater = 0; hs.forEach((h) => { const v = V[h.id]; if (isFinite(P0[h.id]) && P0[h.id] > 0 && v.L > 0 && v.payoff > 0) extraLater += v.X; });
-    return { dpCash, outsideTotal: s.outside[T], extraNow: s.extra[0], extraLater, purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
-      at, assetsAt, poolAt, snap: assetsAt(Math.min(T, planM)), rows, funds, fundedByLOC: funds, trust, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id), skipped: Object.keys(skipped), queue: order.map((h) => h.id) };
+    return { dpCash, jobUsed: jobs.used, outsideTotal: s.outside[T], extraNow: s.extra[0], extraLater, purchase: P0, sellAt, mergeAt, exits, series: s, T, lastBuy, lastEvent, planM: Math.min(T, planM), today: at(0), final: at(Math.min(T, lastEvent)), horizon: at(Math.min(T, planM)),
+      at, assetsAt, poolAt, snap: assetsAt(Math.min(T, planM)), rows, jobs, loanEnd, balAt, autoAt: shareAt(AUTO), jobAt: shareAt(JOBX), autoFrom: firstPos(AUTO), jobFrom: firstPos(JOBX), funds, fundedByLOC: funds, trust, V, worst, unfunded: hs.filter((h) => !isFinite(P0[h.id])).map((h) => h.id), skipped: Object.keys(skipped), queue: order.map((h) => h.id) };
   }
 
 
@@ -370,7 +433,7 @@
     const p = S.p; if (!p) return null; pl = pl || plan(S);
     const g = S.g, s = pl.series, T = pl.T, infl = (p.inflation || 0) / 100, apy = (p.cashApy || 0) / 1200;
     const N = (n) => new Array(n + 1).fill(0);
-    const R = { dep: N(T), taxable: N(T), gm: N(T), hours: N(T), nBiz: N(T), income: N(T), portfolio: N(T), portTax: N(T), extra: N(T), living: N(T), debts: N(T), oneTime: N(T), capitalIn: N(T), outsideCall: N(T), saleTax: N(T), interest: N(T), net: N(T), liquid: N(T), total: N(T), reserve: N(T), burn: N(T), runway: N(T) };
+    const R = { dep: N(T), taxable: N(T), gm: N(T), hours: N(T), nBiz: N(T), income: N(T), portfolio: N(T), portTax: N(T), extra: N(T), living: N(T), debts: N(T), oneTime: N(T), capitalIn: N(T), jobSplit: N(T), jobSurplus: N(T), outsideCall: N(T), saleTax: N(T), interest: N(T), net: N(T), liquid: N(T), total: N(T), reserve: N(T), burn: N(T), runway: N(T) };
     const saleInfo = {}; S.houses.forEach((h) => { const ex = pl.exits[h.id]; if (ex && ex.month <= T) { const st0 = saleTax(S, pl, h); saleInfo[h.id] = st0; R.saleTax[ex.month] += st0.tax; } });
     p.planned.forEach((x) => { if (x.month <= T) R.oneTime[x.month] += x.amount; }); p.capital.forEach((x) => { if (x.month <= T) R.capitalIn[x.month] += x.amount; });
     S.houses.filter((h) => h.type === 'business').forEach((h) => { const a = pl.purchase[h.id], b = Math.min(T + 1, pl.sellAt[h.id], pl.mergeAt[h.id]); if (isFinite(a)) for (let t = a; t < b && t <= T; t++) R.nBiz[t]++; }); /* a business merged into another is one business afterwards: no second manager and no second set of hours */
@@ -383,7 +446,8 @@
       R.outsideCall[t] = t === 0 ? s.outside[0] : s.outside[t] - s.outside[t - 1];
       R.net[t] = R.income[t] + R.portfolio[t] - R.portTax[t] - R.gm[t] - R.extra[t] - R.living[t] - R.debts[t];
       R.interest[t] = t > 0 ? Math.max(0, liq + s.cash[t - 1]) * apy : 0;
-      liq += R.net[t] + R.interest[t] + R.capitalIn[t] - R.outsideCall[t] - R.oneTime[t] - R.saleTax[t] - (pl.dpCash[t] || 0);
+      R.jobSplit[t] = (pl.jobUsed && pl.jobUsed[t]) || 0; R.jobSurplus[t] = (pl.jobs && pl.jobs.surplus[t]) || 0; /* job money that moved into the trust or the loans (never below your cash cushion) */
+      liq += R.net[t] + R.interest[t] + R.capitalIn[t] - R.outsideCall[t] - R.oneTime[t] - R.saleTax[t] - (pl.dpCash[t] || 0) - R.jobSplit[t];
       R.liquid[t] = liq; R.total[t] = liq + s.cash[t];
       R.reserve[t] = (p.emergencyMonths || 0) * (R.living[t] + R.debts[t]);
       R.burn[t] = R.living[t] + R.debts[t] + R.extra[t] + R.gm[t] - Math.max(0, R.portfolio[t] - R.portTax[t]);
@@ -417,7 +481,7 @@
     const totalOutside = s.outside[T], capitalTotal = p.capital.reduce((a, x) => a + x.amount, 0);
     return { series: R, T, status, headline, saleInfo, reasons, fixes, calls: callsAll,
       kpis: { planEnd: { month: pe, cfBefore: R.portfolio[pe], tax: R.portTax[pe], cfAfter: R.portfolio[pe] - R.portTax[pe], net: R.net[pe] }, peakHours: peakH, peakHoursMonth: peakHM, managerCost0: R.gm[0], managerCostMax: gmMax, peakBusinesses: peakBiz, takeHome: R.income[0], portfolioAfterTax: R.portfolio[0] - R.portTax[0], extra: R.extra[0], living: R.living[0], debts: R.debts[0], net0: R.net[0], worstNet, cash0: p.cash, reserveMonths0: R.living[0] + R.debts[0] > 0 ? p.cash / (R.living[0] + R.debts[0]) : Infinity,
-        minLiquid: minT, minLiquidMonth: minM, shortAmount: short, firstShortMonth: firstShort, reserveTarget0: R.reserve[0], reserveGap, runway0: R.runway[0], minRunway: minRun, totalOutside, capitalTotal, savingsUsed: Math.min(p.cash, totalOutside), gap: Math.max(0, totalOutside - p.cash - capitalTotal), dtiPeak: pl.worst.dti } };
+        jobSurplus0: R.jobSurplus[0], jobSplit0: R.jobSplit[0], jobSurplusMax: Math.max.apply(null, R.jobSurplus), minLiquid: minT, minLiquidMonth: minM, shortAmount: short, firstShortMonth: firstShort, reserveTarget0: R.reserve[0], reserveGap, runway0: R.runway[0], minRunway: minRun, totalOutside, capitalTotal, savingsUsed: Math.min(p.cash, totalOutside), gap: Math.max(0, totalOutside - p.cash - capitalTotal), dtiPeak: pl.worst.dti } };
   }
 
   /* Can the lenders carry this purchase? Debt-to-income (including your own rent or mortgage) in the month the trust buys the asset. Assets owned today have nothing to afford. */
@@ -432,7 +496,7 @@
     return { cls, dti, txt: cls === 'ok' ? '✓ Afford' : cls === 'warn' ? '△ Tight' : '✗ Short', why: 'Debt-to-income ' + dti.toFixed(0) + '% (including your own rent or mortgage) vs ' + lim + '% limit when ' + h.addr + ' closes.' };
   }
   function normalize(S) {
-    S.g = Object.assign({}, GDEF, S.g || {});
+    S.g = Object.assign({}, GDEF, S.g || {}); S.g.autoPay = S.g.autoPay !== false;
     ['cap', 'capBiz', 'vac', 'refiRate', 'refiTerm'].forEach((k) => { if (!isFinite(+S.g[k])) S.g[k] = GDEF[k]; });
     if (S.p) S.p = normalizePersonal(S.p);
     S.houses = (S.houses || []).filter((h) => h && h.id).map((h) => { const type = TYPES[h.type] ? h.type : 'house'; return Object.assign(newAsset(type, undefined, { id: h.id }), h, { type }); });
@@ -554,19 +618,19 @@
     A('house', 'conv30', {id: 'birch', addr: '908 Birchwood Ct', price: 195000, rent: 2000, tax: 220, ins: 90, growth: 4, capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8, exit: 'sell', exitMonth: 56}),
     A('house', 'dscr', {id: 'willow', addr: '3350 Willow Bend Rd', price: 210000, rent: 2200, tax: 235, ins: 95, growth: 4}),
     A('house', 'conv30', {id: 'linden', addr: '2914 Linden Way', price: 175000, rent: 1825, tax: 195, ins: 85, growth: 4}),
-    A('business', 'sba7a', {id: "cornerston", addr: "Cornerstone Plumbing Co", price: 950000, rent: 23990, growth: 4, dp: 10, buyIn: 0}),
-    A('commercial', 'comm25', {id: "northgater", addr: "Northgate Retail Strip", price: 1190000, growth: 4, dp: 40, rent: 9700, tax: 744, ins: 298, hoa: 298, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "summitfrei", addr: "Summit Freight & Logistics", price: 1485000, rent: 37500, growth: 4, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "harborstse", addr: "Harbor St Self-Storage", price: 1855000, growth: 4, dp: 45, rent: 14220, tax: 1159, ins: 464, hoa: 464, nnn: 85, capex: 110000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 129, buyIn: 0}),
-    A('business', 'sba7a', {id: "keystonehv", addr: "Keystone HVAC Services", price: 2320000, rent: 48330, growth: 4, dp: 10, buyIn: 0}),
-    A('commercial', 'comm25', {id: "lakeviewme", addr: "Lakeview Medical Office", price: 2900000, growth: 4, dp: 40, rent: 23640, tax: 1813, ins: 725, hoa: 725, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "apexproper", addr: "Apex Property Services", price: 3625000, rent: 65670, growth: 4, exit: "sell", exitMonth: 166, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "westfieldo", addr: "Westfield Office Park", price: 4530000, growth: 4, dp: 35, rent: 41330, tax: 2831, ins: 1133, hoa: 1133, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "meridianst", addr: "Meridian Staffing Group", price: 5660000, rent: 102540, growth: 4, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "eastgatesh", addr: "Eastgate Shopping Plaza", price: 7080000, growth: 4, dp: 40, rent: 57700, tax: 4425, ins: 1770, hoa: 1770, nnn: 85, capex: 425000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 183, buyIn: 0}),
-    A('business', 'bankbiz', {id: "ironwoodma", addr: "Ironwood Manufacturing", price: 8850000, rent: 147500, growth: 4, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "redwoodlog", addr: "Redwood Logistics Center", price: 11060000, growth: 4, dp: 35, rent: 92840, tax: 6913, ins: 2765, hoa: 2765, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "graniteind", addr: "Granite Industrial Supply", price: 13825000, rent: 205730, growth: 4, dp: 30, buyIn: 0})] })); };
+    A('business', 'sba7a', {id: "cornerston", addr: "Cornerstone Plumbing Co", price: 850000, rent: 21460, growth: 4, dp: 10, buyIn: 0}),
+    A('commercial', 'comm25', {id: "northgater", addr: "Northgate Retail Strip", price: 1065000, growth: 4, dp: 40, rent: 8680, tax: 666, ins: 266, hoa: 266, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "summitfrei", addr: "Summit Freight & Logistics", price: 1330000, rent: 33590, growth: 4, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "harborstse", addr: "Harbor St Self-Storage", price: 1660000, growth: 4, dp: 45, rent: 12720, tax: 1038, ins: 415, hoa: 415, nnn: 85, capex: 100000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 125, buyIn: 0}),
+    A('business', 'sba7a', {id: "keystonehv", addr: "Keystone HVAC Services", price: 2075000, rent: 43230, growth: 4, dp: 10, buyIn: 0}),
+    A('commercial', 'comm25', {id: "lakeviewme", addr: "Lakeview Medical Office", price: 2595000, growth: 4, dp: 40, rent: 21150, tax: 1622, ins: 649, hoa: 649, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "apexproper", addr: "Apex Property Services", price: 3240000, rent: 67500, growth: 4, exit: "sell", exitMonth: 160, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "westfieldo", addr: "Westfield Office Park", price: 4055000, growth: 4, dp: 35, rent: 37000, tax: 2534, ins: 1014, hoa: 1014, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "meridianst", addr: "Meridian Staffing Group", price: 5065000, rent: 91760, growth: 4, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "eastgatesh", addr: "Eastgate Shopping Plaza", price: 6335000, growth: 4, dp: 40, rent: 51630, tax: 3959, ins: 1584, hoa: 1584, nnn: 85, capex: 380000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 175, buyIn: 0}),
+    A('business', 'bankbiz', {id: "ironwoodma", addr: "Ironwood Manufacturing", price: 7915000, rent: 131920, growth: 4, dp: 25, buyIn: 0}),
+    A('commercial', 'comm25', {id: "redwoodlog", addr: "Redwood Logistics Center", price: 9895000, growth: 4, dp: 35, rent: 83060, tax: 6184, ins: 2474, hoa: 2474, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "graniteind", addr: "Granite Industrial Supply", price: 12370000, rent: 184080, growth: 4, dp: 30, buyIn: 0}) ] })); };
   /* LEGACY small sample (the Load realistic sample button; the app's default is seedPlan above; listed in the order the assets are bought). Every loan, price, cap rate, multiple and growth rate is checked against
      the grader's benchmark file (prototype/grader). Homes cash flow positive. Recycles sale cash; needs about $1.3M of outside cash. */
   const seed = () => { const A = newAsset; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: Object.assign(samplePersonal(), { cash: 100000 }), houses: [

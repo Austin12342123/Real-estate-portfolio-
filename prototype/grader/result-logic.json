@@ -1,5 +1,5 @@
 {
- "run": "2026-11-12T01:47:28.890Z",
+ "run": "2026-11-12T02:06:30.870Z",
  "total": 100,
  "max": 100,
  "categories": {
@@ -293,7 +293,7 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "default capBiz 50; head0 0 (50) vs 276276 (70); wait 4 vs 0",
+   "detail": "default capBiz 50; head0 6276 (50) vs 318276 (70); wait 4 vs 0",
    "source": "S5",
    "disclosedOnly": false
   },
@@ -414,7 +414,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "peak DTI 25.1% at month 129 vs limit 43",
+   "detail": "peak DTI 27.1% at month 123 vs limit 43",
    "source": "",
    "disclosedOnly": false
   },
@@ -425,7 +425,7 @@
    "pts": 0.5,
    "earned": 0.5,
    "pass": true,
-   "detail": "ok; peak 7(a) outstanding $3240635 at month 57",
+   "detail": "ok; peak 7(a) outstanding $3005466 at month 53",
    "source": "S2,S3,S4,S5",
    "disclosedOnly": false
   },
@@ -766,7 +766,7 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "NW 25y $109.7M, 28y $124.9M; step ratios 1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 19; business growth 4",
+   "detail": "NW 25y $112.4M, 28y $124.5M; step ratios 1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 19; business growth 4",
    "source": "",
    "disclosedOnly": false
   },
@@ -788,7 +788,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "0,0,0,2,5,6,10,31,34,57,57,67,70,86,91,111,113,124,129; verdict yes, lowest liquid cash $62591",
+   "detail": "0,0,0,2,4,5,9,28,31,53,53,62,64,79,84,103,106,117,123; verdict yes, lowest liquid cash $61561",
    "source": "",
    "disclosedOnly": false
   },

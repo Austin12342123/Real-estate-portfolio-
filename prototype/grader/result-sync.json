@@ -1,6 +1,6 @@
 {
   "sync": {
-    "earned": 100,
+    "earned": 99.91,
     "max": 100,
     "checks": [
       {
@@ -10,9 +10,9 @@
         "points": 14,
         "earned": 14,
         "ratio": 1,
-        "detail": "42/42 sub-checks pass",
+        "detail": "41/41 sub-checks pass",
         "repro": "Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)",
-        "seconds": 0.3
+        "seconds": 0.4
       },
       {
         "id": "G2",
@@ -21,9 +21,9 @@
         "points": 14,
         "earned": 14,
         "ratio": 1,
-        "detail": "72/72 sub-checks pass",
+        "detail": "71/71 sub-checks pass",
         "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
-        "seconds": 7.4
+        "seconds": 11.2
       },
       {
         "id": "G3",
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "35/35 sub-checks pass",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 3.1
+        "seconds": 4
       },
       {
         "id": "G4",
@@ -43,9 +43,9 @@
         "points": 18,
         "earned": 18,
         "ratio": 1,
-        "detail": "33/33 sub-checks pass",
+        "detail": "34/34 sub-checks pass",
         "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit",
-        "seconds": 41.8
+        "seconds": 64.4
       },
       {
         "id": "G5",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
-        "seconds": 4
+        "seconds": 5.1
       },
       {
         "id": "G6",
@@ -67,18 +67,18 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 10.4
+        "seconds": 15
       },
       {
         "id": "G7",
         "category": "G",
         "name": "Shared settings (g.* and p.*) propagate to every dependent display",
         "points": 10,
-        "earned": 10,
-        "ratio": 1,
-        "detail": "149/149 sub-checks pass",
+        "earned": 9.91,
+        "ratio": 0.9911504424778761,
+        "detail": "147/148 sub-checks pass. FAIL: cap edit moves the funding date on the Portfolio row of the next asset (b) = engine (0/1 ok) [Possible needs $55,200 cash · pool of 1: borrowing room $3,411 + cash $60,937 = $64,348 · +$29/mo reinvested · funded by the trust at month 27, held until your date (month 30) vs 30]",
         "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
-        "seconds": 6.7
+        "seconds": 7.1
       },
       {
         "id": "G8",

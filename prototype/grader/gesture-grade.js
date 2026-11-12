@@ -29,8 +29,8 @@ exports.run = async function run(X) {
   }
   const store = () => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
   const hash = () => page.evaluate(() => location.hash);
-  const openCat = async (tp) => { const h = page.locator(`[data-testid=cat-header-${tp}]`); if ((await h.getAttribute('aria-expanded')) === 'false') { await h.click(); await page.waitForTimeout(40); } };
-  const openAll = async () => { for (const t of ['house', 'commercial', 'business']) await openCat(t); };
+  const openCat = async (tp) => { const h = page.locator(`[data-testid=cat-header-${tp}]`); if ((await h.count()) && (await h.getAttribute('aria-expanded')) === 'false') { await h.click(); await page.waitForTimeout(40); } };
+  const openAll = async () => { for (const t of ['owned-house', 'owned-commercial', 'owned-business', 'house', 'commercial', 'business']) await openCat(t); };
   const sel = async (id) => { if (!(await page.$(`[data-for="${id}"]`))) { await openAll(); await page.click(`[data-row="${id}"] [data-testid=row-extra-toggle]`); await page.waitForTimeout(60); } };
   const ids = (tp) => page.evaluate((t) => [...document.querySelectorAll(`[data-catbody=${t}] [data-testid=ledger-row]`)].map((r) => r.dataset.row), tp);
   const box = async (sl) => (await page.locator(sl).first().boundingBox());
@@ -64,28 +64,29 @@ exports.run = async function run(X) {
   /* ---------------------------------------------------------------- I2 long-press drag */
   await icheck('I2', 'Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel', 14, 'Hold 600 ms, drag, release; check saved order', async () => {
     const P = new Parts(); await load(sample()); const before = await ids('house');
-    P.t(before.join() === 'cedar,maple,birch,willow,linden', 'Homes list shows the saved (buy) order, sold homes live under Sold', 0.4, before.join());
-    const m = await box('[data-rw=cedar]'), c = await box('[data-rw=maple]');
+    P.t(before.join() === 'birch,willow,linden', 'the planned Homes list shows the saved (buy) order, sold homes live under Sold, bought homes in the Bought section', 0.4, before.join());
+    await page.evaluate(() => document.querySelector('[data-rw=birch]').scrollIntoView({ block: 'center' })); await page.waitForTimeout(60); const m = await box('[data-rw=birch]'), c = await box('[data-rw=willow]');
     await page.mouse.move(m.x + 40, m.y + 18); await page.mouse.down(); await page.waitForTimeout(150);
     P.t((await page.locator('.rw.lift').count()) === 0, 'no lift before the hold time (450 ms)', 0.4);
     await page.waitForTimeout(450); P.t((await page.locator('.rw.lift').count()) === 1 && (await page.locator('#app.dragmode').count()) === 1, 'after the hold the row lifts (shadow) and the list enters drag mode', 1);
     const sh = await page.evaluate(() => getComputedStyle(document.querySelector('.rw.lift')).boxShadow); P.t(sh && sh !== 'none', 'lifted row has a visible shadow', 0.3);
-    const dy = (c.y + c.height / 2) - (m.y + m.height / 2) + 28;
+    const dy = (c.y + c.height / 2) - (m.y + m.height / 2) + 90; /* the finger must end past the middle of the row it passes (rows are tall now) */
     for (let i = 1; i <= 8; i++) { await page.mouse.move(m.x + 40, m.y + 18 + dy * i / 8); await page.waitForTimeout(20); }
     const tr = await page.evaluate(() => document.querySelector('.rw.lift').style.transform); P.t(/translateY/.test(tr), 'the lifted row follows the pointer', 0.4, tr);
     await page.mouse.up(); await page.waitForTimeout(120);
     const after = (await ids('house')), st = await store(); const nz = (a) => a.filter((x) => x !== 'elm').join(); /* a re-link can change the plan, so a home may move between Homes and Sold */
-    P.t(nz(after) === 'maple,cedar,birch,willow,linden', 'drop puts cedar after maple in the list', 2.5, after.join());
+    P.t(nz(after) === 'willow,birch,linden', 'drop puts birch after willow in the list', 2.5, after.join());
     P.t(st.houses.map((h) => h.id).filter((x) => after.includes(x)).join() === after.join(), 'the new order is saved (list order = buy order)', 1.5);
     P.t((await page.locator('[data-testid=asset-panel]').count()) === 0 && (await hash()) === '' || /^#?$/.test(await hash()), 'releasing a drag does not also open a panel or navigate', 0.6);
     await page.waitForTimeout(400); await page.click('[data-row=birch] [data-testid=row-extra-toggle]'); await page.waitForTimeout(60); P.t((await page.locator('[data-for=birch]').count()) === 1, 'a normal tap still opens the row panel', 0.6);
     /* touch drag in Commercial */
-    await openCat('commercial'); const cb0 = await ids('commercial'); const lake = await box('[data-rw=' + cb0[1] + ']'), harb = await box('[data-rw=' + cb0[0] + ']');
+    await openCat('commercial'); const cb0 = await ids('commercial'); await page.evaluate((id) => document.querySelector('[data-rw=' + id + ']').scrollIntoView({ block: 'center' }), cb0[1]); await page.waitForTimeout(60); const lake = await box('[data-rw=' + cb0[1] + ']'), harb = await box('[data-rw=' + cb0[0] + ']');
     await touch([{ x: lake.x + 60, y: lake.y + 20, wait: 650 }].concat(line(lake.x + 60, lake.y + 20, lake.x + 60, harb.y - 4, 8).slice(1))); await page.waitForTimeout(150);
     const cb1 = await ids('commercial'); P.t(cb1.join() === cb0.slice().reverse().join(), 'touch long-press and drag up swaps the two commercial rows', 2.5, cb0.join() + ' -> ' + cb1.join());
     P.t(nz(await ids('house')) === nz(after), 'dragging stays inside its category (homes unchanged)', 0.5);
-    /* a quick swipe is a scroll, not a drag */
-    const b0 = (await ids('house')).join(); const hb = await box('[data-rw=cedar]'); await touch(line(hb.x + 60, hb.y + 20, hb.x + 60, hb.y + 80, 4)); await page.waitForTimeout(100); P.t((await ids('house')).join() === b0 && (await page.locator('.rw.lift').count()) === 0, 'a quick touch-and-move (scroll) does not start a drag', 0.8);
+    { await page.evaluate(() => document.querySelector('[data-rw=cedar]').scrollIntoView({ block: 'center' })); await page.waitForTimeout(60); const ob = await box('[data-rw=cedar]'); await page.mouse.move(ob.x + 40, ob.y + 18); await page.mouse.down(); await page.waitForTimeout(700); P.t((await page.locator('.rw.lift').count()) === 0, 'bought rows are ordered by age and cannot be dragged', 0.5); await page.mouse.move(5, 5); await page.mouse.up(); await page.waitForTimeout(100); if (await hash()) { await page.evaluate(() => { location.hash = ''; }); await page.waitForTimeout(100); } }
+        /* a quick swipe is a scroll, not a drag */
+    await openCat('house'); const b0 = (await ids('house')).join(); await page.evaluate(() => { const e = document.querySelector('[data-catbody=house] [data-rw]'); if (e) e.scrollIntoView({ block: 'center' }); }); await page.waitForTimeout(60); const hb = await box('[data-catbody=house] [data-rw]'); await touch(line(hb.x + 60, hb.y + 20, hb.x + 60, hb.y + 80, 4)); await page.waitForTimeout(100); P.t((await ids('house')).join() === b0 && (await page.locator('.rw.lift').count()) === 0, 'a quick touch-and-move (scroll) does not start a drag', 0.8);
     /* auto-scroll near the screen edge while dragging */
     await load(sample(), null, { coll: { drivers: true } }); await page.evaluate(() => window.scrollTo(0, 0));
     const w = await box('[data-rw=linden]'); await page.evaluate((y) => window.scrollTo(0, y - 500), w.y + 0);
@@ -96,14 +97,15 @@ exports.run = async function run(X) {
 
   /* ---------------------------------------------------------------- I3 move buttons */
   await icheck('I3', 'Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open', 8, 'Select row, press Move', async () => {
-    const P = new Parts(); await load(sample()); await sel('maple');
-    P.t((await page.locator('[data-for=maple] [data-testid=move-up]').count()) === 1 && (await page.locator('[data-for=maple] [data-testid=move-down]').count()) === 1, 'panel has Move up and Move down', 1);
-    await page.click('[data-testid=move-down]'); await page.waitForTimeout(80); let o = await ids('house'); const nz = (a) => a.filter((x) => x !== 'elm').join(); P.t(nz(o) === 'cedar,birch,maple,willow,linden', 'Move down swaps with the next home', 2, o.join());
-    P.t((await page.locator('[data-for=maple]').count()) === 1, 'the panel stays open on the moved row', 1);
-    await page.click('[data-testid=move-up]'); await page.click('[data-testid=move-up]'); await page.waitForTimeout(80); o = await ids('house'); P.t(nz(o) === 'maple,cedar,birch,willow,linden', 'Move up twice brings it to the top', 1.5, o.join());
+    const P = new Parts(); await load(sample()); await sel('willow');
+    P.t((await page.locator('[data-for=willow] [data-testid=move-up]').count()) === 1 && (await page.locator('[data-for=willow] [data-testid=move-down]').count()) === 1, 'panel has Move up and Move down (planned assets)', 1);
+    await sel('cedar'); P.t((await page.locator('[data-for=cedar] [data-testid=move-up]').count()) === 0, 'bought assets have no Move buttons (they sit oldest first)', 0.5); await sel('willow');
+    await page.click('[data-testid=move-down]'); await page.waitForTimeout(80); let o = await ids('house'); const nz = (a) => a.filter((x) => x !== 'elm').join(); P.t(nz(o) === 'birch,linden,willow', 'Move down swaps with the next planned home', 2, o.join());
+    P.t((await page.locator('[data-for=willow]').count()) === 1, 'the panel stays open on the moved row', 1);
+    await page.click('[data-testid=move-up]'); await page.click('[data-testid=move-up]'); await page.waitForTimeout(80); o = await ids('house'); P.t(nz(o) === 'willow,birch,linden', 'Move up twice brings it back to the top', 1.5, o.join());
     P.t(await page.locator('[data-testid=move-up]').isDisabled(), 'Move up is disabled on the first row', 1);
     await sel('linden'); P.t(await page.locator('[data-for=linden] [data-testid=move-down]').isDisabled(), 'Move down is disabled on the last row', 0.5);
-    const st = await store(); P.t(st.houses.findIndex((h) => h.id === 'maple') < st.houses.findIndex((h) => h.id === 'cedar'), 'saved list order follows', 1); return P; });
+    const st = await store(); P.t(st.houses.findIndex((h) => h.id === 'willow') < st.houses.findIndex((h) => h.id === 'birch'), 'saved list order follows', 1); return P; });
 
   /* ---------------------------------------------------------------- I4 auto funding */
   await icheck('I4', 'Funding follows the list order by itself: the trust funds each asset from everything before it (1,2,3 and 1,3,2), the wait lines and purchase months re-work after each move, nothing is stored per asset, no per-asset Funds picker, no re-link on plain load', 16, 'Reorder with Move buttons; read wait lines + saved state + plan', async () => {
@@ -111,21 +113,21 @@ exports.run = async function run(X) {
     const S0 = mk([home('h1', { status: 'owned', paid: 24 }), home('h2', { buyIn: 30 }), home('h3', { buyIn: 40 })]);
     await load(S0); const t0 = await tgt(); P.t(t0.h1 === '' && t0.h2 === '' && t0.h3 === '', 'plain load stores no per-asset links', 1.5, JSON.stringify(t0));
     const sm = await load(sample()).then(store); P.t(sm.houses.every((h) => !h.target), 'the sample carries no old funding links either (the trust decides)', 1, '');
-    const dpl = (id) => page.locator(`[data-row=${id}] [data-testid=dp-line]`).textContent().catch(() => ''); const mon = (t) => { const m = /Funded in (\d+) mo/.exec(t); return m ? +m[1] : null; };
+    const dpl = (id) => page.locator(`[data-row=${id}] [data-testid=dp-line]`).textContent().catch(() => ''); const mon = (t) => { const m = /funded by the trust at (?:month (\d+)|now)/.exec(t); return m ? (m[1] ? +m[1] : 0) : null; };
     await load(S0); await sel('h2'); await page.click('[data-testid=move-down]'); await page.waitForTimeout(60); await page.click('[data-testid=move-up]'); await page.waitForTimeout(80);
     let t = await tgt(); let pl = E.plan(E.normalize(clone(await store())));
-    P.t((await ids('house')).join() === 'h1,h2,h3' && Object.values(t).every((v) => v === ''), 'order 1,2,3 after a move down and back up; still no stored links', 2, JSON.stringify(t));
-    let l2 = await dpl('h2'), l3 = await dpl('h3'); P.t(mon(l2) === pl.purchase.h2 && /pool of 1 assets/.test(l2) && mon(l3) === pl.purchase.h3 && /pool of 2 assets/.test(l3) && /by the trust/.test(l2) && (await page.locator('[data-row=h1] [data-testid=dp-line]').count()) === 0, 'the waits on the rows show the engine month and the pool (house 2: pool of 1, house 3: pool of 2; the first row has none)', 3, l2 + ' | ' + l3);
+    P.t((await ids('house')).join() === 'h2,h3' && Object.values(t).every((v) => v === ''), 'order 1,2,3 after a move down and back up; still no stored links', 2, JSON.stringify(t));
+    let l2 = await dpl('h2'), l3 = await dpl('h3'); P.t(mon(l2) === pl.trust.h2.ready && /pool of 1:/.test(l2) && mon(l3) === pl.trust.h3.ready && /pool of 2:/.test(l3) && /^Possible/.test(l2) && /^Loan due/.test(await dpl('h1')), 'the planned rows show Possible, the engine month the trust can pay and the pool (house 2: pool of 1, house 3: pool of 2); the bought row shows its loan', 3, l2 + ' | ' + l3);
     P.t(pl.purchase.h2 >= 30 && pl.purchase.h3 >= Math.max(40, pl.purchase.h2) && pl.trust.h3.n === 2, 'purchase months: each asset is bought when the pool of everything before it can pay, never before its "not before" month', 1.5, JSON.stringify(pl.purchase));
     await sel('h3'); await page.click('[data-for=h3] [data-testid=move-up]'); await page.waitForTimeout(80);
     t = await tgt(); pl = E.plan(E.normalize(clone(await store()))); l2 = await dpl('h2'); l3 = await dpl('h3');
-    P.t((await ids('house')).join() === 'h1,h3,h2' && Object.values(t).every((v) => v === ''), 'order 1,3,2 after moving house 3 up; still no stored links', 2, JSON.stringify(t));
-    P.t(mon(l3) === pl.purchase.h3 && /pool of 1 assets/.test(l3) && mon(l2) === pl.purchase.h2 && /pool of 2 assets/.test(l2) && pl.purchase.h3 <= pl.purchase.h2, 'house 3 is now funded by the pool of house 1 alone and house 2 by houses 1 and 3 (waits and months re-worked at once)', 3, l3 + ' | ' + l2);
+    P.t((await ids('house')).join() === 'h3,h2' && Object.values(t).every((v) => v === ''), 'order 1,3,2 after moving house 3 up; still no stored links', 2, JSON.stringify(t));
+    P.t(mon(l3) === pl.trust.h3.ready && /pool of 1:/.test(l3) && mon(l2) === pl.trust.h2.ready && /pool of 2:/.test(l2) && pl.purchase.h3 <= pl.purchase.h2, 'house 3 is now funded by the pool of house 1 alone and house 2 by houses 1 and 3 (waits and months re-worked at once)', 3, l3 + ' | ' + l2);
     await page.evaluate(() => { location.hash = '#house-h2'; }); await page.waitForTimeout(100);
     P.t((await page.locator('[data-sel]').count()) === 0 && (await page.locator('[data-testid=trust-section]').count()) === 1 && (await page.locator('[data-testid=trust-pool]').count()) === 1, 'the asset page has no Funds picker; it explains how the trust funds the asset', 1.5);
     const biz = E.newAsset('business', 'sba7a', { id: 'b1', addr: 'Biz One', price: 400000, rent: 9000, buyIn: 20 });
-    const S1 = mk([home('x1', { status: 'owned', paid: 24 }), home('x2', { buyIn: 30 }), home('x3', { status: 'owned', paid: 10 }), biz]);
-    await load(S1); await sel('x2'); await page.click('[data-testid=move-up]'); await page.waitForTimeout(80); t = await tgt();
+    const S1 = mk([home('x1', { status: 'owned', paid: 24 }), home('x2', { buyIn: 30 }), home('x4', { buyIn: 35 }), home('x3', { status: 'owned', paid: 10 }), biz]);
+    await load(S1); await sel('x2'); await page.click('[data-testid=move-down]'); await page.waitForTimeout(80); t = await tgt();
     P.t(Object.values(t).every((v) => v === ''), 'reordering inside a category never writes a link', 0.7, JSON.stringify(t));
     const U = mk([home('u1', { status: 'owned', target: 'u3' }), home('u2'), home('u3'), E.newAsset('commercial', 'comm25', { id: 'c1', target: 'u2' })]); E.relink(U); const ut = Object.fromEntries(U.houses.map((h) => [h.id, h.target]));
     const pu = E.plan(U), U2 = mk([home('u1', { status: 'owned' }), home('u2'), home('u3'), E.newAsset('commercial', 'comm25', { id: 'c1' })]), pu2 = E.plan(U2);
@@ -138,9 +140,9 @@ exports.run = async function run(X) {
     await page.click('[data-for=maple] [data-testid=row-duplicate]'); await page.waitForTimeout(100);
     const st = await store(), i = st.houses.findIndex((h) => h.id === 'maple'), cp = st.houses[i + 1];
     P.t(st.houses.length === n0 + 1 && cp && cp.addr === '1412 Maple Ridge Dr (copy)' && cp.status === 'planned' && cp.id !== 'maple', 'copy added right after the original in the saved list, "(copy)", planned', 2.5, cp && cp.addr);
-    const hb = await ids('house'); P.t(hb.filter((x) => x !== 'elm').join() === homesBefore.filter((x) => x !== 'elm').flatMap((x) => x === 'maple' ? ['maple', cp.id] : [x]).join(), 'the Homes list shows the copy right after the original', 1.5, hb.join());
+    const hb = await ids('house'); P.t(hb.filter((x) => x !== 'elm').join() === [cp.id].concat(homesBefore.filter((x) => x !== 'elm')).join(), 'the planned Homes list shows the copy (it is planned, so it joins the Planned section at its place in the list)', 1.5, hb.join());
     P.t((await page.locator(`[data-for="${cp.id}"]`).count()) === 1, 'the copy is selected so you can edit it', 0.7);
-    const wl = await page.locator(`[data-row="${cp.id}"] [data-testid=dp-line]`).textContent().catch(() => ''); P.t(!cp.target && !st.houses[i].target && /^((\d+ mo after|bought \d+ mo before|bought the same month as)[^·]*· )?(Funded (in \d+ mo|now) by the trust|Not funded)/.test(wl.trim()) && (cp.price === st.houses[i].price) && cp.rent === st.houses[i].rent, 'no links to relink: the copy shows its own trust wait line (planned, funded by everything before it); the numbers are copied', 2.5, wl);
+    const wl = await page.locator(`[data-row="${cp.id}"] [data-testid=dp-line]`).textContent().catch(() => ''); P.t(!cp.target && !st.houses[i].target && /^(Possible|Not possible)/.test(wl.trim()) && (cp.price === st.houses[i].price) && cp.rent === st.houses[i].rent, 'no links to relink: the copy shows its own verdict and math line (planned, funded by everything above it); the numbers are copied', 2.5, wl);
     const ct = await page.locator('[data-testid=cat-count-house]').textContent(); P.t(ct.trim() === String(hb.length), 'the category stat strip counts it', 1, ct);
     await page.click('[data-for="' + cp.id + '"] [data-testid=open-details]'); await page.waitForTimeout(80); await page.click('[data-testid=h-duplicate]'); await page.waitForTimeout(120);
     const s2 = await store(); P.t(s2.houses.length === n0 + 2 && /#house-/.test(await hash()) && (await hash()) !== '#house-' + cp.id && /\(copy\) \(copy\)$/.test((await page.inputValue('input.t'))), 'asset page Duplicate makes another copy and opens it', 1.8, await page.inputValue('input.t'));
@@ -150,13 +152,13 @@ exports.run = async function run(X) {
   await icheck('I6', 'Portfolio = total row + Homes / Commercial / Businesses dropdowns (name left, chevron right, stat strip: count, before/after loan, worth, DSCR, lasts), empty sections, Sold section only when something sold', 12, 'Headers, subtitles, collapse state, empty portfolio', async () => {
     const P = new Parts(); await load(sample());
     const hd = await page.evaluate(() => [...document.querySelectorAll('[data-testid^=cat-header-]')].map((h) => ({ t: h.dataset.testid.replace('cat-header-', ''), name: h.querySelector('b').textContent, sub: h.parentElement.querySelector('.cats').textContent.trim(), chev: !!h.querySelector('.chev'), x: h.querySelector('b').getBoundingClientRect().left, cx: h.querySelector('.chev').getBoundingClientRect().left, exp: h.getAttribute('aria-expanded'), sy: h.parentElement.querySelector('.cats').getBoundingClientRect().top - h.querySelector('b').getBoundingClientRect().bottom })));
-    P.t(hd.map((h) => h.t).join() === 'house,commercial,business,sold' && hd.slice(0, 3).map((h) => h.name).join() === 'Homes,Commercial,Businesses', 'three category headers (plus Sold when something is sold)', 1.5, hd.map((h) => h.name).join());
+    P.t(hd.map((h) => h.t).join() === 'owned-house,owned-business,house,commercial,business,sold' && hd.slice(0, 5).map((h) => h.name).join() === 'Homes,Businesses,Homes,Commercial,Businesses', 'a Bought section (categories that hold something) and a Planned section (three categories), plus Sold when something is sold', 1.5, hd.map((h) => h.name).join());
     P.t(hd.every((h) => h.chev && h.cx > h.x + 150 && h.sy >= -2 && h.sy < 14), 'name on the left, chevron on the right, subtitle directly below the name', 1, JSON.stringify(hd.map((h) => [Math.round(h.x), Math.round(h.cx), Math.round(h.sy)])));
-    P.t(hd[0].exp === 'true' && hd[1].exp === 'false' && hd[2].exp === 'false' && hd[3].exp === 'false', 'default: Homes open, the others collapsed', 1, hd.map((h) => h.exp).join());
-    const S = sample(), pl = E.plan(S), vis = (tp) => S.houses.filter((h) => (h.type || 'house') === tp && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM));
-    const cnt = (tp) => S.houses.filter((h) => (h.type || 'house') === tp && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM)).length;
-    const strip = (x, tp) => x.sub.startsWith(String(cnt(tp))) && /before loan/.test(x.sub) && /after loan/.test(x.sub) && /worth/.test(x.sub) && /DSCR/.test(x.sub) && /lasts/.test(x.sub);
-    P.t(strip(hd[0], 'house') && strip(hd[1], 'commercial') && strip(hd[2], 'business') && (await page.locator('[data-testid=cat-count-house]').textContent()).trim() === String(cnt('house')), 'each header carries the stat strip: count, cash flow before and after loans, worth, DSCR, lasts', 2, hd.map((h) => h.sub).join(' | '));
+    P.t(hd[0].exp === 'true' && hd[1].exp === 'false' && hd[2].exp === 'true' && hd[3].exp === 'false' && hd[4].exp === 'false' && hd[5].exp === 'false', 'default: the Homes of each section open, the others collapsed', 1, hd.map((h) => h.exp).join());
+    const S = sample(), pl = E.plan(S), vis = (tp) => S.houses.filter((h) => (h.type || 'house') === tp && h.status !== 'owned' && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM));
+    const cnt = (tp, own) => S.houses.filter((h) => (h.type || 'house') === tp && (h.status === 'owned') === !!own && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM)).length;
+    const strip = (x, tp, own) => x.sub.startsWith(String(cnt(tp, own))) && /before loan/.test(x.sub) && /after loan/.test(x.sub) && /worth/.test(x.sub) && /DSCR/.test(x.sub) && /lasts/.test(x.sub);
+    P.t(strip(hd[0], 'house', 1) && strip(hd[1], 'business', 1) && strip(hd[2], 'house') && strip(hd[3], 'commercial') && strip(hd[4], 'business') && (await page.locator('[data-testid=cat-count-house]').textContent()).trim() === String(cnt('house')), 'each header carries the stat strip: count, cash flow before and after loans, worth, DSCR, lasts', 2, hd.map((h) => h.sub).join(' | '));
     const tot = await page.evaluate(() => { const t = document.querySelector('[data-testid=ledger-total]'), h = document.querySelector('[data-testid=cat-header-house]'); return { y: t.getBoundingClientRect().top, hy: h.getBoundingClientRect().top, cf: document.querySelector('[data-testid=total-cf]').textContent, kpi: document.querySelector('[data-testid=kpi-cashflow]').textContent }; });
     P.t(tot.y < tot.hy && tot.cf === tot.kpi + '/mo', 'portfolio total row sits above the sections and equals the summary cash flow', 1, JSON.stringify(tot));
     await page.click('[data-testid=cat-header-house]'); await page.waitForTimeout(60); P.t((await page.locator('[data-catbody=house]').count()) === 0, 'tapping a header collapses it', 0.6);
@@ -177,16 +179,16 @@ exports.run = async function run(X) {
     P.t((await page.locator('[data-testid=extra-input]').count()) === 0 && (await page.locator('[data-testid=asset-panel]').count()) === 0, 'nothing expanded and no extra field until a row is selected', 0.6);
     await sel('maple'); P.t((await page.locator('[data-for=maple] [data-testid=extra-input]').count()) === 1 && (await page.locator('[data-testid=extra-effects]').count()) === 1 && (await page.locator('[data-for=maple] [data-testid=open-details]').count()) === 1, 'selecting a row opens its panel: extra field, effects, Open details', 0.8);
     const rd = async () => page.evaluate(() => { const g = (s) => { const e = document.querySelector(s); return e ? e.textContent.trim() : ''; }; const nx = document.querySelector('[data-testid=eff-next]'); return { term: g('[data-testid=eff-term]'), termSub: document.querySelector('[data-testid=eff-term]').nextElementSibling.textContent, pay: g('[data-testid=eff-payment]'), next: g('[data-testid=eff-next]'), nextSub: nx.nextElementSibling.textContent, nextLab: nx.previousElementSibling.textContent, open: nx.dataset.open, sooner: nx.dataset.sooner, val: document.querySelector('[data-testid=extra-input]').value }; });
-    const mmy = (m) => (m <= 0 ? 'now' : m < 24 ? m + ' mo' : m + ' mo (' + Math.floor(m / 12) + 'y ' + (m % 12) + 'm)');
+    const mmy = (m) => (m <= 0 ? 'now' : m < 24 ? 'month ' + m : 'month ' + m + ' (' + Math.floor(m / 12) + 'y ' + (m % 12) + 'm)'), ymf = (m) => (m < 12 ? m + ' mo' : Math.floor(m / 12) + ' yr' + (m % 12 ? ' ' + (m % 12) + ' mo' : ''));
     const check1 = async (label, X) => {
-      const St = E.normalize(clone(await store())); const h = E.H(St, 'maple'); const pl = E.plan(St), v = pl.V.maple, p0 = E.payoffN(h, 0), pX = E.payoffN(h, X);
+      const St = E.normalize(clone(await store())); const h = E.H(St, 'maple'); const pl = E.plan(St), v = pl.V.maple, S00 = clone(St); E.H(S00, 'maple').extra = 0; const p0 = E.plan(S00).loanEnd.maple, pX = pl.loanEnd.maple;
       const nx = St.houses.slice(St.houses.indexOf(h) + 1).find((q) => q.status === 'planned'), S0x = clone(St); E.H(S0x, 'maple').extra = 0; const open = pl.purchase[nx.id], m0 = E.plan(S0x).purchase[nx.id], sooner = m0 - open, tr = pl.trust[nx.id];
       const r = await rd();
-      P.t(r.term.startsWith('Paid off in ' + pX + ' mo'), label + ': loan term "Paid off in ' + pX + ' mo" matches the engine', 1, r.term);
-      P.t(X > 0 ? new RegExp('^' + (p0 - pX) + ' mo( \\([^)]*\\))? sooner').test(r.termSub) : /extra payments pay it off sooner/.test(r.termSub), label + ': months sooner vs no extra = ' + (p0 - pX), 1, r.termSub);
+      P.t(r.term.startsWith('Paid off in ' + ymf(pX)), label + ': loan term "Paid off in ' + ymf(pX) + '" matches the plan (with the automatic extra)', 1, r.term);
+      P.t(X > 0 ? new RegExp('^' + ymf(p0 - pX).replace(/ /g, ' ') + ' sooner').test(r.termSub) : /extra payments pay it off sooner/.test(r.termSub), label + ': months sooner vs no extra = ' + (p0 - pX), 1, r.termSub);
       P.t(r.pay === $f(v.payment), label + ': monthly payment = engine payment now ' + $f(v.payment), 0.8, r.pay);
-      P.t(+r.open === open && r.next === 'in ' + mmy(open) && r.nextLab.includes('Next purchase') && r.nextLab.includes(nx.addr), label + ': next purchase (' + nx.addr + ') in ' + open + ' mo (engine)', 1.2, r.next + ' / open ' + r.open + ' / ' + r.nextLab);
-      P.t(+r.sooner === sooner && new RegExp(X > 0 ? (sooner > 0 ? '^' + sooner + ' mo( \\([^)]*\\))? sooner than with no extra' : '^no faster than with no extra') : 'extra payments make it sooner').test(r.nextSub), label + ': "' + sooner + ' mo sooner" = purchase month with no extra - with the extra (independent re-run of the plan)', 1.2, r.nextSub);
+      P.t(+r.open === open && r.next === mmy(open) && r.nextLab.includes('Next the trust funds') && r.nextLab.includes(nx.addr), label + ': next purchase (' + nx.addr + ') in ' + open + ' mo (engine)', 1.2, r.next + ' / open ' + r.open + ' / ' + r.nextLab);
+      P.t(+r.sooner === sooner && new RegExp(X > 0 ? (sooner > 0 ? '^' + ymf(sooner) + ' sooner than with no extra' : '^no faster than with no extra') : 'extra payments make it sooner').test(r.nextSub), label + ': "' + sooner + ' mo sooner" = purchase month with no extra - with the extra (independent re-run of the plan)', 1.2, r.nextSub);
       P.t(new RegExp('the trust reinvests \\$' + Math.round(tr.cf).toLocaleString('en-US') + '/mo of cash flow toward it').test(r.nextSub), label + ': the trust\'s reinvested cash flow ($' + Math.round(tr.cf) + '/mo) is shown', 1.2, r.nextSub);
       return { v, pl }; };
     await check1('maple as saved (extra 600)', 600);
@@ -195,7 +197,7 @@ exports.run = async function run(X) {
     async function setX(val) { await page.evaluate((val) => { const el = document.querySelector('[data-testid=extra-input]'); el.focus(); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, val); el.dispatchEvent(new Event('input', { bubbles: true })); document.activeElement.blur(); }, val); await page.waitForTimeout(80); }
     /* engine: the reinvested cash flow really leaves your cash line (Finances) in the month it moves into the trust */
     const St = E.normalize(clone(await store())); const pl2 = E.plan(St), mo = 6, dpc = pl2.dpCash[mo]; P.t(dpc > 0, 'pooled cash flow moves into the trust each month while purchases wait (month ' + mo + ': $' + Math.round(dpc) + ')', 0.8, dpc);
-    const f = E.finance(St, pl2), Rr = f.series, dl = Rr.liquid[mo] - Rr.liquid[mo - 1], expect = Rr.net[mo] + Rr.interest[mo] + Rr.capitalIn[mo] - Rr.outsideCall[mo] - Rr.oneTime[mo] - Rr.saleTax[mo] - pl2.dpCash[mo];
+    const f = E.finance(St, pl2), Rr = f.series, dl = Rr.liquid[mo] - Rr.liquid[mo - 1], expect = Rr.net[mo] + Rr.interest[mo] + Rr.capitalIn[mo] - Rr.outsideCall[mo] - Rr.oneTime[mo] - Rr.saleTax[mo] - pl2.dpCash[mo] - pl2.jobUsed[mo];
     P.t(Math.abs(dl - expect) < 0.01 && pl2.dpCash[mo] > 0, 'Finances cash line drops by exactly the cash flow reinvested in that month (liquid change = net + interest - reinvested)', 0.8, Math.round(dl) + ' vs ' + Math.round(expect));
     const ref = null;
     /* asset page sync */
