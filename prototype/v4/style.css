@@ -143,7 +143,7 @@ table.cmp td,table.cmp th{overflow-wrap:anywhere;font-size:12px}
 .txtbtn{background:none;border:0;color:var(--acc);font-size:16px;font-weight:600;min-height:44px;padding:0 10px}
 .vrow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;cursor:pointer}
 .vchip{display:inline-block;font-size:13px;font-weight:700;border-radius:12px;padding:2px 10px;white-space:nowrap}
-.vchip.yes{background:color-mix(in srgb,var(--ok) 7%,var(--card));color:var(--ok)}
+.vchip.yes{background:var(--field);color:var(--ink)}
 .vchip.tight{background:color-mix(in srgb,var(--warn) 7%,var(--card));color:var(--warn)}
 .vchip.no{background:color-mix(in srgb,var(--bad) 7%,var(--card));color:var(--bad)}
 .rsn{display:flex;gap:8px;font-size:14px;padding:6px 0;border-top:1px solid var(--line)}.rsn span:first-child{width:16px;flex:none;font-weight:700}
@@ -157,7 +157,7 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
 
 .rsn.ok span:first-child{color:var(--mut)}.rsn.ok{color:var(--mut)}
 .vrow.big{margin-top:10px;padding:8px 10px;border-radius:12px;align-items:center}
-.vrow.big.yes{background:color-mix(in srgb,var(--ok) 7%,var(--card))}.vrow.big.tight{background:color-mix(in srgb,var(--warn) 7%,var(--card))}.vrow.big.no{background:color-mix(in srgb,var(--bad) 7%,var(--card))}
+.vrow.big.yes{background:var(--field)}.vrow.big.tight{background:color-mix(in srgb,var(--warn) 7%,var(--card))}.vrow.big.no{background:color-mix(in srgb,var(--bad) 7%,var(--card))}
 .vq{display:flex;flex-direction:column;min-width:0}.vq .note{margin:2px 0 0;line-height:1.25}.vgo{white-space:nowrap}
 
 .totrow{background:var(--field);border-radius:10px;padding:8px 10px;margin-bottom:4px;cursor:default;border-top:0!important}
@@ -167,7 +167,7 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
 .info{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-13px -10px -13px 0;padding:0;border:0;background:none;vertical-align:middle;cursor:pointer;flex:none}
 .info span{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--acc);color:var(--acc);font:700 12px/1 Georgia,serif;font-style:italic}
 .lb{display:inline-flex;align-items:center;flex-wrap:wrap}
-.kpi small .info{width:32px;height:32px;margin:-9px -6px -9px 0}.kpi small .info span{width:16px;height:16px;font-size:10px}
+.kpi small .info{width:44px;height:44px;margin:-15px -14px -15px -6px}.kpi small .info span{width:16px;height:16px;font-size:10px}
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50}
 .sheet{position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;background:var(--card);color:var(--ink);border-radius:18px 18px 0 0;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 18px);z-index:51;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
 .sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}.sheet h3{margin:0 0 6px;font-size:20px}.sheet p{margin:0 0 10px;font-size:16px;line-height:1.4}.sheet .eg{background:var(--field);border-radius:10px;padding:8px 12px;font-size:15px}.sheet .btn{width:100%}
@@ -293,7 +293,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]) .bn{color:#06121f}}
 .tgt{margin-top:4px}.tgtb{font-size:13px;min-height:44px}.tgtf{display:grid;grid-template-columns:1fr;gap:0}.tgt .note{margin:6px 0 0;font-size:12px}
 /* Bought / Planned sections */
-.vchip.ok{background:color-mix(in srgb,var(--ok) 7%,var(--card));color:var(--ok)}
+.vchip.ok{background:var(--field);color:var(--ink)}
 .vchip.warn{background:color-mix(in srgb,var(--warn) 7%,var(--card));color:var(--warn)}
 .vchip.bad{background:color-mix(in srgb,var(--bad) 7%,var(--card));color:var(--bad)}
 .vchip.sm{font-size:11px;padding:1px 7px;vertical-align:1px}
@@ -301,7 +301,7 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
 .sech{display:flex;flex-direction:column;gap:1px;margin:16px 4px 6px}.sech b{font-size:18px}.sech .sechs{font-size:12px;color:var(--mut);line-height:1.3}
 .sectseg{margin:10px 0 0}
 .psum{padding:10px 12px}.psum .vrow{min-height:36px}.psum .vrow[data-go]{margin-top:6px;padding:6px 8px;border-radius:12px}
-.psum .vrow.yes{background:color-mix(in srgb,var(--ok) 7%,var(--card))}.psum .vrow.tight{background:color-mix(in srgb,var(--warn) 7%,var(--card))}.psum .vrow.no{background:color-mix(in srgb,var(--bad) 7%,var(--card))}
+.psum .vrow.yes{background:var(--field)}.psum .vrow.tight{background:color-mix(in srgb,var(--warn) 7%,var(--card))}.psum .vrow.no{background:color-mix(in srgb,var(--bad) 7%,var(--card))}
 .row .locline b{font-weight:600;color:var(--ink)}
 .sech .sechs b{font-size:inherit;font-weight:600;color:var(--ink)}
 .row .locline .fx{display:inline-block;white-space:nowrap}
@@ -332,3 +332,19 @@ details.psumd>summary.sec.cs{margin:2px 0 4px}
 main h1,#app>h1{font-size:24px;margin:2px 0 6px}
 .pagetabs{padding:2px}.pagetabs button{min-height:44px}.plantarget{font-size:13.5px}
 .scard .btn,[data-testid=save-current]{width:100%}
+
+/* Checks: plain rows, highlighted only past a safe amount */
+.checks{margin:10px 0 0;border-top:1px solid var(--line);padding-top:8px}
+.chkh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px;font-size:14px}
+.chkok{color:var(--mut);font-size:13px;margin:0 0 2px}
+.chkflag{font-size:12px;font-weight:700;border-radius:12px;padding:2px 10px}.chkflag.warn{background:color-mix(in srgb,var(--warn) 16%,var(--card));color:var(--warn)}.chkflag.bad{background:color-mix(in srgb,var(--bad) 16%,var(--card));color:var(--bad)}
+.chk{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 6px;border-top:1px solid var(--line);font-size:13px;border-radius:8px}
+.chk .ck{min-width:0;flex:1}.chk .ck b{font-weight:600;color:var(--ink)}.chk small{display:block;color:var(--mut);font-size:12px;line-height:1.3;margin-top:2px}
+.chk .cv{flex:none;max-width:48%;text-align:right;font-weight:600;font-size:13px;color:var(--ink)}
+.chk.lv-warn{background:color-mix(in srgb,var(--warn) 14%,var(--card))}.chk.lv-warn .cv{color:var(--warn)}
+.chk.lv-bad{background:color-mix(in srgb,var(--bad) 14%,var(--card))}.chk.lv-bad .cv{color:var(--bad)}
+.chkbtn{margin:0 -4px 0 0;flex:none}
+.lb .dh,.lb .chint{flex-basis:100%;font-size:11.5px;color:var(--mut);font-weight:400;line-height:1.3}
+.lb .chint{color:var(--acc);font-weight:600}.lb .chint.bad{color:var(--bad)}
+.sold-profit{font-weight:700}.sold-profit.neg{color:var(--bad)}
+.ed{white-space:nowrap}

@@ -102,7 +102,7 @@ exports.run = async function run(X) {
     document.querySelectorAll('#app .kpi').forEach((k) => { const b = k.querySelector('b'), s = k.querySelector('.sub'), l = k.querySelector('small'); o.kpis.push({ id: b ? b.dataset.testid : '', label: clean(l ? l.textContent : ''), v: clean(b ? b.textContent : ''), sub: clean(s ? s.textContent : '') }); });
     document.querySelectorAll('#app table').forEach((tb, i) => { o.tables[tb.dataset.testid || 't' + i] = [...tb.querySelectorAll('tr')].map((tr) => [...tr.children].map((c) => clean(c.textContent))); });
     document.querySelectorAll('#app .note').forEach((n) => o.notes.push(clean(n.textContent)));
-    document.querySelectorAll('#app .warnbox').forEach((n) => o.warns.push({ id: n.dataset.testid || '', t: clean(n.textContent) }));
+    document.querySelectorAll('#app .warnbox, #app .chk[data-lvl=bad], #app [data-testid=outside-cash]').forEach((n) => o.warns.push({ id: n.dataset.testid || '', t: clean(n.textContent) })); /* a Checks row counts as a warning only when it is highlighted red (the outside-cash row is always listed so its amount can be compared) */
     document.querySelectorAll('#app .chip,#app .warnchip').forEach((n) => o.chips.push({ t: clean(n.textContent), title: n.getAttribute('title') || '' }));
     document.querySelectorAll('#app [data-testid=ledger-row]').forEach((r) => { const loc = r.querySelector('[data-testid=loc-line],[data-testid=dp-line]'), inp = r.querySelector('input'), cf = r.querySelector('[data-testid=row-cashflow] b'), ex = r.querySelector('.exitline'), pay = r.querySelector('[data-testid=row-payment]');
       o.rows.push({ id: r.dataset.row || '', addr: clean((r.querySelector('.addr') || {}).textContent), tag: clean((r.querySelector('.tag') || {}).textContent), pay: clean(pay ? pay.textContent : ''), extra: inp ? inp.value : null, loc: clean(loc ? loc.textContent : ''), cf: clean(cf ? cf.textContent : ''), exit: clean(ex ? ex.textContent : ''), hi: [...r.querySelectorAll('.hi')].map((x) => clean(x.textContent)), eqAttr: pay ? pay.dataset.equity : null, hasExtra: !!inp }); });
@@ -173,9 +173,9 @@ exports.run = async function run(X) {
     const heldPay = [], heldCf = [], heldEq = [], rPay = [], rCf = [], rEq = []; /* held* = planned rows (Planned page), r* = bought rows (Real page) */
     S.houses.forEach((h) => { const r = byId[h.id]; if (!r) return; const { sp, sold } = rowEng(S, pl, h), pm = /(−?\$[\d,.]+[MB]?)\/mo/.exec(r.pay), cfm = /(−|\+)?\$[\d,.]+[MB]?/.exec(r.cf), eqm = /equity (−?\$[\d,.]+[MBK]?)/.exec(r.pay);
       if (sold) {
-        const sm = /sold for (−?\$[\d,.]+[MB]?) in (\d+) mo/.exec(r.exit), pr = pl.exits[h.id].proceeds;
-        T('sold asset: row says sold; the exit line has proceeds and month from the plan', /sold/i.test(r.pay) && !!sm && eq(sm[1], pr) && +sm[2] === pl.sellAt[h.id], 1, h.id + ': ' + r.pay + ' | ' + r.exit + ' (engine ' + $f(pr) + ' in ' + pl.sellAt[h.id] + ')');
-        T('sold asset: cash-flow cell shows the proceeds as cash from the sale', eq(r.cf.replace(/^\+/, ''), pr) && /^\+/.test(r.cf), 1, h.id + ': ' + r.cf + ' vs ' + $f(pr));
+        const sm = /sold for (−?\$[\d,.]+[MB]?) in month (\d+) \(\d\d\/\d\d\/\d\d\) · cash profit ([+−])(\$[\d,.]+[MB]?)/.exec(r.exit), ex0 = pl.exits[h.id], pr = ex0.price, pf = ex0.profit;
+        T('sold asset: row says sold; the exit line has the sale price, month and cash profit from the plan', /sold/i.test(r.pay) && !!sm && eq(sm[1], pr) && +sm[2] === pl.sellAt[h.id] && eq(sm[4], Math.abs(pf)) && (sm[3] === '+') === (pf >= -0.5), 1, h.id + ': ' + r.pay + ' | ' + r.exit + ' (engine ' + $f(pr) + ' in ' + pl.sellAt[h.id] + ', profit ' + $f(pf) + ')');
+        T('sold asset: cash cell shows the cash profit (sign and amount)', eq(r.cf.replace(/^[+−]/, ''), Math.abs(pf)) && (/^\+/.test(r.cf) === (pf >= -0.5)), 1, h.id + ': ' + r.cf + ' vs ' + $f(pf));
         T('sold asset: no Extra input on a sold row', !r.hasExtra, 0.5, h.id + ' has an input');
         return; }
       if (sp) {
@@ -226,7 +226,7 @@ exports.run = async function run(X) {
     }
     /* headline */
     const nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0], hl = g.t['plan-headline'] || '';
-    { const pq = S.houses.filter((h) => h.status !== 'owned'), nOwn = S.houses.length - pq.length, lastR = Math.max(0, ...pq.map((h) => pl.purchase[h.id]).filter(isFinite)), monw = (m) => (m <= 0 ? 'now' : 'month ' + m), unf = pq.filter((h) => !isFinite(pl.purchase[h.id])).length;
+    { const pq = S.houses.filter((h) => h.status !== 'owned'), nOwn = S.houses.length - pq.length, lastR = Math.max(0, ...pq.map((h) => pl.purchase[h.id]).filter(isFinite)), monw = (m) => require('./dates.js').mond(m), unf = pq.filter((h) => !isFinite(pl.purchase[h.id])).length;
       const want = !pq.length ? 'All ' + S.houses.length + ' assets are bought.' : unf ? (nOwn ? nOwn + ' bought. ' : 'Nothing bought yet. ') + (pq.length - unf) + ' of ' + pq.length + ' planned are possible; ' + unf + ' cannot.' : (nOwn ? nOwn + ' bought. ' : 'Nothing bought yet. ') + 'All ' + pq.length + ' planned are possible; the last is funded at ' + monw(lastR) + '.';
       T('headline = bought count, whether every planned asset is possible, and the month (from today) the trust can pay for the last', hl.replace(/\s+/g, ' ').trim() === want, 2, hl + ' | want ' + want); }
     /* extra now / later */
@@ -280,7 +280,7 @@ exports.run = async function run(X) {
     const S = main.state, h = S.houses.find((x) => x.id === id), pl = planOf(main), row = main.rows.find((r) => r.id === id), share = hg.t['asset-share'] || '', { sp, sold } = rowEng(S, pl, h);
     const T = (key, ok, w, info) => A.t(key, ok, w, tag + ' ' + id + ': ' + info);
     if (sold) {
-      T('sold asset: share line "sold in N mo for $X" = row exit line = row cash cell = engine', share.includes('sold in ' + mm(pl.sellAt[id]) + ' for') && eq((/for (−?\$[\d,.]+[MB]?)/.exec(share) || [])[1], pl.exits[id].proceeds) && eqT((/for (−?\$[\d,.]+[MB]?)/.exec(share) || [])[1], (/sold for (−?\$[\d,.]+[MB]?)/.exec(row.exit) || [])[1]) && eqT((/for (−?\$[\d,.]+[MB]?)/.exec(share) || [])[1], row.cf), 1.5, share + ' | row: ' + row.exit + ' | ' + row.cf);
+      T('sold asset: share line "sold in month N for $X. Cash profit $Y" = row exit line = row cash cell = engine', share.includes('sold in month ' + pl.sellAt[id]) && eq((/for (−?\$[\d,.]+[MB]?)\./.exec(share) || [])[1], pl.exits[id].price) && eqT((/for (−?\$[\d,.]+[MB]?)\./.exec(share) || [])[1], (/sold for (−?\$[\d,.]+[MB]?)/.exec(row.exit) || [])[1]) && eq((/Cash profit [+−](\$[\d,.]+[MB]?)/.exec(share) || [])[1], Math.abs(pl.exits[id].profit)) && eqT((/Cash profit ([+−]\$[\d,.]+[MB]?)/.exec(share) || [])[1], row.cf), 1.5, share + ' | row: ' + row.exit + ' | ' + row.cf);
     } else if (!sp) {
       T('unbought asset: share line says not bought, row says unfunded/plan', /not bought in this plan yet/.test(share), 1, share + ' | tag ' + row.tag);
       T('unbought asset: row does not claim a payment that the total excludes', /sold|unfunded|not in the totals/.test(row.pay) && !/\$[\d,]+\/mo/.test(row.pay), 1, 'row says "' + row.pay + '" but the asset is not in the portfolio total (share line: ' + share + ')');
@@ -464,7 +464,7 @@ exports.run = async function run(X) {
     if (h.status === 'planned') {
       const plE = E.plan(E.normalize(JSON.parse(JSON.stringify(S)))), m = plE.purchase[h.id], need = I.down(h) + h.price * I.cl(S, h) / 100 + (h.finCapex ? 0 : Math.max(0, h.capex || 0)), tm = g.t['trust-months'];
       g1('need', need, 0.51, '"Cash needed" = down payment + closing costs + improvements paid in cash');
-      { const trx = plE.trust[h.id], rd = isFinite(m) ? (isFinite(trx.ready) ? trx.ready : m) : Infinity; add('"Trust can pay at" = the month the pool can pay (one clock: months from today; the purchase month if nothing holds it)', isFinite(rd) ? (rd <= 0 ? tm === 'now' : tm === 'month ' + rd) : tm === 'never', tm + ' vs ' + rd); }
+      { const trx = plE.trust[h.id], rd = isFinite(m) ? (isFinite(trx.ready) ? trx.ready : m) : Infinity; add('"Trust can pay at" = the month the pool can pay (one clock: months from today; the purchase month if nothing holds it)', isFinite(rd) ? tm === require('./dates.js').mond(rd) : tm === 'never', tm + ' vs ' + rd); }
       const tr = plE.trust[h.id]; if (isFinite(m) && tr.pooled) add('trust split: cash held + line drawn = cash needed', /\$([\d,]+) of cash the trust already holds .* and \$([\d,]+) drawn/.test(g.t['loc-split'] || '') && Math.abs(fnum((/\$([\d,]+) of cash/.exec(g.t['loc-split']) || [])[1]) + fnum((/and \$([\d,]+) drawn/.exec(g.t['loc-split']) || [])[1]) - need) <= 1.01, (g.t['loc-split'] || 'missing') + ' vs need ' + R(need));
     }
     add('gain/appraisal relation: value gained = appraisal - price - rehab', h.arv > 0 ? close(fnum(f('gain')), h.arv - h.price - (h.capex || 0), 0.51) : f('gain') === '', 'gain field ' + f('gain') + ', arv ' + h.arv + ', price ' + h.price + ', rehab ' + h.capex);

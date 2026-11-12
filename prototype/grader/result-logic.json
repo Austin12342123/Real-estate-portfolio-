@@ -1,57 +1,57 @@
 {
- "run": "2026-11-12T05:23:45.194Z",
+ "run": "2026-11-12T14:42:31.644Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 13.05,
-   "max": 13.05
+   "earned": 12.3,
+   "max": 12.3
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 8.16,
-   "max": 8.16
+   "earned": 7.69,
+   "max": 7.69
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 15.91,
-   "max": 15.91
+   "earned": 14.99,
+   "max": 14.99
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 8.97,
-   "max": 8.97
+   "earned": 8.46,
+   "max": 8.46
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 6.99,
-   "max": 6.99
+   "earned": 6.59,
+   "max": 6.59
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 8.16,
-   "max": 8.16
+   "earned": 7.69,
+   "max": 7.69
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 11.83,
-   "max": 11.83
+   "earned": 11.15,
+   "max": 11.15
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 6.93,
-   "max": 6.93
+   "earned": 10.76,
+   "max": 10.76
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 15.09,
-   "max": 15.09
+   "earned": 15.76,
+   "max": 15.76
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 4.9,
-   "max": 4.9
+   "earned": 4.61,
+   "max": 4.61
   }
  },
  "checks": [
@@ -370,7 +370,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "Your monthly debt payments divided by the monthly income a lender counts. Limits vary by loan and lender, often 43% to 50% at most. The app counts your other de",
+   "detail": "Your monthly debt payments divided by the monthly income a lender counts. Limits vary by loan and lender, often 43% to 50% at most. The check turns amber above ",
    "source": "S10,S11",
    "disclosedOnly": false
   },
@@ -414,7 +414,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "peak DTI 42.0% at month 240 vs limit 43",
+   "detail": "peak DTI 16.4% at month 240 vs limit 43",
    "source": "",
    "disclosedOnly": false
   },
@@ -425,7 +425,7 @@
    "pts": 0.5,
    "earned": 0.5,
    "pass": true,
-   "detail": "ok; peak 7(a) outstanding $4720967 at month 148",
+   "detail": "ok; peak 7(a) outstanding $3098867 at month 146",
    "source": "S2,S3,S4,S5",
    "disclosedOnly": false
   },
@@ -766,7 +766,7 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "NW 25y $82.5M, 28y $125.7M; step ratios 1.25,1.25,1.25,1.24,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 23; business growth 4",
+   "detail": "NW 25y $80.8M, 28y $130.6M; step ratios 1.25,1.24,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 27; business growth 4",
    "source": "",
    "disclosedOnly": false
   },
@@ -777,7 +777,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "NW $125.67M, cash flow $1.386M/mo (rows $1.386M), income before loans $1.482M, loan payments $0.096M",
+   "detail": "NW $130.60M, cash flow $1.376M/mo (rows $1.376M), income before loans $1.743M, loan payments $0.367M",
    "source": "",
    "disclosedOnly": false
   },
@@ -799,7 +799,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "4,17,39,43,53,65,80,90,102,116,116,130,130,148,148,169,173,192,197,212,219,236,240; verdict yes, lowest liquid cash $28099",
+   "detail": "9,18,25,29,30,38,44,53,65,84,93,104,118,127,127,146,146,163,165,189,192,212,216,232,240,255,262; verdict yes, lowest liquid cash $27434",
    "source": "",
    "disclosedOnly": false
   },
@@ -920,7 +920,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "owned false first pooled false no-job unfunded 23 NW on/off 125.7/21.3",
+   "detail": "owned false first pooled false no-job unfunded 27 NW on/off 130.6/13.0",
    "source": "",
    "disclosedOnly": false
   },
@@ -976,6 +976,50 @@
    "earned": 1,
    "pass": true,
    "detail": "42 sources with URL and fact; cited ids missing: none",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L8",
+   "id": "L8.6",
+   "name": "Default plan has renovations on at least the first two houses bought (rehab $20K-$40K paid from cash, not financed, new appraisal adds 1.2x-1.6x the rehab cost, rent lift 8-12%), and the engine follows the rules: the value is the new appraisal when the work finishes, income rises by the lift, homes still cash flow positive",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "maple $25000 -> $95000; cedar $30000 -> $117000",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L8",
+   "id": "L8.7",
+   "name": "Default plan is robust and honest: with the default finance profile net worth >= $125M, cash flow >= $1.3M/mo, verdict Yes, debt-to-income peak <= 35%, no unfunded asset, every purchase inside the plan years; with a much tighter profile (about $580/mo of job money left after living costs) the plan is NOT silently Yes: the verdict is Tight with a reason that names the late last purchase",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "default NW $130.6M, cf $1.38M, DTI 16%, last buy month 262; weak profile (job money $580/mo): NW $22.8M, verdict tight, last buy month 362",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L8",
+   "id": "L8.8",
+   "name": "Sold asset cash profit (pl.exits[id].profit) = sale price - selling costs - loan and liens paid off - tax on the sale - (down payment + closing costs + cash improvements), checked against independent reference math on 40 random sales (gain, loss, flat-rate tax, improvements)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "0 / 40 disagree ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.8",
+   "name": "Stretch scenario affords 607 Siena Way (Bel Air, Los Angeles CA 90077): it is a planned $135,000,000 asset bought inside the plan years, the finance verdict is not \"no\", the cash flow after the purchase still covers the house's carry (property tax + insurance + upkeep), no partner capital, and net worth stays large",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "bought in month 170 (plan 240), verdict yes, NW end $542M, cash flow after $1859253 vs carry $287500/mo",
    "source": "",
    "disclosedOnly": false
   }

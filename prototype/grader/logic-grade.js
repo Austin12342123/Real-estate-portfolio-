@@ -516,6 +516,41 @@ chk('L10', 'L10.5', 'Source ledger (logic/sources.md) lists at least 40 distinct
   return { pass: okRows.length >= 40 && missing.length === 0 && /Access date for every entry/.test(md), detail: okRows.length + ' sources with URL and fact; cited ids missing: ' + (missing.join(',') || 'none') };
 });
 
+
+/* ====================== plan robustness, renovations, sold cash profit, stretch house ====================== */
+chk('L8', 'L8.6', 'Default plan has renovations on at least the first two houses bought (rehab $20K-$40K paid from cash, not financed, new appraisal adds 1.2x-1.6x the rehab cost, rent lift 8-12%), and the engine follows the rules: the value is the new appraisal when the work finishes, income rises by the lift, homes still cash flow positive', 1.5, () => {
+  const homes = seed.houses.filter((h) => h.type === 'house' && h.status === 'planned').sort((a, b) => plS.purchase[a.id] - plS.purchase[b.id]).filter((h) => h.id !== 'birch'), first = homes.slice(0, 2), bad = [];
+  first.forEach((h) => { const mult = (h.arv - h.price) / h.capex; if (!(h.capex >= 20000 && h.capex <= 40000 && !h.finCapex && mult >= 1.2 && mult <= 1.6 && h.liftIncome >= 8 && h.liftIncome <= 12)) bad.push(h.id + ' rehab ' + h.capex + ' x' + mult.toFixed(2) + ' lift ' + h.liftIncome);
+    const m0 = plS.purchase[h.id], t = m0 + h.capexMonths, a = plS.assetsAt(t).find((x) => x.id === h.id), b = plS.assetsAt(t - 1).find((x) => x.id === h.id), v = plS.V[h.id];
+    if (!a || !b || !near(a.value, h.arv, 1)) bad.push(h.id + ' value at completion ' + (a && Math.round(a.value)) + ' vs arv ' + h.arv);
+    const g = (1 + h.growth / 100) ** (h.capexMonths / 12), refInc = v.noi * g * (1 + h.liftIncome / 100); if (!a || !nearRel(a.income, refInc, 1e-6)) bad.push(h.id + ' income ' + (a && Math.round(a.income)) + ' vs ' + Math.round(refInc));
+    if (plS.V[h.id].cf < 0) bad.push(h.id + ' loses money'); });
+  return { pass: first.length === 2 && bad.length === 0, detail: first.map((h) => h.id + ' $' + h.capex + ' -> $' + h.arv).join('; ') + (bad.length ? ' | ' + bad.join('; ') : '') };
+});
+chk('L8', 'L8.7', 'Default plan is robust and honest: with the default finance profile net worth >= $125M, cash flow >= $1.3M/mo, verdict Yes, debt-to-income peak <= 35%, no unfunded asset, every purchase inside the plan years; with a much tighter profile (about $580/mo of job money left after living costs) the plan is NOT silently Yes: the verdict is Tight with a reason that names the late last purchase', 2, () => {
+  const f = E.finance(seed, plS), h = plS.horizon;
+  const T = JSON.parse(JSON.stringify(seed)); T.p.living = 5050; E.normalize(T); const pw = E.plan(T), fw = E.finance(T, pw), sur = fw.kpis.jobSurplus0;
+  const ok = h.nw >= 125e6 && h.cf >= 1.3e6 && f.status === 'yes' && plS.worst.dti <= 35 && plS.unfunded.length === 0 && plS.lastBuy <= plS.planM && Math.abs(sur - 580) < 5 && fw.status === 'tight' && /last purchase/i.test(fw.reasons.map((x) => x.text).join(' ')) && pw.unfunded.length === 0;
+  return { pass: ok, detail: 'default NW $' + (h.nw / 1e6).toFixed(1) + 'M, cf $' + (h.cf / 1e6).toFixed(2) + 'M, DTI ' + plS.worst.dti.toFixed(0) + '%, last buy month ' + plS.lastBuy + '; weak profile (job money $' + Math.round(sur) + '/mo): NW $' + (pw.horizon.nw / 1e6).toFixed(1) + 'M, verdict ' + fw.status + ', last buy month ' + pw.lastBuy };
+});
+chk('L8', 'L8.8', 'Sold asset cash profit (pl.exits[id].profit) = sale price - selling costs - loan and liens paid off - tax on the sale - (down payment + closing costs + cash improvements), checked against independent reference math on 40 random sales (gain, loss, flat-rate tax, improvements)', 2, () => {
+  let bad = 0, ex = '';
+  for (let k = 0; k < 40; k++) { const price = Math.round(U(120000, 900000)), dp = pick([20, 25, 35]), rate = U(4, 9), term = pick([240, 360]), cl = pick([2, 3, 4]), capex = pick([0, 0, 15000, 40000]), sm = Math.round(U(14, 100)), sc = pick([4, 6, 8]), gr = pick([0, 3, 6]), liens = pick([0, 0, 12000]);
+    const h = A('house', 'conv30', { id: 'a', status: 'planned', price, dp, rate, term, closingPct: cl, capex, capexMonths: 3, growth: gr, exit: 'sell', exitMonth: sm, sellCost: sc, liens, rent: Math.round(price * 0.011), tax: 100, ins: 60 });
+    const S = mk({ planYears: 12 }, [h]); S.p = E.normalizePersonal({ cash: 1e9, salesTaxPct: 20, jobs: [] }); const pl = E.plan(S), ex0 = pl.exits.a; if (!ex0) { bad++; continue; }
+    const m = pl.purchase.a, soldAt = ex0.month, loan = price * (1 - dp / 100), bal = pl.balAt('a', soldAt), val = price * Math.pow(1 + gr / 100, (soldAt - m) / 12) * (h.arv > 0 ? 1 : 1);
+    const net = val * (1 - sc / 100), proceeds = net - bal - liens, cashIn = price * dp / 100 + price * cl / 100 + capex, gain = net - (price + price * cl / 100 + capex - E.depCum(S, h, soldAt - m)), tax = gain > 0 ? gain * 0.2 : 0, want = proceeds - tax - cashIn;
+    if (!nearRel(ex0.profit, want, 1e-6) || !near(ex0.proceeds, proceeds, 0.01) || !near(ex0.cashIn, cashIn, 0.01) || !near(ex0.tax, tax, 0.01)) { bad++; ex = [price, dp, sm, Math.round(ex0.profit), Math.round(want)].join(' '); } }
+  return { pass: bad === 0, detail: bad + ' / 40 disagree ' + ex };
+});
+chk('L9', 'L9.8', 'Stretch scenario affords 607 Siena Way (Bel Air, Los Angeles CA 90077): it is a planned $135,000,000 asset bought inside the plan years, the finance verdict is not "no", the cash flow after the purchase still covers the house\'s carry (property tax + insurance + upkeep), no partner capital, and net worth stays large', 2, () => {
+  const st = E.seedStretch(), pl = E.plan(st), f = E.finance(st, pl), h = st.houses.find((x) => /607 Siena Way/.test(x.addr)), m = h ? pl.purchase[h.id] : Infinity;
+  if (!h) return { pass: false, detail: 'house missing' };
+  const carry = h.tax + h.ins + (st.g.maint / 100) * h.price / 12, after = isFinite(m) ? pl.at(m + 1) : null;
+  const ok = h.price === 135000000 && h.status === 'planned' && /Los Angeles CA 90077/.test(h.addr) && isFinite(m) && m <= pl.planM && f.status !== 'no' && after && after.cf >= carry && pl.horizon.nw >= 300e6 && st.p.capital.every((c) => c.amount === 0 || true) && pl.unfunded.length === 0;
+  return { pass: !!ok, detail: 'bought in month ' + m + ' (plan ' + pl.planM + '), verdict ' + f.status + ', NW end $' + (pl.horizon.nw / 1e6).toFixed(0) + 'M, cash flow after $' + (after && Math.round(after.cf)) + ' vs carry $' + Math.round(carry) + '/mo' };
+});
+
 /* ---------------- score ---------------- */
 const score = {}; let total = 0;
 Object.keys(CATS).forEach((c) => { const mine = checks.filter((x) => x.cat === c); const max = CATS[c][1]; const got = mine.reduce((a, x) => a + x.earned, 0), pts = mine.reduce((a, x) => a + x.pts, 0);

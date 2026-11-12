@@ -20,14 +20,14 @@ function spec(i, price0) {
   const k = price < 950000 ? 'c' : i % 2 === 0 ? 'b' : 'c', /* a small business cannot carry a manager's salary, so businesses start at about $1M */ n = k === 'b' ? NB[cnt.b++ % NB.length] : NC[cnt.c++ % NC.length], id = n.toLowerCase().replace(/[^a-z]/g, '').slice(0, 10);
   if (k === 'c') { const cap = 7.0 + (i % 3) * 0.5, c = rc(price, cap, 85); return ['commercial', 'comm25', { id, addr: n, price, growth: GC, dp: 35, ...c, buyIn: 0 }]; }
   const mult = price < 2e6 ? 3.6 : price < 3.5e6 ? 4.0 : price < 6e6 ? 4.6 : price < 10e6 ? 5.0 : 5.6, rent = Math.round(price / mult / 12 / 10) * 10;
-  return ['business', price * 0.9 < 3.2e6 && price < 3.4e6 ? 'sba7a' : 'bankbiz', { id, addr: n, price, rent, growth: GB, buyIn: 0 }]; }
+  return ['business', price * 0.9 < (+process.env.SBAMAX || 2.2e6) ? 'sba7a' : 'bankbiz', { id, addr: n, price, rent, growth: GB, buyIn: 0 }]; }
 /* birch is flipped after about 40 months (a value-add rehab), so the plan also shows a sale */
 function flip(rows, pl) { rows.forEach((r) => { if (r[2].id === 'birch') { r[2].exit = 'sell'; r[2].exitMonth = (isFinite(pl && pl.purchase.birch) ? pl.purchase.birch : 28) + 40; } }); }
 const PROFILES = { default: {}, mid: { living: 4200 }, weak: { living: 5050 }, weakOld: { living: 5050, portfolioTaxPct: 20, salesTaxPct: 25 }, old: { portfolioTaxPct: 20, salesTaxPct: 25 } };
 const prof = (name) => Object.assign(E.samplePersonal(), { capital: [] }, PROFILES[name || 'default']);
 function build(rows, pn) { return E.normalize({ g: Object.assign({}, g0), p: prof(pn || process.env.PROFILE), houses: rows.map((r) => A(r[0], r[1], Object.assign({}, r[2]))) }); }
 function fit(r) { const o = r[2], S = build([r]), h = S.houses[0];
-  if (r[0] === 'house') { for (let k = 0; k < 40; k++) { if (E.view(S, h).cf >= 120) break; h.rent += 10; } o.rent = h.rent; return r; }
+  if (r[0] === 'house') { for (let k = 0; k < 40; k++) { if (E.view(S, h).cf >= (+process.env.CFMIN || 120)) break; h.rent += 10; } o.rent = h.rent; return r; }
   const need = r[1] === 'sba7a' ? 1.15 : 1.25, lo = r[1] === 'sba7a' ? 10 : r[1] === 'bankbiz' ? 25 : 35;
   for (let dp = lo; dp <= 60; dp += 5) { h.dp = dp; const v = E.view(S, h); if (v.noi / (v.P + v.mip) >= need + (+process.env.DSCRX || 0.03)) { o.dp = Math.min(60, dp + (+process.env.DPADD || 0)); return r; } } o.dp = 60; return r; }
 let rows = [], price = +process.env.BASE || 110000; const used = {};
@@ -35,7 +35,7 @@ for (let i = 0; i < STEPS; i++) { const r = fit(spec(i, price)); price *= STEP; 
 /* renovations on the first homes: RENO='25000,30000,15000' = rehab budget of homes 1, 2, 3 (paid from savings / the trust's cash, not financed); the new appraisal adds MULT x the rehab cost on top of the price, and rents lift LIFT% */
 const RENO = (process.env.RENO || '').split(',').filter(Boolean).map(Number), MULT = +process.env.MULT || 1.4, LIFT = +process.env.LIFT || 10;
 rows.filter((r) => r[0] === 'house' && r[2].id !== 'birch').slice(0, RENO.length).forEach((r, i) => { const o = r[2], cx = RENO[i]; Object.assign(o, { capex: cx, capexMonths: 3, arv: Math.round((o.price + cx * MULT) / 1000) * 1000, liftIncome: LIFT }); });
-rows.forEach((r) => { if (r[2].id === 'birch') Object.assign(r[2], { capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8 }); });
+rows.forEach((r) => { if (r[2].id === 'birch') Object.assign(r[2], { capex: 30000, capexMonths: 4, arv: Math.round((r[2].price + 30000 * 1.8) / 1000) * 1000, liftIncome: 8 }); });
 let S = build(rows), pl = E.plan(S); for (let k = 0; k < 4; k++) { flip(rows, pl); S = build(rows); pl = E.plan(S); }
 const f = E.finance(S, pl);
 for (const pn of Object.keys(PROFILES)) { const S2 = build(rows, pn), p2 = E.plan(S2), f2 = E.finance(S2, p2); console.error('  profile', pn.padEnd(8), 'NW', (p2.horizon.nw / 1e6).toFixed(1) + 'M', 'CF', Math.round(p2.horizon.cf), 'status', f2.status, 'lastBuy', p2.lastBuy, 'dti', p2.worst.dti.toFixed(0), '@' + p2.worst.month, 'unf', p2.unfunded.length, 'first', p2.purchase[S2.houses[0].id], 'minLiq', Math.round(f2.kpis.minLiquid)); }

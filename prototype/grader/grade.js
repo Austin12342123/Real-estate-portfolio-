@@ -17,7 +17,7 @@ const results = [];
 const cats = { A: 'Requirement / propagation', B: 'Engine correctness', C: 'UX conciseness & usability', D: 'PWA / local-first', E: 'Robustness & accessibility', R: 'Realism & market accuracy' };
 const CATMAX = { A: 18, B: 12, C: 10, D: 8, E: 7, R: 30 };
 const KEY = 'rep-v4', DATA_V = +((/const DATA_V = (\d+)/.exec(fs.readFileSync(path.resolve(__dirname, '../v4/app.js'), 'utf8')) || [0, 0])[1]);
-const FIN_ONLY = process.env.FINANCE_ONLY === '1', SYNC_ONLY = process.env.SYNC_ONLY === '1', INFO_ONLY = process.env.INFO_ONLY === '1', MAIN_ONLY = process.env.MAIN_ONLY === '1', GEST_ONLY = process.env.GEST_ONLY === '1';
+const FIN_ONLY = process.env.FINANCE_ONLY === '1', SYNC_ONLY = process.env.SYNC_ONLY === '1', INFO_ONLY = process.env.INFO_ONLY === '1', MAIN_ONLY = process.env.MAIN_ONLY === '1', GEST_ONLY = process.env.GEST_ONLY === '1', UX_ONLY = process.env.UX_ONLY === '1';
 const NSEED = E.seedPlan().houses.length; /* the app's default portfolio (the self-funded plan), derived from the app, never hard-coded */
 const SEEDN = E.seed().houses.length; /* the older small sample (Load realistic sample) */
 
@@ -71,7 +71,7 @@ function startServer() {
 let BASE, browser;
 const collect = { errors: [], requests: [], paused: false };
 const INIT = () => {
-  window.__persist = 0; window.__cls = 0;
+  window.REP_TODAY = '2026-11-12'; window.__persist = 0; window.__cls = 0; /* the app's "today" is pinned so dates are stable */
   try { const o = navigator.storage && navigator.storage.persist; if (o) navigator.storage.persist = function () { window.__persist++; return o.apply(this, arguments); }; } catch (e) {}
   try { new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true }); } catch (e) {}
 };
@@ -849,9 +849,9 @@ async function robustChecks(page) {
   const t0 = Date.now(); const { srv, port } = await startServer(); BASE = 'http://127.0.0.1:' + port;
   console.log('Serving', V4, 'on', BASE);
   browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
-  let finance = null, sync = null, info = null, gest = null;
+  let finance = null, sync = null, info = null, gest = null, ux = null;
   try {
-    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !GEST_ONLY) {
+    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !GEST_ONLY && !UX_ONLY) {
     await engineChecks();
     const ctx = await mkCtx(); const page = await mkPage(ctx, 'main');
     await reqChecks(page); await uxChecks(page); await robustChecks(page);
@@ -864,28 +864,34 @@ async function robustChecks(page) {
     catch (e) { results.push({ id: 'R00', category: 'R', name: 'Realism module failed to run', points: 30, rawPoints: 30, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.message || e), repro: 'node -e "require(\'./realism.js\')"' }); console.log('  [0.00/30] R00 realism module error: ' + (e && e.message)); }
     }
     /* Category F: personal finances, scored separately on its own 90-point scale (does not touch the A-E + R total) */
-    if (!SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY) {
+    if (!SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY && !UX_ONLY) {
     console.log('F. Personal finances');
     try { finance = await require('./finance-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS }); }
     catch (e) { finance = { earned: 0, max: 90, checks: [{ id: 'F00', category: 'F', name: 'Finance module failed to run', points: 90, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./finance-grade.js\')"' }] }; console.log('  [0.00/90] F00 finance module error: ' + (e && e.message)); }
     }
     /* Category G: number sync, scored separately on its own 100-point scale (does not touch the A-E + R total or F) */
-    if (!FIN_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY) {
+    if (!FIN_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY && !UX_ONLY) {
     console.log('G. Number sync');
     try { sync = await require('./sync-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS, base: () => BASE }); }
     catch (e) { sync = { earned: 0, max: 100, checks: [{ id: 'G00', category: 'G', name: 'Sync module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./sync-grade.js\')"' }] }; console.log('  [0.00/100] G00 sync module error: ' + (e && e.message)); }
     }
     /* Category H: plain-language help and hourly jobs, scored on its own 100-point scale (does not touch A-E + R, F or G) */
-    if (!FIN_ONLY && !SYNC_ONLY && !MAIN_ONLY && !GEST_ONLY) {
+    if (!FIN_ONLY && !SYNC_ONLY && !MAIN_ONLY && !GEST_ONLY && !UX_ONLY) {
     console.log('H. Help (i) buttons and hourly jobs');
     try { info = await require('./info-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS, base: () => BASE }); }
     catch (e) { info = { earned: 0, max: 100, checks: [{ id: 'H00', category: 'H', name: 'Info module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./info-grade.js\')"' }] }; console.log('  [0.00/100] H00 info module error: ' + (e && e.message || e)); }
     }
     /* Category I: Portfolio sections, reorder, auto-funding, duplicate, extra panel, loan line, swipe back, keyboard dismiss (own 100-point scale) */
-    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY) {
+    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !UX_ONLY) {
     console.log('I. Portfolio sections, gestures and funding order');
     try { gest = await require('./gesture-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, collect, base: () => BASE }); }
     catch (e) { gest = { earned: 0, max: 100, checks: [{ id: 'I00', category: 'I', name: 'Gesture module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./gesture-grade.js\')"' }] }; console.log('  I module failed: ' + (e && e.message)); }
+    }
+    /* Category J: calendar dates, math in number boxes, Checks block, sold cash profit, migration, stretch house, tap targets (own 100-point scale) */
+    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY) {
+    console.log('J. Dates, number-box math, Checks, sold profit, migration');
+    try { ux = await require('./ux-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, collect, base: () => BASE }); }
+    catch (e) { ux = { earned: 0, max: 100, checks: [{ id: 'J00', category: 'J', name: 'UX module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./ux-grade.js\')"' }] }; console.log('  J module failed: ' + (e && e.message)); }
     }
   } finally { await browser.close(); srv.close(); }
 
@@ -902,6 +908,10 @@ async function robustChecks(page) {
   const gestMd = () => { if (!gest) return ''; let m = `\n## I. Portfolio sections, gestures and funding order: **${fmt2(gest.earned)} / ${gest.max}** (separate scale; not included in A-E + R, F, G or H)\n\n| ID | Check | Pts | Earned | Detail |\n|---|---|---|---|---|\n`;
     gest.checks.forEach((r) => (m += `| ${r.id} | ${r.name} | ${fmt2(r.points)} | ${fmt2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 1500)} |\n`));
     const ff = gest.checks.filter((r) => r.earned < r.points - 0.001); m += `\n### I failures\n\n`; if (!ff.length) m += 'None.\n'; ff.forEach((r) => (m += `- **${r.id} ${r.name}** (-${fmt2(r.points - r.earned)}): ${String(r.detail).slice(0, 1500)}\n  - Reproduce: ${r.repro}\n`)); return m; };
+  const uxMd = () => { if (!ux) return ''; let m = `\n## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **${fmt2(ux.earned)} / ${ux.max}** (separate scale)\n\n| ID | Check | Pts | Earned | Detail |\n|---|---|---|---|---|\n`;
+    ux.checks.forEach((r) => (m += `| ${r.id} | ${r.name} | ${fmt2(r.points)} | ${fmt2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 1500)} |\n`));
+    const ff = ux.checks.filter((r) => r.earned < r.points - 0.001); m += `\n### J failures\n\n`; if (!ff.length) m += 'None.\n'; ff.forEach((r) => (m += `- **${r.id} ${r.name}** (-${fmt2(r.points - r.earned)}): ${String(r.detail).slice(0, 1500)}\n  - Reproduce: ${r.repro}\n`)); return m; };
+  if (UX_ONLY) { fs.writeFileSync(path.join(__dirname, 'report-ux.md'), `# UX grader (UX_ONLY)\n\nRun: ${new Date().toISOString()}\n` + uxMd()); console.log(`\nJ UX: ${fmt2(ux.earned)}/${ux.max}`); return; }
   if (GEST_ONLY) {
     fs.writeFileSync(path.join(__dirname, 'report-gesture.md'), `# Portfolio gestures grader (GEST_ONLY)\n\nRun: ${new Date().toISOString()}  |  ${((Date.now() - t0) / 1000).toFixed(0)}s\n` + gestMd());
     fs.writeFileSync(path.join(__dirname, 'result-gesture.json'), JSON.stringify({ gest }, null, 2));
@@ -937,14 +947,15 @@ async function robustChecks(page) {
   results.forEach((r) => (md += `| ${r.id} | ${r.name} | ${f2(r.points)} | ${f2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 400)} |\n`));
   const fails = results.filter((r) => r.earned < r.points - 0.001).sort((a, b) => (b.points - b.earned) - (a.points - a.earned));
   md += `\n## Top failures\n\n`; if (!fails.length) md += 'None.\n'; fails.slice(0, 15).forEach((r, i) => (md += `${i + 1}. **${r.id} ${r.name}** (-${f2(r.points - r.earned)})\n   - Detail: ${String(r.detail).slice(0, 500)}\n   - Reproduce: ${r.repro}\n`));
-  md += finMd() + syncMd() + infoMd() + gestMd();
+  md += finMd() + syncMd() + infoMd() + gestMd() + uxMd();
   fs.writeFileSync(path.join(__dirname, 'report.md'), md);
-  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results, finance, sync, info, gest }, null, 2));
+  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results, finance, sync, info, gest, ux }, null, 2));
   console.log('\nCategory scores:'); Object.keys(cats).forEach((c) => console.log(`  ${c}  ${f2(per[c].earned)} / ${f2(per[c].max)}  ${cats[c]}`));
   console.log(`\nTOTAL ${f2(total)} / ${max}`);
   if (finance) console.log(`\nF Personal finances: ${fmt2(finance.earned)}/${finance.max}`);
   if (sync) console.log(`\nG Number sync: ${fmt2(sync.earned)}/${sync.max}`);
   if (info) console.log(`\nH Help and hourly jobs: ${fmt2(info.earned)}/${info.max}`);
   if (gest) console.log(`\nI Portfolio sections and gestures: ${fmt2(gest.earned)}/${gest.max}`);
+  if (ux) console.log(`\nJ Dates, math boxes, Checks, sold profit: ${fmt2(ux.earned)}/${ux.max}`);
   try { delete require.cache[require.resolve('./logic-grade.js')]; const L = require('./logic-grade.js'); console.log(`\nL Logic and math: ${fmt2(L.total)}/${L.max} (details: grader/logic/report.md)`); } catch (e) { console.log('\nL Logic grader failed: ' + e.message); }
 })().catch((e) => { console.error('GRADER CRASH', e); process.exit(2); });

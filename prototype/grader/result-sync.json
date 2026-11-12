@@ -1,18 +1,95 @@
 {
   "sync": {
-    "earned": 13.06,
-    "max": 14,
+    "earned": 100,
+    "max": 100,
     "checks": [
+      {
+        "id": "G1",
+        "category": "G",
+        "name": "Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine)",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "44/44 sub-checks pass",
+        "repro": "Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)",
+        "seconds": 0.7
+      },
+      {
+        "id": "G2",
+        "category": "G",
+        "name": "Asset page <-> Portfolio sync (share line, hero, impact, edits propagate)",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "74/74 sub-checks pass",
+        "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
+        "seconds": 19.6
+      },
       {
         "id": "G3",
         "category": "G",
         "name": "Portfolio <-> Finances sync (cash flow, funding, extra scope, verdict, edge cases)",
         "points": 14,
-        "earned": 13.06,
-        "ratio": 0.9326599326599327,
-        "detail": "34/35 sub-checks pass. FAIL: Finances \"Extra payments\" (now) = Planned \"extra now\" + Real \"extra now\" (35/40 ok) [rand#17: Finances −$1,133 vs Planned header $0/mo extra now + bought 0 [engine extraNow 1133, planned 0, rx $0] (assets with an extra but no loan to pay down are counted in one but not the other) || rand#18: Finances −$192 vs Planned header $0/mo extra now + bought 0 [engine extraNow 192, planned 0, rx $0] (assets with an extra but no loan to pay down are counted in one but not the other) || rand#19: Finances −$2,605 vs Planned header $0/mo extra now · +$1,126 later + bought 2384 [engine extraNow 2605, planned 0, rx $2,384] (assets with an extra but no loan to pay down are counted in one but not the other)]",
+        "earned": 14,
+        "ratio": 1,
+        "detail": "35/35 sub-checks pass",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 5.7
+        "seconds": 6.5
+      },
+      {
+        "id": "G4",
+        "category": "G",
+        "name": "Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences)",
+        "points": 18,
+        "earned": 18,
+        "ratio": 1,
+        "detail": "34/34 sub-checks pass",
+        "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit",
+        "seconds": 76.4
+      },
+      {
+        "id": "G5",
+        "category": "G",
+        "name": "Add page <-> created asset (loan option cards, option switching, 203(k) defaults)",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
+        "seconds": 6.2
+      },
+      {
+        "id": "G6",
+        "category": "G",
+        "name": "Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light)",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
+        "seconds": 19
+      },
+      {
+        "id": "G7",
+        "category": "G",
+        "name": "Shared settings (g.* and p.*) propagate to every dependent display",
+        "points": 10,
+        "earned": 10,
+        "ratio": 1,
+        "detail": "151/151 sub-checks pass",
+        "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
+        "seconds": 10.9
+      },
+      {
+        "id": "G8",
+        "category": "G",
+        "name": "No stale / duplicate / contradictory numbers",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
+        "repro": "Scan every page for repeated labels with different values, missing bases, redundant repeated numbers, subtext that restates the main value, and numbers that contradict adjacent statements",
+        "seconds": 0
       }
     ]
   }
