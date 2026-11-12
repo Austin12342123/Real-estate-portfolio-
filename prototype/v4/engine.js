@@ -306,16 +306,20 @@
         }
         /* 2) the next planned asset in the list is bought when the pool can pay for it. Nothing is ever bought before an asset above it in the list: the queue is walked in list order and stops at the first one that is not ready. */
         let snap = snapOf(t);
+        const rsv0 = pp ? (pp.emergencyMonths || 0) * ((pp.living || 0) * Math.pow(1 + infl, t / 12) + (g.otherDebt || 0)) : 0; /* the cash cushion stays in your savings */
         while (qi < queue.length) {
           const N = queue[qi], pool = bought.length > 0, bi = Math.max(0, Math.round(N.buyIn || 0)), base = downAmt(N) + (N.price * clPct(S, N)) / 100;
           const cap0 = N.finCapex ? 0 : Math.max(0, N.capex || 0), needAmt = base + cap0, sm = sumSnap(snap, t), avail = Math.max(0, sm.head) + C;
+          const own = pp ? Math.max(0, L - rsv0) : Infinity; /* nothing is owned yet: the first purchase is paid from your savings above the cushion plus the job money saved since */
           if (pool && (!best[N.id] || avail > best[N.id].avail)) best[N.id] = { avail, month: t };
+          if (!pool && pp && (!best[N.id] || own > best[N.id].avail)) best[N.id] = { avail: own, month: t };
           if (pool && readyAt[N.id] === undefined && avail >= needAmt - 1e-6) readyAt[N.id] = t;
           if (t < bi || (pool && readyAt[N.id] === undefined)) break;
           if (pool && avail < needAmt - 1e-6) break;
+          if (!pool && pp && own < needAmt - 1e-6) break;
           P0[N.id] = t; exitTimes(N); dr[N.id] = new Array(TS + 1).fill(0); startLoan(N, t);
           if (pool) { const C0 = C, useC = Math.min(C, needAmt); C -= useC; cur[N.id] = needAmt - useC; fund[N.id] = { pool: true, n: sm.n, room: Math.max(0, sm.head), heldCash: C0, have: avail, cf: sm.sweep, gross: sm.cf, cash: useC, draw: needAmt - useC, need: needAmt }; }
-          else { const nd = (t > 0 ? base : 0) + cap0; out += nd; fund[N.id] = { pool: false, n: 0, room: 0, cf: 0, cash: 0, draw: 0, need: nd }; }
+          else { const nd = base + cap0; out += nd; fund[N.id] = { pool: false, n: 0, room: 0, cf: 0, cash: 0, draw: 0, need: nd, have: pp ? own : nd, savings: pp ? Math.min(nd, Math.max(0, (+pp.cash || 0) - rsv0)) : nd, rsv: rsv0 }; }
           bought.push(N); qi++; snap = snapOf(t);
         }
         /* 3) record the state and sweep the month's pooled cash flow. Order of use: (a) pay the trust's line down (oldest draw first); (b) while a planned asset is still waiting, hold the rest as cash for it; (c) once nothing is left to buy, the rest goes to each
@@ -336,8 +340,9 @@
           intr = t > 0 ? Math.max(0, L + cashA[t - 1]) * apy : 0; cI = pp.capital.reduce((a2, c) => a2 + (c.month === t ? c.amount : 0), 0); oT = pp.planned.reduce((a2, c) => a2 + (c.month === t ? c.amount : 0), 0);
           const calls = out - outPrev + oT + SALET[t] - cI - intr, G = inc - liv - dbt - Xu + Math.min(0, port), rsv = (pp.emergencyMonths || 0) * (liv + dbt);
           CALLS[t] = Math.max(0, out - outPrev + oT + SALET[t]); /* one-time costs this month */
-          const cand = pending ? Math.max(0, G) : Math.max(0, G + x); pCand = pending ? 0 : Math.min(x, cand); jCand = cand - pCand;
-          scale = autoPay && cand > 0 ? Math.min(cand, Math.max(0, L + C + cand - calls - rsv - (FUT ? FUT[t] : 0))) / cand : 0; /* FUT = costs still to come (one-time expenses, sale taxes, outside cash for purchases): that money stays in your cash */ JS[t] = Math.max(0, G);
+          const cand = pending ? (bought.length ? Math.max(0, G) : 0) : Math.max(0, G + x); /* with nothing owned yet there is no trust to send job money to: it stays in your cash for the first purchase */ pCand = pending ? 0 : Math.min(x, cand); jCand = cand - pCand;
+          const flow = inc - liv - dbt - Xu + port - (t > 0 ? reinv[t - 1] : 0) + intr + cI - oT - (out - outPrev) - SALET[t]; /* what your cash does this month before the loan money; your cash after = L + flow - what moves, and the trust's cash (cashA[t]) counts in the cushion */
+          scale = autoPay && cand > 0 ? Math.min(cand, Math.max(0, L + cashA[t] + flow - rsv - (FUT ? FUT[t] : 0))) / cand : 0; /* FUT = costs still to come (one-time expenses, sale taxes, outside cash for purchases): that money stays in your cash */ JS[t] = Math.max(0, G);
         }
         let pSpent = 0;
         if (!pending && pCand > 0.005 && scale > 0 && anyLoan) { const r = spread(pCand * scale, snap.map((x2) => ({ id: x2.h.id, w: Math.max(0, x2.inc - x2.sched - x2.hi), cap: cap[x2.h.id] || 0 }))); Object.keys(r.got).forEach((id) => { AUTO[id][t] = r.got[id]; cap[id] -= r.got[id]; pSpent += r.got[id]; }); }
@@ -351,7 +356,7 @@
         if (pp) { L += inc - liv - dbt - Xu + port - (t > 0 ? reinv[t - 1] : 0) - JU[t] + intr + cI - oT - (out - outPrev) - SALET[t]; LQ[t] = L; }
         outPrev = out;
         /* 4) next month's loan balances: the scheduled payment, your extra, and the automatic extra from the asset's own profit and from your job */
-        for (const h of bought) { if (!held(h, t + 1) || !(BAL[h.id][t] > 0.005) || t + 1 > TS) continue; setMonth(h, t + 1, Math.max(0, nextBal(h, t) - (AUTO[h.id][t] || 0) - (JOBX[h.id][t] || 0))); }
+        for (const h of bought) { if (!held(h, t) || !(BAL[h.id][t] > 0.005) || t + 1 > TS) continue; /* a loan keeps running through the month an asset is sold: the sale pays off its balance */ setMonth(h, t + 1, Math.max(0, nextBal(h, t) - (AUTO[h.id][t] || 0) - (JOBX[h.id][t] || 0))); }
       }
       blocked = qi < queue.length ? queue[qi] : null;
     }
@@ -401,7 +406,7 @@
     const funds = {}; hs.forEach((h) => { funds[h.id] = !!(fund[h.id] && fund[h.id].pool); });
     const trust = {}; let prevM = 0; hs.forEach((h) => { if (h.status === 'owned') return; const m = P0[h.id], f = fund[h.id] || null, bi = Math.max(0, Math.round(h.buyIn || 0)), rd = readyAt[h.id] === undefined ? Infinity : readyAt[h.id];
       /* month = the one clock everywhere: months from today. ready = the first month the pool could pay (room + cash >= need); month = ready, or the 'not before' month if that is later (held = true). */
-      trust[h.id] = { month: m, ready: rd, held: isFinite(m) && isFinite(rd) && m > rd, buyIn: bi, ok: isFinite(m), pooled: funds[h.id], n: f ? f.n : 0, room: f ? f.room : 0, cf: f ? f.cf : 0, cash: f ? f.cash : 0, draw: f ? f.draw : 0, heldCash: f ? f.heldCash : 0, have: f ? f.have : 0, need: f ? f.need : needFor(S, h), gross: f ? f.gross : 0, best: best[h.id] || null };
+      trust[h.id] = { month: m, ready: rd, held: isFinite(m) && isFinite(rd) && m > rd, buyIn: bi, ok: isFinite(m), pooled: funds[h.id], n: f ? f.n : 0, room: f ? f.room : 0, cf: f ? f.cf : 0, cash: f ? f.cash : 0, draw: f ? f.draw : 0, heldCash: f ? f.heldCash : 0, have: f ? f.have : 0, need: f ? f.need : needFor(S, h), savings: f ? f.savings || 0 : 0, rsv: f ? f.rsv || 0 : 0, gross: f ? f.gross : 0, best: best[h.id] || null };
     });
     /* loans: balance at any month, and the month each loan is paid off (with the extra from your own profit and your job); 0 = no loan, Infinity = not within the plan horizon */
     const loanEnd = {}, balAt = (id, t) => (BAL[id] ? BAL[id][Math.max(0, Math.min(TS, Math.round(t)))] || 0 : 0);
@@ -610,27 +615,31 @@
     A('commercial', 'bridge', {id: 'river', addr: 'Riverside Flex Industrial', price: 14640000, rent: 148047, tax: 5307, ins: 4118, hoa: 2288, growth: 5, buyIn: 96, capex: 1200000, capexMonths: 12, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 160}),
     A('commercial', 'comm25', {id: 'west', addr: 'Westfield Office Park', price: 10065000, rent: 102480, tax: 3843, ins: 3020, hoa: 2196, growth: 5, buyIn: 120}),
     A('house', 'cashh', {id: 'stradella', addr: '900 Stradella Rd residence', price: 38731700, rent: 150000, tax: 35500, ins: 11000, growth: 3.5, buyIn: 200})] })); };
-  /* Default portfolio: smooth growth to about $125M of net worth after 28 years (built by grader/logic/gen-plan.js). Purchases get bigger step by step (about 25% larger than the one before), financed with loans a lender would write: conventional and DSCR home loans, SBA 7(a) (never more than $5M outstanding at once), bank term loans and commercial loans with enough down payment that each loan's DSCR meets the lender minimum (1.15 SBA, 1.25 bank), and the trust's pooled line of credit. The trust decides every purchase month (each row's buyIn is 0 = as soon as everything before it can pay). Commercial rows carry realistic gross tax, insurance and CAM (about 1.35% of value a year) that tenants repay under NNN leases (85%). Growth is 4%/yr for businesses (about the Federal Reserve's long-run nominal GDP growth), homes and commercial. No partner or investor money: every down payment comes from the pool of assets before it (its cash flow and borrowing room), sale proceeds and the trust's line. */
+  /* Default portfolio: NOTHING IS OWNED YET (every asset is planned; the Bought section starts empty). Smooth growth to about $125M of net worth after 28 years (built by grader/logic/gen-plan.js). The first asset has no trust to borrow from, so it is paid from your savings above the cash cushion plus the job money saved since; every later asset is paid by the trust (the borrowing room and reinvested cash flow of everything bought before it) plus your job money. Purchases get bigger step by step (about 25% larger than the one before): six modest homes first, then businesses (never under 3.3x yearly profit) and commercial property, financed with loans a lender would write (conventional and DSCR home loans, SBA 7(a) never above $5M outstanding, bank term loans and commercial loans with enough down payment to meet the lender's DSCR minimum, 1.15 SBA and 1.25 bank) and the trust's pooled line of credit. The trust decides every purchase month (each row's buyIn is 0 = as soon as the money is there). Commercial rows carry realistic gross tax, insurance and CAM that tenants repay under NNN leases (85%). Growth is 4%/yr for everything. No partner or investor money. */
   const seedPlan = () => { const A = newAsset; const p = samplePersonal(); p.capital = []; return orderByBuy(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450, planYears: 28 }), p, houses: [
-    A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4}),
-    A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4}),
-    A('business', 'sba7a', {id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 4}),
-    A('house', 'conv30', {id: 'birch', addr: '908 Birchwood Ct', price: 195000, rent: 2000, tax: 220, ins: 90, growth: 4, capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8, exit: 'sell', exitMonth: 56}),
-    A('house', 'dscr', {id: 'willow', addr: '3350 Willow Bend Rd', price: 210000, rent: 2200, tax: 235, ins: 95, growth: 4}),
-    A('house', 'conv30', {id: 'linden', addr: '2914 Linden Way', price: 175000, rent: 1825, tax: 195, ins: 85, growth: 4}),
-    A('business', 'sba7a', {id: "cornerston", addr: "Cornerstone Plumbing Co", price: 850000, rent: 21460, growth: 4, dp: 10, buyIn: 0}),
-    A('commercial', 'comm25', {id: "northgater", addr: "Northgate Retail Strip", price: 1065000, growth: 4, dp: 40, rent: 8680, tax: 666, ins: 266, hoa: 266, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "summitfrei", addr: "Summit Freight & Logistics", price: 1330000, rent: 33590, growth: 4, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "harborstse", addr: "Harbor St Self-Storage", price: 1660000, growth: 4, dp: 45, rent: 12720, tax: 1038, ins: 415, hoa: 415, nnn: 85, capex: 100000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 125, buyIn: 0}),
-    A('business', 'sba7a', {id: "keystonehv", addr: "Keystone HVAC Services", price: 2075000, rent: 43230, growth: 4, dp: 10, buyIn: 0}),
-    A('commercial', 'comm25', {id: "lakeviewme", addr: "Lakeview Medical Office", price: 2595000, growth: 4, dp: 40, rent: 21150, tax: 1622, ins: 649, hoa: 649, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "apexproper", addr: "Apex Property Services", price: 3240000, rent: 67500, growth: 4, exit: "sell", exitMonth: 160, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "westfieldo", addr: "Westfield Office Park", price: 4055000, growth: 4, dp: 35, rent: 37000, tax: 2534, ins: 1014, hoa: 1014, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "meridianst", addr: "Meridian Staffing Group", price: 5065000, rent: 91760, growth: 4, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "eastgatesh", addr: "Eastgate Shopping Plaza", price: 6335000, growth: 4, dp: 40, rent: 51630, tax: 3959, ins: 1584, hoa: 1584, nnn: 85, capex: 380000, capexMonths: 9, liftValue: 18, liftIncome: 12, exit: "sell", exitMonth: 175, buyIn: 0}),
-    A('business', 'bankbiz', {id: "ironwoodma", addr: "Ironwood Manufacturing", price: 7915000, rent: 131920, growth: 4, dp: 25, buyIn: 0}),
-    A('commercial', 'comm25', {id: "redwoodlog", addr: "Redwood Logistics Center", price: 9895000, growth: 4, dp: 35, rent: 83060, tax: 6184, ins: 2474, hoa: 2474, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "graniteind", addr: "Granite Industrial Supply", price: 12370000, rent: 184080, growth: 4, dp: 30, buyIn: 0}) ] })); };
+    A('house', 'conv30', {id: "maple", addr: "1412 Maple Ridge Dr", price: 120000, rent: 1340, tax: 144, ins: 80, growth: 4, buyIn: 0}),
+    A('house', 'conv30', {id: "cedar", addr: "2207 Cedar Hollow Ln", price: 150000, rent: 1680, tax: 180, ins: 95, growth: 4, buyIn: 0}),
+    A('house', 'dscr', {id: "birch", addr: "908 Birchwood Ct", price: 185000, rent: 2070, tax: 222, ins: 113, growth: 4, buyIn: 0, capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8, exit: "sell", exitMonth: 79}),
+    A('house', 'conv30', {id: "willow", addr: "3350 Willow Bend Rd", price: 230000, rent: 2580, tax: 276, ins: 135, growth: 4, buyIn: 0}),
+    A('house', 'conv30', {id: "linden", addr: "2914 Linden Way", price: 290000, rent: 3250, tax: 348, ins: 165, growth: 4, buyIn: 0}),
+    A('house', 'dscr', {id: "ridge", addr: "5521 Ridgeview Ct", price: 365000, rent: 4090, tax: 438, ins: 203, growth: 4, buyIn: 0}),
+    A('commercial', 'comm25', {id: "northgater", addr: "Northgate Retail Strip", price: 455000, growth: 4, dp: 40, rent: 3710, tax: 284, ins: 114, hoa: 114, nnn: 85, buyIn: 0}),
+    A('commercial', 'comm25', {id: "harborstse", addr: "Harbor St Self-Storage", price: 565000, growth: 4, dp: 35, rent: 4880, tax: 353, ins: 141, hoa: 141, nnn: 85, buyIn: 0}),
+    A('commercial', 'comm25', {id: "lakeviewme", addr: "Lakeview Medical Office", price: 710000, growth: 4, dp: 35, rent: 6480, tax: 444, ins: 178, hoa: 178, nnn: 85, buyIn: 0}),
+    A('commercial', 'comm25', {id: "westfieldo", addr: "Westfield Office Park", price: 885000, growth: 4, dp: 40, rent: 7210, tax: 553, ins: 221, hoa: 221, nnn: 85, buyIn: 0}),
+    A('business', 'sba7a', {id: "cornerston", addr: "Cornerstone Plumbing Co", price: 1110000, rent: 25690, growth: 4, buyIn: 0, dp: 10}),
+    A('commercial', 'comm25', {id: "eastgatesh", addr: "Eastgate Shopping Plaza", price: 1385000, growth: 4, dp: 35, rent: 12640, tax: 866, ins: 346, hoa: 346, nnn: 85, buyIn: 0}),
+    A('business', 'sba7a', {id: "summitfrei", addr: "Summit Freight & Logistics", price: 1730000, rent: 40050, growth: 4, buyIn: 0, dp: 10}),
+    A('commercial', 'comm25', {id: "redwoodlog", addr: "Redwood Logistics Center", price: 2165000, growth: 4, dp: 35, rent: 18700, tax: 1353, ins: 541, hoa: 541, nnn: 85, buyIn: 0}),
+    A('business', 'sba7a', {id: "keystonehv", addr: "Keystone HVAC Services", price: 2705000, rent: 56350, growth: 4, buyIn: 0, dp: 10}),
+    A('commercial', 'comm25', {id: "bayviewmed", addr: "Bayview Medical Plaza", price: 3380000, growth: 4, dp: 40, rent: 27550, tax: 2113, ins: 845, hoa: 845, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "apexproper", addr: "Apex Property Services", price: 4230000, rent: 76630, growth: 4, buyIn: 0, dp: 25}),
+    A('commercial', 'comm25', {id: "summitbusi", addr: "Summit Business Park", price: 5285000, growth: 4, dp: 35, rent: 48220, tax: 3303, ins: 1321, hoa: 1321, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "meridianst", addr: "Meridian Staffing Group", price: 6605000, rent: 110080, growth: 4, buyIn: 0, dp: 25}),
+    A('commercial', 'comm25', {id: "crossroads", addr: "Crossroads Retail Center", price: 8255000, growth: 4, dp: 35, rent: 71300, tax: 5159, ins: 2064, hoa: 2064, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "ironwoodma", addr: "Ironwood Manufacturing", price: 10320000, rent: 153570, growth: 4, buyIn: 0, dp: 30}),
+    A('commercial', 'comm25', {id: "harborfron", addr: "Harborfront Industrial", price: 12900000, growth: 4, dp: 40, rent: 105140, tax: 8063, ins: 3225, hoa: 3225, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "graniteind", addr: "Granite Industrial Supply", price: 16130000, rent: 240030, growth: 4, buyIn: 0, dp: 30}) ] })); };
   /* LEGACY small sample (the Load realistic sample button; the app's default is seedPlan above; listed in the order the assets are bought). Every loan, price, cap rate, multiple and growth rate is checked against
      the grader's benchmark file (prototype/grader). Homes cash flow positive. Recycles sale cash; needs about $1.3M of outside cash. */
   const seed = () => { const A = newAsset; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: Object.assign(samplePersonal(), { cash: 100000 }), houses: [

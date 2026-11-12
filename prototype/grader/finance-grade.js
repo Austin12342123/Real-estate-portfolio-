@@ -184,7 +184,7 @@ exports.run = async function run(X) {
       const ra = RANK[E.finance(A).status], rb = RANK[E.finance(B).status], rc = RANK[E.finance(C).status], rd = RANK[E.finance(D).status], rd2 = RANK[E.finance(D2).status];
       monN++; if (ra >= r0 && rb >= r0 && rc <= r0 && rd <= r0 && rd2 >= r0) mono++; else monBad.push(`#${n} base ${r0} cash+ ${ra} pay+ ${rb} living+ ${rc} debt+ ${rd} cap+ ${rd2}`); }
     P.t(mono === monN, `status is monotone on ${monN} random states: more cash / pay / capital never worsen it, higher living costs / debts never improve it`, 2, monBad.slice(0, 3).join('; '));
-    const st = E.seedStretch(); st.houses = st.houses.filter((h) => h.status !== 'owned'); st.houses[0].buyIn = 1; const sf = E.finance(st); P.t(sf.status === 'no' && sf.kpis.shortAmount > 0 && sf.kpis.firstShortMonth >= 0, "the stretch scenario without the assets you own today (its first asset has no trust behind it and needs more outside cash than the savings) is 'no'", 1, sf.status);
+    const st = E.seedStretch(); st.houses = st.houses.filter((h) => h.status !== 'owned'); st.houses[0].buyIn = 1; st.p.jobs = []; const sf = E.finance(st); P.t(sf.status === 'no' && sf.kpis.shortAmount > 0 && sf.kpis.firstShortMonth >= 0, "the stretch scenario with nothing owned and no job income (the first asset waits for savings that living costs eat) is 'no'", 1, sf.status);
     /* verdict agrees with the independent verdict on random states (skipping knife-edge ones) */
     let agree = 0, cmp = 0, kp = 0; const dis = [];
     for (let n = 0; n < 70; n++) { const S = randState(), pl = E.plan(S), f = E.finance(S, pl), o = sim(S, pl), v = verdictOf(S, pl, o); if (v.border) continue; cmp++;

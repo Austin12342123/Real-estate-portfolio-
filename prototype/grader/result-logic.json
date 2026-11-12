@@ -1,57 +1,57 @@
 {
- "run": "2026-11-12T02:06:30.870Z",
+ "run": "2026-11-12T03:17:04.015Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 14.6,
-   "max": 14.6
+   "earned": 13.22,
+   "max": 13.22
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 9.13,
-   "max": 9.13
+   "earned": 8.26,
+   "max": 8.26
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 17.8,
-   "max": 17.8
+   "earned": 16.11,
+   "max": 16.11
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 10.04,
-   "max": 10.04
+   "earned": 9.09,
+   "max": 9.09
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 7.82,
-   "max": 7.82
+   "earned": 7.08,
+   "max": 7.08
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 9.13,
-   "max": 9.13
+   "earned": 8.26,
+   "max": 8.26
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 13.23,
-   "max": 13.23
+   "earned": 11.98,
+   "max": 11.98
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 6.39,
-   "max": 6.39
+   "earned": 5.78,
+   "max": 5.78
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 6.39,
-   "max": 6.39
+   "earned": 15.28,
+   "max": 15.28
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 5.48,
-   "max": 5.48
+   "earned": 4.96,
+   "max": 4.96
   }
  },
  "checks": [
@@ -227,7 +227,7 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "new commercial tax+ins 1.05%/yr, nnn 85%; default rows min 1.05%; caps 6.5-8.0; NOI gain 1540.08 vs 1540.08",
+   "detail": "new commercial tax+ins 1.05%/yr, nnn 85%; default rows min 1.05%; caps 7.0-8.0; NOI gain 1540.08 vs 1540.08",
    "source": "",
    "disclosedOnly": false
   },
@@ -414,7 +414,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "peak DTI 27.1% at month 123 vs limit 43",
+   "detail": "peak DTI 41.2% at month 240 vs limit 43",
    "source": "",
    "disclosedOnly": false
   },
@@ -425,7 +425,7 @@
    "pts": 0.5,
    "earned": 0.5,
    "pass": true,
-   "detail": "ok; peak 7(a) outstanding $3005466 at month 53",
+   "detail": "ok; peak 7(a) outstanding $4661739 at month 147",
    "source": "S2,S3,S4,S5",
    "disclosedOnly": false
   },
@@ -762,11 +762,11 @@
   {
    "cat": "L8",
    "id": "L8.4",
-   "name": "Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M (115-135M at the 28-year plan end, 95-140M at 25 years) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative",
+   "name": "Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M (115-135M at the 28-year plan end, 80-140M at 25 years: the plan starts from zero owned assets and compounds) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative",
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "NW 25y $112.4M, 28y $124.5M; step ratios 1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 19; business growth 4",
+   "detail": "NW 25y $82.1M, 28y $124.9M; step ratios 1.24,1.26,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 23; business growth 4",
    "source": "",
    "disclosedOnly": false
   },
@@ -788,7 +788,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "0,0,0,2,4,5,9,28,31,53,53,62,64,79,84,103,106,117,123; verdict yes, lowest liquid cash $61561",
+   "detail": "4,17,39,43,52,65,80,89,101,115,115,129,129,147,147,168,172,191,196,212,218,235,240; verdict yes, lowest liquid cash $28099",
    "source": "",
    "disclosedOnly": false
   },
@@ -833,6 +833,83 @@
    "earned": 1,
    "pass": true,
    "detail": "0 / 30 disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.6",
+   "name": "Order rule: a planned asset is never bought before an asset listed above it (purchase months never decrease down the list among assets that are bought), checked on 150 random portfolios, each also shuffled and re-planned",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "0 violations ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.7",
+   "name": "A purchase happens only when the pool can pay: at the purchase month room + held cash >= the cash needed, and one month earlier it was NOT affordable unless your \"not before\" month or the asset above it held it back (150 random portfolios with a personal profile)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "0 violations in 778 pooled purchases ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.8",
+   "name": "Profit goes to the asset's own loan: with nothing left to buy, the loan balance every month equals an independent recursion where the whole cash flow after the payment is paid as extra principal (30 random single-asset cases)",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "0 / 30 disagree ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.9",
+   "name": "Your job money: take-home pay minus living costs, other debts and extra payments is split equally across the loans (after the profit goes to each loan), checked month by month on two assets against an independent recursion; with no job (no profile, or no jobs) nothing is split",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "0 balance mismatches ; no-job states split nothing: true",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.10",
+   "name": "Job money never takes your cash below the emergency cushion (and none moves while savings are below it): 60 random states, every month the split stays within the surplus and, when something moves, cash afterwards >= cushion",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "0 violations ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.11",
+   "name": "Nothing owned yet: the first purchase is paid from savings above the cash cushion plus the job money saved since, in the first month that sum covers its cash need (independent calculation, 40 random cases), and the cash line charges the same amount",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "0 / 40 disagree ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.12",
+   "name": "The default plan owns nothing: every asset is planned, the first is paid from savings and job money, every later one by the trust; with no job the plan cannot start; automatic payments on beat off",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "owned false first pooled false no-job unfunded 23 NW on/off 124.9/21.4",
    "source": "",
    "disclosedOnly": false
   },

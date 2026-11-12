@@ -384,10 +384,10 @@ chk('L8', 'L8.3', 'Hours check: weekly hours = job hours (while the job runs) + 
     const S = mk({}, hs.length ? hs : [A('house', 'cashh', { id: 'h', status: 'owned' })]); S.p = E.normalizePersonal({ operating: op, bizHours: bh, jobs: jh ? [{ id: 'j', kind: 'salary', gross: 70000, raise: 0, tax: 20, hours: jh, start: 0, end: null }] : [] }); const f = E.finance(S, E.plan(S)); const ref = jh + Math.min(op, nb) * bh; if (!near(f.series.hours[0], ref, 1e-9)) bad++; }
   return { pass: bad === 0, detail: bad + ' / 30 disagree' };
 });
-chk('L8', 'L8.4', 'Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M (115-135M at the 28-year plan end, 95-140M at 25 years) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative', 2, () => {
+chk('L8', 'L8.4', 'Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M (115-135M at the 28-year plan end, 80-140M at 25 years: the plan starts from zero owned assets and compounds) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative', 2, () => {
   const buy = seed.houses.filter((h) => h.status === 'planned' && h.type !== 'house').sort((a, b) => plS.purchase[a.id] - plS.purchase[b.id]), ratios = buy.slice(1).map((h, i) => h.price / buy[i].price);
   const f = E.finance(seed, plS), n25 = plS.at(300).nw, n28 = plS.at(336).nw, bg = [...new Set(seed.houses.filter((h) => h.type === 'business').map((h) => h.growth))];
-  const ok = n25 >= 95e6 && n25 <= 140e6 && n28 >= 115e6 && n28 <= 135e6 && ratios.every((x) => x >= 1.0 && x <= 1.4) && seed.p.capital.length === 0 && f.status === 'yes' && f.kpis.minLiquid >= 0 && seed.houses.filter((h) => h.type === 'house').every((h) => plS.V[h.id].cf >= 0) && seed.g.planYears === 28 && bg.every((x) => x <= 4.5);
+  const ok = n25 >= 80e6 && n25 <= 140e6 && n28 >= 115e6 && n28 <= 135e6 && ratios.every((x) => x >= 1.0 && x <= 1.4) && seed.p.capital.length === 0 && f.status === 'yes' && f.kpis.minLiquid >= 0 && seed.houses.filter((h) => h.type === 'house').every((h) => plS.V[h.id].cf >= 0) && seed.g.planYears === 28 && bg.every((x) => x <= 4.5);
   return { pass: ok, detail: 'NW 25y $' + (n25 / 1e6).toFixed(1) + 'M, 28y $' + (n28 / 1e6).toFixed(1) + 'M; step ratios ' + ratios.map((x) => x.toFixed(2)).join(',') + '; assets ' + seed.houses.length + '; business growth ' + bg };
 });
 chk('L8', 'L8.5', 'Sell / merge: sale proceeds = value x (1 - selling cost) - balance - liens - line draw; merge lift scales value and income by (1 + lift) from the merge month (random 20)', 1, () => {
@@ -426,6 +426,68 @@ chk('L9', 'L9.5', 'Stress test ("lasts"): the ~45% biggest earners fail (rent go
     const partial = cf - lost.slice(0, kk).reduce((a, x) => a + x, 0), all = -(ds + rows.reduce((a, x) => a + cost(x), 0)), burn = partial >= 0 ? all : partial; const months = burn >= -0.5 ? Infinity : cash / -burn;
     if (!near(got.burn, burn, 0.01) || (isFinite(months) ? !near(got.months, months, 1e-6 * Math.max(1, months)) : isFinite(got.months))) bad++; }
   return { pass: bad === 0, detail: bad + ' / 30 disagree' };
+});
+
+/* ---- new in the Bought / Planned rework: one clock, order rule, purchase test, automatic payments, job split, nothing owned yet ---- */
+const mkP = (g, p, houses) => E.normalize({ g: Object.assign({}, E.GDEF, { closing: 0, appr: 0 }, g || {}), p: Object.assign(E.samplePersonal(), { cash: 0, cashApy: 0, inflation: 0, living: 0, emergencyMonths: 0, housing: 0, portfolioTaxPct: 0, salesTaxPct: 0, jobs: [], planned: [], capital: [] }, p || {}), houses });
+const randPortfolio = (withP) => { const n = 4 + Math.floor(rnd() * 6), hs = []; for (let i = 0; i < n; i++) { const type = pick(['house', 'house', 'commercial', 'business']), lo = pick(E.loansFor(type)), own = i < 2 && rnd() < 0.7;
+  const o = { id: 'r' + i, status: own ? 'owned' : 'planned', price: U(80, 900) * 1000 * (type === 'house' ? 0.6 : 2.5), rent: U(900, 22000), tax: type === 'business' ? 0 : U(0, 500), ins: type === 'business' ? 0 : U(0, 300), buyIn: rnd() < 0.3 ? Math.round(U(0, 80)) : 0, paid: own ? Math.round(U(0, 60)) : 0, extra: rnd() < 0.3 ? Math.round(U(0, 800)) : 0, growth: pick([null, 3, 5]), loanId: lo.id };
+  hs.push(A(type, lo.id, o)); }
+  const jobs = [{ id: 'j1', name: 'j', gross: U(40, 220) * 1000, raise: pick([0, 3]), tax: 25, hours: 40, start: 0, end: rnd() < 0.3 ? Math.round(U(30, 200)) : null }];
+  return withP ? mkP({ otherDebt: Math.round(U(0, 600)) }, { cash: Math.round(U(0, 120)) * 1000, living: Math.round(U(1500, 5000)), emergencyMonths: pick([0, 3, 6]), jobs, cashApy: 2, inflation: 3 }, hs) : mk({}, hs); };
+chk('L9', 'L9.6', 'Order rule: a planned asset is never bought before an asset listed above it (purchase months never decrease down the list among assets that are bought), checked on 150 random portfolios, each also shuffled and re-planned', 1.5, () => {
+  let bad = 0, ex = ''; for (let k = 0; k < 150; k++) { const S = randPortfolio(k % 2 === 0); for (let r = 0; r < 3; r++) { if (r) S.houses = S.houses.map((h) => [h, rnd()]).sort((a, b) => a[1] - b[1]).map((x) => x[0]); const pl = E.plan(S); let prev = -1, skipped = pl.skipped;
+    for (const h of S.houses) { if (h.status === 'owned') continue; const m = pl.purchase[h.id]; if (!isFinite(m)) continue; if (m < prev) { bad++; ex = h.id + ' ' + m + ' < ' + prev; } prev = Math.max(prev, m); } } }
+  return { pass: bad === 0, detail: bad + ' violations ' + ex };
+});
+chk('L9', 'L9.7', 'A purchase happens only when the pool can pay: at the purchase month room + held cash >= the cash needed, and one month earlier it was NOT affordable unless your "not before" month or the asset above it held it back (150 random portfolios with a personal profile)', 2, () => {
+  let bad = 0, n = 0, ex = ''; for (let k = 0; k < 150; k++) { const S = randPortfolio(true), pl = E.plan(S); const planned = S.houses.filter((h) => h.status !== 'owned' && isFinite(pl.purchase[h.id]));
+    planned.forEach((h) => { const tr = pl.trust[h.id]; if (!tr.pooled) return; n++; const m = pl.purchase[h.id];
+      if (!(tr.room + tr.heldCash >= tr.need - 1e-3) || !near(tr.have, tr.room + tr.heldCash, 1e-6) || tr.ready > m || (!tr.held && tr.ready !== m)) { bad++; ex = 'at-purchase ' + h.id; return; }
+      if (tr.ready > 0) { const idx = S.houses.indexOf(h), above = S.houses.slice(0, idx).filter((q) => q.status !== 'owned' && isFinite(pl.purchase[q.id])), heldByAbove = above.some((q) => pl.purchase[q.id] >= tr.ready), p1 = pl.poolAt(tr.ready - 1);
+        if (!heldByAbove && p1.head + p1.cash >= tr.need - 1e-3) { bad++; ex = 'one month earlier was affordable ' + h.id + ' ready ' + tr.ready; } } }); }
+  return { pass: bad === 0 && n > 100, detail: bad + ' violations in ' + n + ' pooled purchases ' + ex };
+});
+chk('L9', 'L9.8', 'Profit goes to the asset\'s own loan: with nothing left to buy, the loan balance every month equals an independent recursion where the whole cash flow after the payment is paid as extra principal (30 random single-asset cases)', 1.5, () => {
+  let bad = 0, ex = ''; for (let k = 0; k < 30; k++) { const h = A('house', 'conv30', { id: 'a', status: 'owned', price: U(150, 500) * 1000, rate: U(4, 9), term: 360, paid: Math.round(U(0, 80)), rent: U(3500, 6000), tax: 100, ins: 50, hoa: 0, growth: 0, extra: pick([0, 200]) });
+    const S = mkP({ vac: 0, mgmt: 0, maint: 0, autoPay: true, planYears: 30 }, {}, [h]), pl = E.plan(S), P = E.payment(h), i = h.rate / 1200, noi = h.rent - 150, X = h.extra; let B = E.balToday(h);
+    for (let t = 0; t <= 60 && B > 0.005; t++) { if (!near(pl.series.debt[t], B, 0.05)) { bad++; ex = [t, pl.series.debt[t].toFixed(2), B.toFixed(2)].join(' '); break; } const cf = Math.max(0, noi - P - X); /* your own extra payment comes out of the profit first */ B = Math.max(0, B * (1 + i) - P - X - Math.min(cf, Math.max(0, B * (1 + i) - P - X))); } }
+  return { pass: bad === 0, detail: bad + ' / 30 disagree ' + ex };
+});
+chk('L9', 'L9.9', 'Your job money: take-home pay minus living costs, other debts and extra payments is split equally across the loans (after the profit goes to each loan), checked month by month on two assets against an independent recursion; with no job (no profile, or no jobs) nothing is split', 2, () => {
+  const mkA = (id, price) => A('house', 'conv30', { id, status: 'owned', price, rate: 6, term: 360, paid: 0, rent: 2600, tax: 100, ins: 50, growth: 0, extra: 0 });
+  const a = mkA('a', 200000), b = mkA('b', 300000), S = mkP({ vac: 0, mgmt: 0, maint: 0, autoPay: true, otherDebt: 200 }, { cash: 5000, living: 2500, jobs: [{ id: 'j', name: 'j', gross: 96000, raise: 0, tax: 25, hours: 40, start: 0, end: null }] }, [a, b]);
+  const pl = E.plan(S), surplus = 96000 * 0.75 / 12 - 2500 - 200; const Bs = { a: E.balToday(a), b: E.balToday(b) }; let bad = 0, ex = '';
+  for (let t = 0; t <= 100; t++) { for (const h of [a, b]) { if (!near(pl.balAt(h.id, t), Bs[h.id], 0.05)) { bad++; ex = [h.id, t, pl.balAt(h.id, t).toFixed(2), Bs[h.id].toFixed(2)].join(' '); } }
+    const live = [a, b].filter((h) => Bs[h.id] > 0.005); if (!live.length) break; const pre = {}; live.forEach((h) => { const P = E.payment(h), i = h.rate / 1200; pre[h.id] = Math.max(0, Bs[h.id] * (1 + i) - P); });
+    /* the pooled profit (every asset's income minus its payment) goes to the loans in proportion to what each earned; assets without a loan still earn */
+    const prof = {}; let pool = 0; [a, b].forEach((h) => { const own = Bs[h.id] > 0.005 ? Math.max(0, (h.rent - 150) - E.payment(h)) : h.rent - 150; if (Bs[h.id] > 0.005) prof[h.id] = own; pool += own; });
+    const split = (amt, w) => { let ids = Object.keys(w).filter((id) => pre[id] > 0.005); for (let g2 = 0; g2 < 6 && amt > 0.005 && ids.length; g2++) { const W = ids.reduce((x, id) => x + w[id], 0); let used = 0; ids.forEach((id) => { const give = Math.min(pre[id], amt * w[id] / W); pre[id] -= give; used += give; }); amt -= used; ids = ids.filter((id) => pre[id] > 0.005); } return amt; };
+    split(pool, prof); const wj = {}; live.forEach((h) => { wj[h.id] = 1; }); split(surplus, wj);
+    live.forEach((h) => { Bs[h.id] = Math.max(0, pre[h.id]); }); }
+  const none = mkP({ autoPay: true }, { jobs: [] }, [mkA('a', 200000)]), plN = E.plan(none), noP = mk({ autoPay: true }, [mkA('a', 200000)]), plNP = E.plan(noP);
+  const zero = (q) => q.jobs.used.every((x) => x === 0) && q.jobs.surplus.every((x) => x === 0);
+  return { pass: bad === 0 && zero(plN) && zero(plNP), detail: bad + ' balance mismatches ' + ex + '; no-job states split nothing: ' + (zero(plN) && zero(plNP)) };
+});
+chk('L9', 'L9.10', 'Job money never takes your cash below the emergency cushion (and none moves while savings are below it): 60 random states, every month the split stays within the surplus and, when something moves, cash afterwards >= cushion', 1.5, () => {
+  let bad = 0, ex = ''; for (let k = 0; k < 60; k++) { const S = randPortfolio(true); S.p.planned = []; S.p.capital = []; S.houses.forEach((h) => { h.exit = 'hold'; }); const pl = E.plan(S), p = S.p, J = pl.jobs;
+    for (let t = 0; t <= Math.min(pl.T, 300); t++) { if (J.used[t] > J.surplus[t] + 1e-6) { bad++; ex = 'used>surplus ' + t; break; } const rsv = p.emergencyMonths * (p.living * Math.pow(1 + p.inflation / 100, t / 12) + S.g.otherDebt); const out = pl.series.outside[t] - (t ? pl.series.outside[t - 1] : 0);
+      if (J.used[t] > 0.5 && out < 0.5 && J.liquid[t] + pl.series.cash[t] < rsv - 2) { bad++; ex = 'below cushion at ' + t + ' ' + Math.round(J.liquid[t] + pl.series.cash[t]) + ' < ' + Math.round(rsv); break; } } }
+  return { pass: bad === 0, detail: bad + ' violations ' + ex };
+});
+chk('L9', 'L9.11', 'Nothing owned yet: the first purchase is paid from savings above the cash cushion plus the job money saved since, in the first month that sum covers its cash need (independent calculation, 40 random cases), and the cash line charges the same amount', 2, () => {
+  let bad = 0, ex = ''; for (let k = 0; k < 40; k++) { const price = Math.round(U(90, 260)) * 1000, h = A('house', 'conv30', { id: 'f', price, rent: Math.round(price * 0.012), tax: 100, ins: 50, growth: 3, buyIn: 0 }), cash = Math.round(U(20, 70)) * 1000, em = pick([0, 3, 6]), liv = Math.round(U(1500, 3500)), gross = Math.round(U(50, 120)) * 1000;
+    const S = mkP({ closing: 3, otherDebt: 0 }, { cash, living: liv, emergencyMonths: em, jobs: [{ id: 'j', name: 'j', gross, raise: 0, tax: 20, hours: 40, start: 0, end: null }] }, [h]), pl = E.plan(S), need = E.needFor(S, h), sur = gross * 0.8 / 12 - liv;
+    let want = Infinity; for (let t = 0; t < 400; t++) { if (cash + Math.max(0, sur) * t - em * liv >= need - 1e-6) { want = t; break; } } if (sur <= 0 && cash - em * liv < need) want = Infinity;
+    const got = pl.purchase.f; if (got !== want) { bad++; ex = [price, cash, em, liv, gross, got, want].join(' '); continue; }
+    if (isFinite(got)) { const f = E.finance(S, pl); if (!near(f.series.outsideCall[got], need, 0.01) || pl.trust.f.pooled) { bad++; ex = 'cash line ' + got; } } }
+  return { pass: bad === 0, detail: bad + ' / 40 disagree ' + ex };
+});
+chk('L9', 'L9.12', 'The default plan owns nothing: every asset is planned, the first is paid from savings and job money, every later one by the trust; with no job the plan cannot start; automatic payments on beat off', 1, () => {
+  const none = seed.houses.every((h) => h.status === 'planned'), first = seed.houses[0], tr = plS.trust[first.id], second = plS.trust[seed.houses[1].id];
+  const S2 = JSON.parse(JSON.stringify(seed)); S2.p.jobs = []; const noJob = E.plan(S2);
+  const S3 = JSON.parse(JSON.stringify(seed)); S3.g.autoPay = false; const off = E.plan(S3);
+  return { pass: none && !tr.pooled && second.pooled && tr.savings > 0 && noJob.unfunded.length === seed.houses.length && plS.horizon.nw > off.horizon.nw, detail: 'owned ' + !none + ' first pooled ' + tr.pooled + ' no-job unfunded ' + noJob.unfunded.length + ' NW on/off ' + (plS.horizon.nw / 1e6).toFixed(1) + '/' + (off.horizon.nw / 1e6).toFixed(1) };
 });
 
 /* ====================== L10 disclosure, labels, units, glossary ====================== */
