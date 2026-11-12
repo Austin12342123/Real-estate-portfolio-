@@ -490,6 +490,21 @@ exports.run = async function run(X) {
     await page.setViewportSize({ width: 390, height: 844 }); return P;
   });
 
+  await jcheck('J28', 'Remove-all: a Remove button sits next to Finances and Settings on the Planned page only; it asks first, files the portfolio in Saved, removes every planned asset (bought ones stay), Undo restores; the Saved page has the same action; nothing overflows at 320', 6, 'Planned header, Saved page', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 320, height: 844 }); const S = withV(E.seedPlan()); await load(S, ''); await page.waitForSelector('[data-testid=clear-plan-btn]');
+    const pos = await page.evaluate(() => { const r = (q) => { const e = document.querySelector(q); return e && e.getBoundingClientRect(); }, a = r('[data-testid=clear-plan-btn]'), f = r('[data-testid=finances-link]'), g = r('[data-testid=settings-link]'); return a && f && g ? { before: a.right <= f.left + 1, rightIn: g.right <= innerWidth + 1, h: a.height, ov: document.documentElement.scrollWidth > innerWidth } : null; });
+    P.t(pos && pos.before && pos.rightIn && pos.h >= 44 && !pos.ov, 'Remove sits before Finances and Settings, 44px tall, inside the screen at 320', 2, JSON.stringify(pos));
+    await page.click('[data-testid=tab-real]'); P.t((await page.locator('[data-testid=clear-plan-btn]').count()) === 0, 'no Remove button on the Real page', 1, '');
+    await page.click('[data-testid=tab-planned]'); await page.click('[data-testid=clear-plan-btn]');
+    P.t((await page.locator('[data-testid=clear-plan-confirm]').count()) === 1 && (await store()).houses.length === S.houses.length, 'tapping Remove only asks; nothing is removed yet', 1, '');
+    await page.click('[data-testid=clear-plan-confirm]'); const st = await store();
+    P.t(st.houses.filter((h) => h.status !== 'owned').length === 0, 'after confirming, no planned asset is left', 1, String(st.houses.length));
+    const sv = await page.evaluate(() => JSON.parse(localStorage.getItem('rep-v4-saved') || '[]')); P.t(sv.length >= 1 && /before removing planned/.test(sv[0].name) && sv[0].state.houses.length === S.houses.length, 'the earlier portfolio is filed in Saved', 1, JSON.stringify(sv.map((x) => x.name)));
+    await page.click('[data-testid=undo-banner] [data-undo]'); P.t((await store()).houses.length === S.houses.length, 'Undo brings every asset back', 1, String((await store()).houses.length));
+    await page.click('[data-testid=tab-saved]'); P.t((await page.locator('[data-testid=saved-clear-plan]').count()) === 1, 'the Saved page has the same "Remove every planned asset" action', 1, '');
+    await page.setViewportSize({ width: 390, height: 844 }); return P;
+  });
+
   await ctx.close();
   const earned = checks.reduce((a, c) => a + c.earned, 0), max = checks.reduce((a, c) => a + c.points, 0);
   return { earned: Math.round(earned / max * 10000) / 100, max: 100, checks: checks.map((c) => Object.assign({}, c, { points: Math.round(c.points / max * 10000) / 100, earned: Math.round(c.earned / max * 10000) / 100 })) };
