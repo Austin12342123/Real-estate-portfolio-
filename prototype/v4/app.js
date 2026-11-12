@@ -109,7 +109,8 @@
   /* ---------- reusable bits ---------- */
   const lblOf = (label, info) => { const ib = infoBtn(info), m = /^([\s\S]*\S)\s+(\S+)$/.exec(label); return m ? m[1] + ' <span class="nw">' + m[2] + ib + '</span>' : '<span class="nw">' + label + ib + '</span>'; }; /* the last word and its (i) never split across lines */
   const field = (label, p, val, o = {}) => `<label class="f ${o.calc ? 'calc' : ''}"><span class="lb">${lblOf(label, o.info || GL.LABEL[label])}${o.calc ? ' <i class="auto" title="calculated from your other numbers — tap to override">auto</i>' : ''}${o.date ? `<small class="dh" data-testid="date-hint" data-dh="${p}" data-m="${isFinite(+val) && String(val) !== '' ? Math.round(+val) : ''}">${isFinite(+val) && String(val) !== '' ? (+val <= 0 ? 'today (' + dt(0) + ')' : 'on ' + dt(+val)) : 'no date yet'}</small>` : ''}</span><span class="iw">${o.pre ? `<em>${o.pre}</em>` : ''}<input inputmode="${o.ro ? 'decimal' : 'text'}" ${o.ro ? '' : `data-num="1" data-pre="${esc(o.pre || '')}" data-suf="${esc(o.suf || '')}" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false"`} data-p="${p}" data-k="${p}" aria-label="${esc(label)}" ${o.ro ? 'readonly tabindex="-1"' : ''} ${o.ph ? 'placeholder="' + esc(o.ph) + '"' : ''} value="${val}">${o.suf ? `<em>${o.suf}</em>` : ''}</span></label>`;
-  const kpi = (id, label, val, sub, cls, sm) => `<div class="kpi ${sm ? 'sm' : ''}"><small>${label}${infoBtn(GL.LABEL[label])}</small><b class="${cls || ''}" data-testid="${id}" data-k="${id}">${val}</b>${sub ? `<span class="sub">${sub}</span>` : ''}</div>`;
+  const kpiLbl = (label, ib) => { const m = /^([\s\S]*\S)\s+(\S+)$/.exec(label); return m ? m[1] + ' <span class="nw">' + m[2] + ib + '</span>' : '<span class="nw">' + label + ib + '</span>'; }; /* the last word and its (i) never split across lines */
+  const kpi = (id, label, val, sub, cls, sm) => `<div class="kpi ${sm ? 'sm' : ''}"><small>${kpiLbl(label, infoBtn(GL.LABEL[label]))}</small><b class="${cls || ''}" data-testid="${id}" data-k="${id}">${val}</b>${sub ? `<span class="sub">${sub}</span>` : ''}</div>`;
 
   const CDEF = {};
   const colSec = (id, title, sum, inner, defCollapsed) => { CDEF[id] = !!defCollapsed; const open = !(UI.coll[id] === undefined ? !!defCollapsed : UI.coll[id]); return `<div class="sec cs" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}"><span>${title}</span><span class="cx">${open ? 'Hide ▾' : esc(sum) + ' ▸'}</span></div>${open ? inner : ''}`; };
@@ -309,7 +310,7 @@
     const c3 = (label, a, b, c, f, cls) => `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td data-k="c-${label}-b">${f(b)}</td><td class="${cls || ''}" data-k="c-${label}-c"><b>${f(c)}</b></td></tr>`;
     const restSn = pl.snap.filter((x) => !ownSn.includes(x)), bt = (tp) => restSn.filter((x) => x.type === tp).reduce((a, x) => ({ n: a.n + 1, value: a.value + x.value, equity: a.equity + x.equity, cf: a.cf + x.cf }), { n: 0, value: 0, equity: 0, cf: 0 });
     const bRow = (label, o, cls) => `<tr class="${cls || ''}"><td>${label}</td><td>${$c(o.value)}</td><td>${$c(o.equity)}</td><td class="${o.cf < 0 ? 'bad' : ''}">${$cs(o.cf)}</td></tr>`;
-    const breakdown = `<table class="cmp" data-testid="breakdown"><thead><tr><th></th><th>Value</th><th>Equity${infoBtn('equity')}</th><th>Cash flow/mo</th></tr></thead><tbody>
+    const breakdown = `<table class="cmp" data-testid="breakdown"><thead><tr><th></th><th>Value</th><th><span class="nw">Equity${infoBtn('equity')}</span></th><th><span class="nw">Cash flow/mo</span></th></tr></thead><tbody>
       ${['house', 'commercial', 'business'].map((tp) => { const o = bt(tp); return o.n ? bRow(TPL[tp] + ' (' + o.n + ')', o) : ''; }).join('')}
       ${sn.cash > 0.5 ? bRow('Trust cash', { value: sn.cash, equity: sn.cash, cf: 0 }) : ''}
       ${bRow('Portfolio', { value: restSn.reduce((a, x) => a + x.value, 0), equity: sn.nw, cf: sn.cf }, 'tot')}</tbody></table>`;
@@ -346,7 +347,7 @@
       ${kpi('kpi-monthly', 'Total monthly payments', $f(sn.monthly), sn.extra > 0.5 ? `incl. ${$f(sn.extra)} extra` : 'sum of the rows below')}
       ${kpi('kpi-cashflow', 'Cash flow / mo', $s(sn.cf), sn.extra > 0.5 ? `${$s(sn.cfx)} after extra` : 'before tax · at plan end', sn.cf < 0 ? 'bad' : '', 1)}
       ${kpi('kpi-dscr', 'DSCR', sn.ds > 0.5 ? r(sn.dscr, 2) : '—', sn.ds <= 0.5 ? 'no loan left' : sn.dscr >= 1.25 ? '1.25+ is healthy' : sn.dscr >= 1 ? 'thin (1.25+ is healthy)' : 'below 1.0', sn.ds > 0.5 && sn.dscr < 1 ? 'bad' : '', 1)}</div>
-      ${(() => { const pp = S.p || {}, inf = +pp.inflation || 0, real = sn.nw / Math.pow(1 + inf / 100, yrs), open = !!UI.coll.tgt; return `<div class="tgt" data-testid="target-years"><button type="button" class="linkbtn leftbtn tgtb" data-coll="tgt" aria-expanded="${open}" data-testid="target-toggle">By year ${yrs}: ${$f(real)} in today's dollars ${open ? '▾' : '▸'}</button>${open ? `<div class="tgtf">${field('Years to reach this net worth', 'g.planYears', g.planYears, { info: 'projection' })}${S.p ? field('Inflation / year', 'p.inflation', r(pp.inflation, 2), { suf: '%', info: 'inflation' }) : ''}</div><p class="note" data-testid="real-nw">${$f(sn.nw)} in ${yrs} year${+yrs === 1 ? '' : 's'} at ${r(inf, 1)}% inflation buys what ${$f(real)} buys today. Change the years to move the target date.</p>` : ''}</div>`; })()}
+      ${(() => { const pp = S.p || {}, inf = +pp.inflation || 0, real = sn.nw / Math.pow(1 + inf / 100, yrs), open = !!UI.coll.tgt; return `<div class="tgt" data-testid="target-years"><button type="button" class="linkbtn leftbtn tgtb" data-coll="tgt" aria-expanded="${open}" data-testid="target-toggle">By year ${yrs}: ${$f(real)} in today's <span class="nw">dollars ${open ? '▾' : '▸'}</span></button>${open ? `<div class="tgtf">${field('Years to reach this net worth', 'g.planYears', g.planYears, { info: 'projection' })}${S.p ? field('Inflation / year', 'p.inflation', r(pp.inflation, 2), { suf: '%', info: 'inflation' }) : ''}</div><p class="note" data-testid="real-nw">${$f(sn.nw)} in ${yrs} year${+yrs === 1 ? '' : 's'} at ${r(inf, 1)}% inflation buys what ${$f(real)} buys today. Change the years to move the target date.</p>` : ''}</div>`; })()}
             <p class="plan-line${extraCash > 0.5 ? ' warn' : ''}" data-testid="plan-headline">${headline}</p>
       ${fin ? `<div class="vrow big ${affS}" data-go="finances" data-testid="afford-line" role="link"><span class="vq"><b>Can I afford this?</b><span class="note">${esc(affS !== fin.status ? 'Lenders may decline a loan around ' + mond(pl.worst.month) + '.' : fin.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, ''))}</span></span><span class="vgo"><span class="vchip ${affS}" data-testid="afford-chip" data-lvl="${affS === 'yes' ? 'ok' : affS === 'tight' ? 'warn' : 'bad'}">${VL[affS]}</span> ›</span></div>` : ''}</section>
     <section class="card" id="ledger" style="margin-top:10px" data-testid="ledger"><div class="row totrow" data-testid="ledger-total"><div class="r1"><span class="nm"><span class="addr">Portfolio total</span><div class="pay">${$f(sn.monthly)}/mo payments<br><span data-testid="total-extra" data-k="tot">${$f(totNow)}/mo extra now${totLater > 0.5 ? ' · +' + $f(totLater) + ' later' : ''}</span></div></span><span class="cfl ${sn.cf < 0 ? 'bad' : 'ok'}"><b data-testid="total-cf">${$s(sn.cf)}/mo</b><small>cash flow</small></span></div></div></section>
@@ -755,6 +756,9 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   }
   /* a box where blank is a real answer (no end date, estimate the tax): everywhere else a blank box is not a value */
   const EMPTYOK = (p) => /^j\.[^.]+\.(end|tax)$/.test(p) || /^p\.(portfolioTaxPct|salesTaxPct)$/.test(p) || /^h\.[^.]+\.(refiRate|refiTermY)$/.test(p);
+  /* whole-month boxes (dates counted in months from today, months already paid, ...): rounded to a whole number and capped at 600 months (or the plan length + 10 years when that is longer), with a 'Rounded / Capped' note */
+  const MONTHSBOX = (p) => /^h\.[^.]+\.(buyIn|wait|paid|mat|payoff|capexMonths|exitMonth)$/.test(p) || /^[oc]\.[^.]+\.month$/.test(p) || /^j\.[^.]+\.(end|start)$/.test(p);
+  const monthsCap = () => Math.max(600, Math.round((S.g.planYears || 20) * 12) + 120);
   let pendT = null;
   const clearHintDom = () => { clearTimeout(hintTimer); calcHint = null; document.querySelectorAll('#app .chint').forEach((n) => n.remove()); };
   /* what a box shows when it is at rest: the number without %, $ or typed math; thousands grouped in dollar-style boxes */
@@ -765,14 +769,13 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (c.kind === 'plain') ok = setField(p, el.value); else if (c.ok) ok = setField(p, String(c.v));
     if (ok) { save(); if (!quiet) render(); } return ok; };
   app.addEventListener('input', (e) => { const d = e.target.dataset; if (d.savedName !== undefined) { saveName = e.target.value; return; } if (d.renamedName !== undefined) { renameName = e.target.value; return; } const p = d.p; if (!p) return;
-    if (d.num !== undefined) { /* a number box: the answer to complete math shows as a hint ('= 1,950'); half-typed or invalid math (650*, 5/0, 5%) changes nothing at all. A single typed key is only a possible prefix of something longer ('5' of '5/0'), so it lands after a short pause or when you leave the box; a pasted / complete entry lands at once. */
+    if (d.num !== undefined) { /* a number box: the answer to complete math shows as a hint ('= 1,950'); half-typed or invalid math (650*, 5/0, 5%) changes nothing at all. The value itself lands only on blur / Enter. */
       const c = calcEval(e.target.value), bd = boxBad(e.target, c); clearTimeout(hintTimer); clearTimeout(pendT);
       if (bd) { calcHint = { p, text: bd.live, bad: true }; placeHint(); return; }
       if (c.kind !== 'plain' && !c.ok) { calcHint = { p, text: 'Check the math', bad: true }; placeHint(); return; }
       calcHint = c.kind === 'plain' ? null : { p, text: '= ' + c.v.toLocaleString('en-US', { maximumFractionDigits: 4 }) };
-      const keyed = /^(insertText|deleteContent|deleteWord|deleteByCut)/.test(e.inputType || '') && (e.inputType.indexOf('delete') === 0 || (e.data || '').length <= 1);
-      if (keyed) { placeHint(); const el = e.target; pendT = setTimeout(() => { if (document.activeElement === el && el.isConnected) liveCommit(el); }, 350); return; }
-      liveCommit(e.target); placeHint(); return; }
+      const dh = e.target.closest('label') && e.target.closest('label').querySelector('.dh'); if (dh) { const tv = boxNum(e.target, c); if (isFinite(tv) && String(e.target.value).trim() !== '') { const mv = Math.min(Math.round(tv), monthsCap()); dh.textContent = mv <= 0 ? 'today (' + dt(0) + ')' : 'on ' + dt(mv); } } /* the date under a months box follows what you type (display only) */
+      placeHint(); return; } /* nothing is committed while you type: the value lands when you leave the box or press Enter, so a half-typed prefix ('5' of '5/0') can never become the live number */
     if (setField(p, e.target.value)) { save(); render(); } });
   /* section headers are role=button divs, so Enter and Space must open them like a real button */
   app.addEventListener('keydown', (e) => { const cs = e.target.closest && e.target.closest('[data-coll][role=button]'); if (cs && cs === e.target && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); cs.click(); } });
@@ -791,8 +794,11 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       if (!setField(p, orig) && String(orig).trim() === '') { /* nothing was stored as text: leave the stored value alone */ } save();
       el.value = orig; showNote(p, fix + ' ' + (String(orig).trim() === '' ? 'blank' : (el.dataset.pre || '') + orig + (el.dataset.suf || '')));
       if (nxtP) setTimeout(render, 0); else if (nxt) deferRender(); else render(); return; }
+    let mnote = null, n2 = n;
+    if (!blank && MONTHSBOX(p) && isFinite(n)) { const cp = monthsCap(), rn = Math.round(n); n2 = Math.min(cp, rn); if (n2 > cp) n2 = cp; mnote = n > cp ? 'Capped at ' + cp + ' months' : rn !== n ? 'Rounded to ' + rn + ' months' : null; if (n2 !== n) { el.value = String(n2); } }
     const had = !!calcHint || !!document.querySelector('#app .chint'); clearHintDom();
-    const changed = liveCommit(el, true), txt = blank ? '' : fmtBox(el, n, editGood && editGood.p === p ? editGood.text : '');
+    const changed = liveCommit(el, true), txt = blank ? '' : fmtBox(el, n2, editGood && editGood.p === p ? editGood.text : '');
+    if (mnote) showNote(p, mnote);
     if (el.value !== txt) el.value = txt;
     if (nxtP) { if (changed || had) setTimeout(render, 0); } else if (nxt) { if (changed) deferRender(); } else if (changed || had) render(); });
   app.addEventListener('focusout', (e) => { if (e.target.dataset && e.target.dataset.p && e.target.tagName === 'INPUT' && !e.relatedTarget) setTimeout(() => { const a = document.activeElement; if (!(a && a.dataset && (a.dataset.p || a.dataset.sel))) render(); }, 0); });

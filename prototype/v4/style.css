@@ -401,3 +401,26 @@ table.cmp[data-testid=breakdown] th .info{margin-left:2px}
 .row .addr{-webkit-line-clamp:3}
 .fulladdr{margin:-2px 4px 8px;font-size:13px;color:var(--mut);overflow-wrap:anywhere}
 .chkok,.chkflag{margin-top:6px;line-height:1.3}.chkh+.chkok,.chkh+.chkflag{padding-right:2px}
+
+/* ---- review round 3: tap targets, breakdown header, glued last words ---- */
+.nw{white-space:nowrap}
+/* breakdown header: label + (i) stay on one line, right-aligned over the numbers; 'Cash flow/mo' never wraps */
+table.cmp[data-testid=breakdown] th{overflow:visible}
+table.cmp[data-testid=breakdown] th .nw{display:inline-flex;align-items:center;justify-content:flex-end;white-space:nowrap}
+table.cmp[data-testid=breakdown] th .info{margin:-13px -12px -13px -10px}
+table.cmp[data-testid=breakdown] th{vertical-align:middle}
+@media (max-width:359px){
+  table.cmp[data-testid=breakdown] th:first-child,table.cmp[data-testid=breakdown] td:first-child{width:25%!important}
+  table.cmp[data-testid=breakdown] th:nth-child(2),table.cmp[data-testid=breakdown] td:nth-child(2){width:21.5%!important}
+  table.cmp[data-testid=breakdown] th:nth-child(3),table.cmp[data-testid=breakdown] td:nth-child(3){width:24%!important}
+  table.cmp[data-testid=breakdown] th:nth-child(4),table.cmp[data-testid=breakdown] td:nth-child(4){width:29.5%!important}
+  table.cmp[data-testid=breakdown] th:not(:first-child){font-size:11px;padding-left:2px}
+}
+/* the 'edit ›' link on a row is a 44px-tall tap target: the address box gets 15px of padding (cancelled by an equal negative margin, so rows keep their height) and the link grows a 44px hit area into it */
+.row .addr{padding:15px 8px 15px 0;margin:-15px -8px -15px 0}
+.row .addr .ed{position:relative;z-index:1;display:inline-block;padding:15px 8px;margin:-15px -8px -15px 0;line-height:15px;box-sizing:content-box}
+/* 'How the numbers are built' and the other plain summaries */
+details>summary{min-height:44px;display:flex;align-items:center}
+details[data-testid=model-notes]{padding-top:0!important;padding-bottom:0!important}
+details[data-testid=model-notes][open]{padding-bottom:10px!important}
+.tgtb{white-space:normal;text-align:left}

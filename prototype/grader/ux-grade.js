@@ -70,7 +70,7 @@ exports.run = async function run(X) {
     const S = withV(E.seedPlan()); await load(S, '#house-maple'); await openAllColl(); const rentSel = '[data-p="h.maple.rent"]';
     const rent = async () => (await store()).houses.find((h) => h.id === 'maple').rent, val = () => page.inputValue(rentSel);
     const cases = [['650*3', 1950], ['1,200+450', 1650], ['(2000-300)/2', 850], ['650x3', 1950], ['650×3', 1950], ['$1,200', 1200], ['2000-300', 1700], ['1.5*1000', 1500], ['-5+1005', 1000], ['650*(2+1)', 1950]];
-    for (const [t, want] of cases) { await typeIn(rentSel, t); await page.waitForTimeout(60); const live = await rent(); const hint = await page.locator('[data-testid=calc-hint]').count() ? await page.locator('[data-testid=calc-hint]').first().textContent() : ''; await blur(); P.t(live === want && num(await val()) === want, `"${t}" -> ${want} in state while typing and in the box after leaving`, 1, `state ${live}, box ${await val()}, hint ${hint}`); }
+    for (const [t, want] of cases) { const prior = await rent(); await typeIn(rentSel, t); await page.waitForTimeout(500); const live = await rent(); const hint = await page.locator('[data-testid=calc-hint]').count() ? await page.locator('[data-testid=calc-hint]').first().textContent() : ''; await blur(); P.t(live === prior, `"${t}": nothing is committed while the box is being edited (state still ${prior} after a 500 ms pause)`, 0.5, `state ${live}`); P.t((await rent()) === want && num(await val()) === want, `"${t}" -> ${want} in state after leaving the box and in the box`, 1, `state ${await rent()}, box ${await val()}, hint ${hint}`); }
     await typeIn(rentSel, '650*3'); await page.waitForTimeout(60); const h1 = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => ''); P.t(/= 1,950/.test(h1), 'a live "= 1,950" hint shows while the expression is typed', 1, h1); await blur();
     /* where it shows up */
     const Sx = E.normalize(clone(await store())), pl = E.plan(Sx), v = pl.V.maple;
@@ -82,11 +82,11 @@ exports.run = async function run(X) {
     await page.goto(base() + '/index.html?j=' + seq++ + '#house-maple'); await page.waitForSelector('#app > *'); const before = await rent();
     for (const bad of ['650*', '5/0', '(2+3', 'abc', '650**3', '1/(2-2)', '12 34x']) { await typeIn(rentSel, bad); await page.waitForTimeout(60); const after = await rent(); const hint = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => ''); const aria = await page.locator('[data-testid=calc-hint]').first().getAttribute('aria-live').catch(() => ''); await blur(); P.t(after === before && num(await val()) === before && /Check the math/.test(hint) && aria === 'polite', `invalid "${bad}": state unchanged (${before}), "Check the math" shown (aria-live), box restored`, 1, `${after} / ${await val()} / ${hint}`); }
     /* typed one key at a time: a half-typed expression keeps the last good value, the finished one lands */
-    await typeIn(rentSel, '650*3', { slow: true }); await page.waitForTimeout(80); P.t((await rent()) === 1950, 'typing 650*3 key by key ends at 1950', 1, String(await rent())); await blur();
+    await typeIn(rentSel, '650*3', { slow: true }); await page.waitForTimeout(80); await blur(); P.t((await rent()) === 1950, 'typing 650*3 key by key ends at 1950 once you leave the box', 1, String(await rent()));
     /* percent and plain numbers keep working */
     await page.goto(base() + '/index.html?j=' + seq++ + '#assumptions'); await page.waitForSelector('#app > *'); await openAllColl();
     await typeIn('[data-p="g.vac"]', '9%'); await blur(); P.t((await store()).g.vac === 9, 'a percent box accepts 9% as 9', 1, ''); await typeIn('[data-p="g.vac"]', '14/2'); await blur(); P.t((await store()).g.vac === 7, 'a percent box accepts 14/2 as 7', 1, '');
-    await page.goto(base() + '/index.html?j=' + seq++); await page.waitForSelector('#app > *'); await page.click('[data-row=maple] [data-testid=row-extra-toggle]'); await page.waitForTimeout(80); await typeIn('[data-testid=extra-input]', '300+200'); await page.waitForTimeout(60); P.t((await store()).houses.find((h) => h.id === 'maple').extra === 500, 'the extra-payment box accepts 300+200', 1, ''); await blur();
+    await page.goto(base() + '/index.html?j=' + seq++); await page.waitForSelector('#app > *'); await page.click('[data-row=maple] [data-testid=row-extra-toggle]'); await page.waitForTimeout(80); await typeIn('[data-testid=extra-input]', '300+200'); await page.waitForTimeout(60); await blur(); P.t((await store()).houses.find((h) => h.id === 'maple').extra === 500, 'the extra-payment box accepts 300+200', 1, '');
     P.t((await page.locator('[data-testid=extra-input]').count()) <= 1, 'no layout/state side effects (single extra box)', 0.5, '');
     const inp = await page.evaluate(() => [...document.querySelectorAll('#app input[data-num]')].map((i) => i.getAttribute('inputmode')));
     await page.goto(base() + '/index.html?j=' + seq++ + '#house-maple'); await page.waitForSelector('#app > *');
@@ -358,7 +358,7 @@ exports.run = async function run(X) {
       const sep = [...document.querySelectorAll('[data-testid=plan-verdict]')].filter((c) => c.closest('.locline')).map((c) => (c.parentElement.textContent.match(/^\s*(?:Possible, tight|Possible|Not possible)\s*(.)/) || [])[1]);
       const lines = (n) => { const r = document.createRange(); r.selectNodeContents(n); return new Set([...r.getClientRects()].map((q) => Math.round(q.top))).size; };
       const dates = [...document.querySelectorAll('.row .nb')].filter((n) => /^[A-Z][a-z]{2} \d{4}$/.test(n.textContent)).map((n) => lines(n));
-      const eds = [...document.querySelectorAll('.row .addr')].map((a) => { const e = a.querySelector('.ed'), nb = a.querySelector('.nb'); if (!e || !nb) return null; return Math.abs(e.getBoundingClientRect().top - nb.getBoundingClientRect().top) < 8; }).filter((x) => x !== null);
+      const eds = [...document.querySelectorAll('.row .addr')].map((a) => { const e = a.querySelector('.ed'), nb = a.querySelector('.nb'); if (!e || !nb) return null; return Math.abs(e.getBoundingClientRect().top + e.getBoundingClientRect().height / 2 - nb.getBoundingClientRect().top - nb.getBoundingClientRect().height / 2) < 8; }).filter((x) => x !== null);
       return { sep, dates, eds, n: document.querySelectorAll('.row .addr').length };
     });
     P.t(g.sep.length >= 5 && g.sep.every((c) => c === '·'), 'the chip is followed by "·" in every planned row', 2, JSON.stringify(g.sep.slice(0, 6)));
@@ -391,7 +391,7 @@ exports.run = async function run(X) {
     await page.evaluate(() => { for (let i = 0; i < 20; i++) { const b = document.querySelector('#app [aria-expanded=false][data-coll],#app [data-testid^=cat-header][aria-expanded=false]'); if (!b) break; b.click(); } }); await page.waitForTimeout(100);
     const g = await page.evaluate(() => { const t = document.querySelector('[data-testid=breakdown]'), o = { gaps: [], over: 0 }; if (!t) return o; t.querySelectorAll('tr').forEach((tr) => { const cs = [...tr.children].slice(1); const rs = cs.map((c) => { const r = document.createRange(); r.selectNodeContents(c); return [c.getBoundingClientRect(), r.getBoundingClientRect()]; }); rs.forEach(([cb, tb], i) => { if (tb.width > cb.width + 0.5) o.over++; if (i > 0 && tb.width > 0) { const pt = rs[i - 1][1]; if (pt.width > 0) o.gaps.push(Math.round(tb.left - pt.right)); } }); }); return o; });
     P.t(g.over === 0 && g.gaps.length > 0 && Math.min(...g.gaps) >= 4, 'breakdown: no cell overflows and at least 4px between neighbouring values at 320', 3, JSON.stringify(g));
-    const row = await page.evaluate(() => { const a = [...document.querySelectorAll('.row .addr')].find((x) => /Siena/.test(x.textContent)); if (!a) return null; return { txt: a.textContent, ell: a.scrollHeight > a.clientHeight + 1, ed: !!a.querySelector('.ed') && Math.abs(a.querySelector('.ed').getBoundingClientRect().top - a.querySelector('.nb').getBoundingClientRect().top) < 8 }; });
+    const row = await page.evaluate(() => { const a = [...document.querySelectorAll('.row .addr')].find((x) => /Siena/.test(x.textContent)); if (!a) return null; return { txt: a.textContent, ell: a.scrollHeight > a.clientHeight + 1, ed: !!a.querySelector('.ed') && Math.abs(a.querySelector('.ed').getBoundingClientRect().top + a.querySelector('.ed').getBoundingClientRect().height / 2 - a.querySelector('.nb').getBoundingClientRect().top - a.querySelector('.nb').getBoundingClientRect().height / 2) < 8 }; });
     P.t(row && !row.ell && /Los Angeles/.test(row.txt) && row.ed, 'the Siena Way row title shows in full with its edit link on the last line', 2, JSON.stringify(row));
     await load(withV(E.seedPlan()), '#assumptions'); await openAllColl(); await page.click('[data-testid=load-stretch]'); await page.click('[data-stretch-yes]'); await page.waitForTimeout(100);
     const sv = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), SKEY) || '[]'); P.t(sv.length === 1 && /^Portfolio 1 \(before Stretch: 607 Siena Way\)$/.test(sv[0].name) && !/\([^)]*\(/.test(sv[0].name), 'saved name has no nested parentheses', 1, sv.map((x) => x.name).join());
@@ -405,6 +405,89 @@ exports.run = async function run(X) {
     P.t(!/Can the plan buy it/.test(txt) && /Bought .*then sold/.test(txt) && !/The trust can pay for this at/.test(txt) && !/Before the sale it was/.test(txt) && /Sold in/.test(txt), 'sold asset page: no plan-buy verdict, no trust-timing note (a one-line "Bought ..., then sold ..." instead)', 2, '');
     const S2 = withV(E.seedPlan()); S2.g.planYears = 1; await load(S2, ''); await page.locator('[data-testid=target-toggle]').click(); const t2 = await page.evaluate(() => document.getElementById('app').innerText); P.t(!/\b1 years\b/.test(t2), 'a 1-year projection never says "1 years"', 0.5, '');
     return P;
+  });
+
+  /* ---------- J23-J27: commit on leave only, tap targets, breakdown header, months boxes, % boxes, glued last words ---------- */
+  await jcheck('J23', 'Slow typing never commits a prefix: price 5, pause 450 ms, then /0 leaves the price alone; the "= result" hint shows while typing; the value lands on Enter / blur and the totals follow', 12, 'asset page price box, keyboard.type with pauses', async () => {
+    const P = new Parts(); const S = withV(E.seedPlan()); await page.setViewportSize({ width: 390, height: 844 }); await load(S, '#house-maple'); await openAllColl();
+    const sel = '[data-p="h.maple.price"]', price = async () => (await store()).houses.find((h) => h.id === 'maple').price, p0 = E.H(S, 'maple').price;
+    const kpi = async () => num(await page.locator('[data-testid=h-payment]').first().textContent());
+    const k0 = await kpi(); const l = page.locator(sel).first(); await l.click(); await page.keyboard.press('Control+A'); await page.keyboard.press('Delete');
+    await page.keyboard.type('5'); await page.waitForTimeout(450);
+    P.t((await price()) === p0 && (await kpi()) === k0, 'type 5, wait 450 ms: price and the Payment figure are unchanged while the box is being edited', 3, (await price()) + ' / ' + (await kpi()));
+    await page.keyboard.type('/0', { delay: 20 }); await page.waitForTimeout(450);
+    const h1 = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => '');
+    P.t((await price()) === p0 && /Check the math/.test(h1), '5/0 after a pause: price unchanged and the hint says Check the math', 3, (await price()) + ' / ' + h1);
+    await page.keyboard.press('Control+A'); await page.keyboard.type('300000+1000', { delay: 10 }); await page.waitForTimeout(450);
+    const h2 = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => '');
+    P.t(/= 301,000/.test(h2) && (await price()) === p0, 'a complete expression shows "= 301,000" but is still not stored while the box has focus', 2, h2 + ' / ' + (await price()));
+    await page.keyboard.press('Enter'); await page.waitForTimeout(150);
+    const Sx = E.normalize(clone(await store())), v = E.plan(Sx).V.maple;
+    P.t((await price()) === 301000 && near2(await kpi(), v.payment, 1.5), 'Enter lands 301,000 in the data and the Payment figure follows the engine', 3, (await price()) + ' / ' + (await kpi()) + ' vs ' + Math.round(v.payment));
+    P.t((await page.inputValue(sel)) === '301,000', 'the box shows the tidy value 301,000 after Enter', 1, await page.inputValue(sel));
+    return P;
+  });
+  await jcheck('J24', 'Tap targets: every row "edit ›" is >= 44px tall at 390 and 430 (and its hit area really is: elementFromPoint), the Assumptions "How the numbers are built" summary is >= 44px, no sideways scroll at 320/390/430', 8, 'default Planned page with lists open; assumptions page', async () => {
+    const P = new Parts();
+    for (const w of [390, 430]) {
+      await page.setViewportSize({ width: w, height: 844 }); await load(withV(E.seedPlan()), ''); await page.evaluate(() => { for (let i = 0; i < 20; i++) { const b = document.querySelector('#app [data-testid^=cat-header][aria-expanded=false]'); if (!b) break; b.click(); } }); await page.waitForTimeout(100);
+      const g = await page.evaluate(() => { const r = [...document.querySelectorAll('.row .ed')].slice(0, 8).map((e) => { e.scrollIntoView({ block: 'center' }); const q = e.getBoundingClientRect(); let hit = 0; for (let y = Math.ceil(q.top); y < q.bottom; y++) { const t = document.elementFromPoint(q.left + q.width / 2, y); if (t && (t === e || e.contains(t))) hit++; } const ad = e.closest('.addr'); return { h: Math.round(q.height), hit, w: Math.round(q.width), sx: ad.scrollWidth - ad.clientWidth, sl: ad.scrollLeft }; }); return r; });
+      P.t(g.length >= 5 && g.every((x) => x.h >= 44 && x.hit >= 43 && x.w >= 40 && x.sx <= 0 && x.sl === 0), `${w}px: row "edit ›" boxes are >= 44px tall, the whole box takes the tap, and the address box never scrolls sideways (no clipped number badge)`, 2, JSON.stringify(g.slice(0, 3)));
+    }
+    await page.setViewportSize({ width: 390, height: 844 }); await load(withV(E.seedPlan()), '#assumptions'); await openAllColl();
+    const sh = await page.evaluate(() => { const s = document.querySelector('[data-testid=model-notes] > summary'); return s ? s.getBoundingClientRect().height : 0; });
+    P.t(sh >= 44, '"How the numbers are built" summary is >= 44px tall', 2, String(sh));
+    const sw = [];
+    for (const w of [320, 390, 430]) { await page.setViewportSize({ width: w, height: 800 }); await load(withV(E.seedPlan()), ''); await page.waitForTimeout(80); sw.push(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)); }
+    P.t(sw.every((x) => x <= 0), 'no sideways scroll at 320/390/430 on the Planned page', 2, JSON.stringify(sw));
+    await page.setViewportSize({ width: 390, height: 844 }); return P;
+  });
+  await jcheck('J25', 'Breakdown table header at 320 and 390: "Equity" and its (i) sit on one line, "Cash flow/mo" does not wrap, the header cells are right-aligned over their numbers and nothing overflows', 8, 'default Planned page; breakdown header cells', async () => {
+    const P = new Parts();
+    for (const w of [320, 390]) {
+      await page.setViewportSize({ width: w, height: 800 }); await load(withV(E.seedPlan()), ''); await page.waitForTimeout(100);
+      const g = await page.evaluate(() => { const t = document.querySelector('[data-testid=breakdown]'); if (!t) return null; const ths = [...t.querySelectorAll('thead th')], td = [...t.querySelectorAll('tbody tr:last-child td')];
+        const lines = (n) => { const r = document.createRange(); r.selectNodeContents(n); return new Set([...r.getClientRects()].filter((q) => q.width > 0).map((q) => Math.round(q.top / 4))).size; };
+        const eq = ths[2], ib = eq.querySelector('.info span'), er = eq.getBoundingClientRect(), cf = ths[3];
+        const right = (n) => { const r = document.createRange(); r.selectNodeContents(n); return r.getBoundingClientRect().right; };
+        const ir = ib.getBoundingClientRect(), tr = document.createRange(); tr.selectNodeContents(eq.querySelector('.nw')); const nwr = eq.querySelector('.nw').getBoundingClientRect();
+        return { eqLines: lines(eq), cfLines: lines(cf), valLines: lines(ths[1]), iconInside: ir.right <= er.right + 1 && ir.left >= er.left - 1, iconMid: Math.abs((ir.top + ir.height / 2) - (nwr.top + nwr.height / 2)) < 6, alignV: Math.abs(right(ths[1]) - right(td[1])) <= 2, alignE: Math.abs(ir.right + 12 - right(td[2])) <= 14, alignC: Math.abs(right(cf) - right(td[3])) <= 2, over: ths.some((c) => { const r = document.createRange(); r.selectNodeContents(c); return r.getBoundingClientRect().width > c.getBoundingClientRect().width + 0.5; }) }; });
+      P.t(g && g.eqLines === 1 && g.iconInside && g.iconMid, `${w}px: "Equity" and its (i) are on one line, the icon inside its cell`, 2, JSON.stringify(g));
+      P.t(g && g.cfLines === 1 && g.valLines === 1 && !g.over, `${w}px: "Cash flow/mo" and "Value" stay on one line, no header cell overflows`, 1.5, JSON.stringify(g));
+      P.t(g && g.alignV && g.alignC && g.alignE, `${w}px: header cells end where the numbers below them end`, 0.5, JSON.stringify(g));
+    }
+    await page.setViewportSize({ width: 390, height: 844 }); return P;
+  });
+  await jcheck('J26', 'Months boxes round to whole months and cap at 600: 1.5 -> 2 with a "Rounded" note, 100000 -> 600 with a "Capped" note (asset page and Finances), and the date under the box matches', 10, 'Not before (months), job Ends in (months)', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 390, height: 844 }); await load(withV(E.seedPlan()), '#house-maple'); await openAllColl();
+    const sel = '[data-p="h.maple.buyIn"]', bi = async () => (await store()).houses.find((h) => h.id === 'maple').buyIn, note = () => page.locator('[data-testid=calc-hint]').first().textContent().catch(() => '');
+    await typeIn(sel, '100000'); await blur(); const n1 = await note();
+    P.t((await bi()) === 600 && (await page.inputValue(sel)) === '600' && /Capped/.test(n1), '100000 months is capped at 600, the box shows 600 and a Capped note appears', 3, (await bi()) + ' / ' + (await page.inputValue(sel)) + ' / ' + n1);
+    const dh = (await page.locator('[data-dh="h.maple.buyIn"]').first().textContent()) || ''; P.t(dh === 'on ' + D.fmt(600), 'the date under the box is the capped month (' + D.fmt(600) + ')', 2, dh);
+    await typeIn(sel, '1.5'); await blur(); const n2 = await note();
+    P.t((await bi()) === 2 && (await page.inputValue(sel)) === '2' && /Rounded/.test(n2), '1.5 months is rounded to 2 with a Rounded note', 3, (await bi()) + ' / ' + (await page.inputValue(sel)) + ' / ' + n2);
+    await typeIn(sel, '12'); await blur(); P.t((await bi()) === 12 && !/Capped|Rounded/.test(await note()), 'a normal whole number (12) is kept as is with no note', 1, String(await bi()));
+    await load(withV(E.seedPlan()), '#finances'); await openAllColl(); const es = '[data-p^="j."][data-p$=".end"]';
+    if (await page.locator(es).count()) { await typeIn(es, '100000'); await blur(); const jv = (await store()).p.jobs.find((j) => j.end !== null && j.end !== undefined); P.t(jv && jv.end === 600, 'a job "Ends in (months)" of 100000 is capped at 600 as well', 1, JSON.stringify(jv && jv.end)); } else P.t(false, 'Finances has a job end box', 1, '');
+    return P;
+  });
+  await jcheck('J27', '% handling is consistent: 5% in a dollar box stays as typed with a hint until you leave, then goes back with "No % in a dollar box, kept"; 4% in a percent box stays 4% while typing and becomes 4 on leaving; at 320 the (i) and the ▸ arrow stay glued to their last word', 8, 'rent box, vacancy box, target toggle, stat grid labels', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 390, height: 844 }); const S = withV(E.seedPlan()); await load(S, '#house-maple'); await openAllColl();
+    const rs = '[data-p="h.maple.rent"]', rent = async () => (await store()).houses.find((h) => h.id === 'maple').rent, r0 = E.H(S, 'maple').rent;
+    await page.locator(rs).first().click(); await page.keyboard.press('Control+A'); await page.keyboard.type('5%', { delay: 20 }); await page.waitForTimeout(500);
+    const hh = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => '');
+    P.t((await page.inputValue(rs)) === '5%' && /No % in a dollar box/.test(hh) && (await rent()) === r0, '5% in a dollar box: text kept while typing, hint shown, nothing stored', 2, (await page.inputValue(rs)) + ' / ' + hh + ' / ' + (await rent()));
+    await blur(); const hh2 = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => '');
+    P.t((await rent()) === r0 && /kept/i.test(hh2) && (await page.inputValue(rs)) === r0.toLocaleString('en-US'), 'after leaving: the box goes back to the stored rent with a "kept" note', 2, (await rent()) + ' / ' + hh2 + ' / ' + (await page.inputValue(rs)));
+    await load(S, '#assumptions'); await openAllColl(); const vs = '[data-p="g.vac"]';
+    await page.locator(vs).first().click(); await page.keyboard.press('Control+A'); await page.keyboard.type('4%', { delay: 20 }); await page.waitForTimeout(500);
+    P.t((await page.inputValue(vs)) === '4%' && (await store()).g.vac !== 4, '4% in a percent box: stays "4%" while typing and is not stored yet', 1, (await page.inputValue(vs)) + ' / ' + (await store()).g.vac);
+    await blur(); P.t((await page.inputValue(vs)) === '4' && (await store()).g.vac === 4, '4% becomes 4 (stored 4) when you leave the percent box', 1, (await page.inputValue(vs)) + ' / ' + (await store()).g.vac);
+    await page.setViewportSize({ width: 320, height: 800 }); await load(S, ''); const tg = await page.evaluate(() => { const b = document.querySelector('[data-testid=target-toggle]'); if (!b) return null; const nw = b.querySelector('.nw'); if (!nw) return { nw: false }; const r = document.createRange(); r.selectNodeContents(nw); const tops = new Set([...r.getClientRects()].filter((q) => q.width > 0).map((q) => Math.round(q.top))); return { nw: true, txt: nw.textContent, lines: tops.size }; });
+    P.t(tg && tg.nw && /[▸▾]$/.test(tg.txt) && /^\S+\s[▸▾]$/.test(tg.txt) && tg.lines === 1, 'the ▸ arrow is glued to the last word ("dollars ▸") and never wraps alone at 320', 1, JSON.stringify(tg));
+    await load(S, '#house-birch'); await openAllColl(); const kl = await page.evaluate(() => [...document.querySelectorAll('.kpi small .info')].map((i) => { const p = i.parentElement; return p.classList.contains('nw') && p.textContent.trim().length > 1 && !/^\s*$/.test((p.textContent || '').replace(/i$/, '')); }));
+    P.t(kl.length >= 3 && kl.every(Boolean), 'every stat-grid (i) sits inside a no-wrap span with its last word (asset page at 320)', 1, JSON.stringify(kl));
+    await page.setViewportSize({ width: 390, height: 844 }); return P;
   });
 
   await ctx.close();
