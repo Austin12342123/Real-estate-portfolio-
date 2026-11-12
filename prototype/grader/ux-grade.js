@@ -1,4 +1,4 @@
-/* Category J: one clock with calendar dates, math in number boxes, the Planned page Checks block, sold-asset cash profit, silent migration to the current plan, the 607 Siena Way stretch scenario, tap targets.
+/* Category J: one clock with calendar dates (J11-J19 cover the review round: sale rounding, Checks layout and edge cases, Finances dates, calculator revert, plurals, migration note, undo toast, saved names, row wording), math in number boxes, the Planned page Checks block, sold-asset cash profit, silent migration to the current plan, the 607 Siena Way stretch scenario, tap targets.
    100 automated points on their own scale. Plugged in from grade.js: require('./ux-grade.js').run(X) -> { earned, max, checks }.  Standalone: UX_ONLY=1 node grade.js  (J_ONLY=J1,J3 for single checks).
    The app's "today" is pinned (window.REP_TODAY = 2026-11-12 in grade.js) so dates are stable. Dates are compared with an independent integer-math reference (grader/dates.js). Never modifies the app. */
 const fs = require('fs'), path = require('path');
@@ -160,7 +160,7 @@ exports.run = async function run(X) {
   /* ---------- J6 stretch scenario ---------- */
   await jcheck('J6', 'Stretch scenario button loads a plan that buys 607 Siena Way ($135,000,000) and the Finances verdict is not "no"; the button and confirm text say so', 10, 'Assumptions > Sample portfolios > stretch', async () => {
     const P = new Parts(); await load(withV(E.seedPlan()), '#assumptions'); await openAllColl();
-    const bt = await page.locator('[data-testid=load-stretch]').textContent(); P.t(/Siena/.test(bt) && /\$540M/.test(bt), 'button text names 607 Siena Way and the new size', 2, bt);
+    const bt = await page.locator('[data-testid=load-stretch]').textContent(); P.t(/Siena/.test(bt) && /\$135M/.test(bt) && !/\$540M/.test(bt), 'button text names 607 Siena Way and its $135M price and does not claim a net-worth figure that other pages show differently', 2, bt);
     await page.click('[data-testid=load-stretch]'); const ct = await page.locator('[role=alertdialog]').textContent(); P.t(/Siena/.test(ct), 'confirm text names the house', 1, ct);
     await page.click('[data-stretch-yes]'); await page.waitForTimeout(150);
     const st = await store(), h = st.houses.find((x) => /607 Siena Way/.test(x.addr)); P.t(!!h && h.price === 135000000 && h.status === 'planned', 'the portfolio holds 607 Siena Way at $135,000,000', 2, h && h.addr);
@@ -191,9 +191,9 @@ exports.run = async function run(X) {
     P.t(/kept in Saved/.test(ct) && /28 to 20 years/.test(ct) && /Undo/.test(ct), 'the confirm text says the plan is kept in Saved and the projection changes from 28 to 20 years', 2, ct);
     await page.click('[data-stretch-yes]'); await page.waitForTimeout(150);
     const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '[]'), SKEY), st = await store();
-    P.t(saved.length === 1 && /^Portfolio 1 \(before \$540M stretch scenario\)$/.test(saved[0].name) && saved[0].state.houses.length === S0.houses.length, 'the old plan is filed as "Portfolio 1 (before $540M stretch scenario)"', 2, saved.map((x) => x.name).join(','));
+    P.t(saved.length === 1 && /^Portfolio 1 \(before stretch scenario \(607 Siena Way\)\)$/.test(saved[0].name) && saved[0].state.houses.length === S0.houses.length, 'the old plan is filed as "Portfolio 1 (before stretch scenario (607 Siena Way))"', 2, saved.map((x) => x.name).join(','));
     const ban = await page.locator('[data-testid=undo-banner]').textContent().catch(() => ''), tab = await page.locator('[data-testid=tab-planned]').getAttribute('aria-selected').catch(() => '');
-    P.t(/Loaded the \$540M stretch scenario/.test(ban) && /Undo/.test(ban) && tab === 'true' && !/assumptions/.test(await page.evaluate(() => location.hash)), 'an Undo banner shows and the app is on the Planned tab', 2, ban + ' ' + tab);
+    P.t(/Loaded the stretch scenario \(607 Siena Way\)/.test(ban) && /Undo/.test(ban) && tab === 'true' && !/assumptions/.test(await page.evaluate(() => location.hash)), 'an Undo banner shows and the app is on the Planned tab', 2, ban + ' ' + tab);
     await page.click('[data-undo]'); await page.waitForTimeout(150); const st2 = await store(), saved2 = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '[]'), SKEY);
     P.t(st2.houses.length === S0.houses.length && st2.g.planYears === 28 && saved2.length === 0, 'Undo restores the 28-year default plan (and takes the filed copy out of Saved)', 3, st2.houses.length + ' ' + st2.g.planYears + ' ' + saved2.length);
     return P;
@@ -222,6 +222,149 @@ exports.run = async function run(X) {
     await page.click('[data-testid=checks-details]'); await page.waitForTimeout(60); P.t((await page.locator('[data-testid=checks-details]').count()) === 1, 'Details stays tappable while flagged', 1, '');
     const hr = await page.evaluate(() => [...document.querySelectorAll('[data-testid=checks] .chk')].every((e) => getComputedStyle(e).borderRadius === '0px')); P.t(hr, 'check rows have no rounded borders (no clipped arcs)', 1, '');
     return P;
+  });
+
+  /* ---------- J11 one rounded source for a sale ---------- */
+  await jcheck('J11', 'A sold asset reads the same to the dollar everywhere: the Sale card, the note under it, the Net proceeds before tax field, the asset-page summary line and the Sold row; the card adds up exactly (several selling-cost rates)', 8, 'asset page of the sold house at 6 / 5.5 / 6.25 / 7.1 % selling costs', async () => {
+    const P = new Parts(); const mon = (t) => { const m = /([−-])?\$([\d,]+)/.exec(String(t || '')); return m ? (m[1] ? -1 : 1) * +m[2].replace(/,/g, '') : NaN; };
+    for (const sc of [6, 5.5, 6.25, 7.1]) {
+      const S = withV(E.seedPlan()); const h = S.houses.find((x) => x.exit === 'sell'); if (!h) { P.t(false, 'the default plan has a house that sells', 1, ''); break; } h.sellCost = sc;
+      await load(S, '#house-' + h.id); await openAllColl();
+      const rows = await page.evaluate(() => [...document.querySelectorAll('[data-testid=sale-profit] .f')].map((f) => f.textContent.replace(/\s+/g, ' ').trim()));
+      const v = rows.map((r) => mon(r.replace(/^.*?([−-]?\$[\d,]+)(?!.*\$).*$/, '$1'))), N = v[3], T = -v[4], I = -v[5], F = v[6];
+      const note = await page.locator('[data-testid=sale-tax]').textContent(), share = await page.locator('[data-testid=asset-share]').textContent(), field = await page.inputValue('[data-p="h.' + h.id + '.proceeds"]');
+      const noteN = mon(/Net proceeds before tax (−?\$[\d,]+)/.exec(note)[1]), shareN = mon(/\((−?\$[\d,]+) net proceeds before tax/.exec(share)[1]), shareI = mon(/the (\$[\d,]+) you put in/.exec(share)[1]), shareF = mon(/Cash profit ([+−-]?\$[\d,]+)/.exec(share)[1]);
+      P.t(N === noteN && N === shareN && N === num(field) && I === shareI && F === shareF, sc + '%: card ' + N + ' / ' + I + ', note ' + noteN + ', summary ' + shareN + ' / ' + shareI + ', field ' + field, 1.2, rows.join(' | '));
+      P.t(v[0] + v[1] + v[2] === N && N + v[4] + v[5] === F, sc + '%: price - costs - loan = net proceeds, and proceeds - tax - cash in = cash profit, exactly', 0.8, v.join(','));
+    }
+    return P;
+  });
+
+  /* ---------- J12 Checks edge cases and layout ---------- */
+  await jcheck('J12', 'Checks is its own card with a clear heading and a light Details button; flagged rows sit inside the card gutter, one row apart, labels do not wrap; when no purchase can be funded Checks says the plan cannot start (no "last purchase today", no fake DTI peak); the lowest cash never exceeds the savings', 12, 'cash 0 / living 9000 at 320px; cash 10000 / living 3000', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 320, height: 700 });
+    const S = withV(E.seedPlan()); S.p.cash = 0; S.p.living = 9000; await load(S, ''); await page.waitForSelector('[data-testid=checks]');
+    const g = await page.evaluate(() => {
+      const c = document.querySelector('[data-testid=checks]'), cr = c.getBoundingClientRect(), rows = [...c.querySelectorAll('.chk')].map((r) => { const q = r.getBoundingClientRect(), b = r.querySelector('.ct b').getBoundingClientRect(); return { l: q.left, r: q.right, t: q.top, b: q.bottom, lab: b.height, lvl: r.dataset.lvl, id: r.dataset.testid }; });
+      const btn = c.querySelector('[data-testid=checks-details]'), bg = getComputedStyle(btn).backgroundColor;
+      return { own: c.matches('section.card') && !c.closest('[data-testid=plan-card]'), head: !!c.querySelector('h2,h3,b') && /^Checks/.test(c.textContent.trim()), cl: cr.left, cr: cr.right, rows, bg, hs: document.documentElement.scrollWidth > innerWidth, plan: document.querySelector('[data-testid=plan-card]').textContent, txt: c.textContent };
+    });
+    P.t(g.own && g.head, 'Checks is its own card with a Checks heading (not inside the Portfolio breakdown card)', 1.5, JSON.stringify({ own: g.own, head: g.head }));
+    P.t(/rgba\(0, 0, 0, 0\)|transparent/.test(g.bg), 'the Details button is light (outlined, no grey block): ' + g.bg, 1, g.bg);
+    P.t(g.rows.length >= 2 && g.rows.every((r) => r.l >= g.cl + 3.5 && r.r <= g.cr - 3.5), 'every Checks row, tinted or not, stays inside the card with a gutter of at least 4px at 320px', 2, JSON.stringify(g.rows.map((r) => [Math.round(r.l - g.cl), Math.round(g.cr - r.r)])));
+    P.t(g.rows.every((r, i) => i === 0 || r.t - g.rows[i - 1].b >= 2 || g.rows[i - 1].lvl === 'ok'), 'adjacent flagged rows are separated (no merged slab)', 1.5, JSON.stringify(g.rows.map((r) => [Math.round(r.t), Math.round(r.b)])));
+    P.t(g.rows.every((r) => r.lab < 24), 'no row label wraps onto a second line (Cash cushion)', 1, JSON.stringify(g.rows.map((r) => Math.round(r.lab))));
+    P.t(/cannot start|can.t start/i.test(g.txt) && !/Debt-to-income peak/.test(g.txt) && !/last purchase today/.test(g.plan) && /no purchase can be funded/.test(g.plan), 'with nothing fundable Checks says the plan cannot start; no DTI peak month and no "last purchase today"', 2.5, g.txt.replace(/\s+/g, ' ').slice(0, 300));
+    P.t(/runs out today/.test(g.txt) && !g.hs, 'the cash row says when the cash runs out instead of a far-future "lowest" month, and the page does not scroll sideways', 1.5, g.txt.replace(/\s+/g, ' ').slice(0, 300));
+    /* lowest cash never above the savings */
+    const S2 = withV(E.seedPlan()); S2.p.cash = 10000; S2.p.living = 3000; await load(S2, ''); if ((await page.getAttribute('[data-testid=checks-details]', 'aria-expanded')) === 'false') await page.click('[data-testid=checks-details]'); await page.waitForTimeout(60);
+    const cu = await page.locator('[data-testid=check-cushion]').textContent().catch(() => ''), lowN = /Lowest cash is \$([\d,]+)/.exec(cu); P.t(!!lowN && +lowN[1].replace(/,/g, '') <= 10000, 'with $10,000 of savings the Checks lowest cash is not above $10,000', 1.5, cu);
+    /* divider between the calm line and the first row when opened */
+    await load(withV(E.seedPlan()), ''); await page.setViewportSize({ width: 390, height: 844 }); await page.click('[data-testid=checks-details]'); await page.waitForTimeout(60);
+    const dv = await page.evaluate(() => { const ok = document.querySelector('[data-testid=checks-ok]'), l = document.querySelector('[data-testid=checks-list]'); if (!ok || !l) return null; const gap = l.getBoundingClientRect().top - ok.getBoundingClientRect().bottom, bt = parseFloat(getComputedStyle(l).borderTopWidth); return { gap, bt }; });
+    P.t(dv && dv.gap >= 6 && dv.bt >= 1, 'a divider and space separate "All checks are in the safe range" from the first row', 1, JSON.stringify(dv));
+    return P;
+  });
+
+  /* ---------- J13 Finances dates ---------- */
+  await jcheck('J13', 'Finances writes every month as "month N (Mon YYYY)" (or "today"), including the Biggest cash calls rows; the Breakdown table keeps every figure inside the card at 320px', 6, 'Finances page with a cash call; Planned breakdown at 320px', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 390, height: 844 });
+    const S = withV(E.seedPlan()); S.p.cash = 0; S.p.living = 3000; await load(S, '#finances'); await openAllColl();
+    const calls = await page.evaluate(() => [...document.querySelectorAll('#app .drv span:first-child')].map((e) => e.textContent.trim()));
+    P.t(calls.length >= 1 && calls.every((t) => /^(Month \d+ \([A-Z][a-z]{2} \d{4}\)|Today)/.test(t)), 'Biggest cash calls rows start with "Month N (Mon YYYY)"', 2.5, calls.join(' | '));
+    const txt = await page.evaluate(() => document.getElementById('app').innerText), bare = txt.match(/\b[Mm]onth \d+(?!\d)(?! \([A-Z][a-z]{2} \d{4}\))/g);
+    P.t(!bare, 'no month number on Finances is missing its date', 2, (bare || []).join(', '));
+    await page.setViewportSize({ width: 320, height: 700 }); await load(withV(E.seedPlan()), ''); await page.waitForSelector('[data-testid=breakdown]');
+    const o = await page.evaluate(() => { const t = document.querySelector('[data-testid=breakdown]'), c = t.closest('.card').getBoundingClientRect(), pad = parseFloat(getComputedStyle(t.closest('.card')).paddingRight); return [...t.querySelectorAll('td,th')].map((e) => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect().right - (c.right - pad); }).filter((d) => d > 0.5); });
+    P.t(o.length === 0, 'no breakdown figure ends past the card content edge at 320px', 1.5, o.map((x) => Math.round(x)).join(','));
+    await page.setViewportSize({ width: 390, height: 844 }); return P;
+  });
+
+  /* ---------- J14 calculator revert, negatives, percent ---------- */
+  await jcheck('J14', 'Number boxes: a half-typed or invalid entry typed key by key goes back to the value the box had when you tapped into it (not a typed prefix) and says "Kept $X"; a negative says "Can\'t be negative, kept $X"; a percent in a dollar box is refused with a note; a percent box still takes 9%', 12, 'type 5/0, 650*, -5, 10% into the rent box one key at a time', async () => {
+    const P = new Parts(); const S = withV(E.seedPlan()); await load(S, '#house-maple'); await openAllColl(); const sel = '[data-p="h.maple.rent"]';
+    const rent = async () => (await store()).houses.find((h) => h.id === 'maple').rent, before = await rent(), hint = () => page.locator('[data-testid=calc-hint]').first().textContent().catch(() => '');
+    const clearType = async (t) => { await page.locator(sel).first().click(); await page.keyboard.press('Control+A'); await page.keyboard.press('Delete'); await page.keyboard.type(t, { delay: 15 }); await page.waitForTimeout(60); };
+    for (const [t, re] of [['5/0', /^Kept \$[\d,]+$/], ['650*', /^Kept \$[\d,]+$/], ['(2+3', /^Kept \$[\d,]+$/], ['-5', /^Can't be negative, kept \$[\d,]+$/], ['10%', /^No % in a dollar box, kept \$[\d,]+$/]]) {
+      await clearType(t); await page.keyboard.press('Enter'); await page.waitForTimeout(120); const h = await hint(), v = await rent(), box = num(await page.inputValue(sel));
+      P.t(v === before && box === before && re.test(h), `"${t}" typed key by key: ends at ${before} (state ${v}, box ${box}) with the note "${h}"`, 1.8, h);
+    }
+    await clearType('-5'); P.t(/negative/i.test(await hint()) && (await rent()) === before, 'while typing -5 the hint says it cannot be negative and nothing changes', 1, await hint()); await blur();
+    await clearType('650*3'); await page.keyboard.press('Enter'); await page.waitForTimeout(100); P.t((await rent()) === 1950, 'a finished expression still lands (650*3 = 1950)', 0.8, String(await rent()));
+    await load(S, '#assumptions'); await openAllColl(); await typeIn('[data-p="g.vac"]', '9%'); await blur(); P.t((await store()).g.vac === 9, 'a percent box takes 9%', 0.6, '');
+    return P;
+  });
+
+  /* ---------- J15 plurals ---------- */
+  await jcheck('J15', 'Singular and plural wording: "pool of 1 asset", "1 planned asset is possible", "Your 1 asset is bought", no "1 assets" / "1 months" / "1 homes" on Planned, Real, Saved, Finances or the asset page', 4, 'timeline with a pool of 1; a one-asset plan', async () => {
+    const P = new Parts(); const bad = /\b1 (assets|months|homes|properties|businesses|loans|years)\b/;
+    await load(withV(E.seedPlan()), '', { open: true, tab: 'timeline' }); const t0 = await page.evaluate(() => document.getElementById('app').innerText);
+    P.t(/pool of 1 asset\b(?!s)/.test(t0) && !/pool of 1 assets/.test(t0), 'the timeline says "pool of 1 asset"', 1.5, (/pool of 1 assets?/.exec(t0) || [''])[0]);
+    const S = withV(E.seedPlan()); S.houses = [S.houses.find((h) => h.status !== 'owned')]; S.houses[0].buyIn = 0; await load(S, '');
+    const t1 = await page.evaluate(() => document.getElementById('app').innerText); P.t(!bad.test(t1) && /The 1 planned asset is possible|1 planned is possible/.test(t1) && /1 asset ·/.test(t1), 'a one-asset plan reads "The 1 planned asset is possible" and "1 asset"', 1.5, (t1.match(/(The 1 planned[^.]*|1 assets?[^\n]*)/) || [''])[0]);
+    for (const hsh of ['#finances', '#house-' + S.houses[0].id]) { await load(S, hsh); const t = await page.evaluate(() => document.getElementById('app').innerText); P.t(!bad.test(t), hsh.slice(0, 8) + ': no "1 assets" style slip', 0.5, (bad.exec(t) || [''])[0]); }
+    return P;
+  });
+
+  /* ---------- J16 migration note ---------- */
+  await jcheck('J16', 'After a silent migration the Planned page shows one dismissible line naming the Saved portfolio (no dialog, no Undo); it stays until dismissed, is gone afterwards and never shows for a current save or on the other pages', 8, 'load a v17 save', async () => {
+    const P = new Parts(); const old = clone(E.seedPlan()); old.houses = old.houses.slice(0, 5); old.v = 17; await load(old, '');
+    const n = page.locator('[data-testid=migrate-note]'), txt = await n.textContent().catch(() => ''), saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '[]'), SKEY);
+    P.t(/Your earlier portfolio is saved in Saved as/.test(txt) && saved.length === 1 && txt.includes(saved[0].name), 'the note names the filed portfolio: ' + txt, 2, txt);
+    const m = await page.evaluate(() => { const b = document.querySelector('[data-testid=migrate-dismiss]'), q = b && b.getBoundingClientRect(), n = document.querySelector('[data-testid=migrate-note]'); return { w: q && q.width, h: q && q.height, role: n.getAttribute('role'), dlg: document.querySelectorAll('.sheet,[role=alertdialog],[role=dialog],[data-testid=undo-banner]').length, fixed: getComputedStyle(n).position }; });
+    P.t(m.w >= 43.5 && m.h >= 43.5 && m.role === 'status' && m.dlg === 0 && m.fixed !== 'fixed', 'dismiss button is >= 44px, the note is a status line in the page (no dialog, no undo banner)', 2, JSON.stringify(m));
+    await page.reload(); await page.waitForSelector('[data-testid=tab-planned]'); P.t((await n.count()) === 1, 'it stays after a reload until dismissed', 1, '');
+    await page.click('[data-testid=tab-real]'); P.t((await n.count()) === 0, 'it is only on the Planned page', 0.5, ''); await page.click('[data-testid=tab-planned]');
+    await page.click('[data-testid=migrate-dismiss]'); await page.reload(); await page.waitForSelector('[data-testid=tab-planned]'); P.t((await n.count()) === 0, 'dismissed: it does not come back', 1.5, '');
+    await load(withV(E.seedPlan()), ''); P.t((await n.count()) === 0, 'a current save shows no note', 1, '');
+    return P;
+  });
+
+  /* ---------- J17 undo toast ---------- */
+  await jcheck('J17', 'The Undo message is a floating toast: it does not move the page, stays readable (role=status), keeps Undo working, follows you across the tabs, and disappears by itself after about 10 seconds', 8, 'remove a planned asset, then wait', async () => {
+    const P = new Parts(); await load(withV(E.seedPlan()), ''); await page.waitForSelector('[data-testid=ledger-row]');
+        const id = await page.evaluate(() => document.querySelector('[data-testid=ledger-row]').dataset.row), n0 = (await store()).houses.length;
+    await page.click(`[data-row="${id}"] [data-testid=row-extra-toggle]`); await page.click(`[data-del="${id}"]`); await page.click(`[data-del-yes="${id}"]`); await page.waitForSelector('[data-testid=undo-banner]'); await page.waitForTimeout(100);
+    const o = await page.evaluate(() => { const b = document.querySelector('[data-testid=undo-banner]'), q = b.getBoundingClientRect(), u = b.querySelector('[data-undo]').getBoundingClientRect(); return { pos: getComputedStyle(b).position, role: b.getAttribute('role'), inView: q.top >= 0 && q.bottom <= innerHeight && q.left >= 0 && q.right <= innerWidth, uh: u.height, uw: u.width }; });
+    P.t(o.pos === 'fixed' && o.inView, 'the toast floats (position fixed) and is fully on screen', 2, JSON.stringify(o));
+    P.t(o.role === 'status' && o.uh >= 43.5 && o.uw >= 43.5, 'it is a status message and Undo is >= 44px', 1, JSON.stringify(o));
+    P.t(await page.evaluate(() => document.querySelector('[data-testid=page-tabs]').previousElementSibling.matches('h1') && !document.querySelector('#app > [data-testid=undo-banner]').previousElementSibling.matches('[data-testid=page-tabs]')), 'nothing is inserted between the title and the tabs (the page does not move down)', 1.5, '');
+    await page.click('[data-testid=tab-saved]'); P.t((await page.locator('[data-testid=undo-banner]').count()) === 1, 'the toast is still there on another tab', 0.5, ''); await page.click('[data-testid=tab-planned]');
+    await page.click('[data-undo]'); await page.waitForTimeout(100); P.t((await store()).houses.length === n0 && (await page.locator('[data-testid=undo-banner]').count()) === 0, 'Undo restores the asset and the toast goes', 1, '');
+    await page.click(`[data-row="${id}"] [data-testid=row-extra-toggle]`); await page.click(`[data-del="${id}"]`); await page.click(`[data-del-yes="${id}"]`); await page.waitForSelector('[data-testid=undo-banner]'); const t1 = Date.now();
+    await page.waitForTimeout(8500); const still = await page.locator('[data-testid=undo-banner]').count(); await page.waitForTimeout(2600);
+    P.t(still === 1 && (await page.locator('[data-testid=undo-banner]').count()) === 0, 'it is still there at 8.5 s and gone by 11 s', 2, 'still ' + still);
+    return P;
+  });
+
+  /* ---------- J18 saved names + stretch title ---------- */
+  await jcheck('J18', 'Saved portfolio names never repeat ("Portfolio n" with n = saved count + 1, moved up when taken, also after a delete or a typed duplicate); the stretch sample no longer claims a net-worth figure the pages do not show', 6, 'save three, delete the first, save again', async () => {
+    const P = new Parts(); await load(withV(E.seedPlan()), ''); await page.click('[data-testid=tab-saved]'); const names = [];
+    for (let i = 0; i < 3; i++) { await page.click('[data-testid=save-current]'); names.push(await page.inputValue('[data-testid=save-name]')); await page.click('[data-testid=save-confirm]'); }
+    P.t(names.join() === 'Portfolio 1,Portfolio 2,Portfolio 3', 'first three defaults are Portfolio 1, 2, 3', 1, names.join());
+    const cards = page.locator('[data-testid=saved-card]'); await cards.nth((await cards.count()) - 1).locator('[data-testid=saved-delete]').click(); await page.click('[data-testid=delete-confirm]');
+    await page.click('[data-testid=save-current]'); const nx = await page.inputValue('[data-testid=save-name]'); await page.click('[data-testid=save-confirm]');
+    const all = await page.locator('[data-testid=saved-name]').allInnerTexts(); P.t(!all.some((n, i) => all.indexOf(n) !== i) && !/^Portfolio 3$/.test(nx) && /^Portfolio \d+$/.test(nx), 'after deleting Portfolio 1 the next default (' + nx + ') repeats nothing: ' + all.join(' | '), 2, all.join('|'));
+    await page.click('[data-testid=save-current]'); await page.fill('[data-testid=save-name]', 'Portfolio 2'); await page.click('[data-testid=save-confirm]'); const all2 = await page.locator('[data-testid=saved-name]').allInnerTexts();
+    P.t(!all2.some((n, i) => all2.indexOf(n) !== i), 'typing an existing name does not create a duplicate: ' + all2.join(' | '), 1.5, all2.join('|'));
+    await load(withV(E.seedPlan()), '#assumptions'); await openAllColl(); const bt = await page.locator('[data-testid=load-stretch]').textContent(); P.t(!/\$540M/.test(bt) && /Siena/.test(bt), 'the stretch button does not say $540M', 1.5, bt);
+    return P;
+  });
+
+  /* ---------- J19 wording at 320 ---------- */
+  await jcheck('J19', 'Planned rows: the verdict chip is separated from the sentence by a dot; "(Mon YYYY)" never splits across lines; "edit ›" stays on the same line as the last word of the name (320px)', 6, 'default Planned page at 320px, all lists open', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 320, height: 700 }); await load(withV(E.seedPlan()), ''); await page.evaluate(() => { for (let i = 0; i < 20; i++) { const b = document.querySelector('#app [data-testid^=cat-header][aria-expanded=false]'); if (!b) break; b.click(); } }); await page.waitForTimeout(100);
+    const g = await page.evaluate(() => {
+      const sep = [...document.querySelectorAll('[data-testid=plan-verdict]')].filter((c) => c.closest('.locline')).map((c) => (c.parentElement.textContent.match(/^\s*(?:Possible, tight|Possible|Not possible)\s*(.)/) || [])[1]);
+      const lines = (n) => { const r = document.createRange(); r.selectNodeContents(n); return new Set([...r.getClientRects()].map((q) => Math.round(q.top))).size; };
+      const dates = [...document.querySelectorAll('.row .nb')].filter((n) => /^[A-Z][a-z]{2} \d{4}$/.test(n.textContent)).map((n) => lines(n));
+      const eds = [...document.querySelectorAll('.row .addr')].map((a) => { const e = a.querySelector('.ed'), nb = a.querySelector('.nb'); if (!e || !nb) return null; return Math.abs(e.getBoundingClientRect().top - nb.getBoundingClientRect().top) < 8; }).filter((x) => x !== null);
+      return { sep, dates, eds, n: document.querySelectorAll('.row .addr').length };
+    });
+    P.t(g.sep.length >= 5 && g.sep.every((c) => c === '·'), 'the chip is followed by "·" in every planned row', 2, JSON.stringify(g.sep.slice(0, 6)));
+    P.t(g.dates.length >= 5 && g.dates.every((n) => n === 1), 'every "(Mon YYYY)" in a row sits on one line', 2, JSON.stringify(g.dates));
+    P.t(g.eds.length >= 5 && g.eds.every(Boolean), 'the "edit ›" link shares a line with the last word of its name in every row', 2, JSON.stringify(g.eds));
+    await page.setViewportSize({ width: 390, height: 844 }); return P;
   });
 
   await ctx.close();

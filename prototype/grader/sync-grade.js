@@ -214,7 +214,7 @@ exports.run = async function run(X) {
       const cashRow = find(/^Trust cash$/); T('breakdown "Trust cash" row = cash the trust holds (sale proceeds and reinvested cash flow not yet spent; shown only when > 0)', sn.cash > 0.5 ? !!cashRow && eq(cashRow[2], sn.cash) : !cashRow, 0.5, JSON.stringify(cashRow) + ' vs ' + $f(sn.cash));
     }
     /* KPI subtext */
-    T('net worth subtext: asset count and plan length match (cash from sales is in the breakdown Sold row)', new RegExp('^' + S.houses.filter((h) => !isOwnH(h)).length + ' assets · by year ' + S.g.planYears + '$').test(nw.sub), 0.5, nw.sub + ' (planned assets ' + S.houses.filter((h) => !isOwnH(h)).length + ', years ' + S.g.planYears + ')');
+    T('net worth subtext: asset count and plan length match (cash from sales is in the breakdown Sold row)', new RegExp('^' + S.houses.filter((h) => !isOwnH(h)).length + (S.houses.filter((h) => !isOwnH(h)).length === 1 ? ' asset' : ' assets') + ' · by year ' + S.g.planYears + '$').test(nw.sub), 0.5, nw.sub + ' (planned assets ' + S.houses.filter((h) => !isOwnH(h)).length + ', years ' + S.g.planYears + ')');
     T('monthly payments subtext extra = plan-horizon extra', sn.extra > 0.5 ? /incl\. (\$[\d,.]+[MB]?) extra/.test(mon.sub) && eq(/incl\. (\$[\d,.]+[MB]?) extra/.exec(mon.sub)[1], sn.extra) : !/extra/.test(mon.sub), 0.5, mon.sub + ' vs ' + $f(sn.extra));
     T('cash flow subtext "after extra" = cash flow minus extra', sn.extra > 0.5 ? /([−+]\$[\d,.]+[MB]?) after extra/.test(cf.sub) && eq(/([−+]\$[\d,.]+[MB]?) after extra/.exec(cf.sub)[1], sn.cfx) && Math.abs(sn.cf - sn.extra - sn.cfx) < 1 : true, 0.5, cf.sub + ' vs ' + $f(sn.cfx));
     /* chart */
@@ -227,7 +227,7 @@ exports.run = async function run(X) {
     /* headline */
     const nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0], hl = g.t['plan-headline'] || '';
     { const pq = S.houses.filter((h) => h.status !== 'owned'), nOwn = S.houses.length - pq.length, lastR = Math.max(0, ...pq.map((h) => pl.purchase[h.id]).filter(isFinite)), monw = (m) => require('./dates.js').mond(m), unf = pq.filter((h) => !isFinite(pl.purchase[h.id])).length;
-      const want = !pq.length ? 'All ' + S.houses.length + ' assets are bought.' : unf ? (nOwn ? nOwn + ' bought. ' : 'Nothing bought yet. ') + (pq.length - unf) + ' of ' + pq.length + ' planned are possible; ' + unf + ' cannot.' : (nOwn ? nOwn + ' bought. ' : 'Nothing bought yet. ') + 'All ' + pq.length + ' planned are possible; the last is funded at ' + monw(lastR) + '.';
+      const want = !pq.length ? (S.houses.length === 1 ? 'Your 1 asset is bought.' : 'All ' + S.houses.length + ' assets are bought.') : unf ? (nOwn ? nOwn + ' bought. ' : 'Nothing bought yet. ') + (pq.length - unf) + ' of ' + pq.length + ' planned ' + (pq.length === 1 ? 'is' : 'are') + ' possible; ' + unf + ' cannot.' : (nOwn ? nOwn + ' bought. ' : 'Nothing bought yet. ') + (pq.length === 1 ? 'The 1 planned asset is possible; it is' : 'All ' + pq.length + ' planned are possible; the last is') + ' funded at ' + monw(lastR) + '.';
       T('headline = bought count, whether every planned asset is possible, and the month (from today) the trust can pay for the last', hl.replace(/\s+/g, ' ').trim() === want, 2, hl + ' | want ' + want); }
     /* extra now / later */
     const X0 = HZ.plannedExtraNow(S, pl), Xall = X0 + pl.extraLater, te = g.t['total-extra'] || '';

@@ -334,20 +334,20 @@ main h1,#app>h1{font-size:24px;margin:2px 0 6px}
 .scard .btn,[data-testid=save-current]{width:100%}
 
 /* Checks: plain rows, highlighted only past a safe amount */
-.checks{margin:10px 0 0;border-top:1px solid var(--line);padding-top:8px}
-.chkh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px;font-size:14px}
+.checks{margin:0 0 12px}
+.chkh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-size:14px}.chkt{display:flex;align-items:center;gap:4px;margin:0;font-size:17px;font-weight:700}
 .chkok{color:var(--mut);font-size:13px;margin:0 0 2px}
 .chkflag{display:block;font-size:13px;font-weight:700;margin:0 0 2px;padding:0}.chkflag.warn{color:var(--warn)}.chkflag.bad{color:var(--bad)}
-.chklist{margin-top:2px}
-.chk{display:block;padding:8px 0;border-top:1px solid var(--line);font-size:13px;border-radius:0}.chk:first-child{border-top:0}
+.chklist{margin:8px -10px 0;padding-top:4px;border-top:1px solid var(--line)}.chkok,.chkflag{margin-top:2px}
+.chk{display:block;padding:8px 10px;border-top:1px solid var(--line);font-size:13px;border-radius:0}.chk:first-child{border-top:0}
 .chk .ct{display:flex;align-items:center;gap:6px;min-height:28px}.chk .ct b{font-weight:600;color:var(--ink);font-size:14px;min-width:0;overflow-wrap:break-word}
 .chk .ct .info{margin:-8px -10px -8px -4px;flex:none}
 .chk small{display:block;color:var(--mut);font-size:12px;line-height:1.35;margin-top:1px}
 .chk .cv{margin-left:auto;flex:none;text-align:right;font-weight:600;font-size:14px;color:var(--ink);white-space:nowrap;padding-left:8px}
-.chk.lv-warn,.chk.lv-bad{padding-left:10px;padding-right:10px;margin:0 -10px;border-top-color:transparent}.chk.lv-warn+.chk,.chk.lv-bad+.chk{border-top-color:transparent}
+.chk.lv-warn,.chk.lv-bad{margin:4px 0;border-top-color:transparent}.chk.lv-warn+.chk,.chk.lv-bad+.chk{border-top-color:transparent}
 .chk.lv-warn{background:color-mix(in srgb,var(--warn) 14%,var(--card))}.chk.lv-warn .cv{color:var(--warn)}
 .chk.lv-bad{background:color-mix(in srgb,var(--bad) 14%,var(--card))}.chk.lv-bad .cv{color:var(--bad)}
-.chkbtn{margin:0;flex:none;padding:0 10px;border-radius:12px}
+.chkbtn{margin:0;flex:none;padding:0 14px;border-radius:22px;background:none;border:1px solid var(--line);color:var(--acc);font-weight:600}.chkbtn:hover,.chkbtn:focus-visible{border-color:var(--acc)}
 .lb .dh{display:block;font-size:12px;color:var(--mut);font-weight:400;line-height:1.3}
 .sold-profit{font-weight:700}.sold-profit.neg{color:var(--bad)}
 .ed{white-space:nowrap}
@@ -378,3 +378,14 @@ table.cmp td:first-child,table.cmp th:first-child{width:30%}
 .cathw .cats .sc b.warn{color:var(--warn)}
 .sec[data-testid=sale-heading]{margin-top:10px}
 .rtag{margin:2px 0 0}
+
+/* ---- review round: toast, migration note, wording, tables ---- */
+.nb{white-space:nowrap}
+.vsep{color:var(--mut)}
+.toast{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;width:calc(100% - 32px);max-width:398px;display:flex;align-items:center;gap:4px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:4px 4px 4px 14px;font-size:14px;line-height:1.3;box-shadow:0 6px 24px rgba(0,0,0,.28)}
+.toast .tmsg{flex:1;min-width:0}.toast .chip{margin:0;flex:none}.toast .tx{flex:none;min-width:44px;min-height:44px;border:0;background:none;color:var(--mut);font-size:22px;line-height:1}
+.migrate{display:flex;align-items:center;gap:6px;margin:0 0 10px;padding:4px 4px 4px 12px;font-size:13px;line-height:1.3;border-radius:12px;background:color-mix(in srgb,var(--acc) 9%,var(--card))}
+.migrate span{flex:1;min-width:0}.migrate .chip{margin:0;flex:none;background:none}
+[data-testid=breakdown]{table-layout:fixed}
+[data-testid=breakdown] th:first-child,[data-testid=breakdown] td:first-child{width:25%}
+[data-testid=breakdown] th:nth-child(4),[data-testid=breakdown] td:nth-child(4){width:30%;padding-right:0}

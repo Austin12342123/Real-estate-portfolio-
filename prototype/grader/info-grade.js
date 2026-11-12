@@ -350,7 +350,7 @@ exports.run = async function run(X) {
       P.t(j.kind === 'hourly' && j.wage === 20 && j.tips === 5 && j.gross === 36000, 'switching back to Hourly restores wage, tips and the same gross', 0.6, JSON.stringify([j.kind, j.wage, j.tips, j.gross]));
       /* clamps */
       await setVal(page, `[data-p="j.${id}.wage"]`, '-5'); await setVal(page, `[data-p="j.${id}.tips"]`, '-2'); await setVal(page, `[data-p="j.${id}.weeks"]`, '70'); await setVal(page, `[data-p="j.${id}.hours"]`, '500'); S = await stateOf(page); j = S.p.jobs.find((q) => q.id === id);
-      P.t(j.wage === 0 && j.tips === 0 && j.weeks === 52 && j.hours === 168 && j.gross === 0 && !(await scanBad(page)), 'nonsense values are clamped (negative wage/tips -> 0, 70 weeks -> 52, 500 hours -> 168) with no NaN anywhere', 0.8, JSON.stringify(j) + ' ' + (await scanBad(page)));
+      P.t(j.wage === 20 && j.tips === 5 && j.weeks === 52 && j.hours === 168 && j.gross === 25 * 168 * 52 && !(await scanBad(page)), 'nonsense values are handled (a negative wage/tip is refused and the box goes back to its last value with a note, 70 weeks -> 52, 500 hours -> 168) with no NaN anywhere', 0.8, JSON.stringify(j) + ' ' + (await scanBad(page)));
       await setVal(page, `[data-p="j.${id}.wage"]`, '20'); await setVal(page, `[data-p="j.${id}.tips"]`, '5'); await setVal(page, `[data-p="j.${id}.hours"]`, '30'); await setVal(page, `[data-p="j.${id}.weeks"]`, '48');
       /* many hours: verdict warns */
       await setVal(page, `[data-p="j.${id}.hours"]`, '80'); S = await stateOf(page); const fh = E.finance(clone(S)); const vu = await verdictUI(page);
