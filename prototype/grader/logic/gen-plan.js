@@ -23,7 +23,9 @@ function spec(i, price0) {
   return ['business', price * 0.9 < 3.2e6 && price < 3.4e6 ? 'sba7a' : 'bankbiz', { id, addr: n, price, rent, growth: GB, buyIn: 0 }]; }
 /* birch is flipped after about 40 months (a value-add rehab), so the plan also shows a sale */
 function flip(rows, pl) { rows.forEach((r) => { if (r[2].id === 'birch') { r[2].exit = 'sell'; r[2].exitMonth = (isFinite(pl && pl.purchase.birch) ? pl.purchase.birch : 28) + 40; } }); }
-function build(rows) { return E.normalize({ g: Object.assign({}, g0), p: Object.assign(E.samplePersonal(), { capital: [] }), houses: rows.map((r) => A(r[0], r[1], Object.assign({}, r[2]))) }); }
+const PROFILES = { default: {}, weak: { living: 5050 }, weakOld: { living: 5050, portfolioTaxPct: 20, salesTaxPct: 25 }, old: { portfolioTaxPct: 20, salesTaxPct: 25 } };
+const prof = (name) => Object.assign(E.samplePersonal(), { capital: [] }, PROFILES[name || 'default']);
+function build(rows, pn) { return E.normalize({ g: Object.assign({}, g0), p: prof(pn || process.env.PROFILE), houses: rows.map((r) => A(r[0], r[1], Object.assign({}, r[2]))) }); }
 function fit(r) { const o = r[2], S = build([r]), h = S.houses[0];
   if (r[0] === 'house') { for (let k = 0; k < 40; k++) { if (E.view(S, h).cf >= 120) break; h.rent += 10; } o.rent = h.rent; return r; }
   const need = r[1] === 'sba7a' ? 1.15 : 1.25, lo = r[1] === 'sba7a' ? 10 : r[1] === 'bankbiz' ? 25 : 35;
@@ -33,6 +35,7 @@ for (let i = 0; i < STEPS; i++) { const r = fit(spec(i, price)); price *= STEP; 
 rows.forEach((r) => { if (r[2].id === 'birch') Object.assign(r[2], { capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8 }); });
 let S = build(rows), pl = E.plan(S); for (let k = 0; k < 4; k++) { flip(rows, pl); S = build(rows); pl = E.plan(S); }
 const f = E.finance(S, pl);
+for (const pn of Object.keys(PROFILES)) { const S2 = build(rows, pn), p2 = E.plan(S2), f2 = E.finance(S2, p2); console.error('  profile', pn.padEnd(8), 'NW', (p2.horizon.nw / 1e6).toFixed(1) + 'M', 'CF', Math.round(p2.horizon.cf), 'status', f2.status, 'lastBuy', p2.lastBuy, 'dti', p2.worst.dti.toFixed(0), '@' + p2.worst.month, 'unf', p2.unfunded.length, 'first', p2.purchase[S2.houses[0].id], 'minLiq', Math.round(f2.kpis.minLiquid)); }
 const nwAt = (y) => (pl.at(y * 12).nw / 1e6).toFixed(1) + 'M';
 console.error('assets', S.houses.length, 'NW', nwAt(28), 'y5', nwAt(5), 'y10', nwAt(10), 'y15', nwAt(15), 'y20', nwAt(20), 'y25', nwAt(25), 'status', f.status, 'last buy', pl.lastBuy, 'unfunded', pl.unfunded.length, 'dti', pl.worst.dti.toFixed(0), 'minLiq', Math.round(f.kpis.minLiquid));
 console.error('first buys', S.houses.slice(0, 10).map((h) => h.id + '@' + pl.purchase[h.id]).join(' '));
