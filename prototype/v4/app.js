@@ -949,6 +949,6 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   render();
   /* local-first plumbing: ask the browser to keep our data, and cache the app for offline use */
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
-  /*SW*/if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});/*ENDSW*/
+  /*SW*/if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { const had = !!navigator.serviceWorker.controller; let rl = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !rl) { rl = true; location.reload(); } }); navigator.serviceWorker.register('sw.js').catch(() => {}); }/*ENDSW*/
   window.__app = { get state() { return S; } };
 })();
