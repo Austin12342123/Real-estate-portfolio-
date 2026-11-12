@@ -396,7 +396,7 @@
     const assetsAt = (t) => { t = Math.min(T, Math.round(t)); const list = hs.map((h) => { if (!held(h, t)) return null; const a = st(h, t); if (!a) return null;
       const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? PAY[h.id][t] + mipNow(h, a) : 0, ex = a.live ? v.X : 0, inc = v.noi * a.gfi;
       return { id: h.id, addr: h.addr, type: h.type || 'house', equity: a.val - a.B - (h.liens || 0) - a.heloc, value: a.val, debt: a.B + (h.liens || 0) + a.heloc,
-        payment: sched + ex + v.escrow + hi, cf: inc - sched - hi, income: inc }; }).filter(Boolean);
+        payment: sched + ex + v.escrow + hi, cf: inc - sched - hi, income: inc, extra: ex }; }).filter(Boolean);
       if (s.cash[t] > 0.5) list.push({ id: '__cash', addr: 'Cash in the trust', type: 'cash', equity: s.cash[t], value: s.cash[t], debt: 0, payment: 0, cf: 0, income: 0 }); return list; };
     /* the pool at the END of month t: how many assets, borrowing room, line drawn, room left, pooled monthly cash flow, cash held */
     const poolAt = (t) => { t = Math.max(0, Math.min(TS, Math.round(t))); const sn = []; for (const h of bought) { if (!held(h, t)) continue; const a = st(h, t); if (!a) continue; const v = a.v, hi = (a.heloc * hel) / 1200, sched = a.live ? PAY[h.id][t] + mipNow(h, a) : 0;

@@ -3,6 +3,7 @@
    G1 Portfolio internal sync, G2 asset <-> portfolio, G3 portfolio <-> finances, G4 asset-page field dependencies (property-based),
    G5 add page <-> asset, G6 navigation / persistence, G7 shared settings, G8 stale / duplicate / contradictory numbers. Never modifies the app. */
 const fs = require('fs');
+const PLH = (E) => require('./plannedhz.js')(E);
 
 exports.run = async function run(X) {
   const { E, Parts, mkS, DATA_V, KEY, money, mkCtx, mkPage, base, collect, EXPAND_JS } = X;
@@ -153,14 +154,14 @@ exports.run = async function run(X) {
   /* ================================================================ Portfolio page consistency */
   const rowEng = (S, pl, h) => { const sp = pl.snap.find((x) => x.id === h.id), sold = !!(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM); return { sp, sold }; };
   function chkPortfolio(g, A, tag) {
-    const S = g.state, pl = planOf(g), sn = pl.horizon, kp = (id) => g.kpis.find((k) => k.id === id) || { v: '', sub: '' };
+    const S = g.state, pl = planOf(g), HZ = PLH(E), sn = HZ.plannedHz(S, pl), restSn = HZ.split(S, pl).rest, isOwnH = (h) => h.status === 'owned', kp = (id) => g.kpis.find((k) => k.id === id) || { v: '', sub: '' };
     const T = (key, ok, w, info) => A.t(key, ok, w, tag + ': ' + info);
     const nw = kp('kpi-networth'), mon = kp('kpi-monthly'), cf = kp('kpi-cashflow'), ds = kp('kpi-dscr');
     T('KPI net worth = engine plan-horizon value', eq(nw.v, sn.nw), 1, nw.v + ' vs ' + $f(sn.nw));
     T('KPI monthly payments = engine', eq(mon.v, sn.monthly), 1, mon.v + ' vs ' + $f(sn.monthly));
     T('KPI cash flow = engine', eq(cf.v, sn.cf), 1, cf.v + ' vs ' + $f(sn.cf));
     T('KPI DSCR = engine (2 dp), or a dash when no loan payment is left', sn.ds > 0.5 ? Math.abs(parseFloat(ds.v) - sn.dscr) <= 0.0051 : ds.v === '—', 0.5, ds.v + ' vs ' + R(sn.dscr, 2));
-    T('engine: sum of per-asset shares = KPI numbers', Math.abs(pl.snap.reduce((a, x) => a + x.equity, 0) - sn.nw) < 1 && Math.abs(pl.snap.reduce((a, x) => a + x.payment, 0) - sn.monthly) < 1 && Math.abs(pl.snap.reduce((a, x) => a + x.cf, 0) - sn.cf) < 1, 0.5, 'snapshot entries do not sum to the KPI totals');
+    T('engine: sum of the planned assets\' shares (+ trust cash) = Planned KPI numbers', Math.abs(restSn.reduce((a, x) => a + x.equity, 0) - sn.nw) < 1 && Math.abs(restSn.reduce((a, x) => a + x.payment, 0) - sn.monthly) < 1 && Math.abs(restSn.reduce((a, x) => a + x.cf, 0) - sn.cf) < 1, 0.5, 'snapshot entries do not sum to the KPI totals');
     /* ledger total row */
     const tp = g.t['ledger-total'] || '', m = /(−?\$[\d,.]+[MB]?)\/mo payments/.exec(tp);
     T('ledger total row exists with payments (equity now lives in the KPI, the breakdown and each row)', !!m, 1, tp);
@@ -169,7 +170,7 @@ exports.run = async function run(X) {
     /* rows */
     const byId = {}; g.rows.forEach((r) => (byId[r.id] = r));
     T('one ledger row per asset', g.rows.length === S.houses.length && S.houses.every((h) => byId[h.id]), 0.5, g.rows.length + ' rows vs ' + S.houses.length + ' assets');
-    const heldPay = [], heldCf = [], heldEq = [];
+    const heldPay = [], heldCf = [], heldEq = [], rPay = [], rCf = [], rEq = []; /* held* = planned rows (Planned page), r* = bought rows (Real page) */
     S.houses.forEach((h) => { const r = byId[h.id]; if (!r) return; const { sp, sold } = rowEng(S, pl, h), pm = /(−?\$[\d,.]+[MB]?)\/mo/.exec(r.pay), cfm = /(−|\+)?\$[\d,.]+[MB]?/.exec(r.cf), eqm = /equity (−?\$[\d,.]+[MBK]?)/.exec(r.pay);
       if (sold) {
         const sm = /sold for (−?\$[\d,.]+[MB]?) in (\d+) mo/.exec(r.exit), pr = pl.exits[h.id].proceeds;
@@ -182,7 +183,7 @@ exports.run = async function run(X) {
         T('row cash flow = asset share of plan-horizon cash flow', cfm && eq(r.cf.replace('/mo', ''), sp.cf), 1.5, h.id + ': ' + r.cf + ' vs ' + $f(sp.cf));
         T('row equity (text, rounded) = asset share of plan-horizon net worth', !!eqm && eq(eqm[1], sp.equity), 1.5, h.id + ': ' + r.pay + ' vs ' + $f(sp.equity));
         T('row data-equity = asset share of plan-horizon net worth (exact)', r.eqAttr !== '' && r.eqAttr != null && Math.abs(+r.eqAttr - sp.equity) <= 0.51, 1, h.id + ': data-equity=' + r.eqAttr + ' vs ' + sp.equity);
-        if (sp.payment > 0.5 && pm) heldPay.push(pm[1]); if (cfm) heldCf.push(r.cf.replace('/mo', '')); if (r.eqAttr) heldEq.push('$' + r.eqAttr);
+        if (isOwnH(h)) { if (sp.payment > 0.5 && pm) rPay.push(pm[1]); if (cfm) rCf.push(r.cf.replace('/mo', '')); if (r.eqAttr) rEq.push('$' + r.eqAttr); } else { if (sp.payment > 0.5 && pm) heldPay.push(pm[1]); if (cfm) heldCf.push(r.cf.replace('/mo', '')); if (r.eqAttr) heldEq.push('$' + r.eqAttr); }
       }
     });
     if (heldPay.length) {
@@ -192,22 +193,28 @@ exports.run = async function run(X) {
       const cashPart = sn.cash > 0.5 ? sn.cash : 0;
       T('sum of row equity + cash from sales = KPI net worth', Math.abs(sum(heldEq) + cashPart - money(nw.v)) <= sumTol(heldEq) + dispTol(nw.v) + 1, 1, sum(heldEq) + '+' + cashPart + ' vs ' + nw.v);
     }
+    if (g.real && g.real.kpis) { /* the Real page covers only the bought assets: its KPIs equal the engine's bought-only numbers and the sum of its rows */
+      const rk = (id) => g.real.kpis.find((k) => k.id === id) || { v: '' }, rh = HZ.realHz(S, pl), sum2 = (arr) => arr.reduce((a, t) => a + money(t), 0);
+      T('Real page KPI net worth = engine (bought assets only)', eq(rk('kpi-networth').v, rh.nw), 1, rk('kpi-networth').v + ' vs ' + $f(rh.nw));
+      T('Real page KPI payments / cash flow = engine (bought assets only)', eq(rk('kpi-monthly').v, rh.monthly) && eq(rk('kpi-cashflow').v, rh.cf), 1, rk('kpi-monthly').v + ' ' + rk('kpi-cashflow').v + ' vs ' + $f(rh.monthly) + ' ' + $f(rh.cf));
+      T('Real page: sum of its rows = its KPIs (payments, cash flow, net worth)', Math.abs(sum2(rPay) - money(rk('kpi-monthly').v)) <= sumTol(rPay) + dispTol(rk('kpi-monthly').v) + 1 && Math.abs(sum2(rCf) - money(rk('kpi-cashflow').v)) <= sumTol(rCf) + dispTol(rk('kpi-cashflow').v) + 1 && Math.abs(sum2(rEq) - money(rk('kpi-networth').v)) <= sumTol(rEq) + dispTol(rk('kpi-networth').v) + 1, 1, sum2(rPay) + '/' + sum2(rCf) + '/' + sum2(rEq));
+    }
     /* breakdown */
     const bd = (g.tables.breakdown || []).filter((r) => /\$/.test(r[1] || '')), find = (re) => bd.find((r) => re.test(r[0])), port = find(/^Portfolio$/);
     T('breakdown has a Portfolio row', !!port, 1, JSON.stringify(bd.map((r) => r[0])));
     if (port) {
       T('breakdown Portfolio net worth = KPI net worth', eqT(port[2], nw.v), 1, port[2] + ' vs ' + nw.v);
       T('breakdown Portfolio cash flow = KPI cash flow', eqT(port[3], cf.v), 1, port[3] + ' vs ' + cf.v);
-      T('breakdown Portfolio value = sum of snapshot values', eq(port[1], pl.snap.reduce((a, x) => a + x.value, 0)), 0.5, port[1] + ' vs ' + $f(pl.snap.reduce((a, x) => a + x.value, 0)));
+      T('breakdown Portfolio value = sum of snapshot values', eq(port[1], restSn.reduce((a, x) => a + x.value, 0)), 0.5, port[1] + ' vs ' + $f(restSn.reduce((a, x) => a + x.value, 0)));
       const parts = bd.filter((r) => r !== port);
       T('breakdown rows add up to the Portfolio row (net worth and cash flow)', Math.abs(parts.reduce((a, r) => a + money(r[2]), 0) - money(port[2])) <= sumTol(parts.map((r) => r[2])) + dispTol(port[2]) + 1 && Math.abs(parts.reduce((a, r) => a + money(r[3]), 0) - money(port[3])) <= sumTol(parts.map((r) => r[3])) + dispTol(port[3]) + 1, 1, JSON.stringify(parts.map((r) => r[2])) + ' vs ' + port[2]);
       const types = { house: /^Single-family homes \((\d+)\)/, commercial: /^Commercial properties \((\d+)\)/, business: /^Businesses \((\d+)\)/ };
-      let okc = true, info = ''; for (const tpn in types) { const row = find(types[tpn]), n = pl.snap.filter((x) => x.type === tpn).length; if ((row ? +types[tpn].exec(row[0])[1] : 0) !== n) { okc = false; info = tpn + ' ' + (row ? row[0] : 'missing') + ' vs ' + n; } }
+      let okc = true, info = ''; for (const tpn in types) { const row = find(types[tpn]), n = restSn.filter((x) => x.type === tpn).length; if ((row ? +types[tpn].exec(row[0])[1] : 0) !== n) { okc = false; info = tpn + ' ' + (row ? row[0] : 'missing') + ' vs ' + n; } }
       T('breakdown type counts match the assets held at the snapshot', okc, 0.5, info);
       const cashRow = find(/^Trust cash$/); T('breakdown "Trust cash" row = cash the trust holds (sale proceeds and reinvested cash flow not yet spent; shown only when > 0)', sn.cash > 0.5 ? !!cashRow && eq(cashRow[2], sn.cash) : !cashRow, 0.5, JSON.stringify(cashRow) + ' vs ' + $f(sn.cash));
     }
     /* KPI subtext */
-    T('net worth subtext: asset count and plan length match (cash from sales is in the breakdown Sold row)', new RegExp('^' + S.houses.length + ' assets · ' + S.g.planYears + '-yr plan$').test(nw.sub), 0.5, nw.sub + ' (assets ' + S.houses.length + ', years ' + S.g.planYears + ')');
+    T('net worth subtext: asset count and plan length match (cash from sales is in the breakdown Sold row)', new RegExp('^' + S.houses.filter((h) => !isOwnH(h)).length + ' assets · ' + S.g.planYears + '-yr plan$').test(nw.sub), 0.5, nw.sub + ' (planned assets ' + S.houses.filter((h) => !isOwnH(h)).length + ', years ' + S.g.planYears + ')');
     T('monthly payments subtext extra = plan-horizon extra', sn.extra > 0.5 ? /incl\. (\$[\d,.]+[MB]?) extra/.test(mon.sub) && eq(/incl\. (\$[\d,.]+[MB]?) extra/.exec(mon.sub)[1], sn.extra) : !/extra/.test(mon.sub), 0.5, mon.sub + ' vs ' + $f(sn.extra));
     T('cash flow subtext "after extra" = cash flow minus extra', sn.extra > 0.5 ? /([−+]\$[\d,.]+[MB]?) after extra/.test(cf.sub) && eq(/([−+]\$[\d,.]+[MB]?) after extra/.exec(cf.sub)[1], sn.cfx) && Math.abs(sn.cf - sn.extra - sn.cfx) < 1 : true, 0.5, cf.sub + ' vs ' + $f(sn.cfx));
     /* chart */
@@ -223,11 +230,11 @@ exports.run = async function run(X) {
       const want = !pq.length ? 'All ' + S.houses.length + ' assets are bought.' : unf ? (nOwn ? nOwn + ' bought. ' : 'Nothing bought yet. ') + (pq.length - unf) + ' of ' + pq.length + ' planned are possible; ' + unf + ' cannot.' : (nOwn ? nOwn + ' bought. ' : 'Nothing bought yet. ') + 'All ' + pq.length + ' planned are possible; the last is funded at ' + monw(lastR) + '.';
       T('headline = bought count, whether every planned asset is possible, and the month (from today) the trust can pay for the last', hl.replace(/\s+/g, ' ').trim() === want, 2, hl + ' | want ' + want); }
     /* extra now / later */
-    const X0 = pl.extraNow, Xall = pl.extraNow + pl.extraLater, te = g.t['total-extra'] || '';
+    const X0 = HZ.plannedExtraNow(S, pl), Xall = X0 + pl.extraLater, te = g.t['total-extra'] || '';
     const mx = /(\$[\d,.]+[MB]?)\/mo extra now/.exec(te), ml = /\+ ?(\$[\d,.]+[MB]?) later/.exec(te);
     T('header "extra now" = extra payments actually being paid (loans still being paid down)', !!mx && eq(mx[1], X0), 1, te + ' vs ' + $f(X0));
     T('header "+ later" = extras that start once the planned assets are bought', Xall - X0 > 0.5 ? !!ml && eq(ml[1], Xall - X0) : !ml, 1, te + ' vs later ' + $f(Xall - X0));
-    const rowSum = g.rows.reduce((a, r) => a + (r.extra == null ? (pl.V[r.id] ? pl.V[r.id].X : 0) /* sold rows have no Extra input: use the extra the engine had set on them */ : fnum(r.extra)), 0);
+    const rowSum = g.rows.filter((r) => { const hh = S.houses.find((x) => x.id === r.id); return hh && !isOwnH(hh); }).reduce((a, r) => a + (r.extra == null ? (pl.V[r.id] ? pl.V[r.id].X : 0) /* sold rows have no Extra input: use the extra the engine had set on them */ : fnum(r.extra)), 0);
     T('extra now + later = extras that are actually paid (never more than the row inputs; the difference is extras typed on assets with no loan to pay down)', mx && Math.abs(money(mx[1]) + (ml ? money(ml[1]) : 0) - Xall) <= g.rows.length * 0.5 + 2 && money(mx[1]) + (ml ? money(ml[1]) : 0) <= rowSum + g.rows.length * 0.5 + 2, 1, te + ' vs engine ' + $f(Xall) + ', row inputs ' + rowSum);
     /* outside cash */
     const oc = g.warns.find((w) => w.id === 'outside-cash');
@@ -241,7 +248,7 @@ exports.run = async function run(X) {
       T('rows are in list (= buy) order inside their category sections (Bought first, then Planned), sold assets last', JSON.stringify(g.rows.map((r) => r.id)) === JSON.stringify(show), 0.5, g.rows.map((r) => r.id).join(',') + ' vs ' + show.join(',')); }
     /* drivers */
     if (g.drivers.length) {
-      const drv = pl.assetsAt(pl.planM).sort((a, b) => b.equity - a.equity).slice(0, 6); let ok = drv.length === g.drivers.length, info = '';
+      const drv = pl.assetsAt(pl.planM).filter((x) => !isOwnH(S.houses.find((h) => h.id === x.id) || {})).sort((a, b) => b.equity - a.equity).slice(0, 6); let ok = drv.length === g.drivers.length, info = '';
       drv.forEach((d, i) => { const x = g.drivers[i]; if (!x || x.addr !== d.addr || !eq((/(−?\$[\d,.]+[MB]?)/.exec(x.t) || [])[1], d.equity)) { ok = false; info = (x ? x.addr + ' ' + x.t : 'missing') + ' vs ' + d.addr + ' ' + $f(d.equity); } });
       T('"What drives net worth" equities = engine shares (= row equities)', ok, 1, info);
     }
