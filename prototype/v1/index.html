@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Portfolio Prototype v1</title>
+<style>
+:root{--bg:#f2f2f7;--card:#fff;--ink:#111;--mut:#7c7c82;--line:#e5e5ea;--acc:#0a6cff;--ok:#1a8f4c;--warn:#a86200;--bad:#d1302b;--flash:#fff0a0;--bar:#dfe6f5}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mut:#98989f;--line:#2c2c2e;--acc:#4c9aff;--ok:#32d27a;--warn:#ffb340;--bad:#ff6961;--flash:#5a4a00;--bar:#2a3550}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 -apple-system,system-ui,"Segoe UI",sans-serif}
+#app{max-width:430px;margin:0 auto;min-height:100vh;padding:calc(env(safe-area-inset-top) + 8px) 16px 96px}
+h1{font-size:28px;margin:6px 0 10px;display:flex;justify-content:space-between;align-items:center}
+.ic{background:none;border:0;font-size:22px;color:var(--acc);padding:6px 8px;cursor:pointer}
+.card{background:var(--card);border-radius:14px;padding:12px 14px;margin:0 0 12px}
+.kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.kpi small{display:block;color:var(--mut);font-size:12px}.kpi b{font-size:18px}
+.bar{height:8px;background:var(--bar);border-radius:4px;margin:10px 0 4px;position:relative;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--acc);border-radius:4px}
+.cap{display:flex;justify-content:space-between;font-size:12px;color:var(--mut)}
+.sec{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin:14px 4px 6px}
+.row{padding:10px 0;border-top:1px solid var(--line);cursor:pointer}.row:first-of-type{border-top:0}
+.r1,.r2{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.r2{margin-top:6px;font-size:13px;color:var(--mut)}
+.addr{font-weight:600}.tag{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:0 5px;margin-left:6px}
+.ex{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--mut)}
+.iw{display:inline-flex;align-items:center;background:var(--bg);border-radius:8px;padding:0 8px}
+.iw em{font-style:normal;color:var(--mut)}
+input,select{font:inherit;font-size:16px;color:var(--ink);background:transparent;border:0;outline:0;min-width:0}
+.iw input{width:84px;text-align:right;padding:8px 2px;font-weight:600}
+.iw:focus-within{box-shadow:0 0 0 2px var(--acc)}
+.calc .iw input{color:var(--mut);font-weight:400}
+.calc .iw{background:transparent;border:1px dashed var(--line)}
+select{color:var(--acc);max-width:130px}
+.st{font-weight:600;white-space:nowrap}.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.f{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-top:1px solid var(--line)}.f:first-of-type{border-top:0}
+.lb i{color:var(--acc);font-style:normal;font-weight:700}
+.note{font-size:12px;color:var(--mut);margin:4px 0 0}
+.chip{display:inline-block;font-size:12px;background:var(--bg);border-radius:10px;padding:2px 8px;margin:4px 6px 0 0;color:var(--mut)}
+.chip.link{color:var(--acc);cursor:pointer}
+.top{display:flex;align-items:center;gap:6px;margin:4px 0 8px}
+.top h2{margin:0;font-size:20px;flex:1}
+.top input.t{font-size:20px;font-weight:700;width:100%}
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(env(safe-area-inset-bottom) + 10px);background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+.bottom>div{max-width:430px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--bad);border:1px solid var(--line);width:100%;margin-top:8px}
+.seg{display:flex;background:var(--bg);border-radius:8px;padding:2px}.seg button{flex:1;border:0;background:none;padding:5px;border-radius:6px;font:inherit;font-size:13px;color:var(--mut)}.seg button.on{background:var(--card);color:var(--ink);font-weight:600}
+@keyframes fl{from{background:var(--flash)}to{background:transparent}}
+.flash{animation:fl .8s ease-out;border-radius:6px}
+</style></head><body><div id="app"></div>
+<script>
+/* ---------- state ---------- */
+const GDEF={cap:85,haircut:0,closing:3,vac:5,mgmt:8,maint:1,appr:0,hrate:8.5,dti:43,p1:200000,p2:200000,rentCount:75,otherDebt:0};
+const seed=()=>({g:{...GDEF},houses:[
+ {id:'oak',addr:'12 Oak St',status:'owned',price:300000,dp:20,rate:6.5,term:360,extra:1000,driver:'extra',wait:24,rent:2100,tax:300,ins:100,hoa:0,target:'elm'},
+ {id:'elm',addr:'8 Elm Ave',status:'planned',price:240000,dp:20,rate:6.75,term:360,extra:100,driver:'extra',wait:24,rent:1800,tax:250,ins:90,hoa:0,target:'pine'},
+ {id:'pine',addr:'3 Pine Rd',status:'planned',price:200000,dp:20,rate:7,term:360,extra:0,driver:'extra',wait:24,rent:1600,tax:200,ins:80,hoa:0,target:''}]});
+let S;try{S=JSON.parse(localStorage.getItem('rep-proto-v1'))}catch(e){}
+if(!S||!S.houses)S=seed();
+const save=()=>{try{localStorage.setItem('rep-proto-v1',JSON.stringify(S))}catch(e){}};
+const G=()=>S.g, H=id=>S.houses.find(h=>h.id===id);
+
+/* ---------- finance engine (verified against spec test cases) ---------- */
+const mi=h=>h.rate/1200, loan=h=>h.price*(1-h.dp/100);
+const pmt=(L,i,n)=>L<=0?0:i?L*i/(1-Math.pow(1+i,-n)):L/n;
+const bal=(h,k,A)=>{const L=loan(h),i=mi(h);const b=i?L*Math.pow(1+i,k)-A*(Math.pow(1+i,k)-1)/i:L-A*k;return Math.max(0,b)};
+const val=(h,k)=>h.price*Math.pow(1+G().appr/100,k/12);
+const payoffN=(h,X)=>{const L=loan(h),i=mi(h),A=pmt(L,i,h.term)+X;if(L<=0)return 0;if(A<=i*L)return Infinity;return Math.ceil(i?-Math.log(1-i*L/A)/Math.log(1+i):L/A)};
+const need=h=>{const t=H(h.target);return t?t.price*(t.dp/100+G().closing/100):0};
+const locMonths=(h,X)=>{const D=need(h),A=pmt(loan(h),mi(h),h.term)+X,g=G();
+ for(let k=0;k<=600;k++){const head=Math.max(0,g.cap/100*val(h,k)-bal(h,k,A));if(head*(1-g.haircut/100)>=D)return k}return Infinity};
+const extraFor=(h,m)=>{if(locMonths(h,0)<=m)return 0;let lo=0,hi=loan(h)+1;if(locMonths(h,hi)>m)return null;
+ for(let j=0;j<50;j++){const mid=(lo+hi)/2;locMonths(h,mid)<=m?hi=mid:lo=mid}return hi};
+function view(h){const g=G(),L=loan(h),i=mi(h),P=pmt(L,i,h.term);
+ let X=h.extra,infeasible=false;
+ if(h.driver==='months'){const x=extraFor(h,h.wait);if(x==null){infeasible=true;X=0}else X=x}
+ const egi=h.rent*(1-g.vac/100),opex=h.tax+h.ins+h.hoa+g.maint/100*h.price/12+g.mgmt/100*egi,noi=egi-opex;
+ const pitia=P+h.tax+h.ins+h.hoa,locM=locMonths(h,X);
+ return{L,P,X,infeasible,egi,noi,cf:noi-P,pitia,D:need(h),down:h.price*h.dp/100,
+  payoff:payoffN(h,X),locM,head0:Math.max(0,g.cap/100*h.price-L),bal0:L}}
+const owned=()=>S.houses.filter(h=>h.status==='owned');
+function portfolio(list=owned()){let debt=0,value=0,noi=0,ds=0,cf=0,extra=0,rent=0;
+ for(const h of list){const v=view(h);debt+=v.L;value+=h.price;noi+=v.noi;ds+=v.P;cf+=v.cf;extra+=v.X;rent+=h.rent}
+ return{debt,value,equity:value-debt,cltv:value?debt/value*100:0,noi,cf,dscr:ds?noi/ds:0,extra,rent}}
+function offset(h){const src=S.houses.find(x=>x.target===h.id&&x.id!==h.id);return h.status==='planned'&&src?view(src).locM+offsetOf(src):0}
+const offsetOf=h=>h.status==='planned'?offset(h):0;
+function afford(h){const t=H(h.target);if(!t)return{cls:'',txt:'No target'};const v=view(h),g=G();
+ if(!isFinite(v.locM))return{cls:'bad',txt:'✗ Not reachable',why:'Cap leaves no room within 50 years'};
+ const list=[...owned(),...(owned().includes(t)?[]:[t])];
+ const inc=(g.p1+g.p2)/12+g.rentCount/100*list.reduce((s,x)=>s+x.rent,0);
+ const debts=g.otherDebt+list.reduce((s,x)=>s+view(x).pitia,0)+need(h)*g.hrate/1200;
+ const dti=debts/inc*100,lim=g.dti;
+ const cls=dti<=lim*0.8?'ok':dti<=lim?'warn':'bad',txt=cls==='ok'?'✓ Afford':cls==='warn'?'△ Tight':'✗ Short';
+ return{cls,txt,dti,why:`DTI ${dti.toFixed(0)}% vs ${lim}% limit`}}
+
+/* ---------- formatting ---------- */
+const $f=n=>(n<0?'−':'')+'$'+Math.round(Math.abs(n)).toLocaleString('en-US');
+const $s=n=>(n>=0?'+':'−')+'$'+Math.round(Math.abs(n)).toLocaleString('en-US');
+const mo=m=>!isFinite(m)?'never':m===0?'now':m<24?m+' mo':Math.floor(m/12)+'y '+(m%12)+'m';
+const r=(n,d=0)=>isFinite(n)?(+n.toFixed(d)).toString():'∞';
+
+/* ---------- views ---------- */
+const field=(label,p,val,o={})=>`<label class="f ${o.calc?'calc':''}"><span class="lb">${label}${o.calc?' <i>~</i>':''}</span><span class="iw">${o.pre?`<em>${o.pre}</em>`:''}<input inputmode="decimal" data-p="${p}" data-k="${p}" value="${val}">${o.suf?`<em>${o.suf}</em>`:''}</span></label>`;
+const targetSel=h=>`<select data-sel="${h.id}">${'<option value="">— none —</option>'+S.houses.filter(x=>x.id!==h.id).map(x=>`<option value="${x.id}" ${h.target===x.id?'selected':''}>→ ${x.addr}</option>`).join('')}</select>`;
+
+function main(){const p=portfolio(),g=G(),tot=S.houses.reduce((s,h)=>s+view(h).X,0);
+ const first=owned().find(h=>h.target&&isFinite(view(h).locM)),t=first&&H(first.target);
+ const rows=S.houses.map(h=>{const v=view(h),a=afford(h),t=H(h.target),off=offset(h);
+  const loc=!t?'No target set':`LOC ${mo(v.locM)}${h.status==='planned'&&isFinite(v.locM)&&off?` <span title="after its own purchase">(≈${mo(v.locM+off)} from now)</span>`:''}`;
+  return `<div class="row" data-go="h/${h.id}"><div class="r1"><span><span class="addr">${h.addr}</span><span class="tag">${h.status}</span></span>
+   <span class="ex ${h.driver==='months'?'calc':''}" >Extra<span class="iw"><em>$</em><input inputmode="decimal" data-p="h.${h.id}.extra" data-k="x${h.id}" value="${r(v.X)}"></span></span></div>
+   <div class="r2"><span>${loc} ${targetSel(h)}</span><span class="st ${a.cls}">${a.txt}</span></div></div>`}).join('');
+ return `<h1>Portfolio <span><button class="ic" data-go="settings" aria-label="Settings">⚙</button></span></h1>
+ <div class="card"><div class="kpis">
+  <div class="kpi"><small>Equity</small><b data-k="eq">${$f(p.equity)}</b></div>
+  <div class="kpi"><small>Cash flow / mo</small><b class="${p.cf<0?'bad':''}" data-k="cf">${$s(p.cf)}</b></div>
+  <div class="kpi"><small>DSCR</small><b class="${p.dscr<1?'bad':p.dscr<1.2?'warn':''}" data-k="ds">${r(p.dscr,2)}</b></div></div>
+  <div class="bar"><i style="width:${Math.min(100,p.cltv/g.cap*100)}%"></i></div>
+  <div class="cap"><span data-k="cl">Debt ${r(p.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
+  ${first?`<p class="note">Next: <b>${t.addr}</b> in <b data-k="nx">${mo(view(first).locM)}</b> via ${first.addr}</p>`:''}</div>
+ <div class="sec">Extra monthly payments &amp; line of credit</div><div class="card" id="ledger">${rows}</div>
+ <div class="bottom"><div><span>Total extra / mo <b data-k="tot">${$f(tot)}</b></span><button class="btn" data-add>+ House</button></div></div>`}
+
+function house(h){const v=view(h),g=G(),a=afford(h),t=H(h.target),p=portfolio(),others=portfolio(owned().filter(x=>x.id!==h.id));
+ const sooner=t&&isFinite(v.locM)?locMonths(h,v.X)-locMonths(h,v.X+100):0;
+ const P=`h.${h.id}.`;
+ return `<div class="top"><button class="ic" data-go="">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${h.addr}"></h2></div>
+ <div class="card"><div class="hero"><div class="kpi"><small>Payment (P&amp;I)</small><b data-k="pi">${$f(v.P)}</b></div>
+  <div class="kpi"><small>Cash flow / mo</small><b class="${v.cf<0?'bad':''}" data-k="hcf">${$s(v.cf)}</b><small>${$s(v.cf-v.X)} after extra</small></div></div>
+  <div class="seg" style="margin-top:10px"><button class="${h.status==='owned'?'on':''}" data-status="owned">Owned</button><button class="${h.status==='planned'?'on':''}" data-status="planned">Planned</button></div></div>
+ <div class="sec">Purchase</div><div class="card">
+  ${field('Price',P+'price',h.price,{pre:'$'})}${field('Down payment',P+'dp',r(h.dp,2),{suf:'%'})}
+  ${field('Down payment $',P+'down',r(v.down),{pre:'$',calc:1})}${field('Loan amount','',r(v.L),{pre:'$',calc:1}).replace('data-p=""','readonly')}</div>
+ <div class="sec">Loan</div><div class="card">
+  ${field('Interest rate',P+'rate',h.rate,{suf:'%'})}${field('Term (years)',P+'termY',h.term/12,{})}
+  ${field('Extra / month',P+'extra',r(v.X),{pre:'$',calc:h.driver==='months'})}
+  ${field('Paid off in (months)',P+'payoff',r(v.payoff),{calc:1})}
+  <p class="note">P&amp;I ${$f(v.P)} + extra ${$f(v.X)} = ${$f(v.P+v.X)} to principal &amp; interest. Months to payoff = ${isFinite(v.payoff)?mo(v.payoff):'never'}.</p></div>
+ <div class="sec">Rent &amp; expenses</div><div class="card">
+  ${field('Monthly rent',P+'rent',h.rent,{pre:'$'})}${field('Property tax / mo',P+'tax',h.tax,{pre:'$'})}
+  ${field('Insurance / mo',P+'ins',h.ins,{pre:'$'})}${field('HOA / mo',P+'hoa',h.hoa,{pre:'$'})}
+  <span class="chip link" data-go="settings">Vacancy ${g.vac}%</span><span class="chip link" data-go="settings">Mgmt ${g.mgmt}%</span><span class="chip link" data-go="settings">Repairs ${g.maint}%/yr</span>
+  <p class="note">Net operating income ${$f(v.noi)}/mo · after P&amp;I ${$s(v.cf)}/mo</p></div>
+ <div class="sec">Line of credit strategy</div><div class="card">
+  <div class="f"><span class="lb">Funds</span>${targetSel(h)}</div>
+  ${t?`${field('Cash needed',' ',r(v.D),{pre:'$',calc:1}).replace('data-p=" "','readonly')}
+  ${field('Months until LOC',P+'wait',isFinite(v.locM)?v.locM:'',{calc:h.driver==='extra'})}
+  <div class="f"><span class="lb">Debt cap ${g.cap}% — room now</span><b>${$f(v.head0)}</b></div>
+  <div class="f"><span class="lb">Status</span><b class="st ${a.cls}">${a.txt}</b></div>
+  <p class="note">${v.infeasible?'⚠ That wait is not reachable even with a full payoff. ':''}${a.why||''}</p>
+  ${sooner>0?`<span class="chip">+$100/mo → ${sooner} mo sooner</span>`:''}`:`<p class="note">Pick the house this line of credit will fund.</p>`}</div>
+ <div class="sec">Impact on portfolio</div><div class="card">
+  <div class="f"><span class="lb">Cash flow</span><span>${$s(others.cf)} → <b>${$s(p.cf)}</b></span></div>
+  <div class="f"><span class="lb">Equity</span><span>${$f(others.equity)} → <b>${$f(p.equity)}</b></span></div>
+  <div class="f"><span class="lb">DSCR</span><span>${r(others.dscr,2)} → <b>${r(p.dscr,2)}</b></span></div>
+  <p class="note">${h.status==='planned'?'Planned houses are not counted yet. Mark Owned to see the effect.':'Portfolio without this house → with it.'}</p></div>
+ <button class="btn ghost" data-del="${h.id}">Remove house</button>`}
+
+function settings(){const g=G(),F=(l,k,o)=>field(l,'g.'+k,g[k],o);
+ return `<div class="top"><button class="ic" data-go="">‹</button><h2>Assumptions</h2></div>
+ <div class="sec">Borrowing</div><div class="card">${F('Max debt on a house (cap)','cap',{suf:'%'})}${F('Lender appraisal haircut','haircut',{suf:'%'})}${F('Closing costs (of price)','closing',{suf:'%'})}${F('LOC interest rate','hrate',{suf:'%'})}</div>
+ <div class="sec">Co-signers &amp; qualifying</div><div class="card">${F('Parent 1 income / yr','p1',{pre:'$'})}${F('Parent 2 income / yr','p2',{pre:'$'})}${F('DTI limit','dti',{suf:'%'})}${F('Rent counted as income','rentCount',{suf:'%'})}${F('Other monthly debts','otherDebt',{pre:'$'})}</div>
+ <div class="sec">Operating costs</div><div class="card">${F('Vacancy','vac',{suf:'%'})}${F('Management (of rent)','mgmt',{suf:'%'})}${F('Repairs reserve (of value / yr)','maint',{suf:'%'})}${F('Appreciation / yr','appr',{suf:'%'})}</div>
+ <div class="sec">Data</div><div class="card"><button class="btn" data-export>Export backup (JSON)</button><button class="btn ghost" data-reset style="color:var(--ink)">Reset sample data</button><p class="note">All data stays on this device. Prototype stores in local browser storage.</p></div>`}
+
+/* ---------- router / render ---------- */
+let prev={};
+function render(){const route=location.hash.slice(2),a=document.activeElement;
+ const id=a&&a.dataset&&(a.dataset.p||a.dataset.sel),typed=a&&a.value,pos=a&&a.selectionStart;
+ const app=document.getElementById('app');
+ app.innerHTML=route==='settings'?settings():route.startsWith('h/')&&H(route.slice(2))?house(H(route.slice(2))):main();
+ if(id){const el=app.querySelector(`[data-p="${id}"]`);if(el){el.focus();if(a.dataset.p){el.value=typed;try{el.setSelectionRange(pos,pos)}catch(e){}}}}
+ const cur={};app.querySelectorAll('[data-k]').forEach(el=>{const k=el.dataset.k,v=el.value!==undefined&&el.tagName==='INPUT'?el.value:el.textContent;cur[k]=v;
+  if(k in prev&&prev[k]!==v&&el!==document.activeElement)(el.closest('label,.kpi')||el).classList.add('flash')});prev=cur}
+addEventListener('hashchange',()=>{prev={};scrollTo(0,0);render()});
+
+/* ---------- events ---------- */
+function setField(p,s){const [t,x,k]=p.split('.');
+ if(k==='addr'){H(x).addr=s;return true}
+ const n=parseFloat(String(s).replace(/[^0-9.\-]/g,''));if(isNaN(n))return false;
+ if(t==='g'){G()[x]=n;return true}
+ const h=H(x);
+ if(k==='extra'){h.extra=Math.max(0,n);h.driver='extra'}
+ else if(k==='wait'){h.wait=Math.max(0,Math.round(n));h.driver='months'}
+ else if(k==='down'){h.dp=Math.min(100,Math.max(0,n/h.price*100))}
+ else if(k==='termY'){h.term=Math.max(1,Math.round(n*12))}
+ else if(k==='payoff'){const L=loan(h),i=mi(h);h.extra=Math.max(0,pmt(L,i,Math.max(1,Math.round(n)))-pmt(L,i,h.term));h.driver='extra'}
+ else h[k]=n;
+ return true}
+const app=document.getElementById('app');
+app.addEventListener('input',e=>{const p=e.target.dataset.p;if(p&&setField(p,e.target.value)){save();render()}});
+app.addEventListener('change',e=>{const s=e.target.dataset.sel;if(s){H(s).target=e.target.value;save();render()}});
+app.addEventListener('click',e=>{const t=e.target;
+ if(t.closest('input,select'))return;
+ const go=t.closest('[data-go]');
+ if(t.dataset.add!==undefined){const id='h'+Date.now();S.houses.push({id,addr:'New house',status:'planned',price:250000,dp:20,rate:6.75,term:360,extra:0,driver:'extra',wait:24,rent:1800,tax:250,ins:100,hoa:0,target:''});save();location.hash='#/h/'+id;return}
+ if(t.dataset.del){if(confirm('Remove this house?')){S.houses=S.houses.filter(h=>h.id!==t.dataset.del);S.houses.forEach(h=>{if(h.target===t.dataset.del)h.target=''});save();location.hash='#/'}return}
+ if(t.dataset.status){H(location.hash.slice(4)).status=t.dataset.status;save();render();return}
+ if(t.dataset.export!==undefined){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));a.download='portfolio-backup.json';a.click();return}
+ if(t.dataset.reset!==undefined){if(confirm('Reset to sample data?')){S=seed();save();render()}return}
+ if(go){location.hash='#/'+go.dataset.go}});
+render();
+</script></body></html>

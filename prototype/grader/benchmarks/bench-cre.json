@@ -1,0 +1,457 @@
+{
+ "retrieved": "2026-11-08",
+ "caveat": "Verified from fetched primary pages: PMMS mortgage rates and SBA 504 program limits. BizBuySell/LoopNet/Crexi/CBRE returned 403 bot blocks and were not bypassed; FRED would not connect. All other values are secondary search-snippet data and stay marked unverified.",
+ "sources": [
+  {
+   "name": "FRED MORTGAGE30US (via search snippet)",
+   "url": "https://fred.stlouisfed.org/graph/?g=15LoW",
+   "fetched": false,
+   "dataDate": "2026-11-05",
+   "note": "30y PMMS 7.18 (10-29: 7.24; 10-22: 7.32; 10-15: 7.40)"
+  },
+  {
+   "name": "macroradar / forecasts.org (snippets)",
+   "url": "https://www.macroradar.io/as-of/2026-11-01",
+   "fetched": false,
+   "dataDate": "2026-10 / 2026-09-02",
+   "note": "10y 4.98 (Oct 2026); prime 6.75 and 10y 4.79 at 2026-09-02, internally inconsistent with fed funds 3.63; low confidence"
+  },
+  {
+   "name": "CRE Daily on CBRE H1 2026 Cap Rate Survey",
+   "url": "https://www.credaily.com/briefs/cbre-h1-2026-cap-rate-survey-finds-sentiment-split/",
+   "fetched": false,
+   "dataDate": "2026-H1",
+   "note": "all-property median ~6.6%; qualitative only for retail/industrial"
+  },
+  {
+   "name": "Lender site citing Colliers/Cushman Q2 2026 (apartmentloanstore)",
+   "url": "https://apartmentloanstore.com/index.php/node/13110",
+   "fetched": false,
+   "dataDate": "2026-Q2",
+   "note": "national avg cap: MF 5.2, industrial 5.2, retail 6.7, strip ~6.4, office 7.9; weak provenance"
+  },
+  {
+   "name": "Northmarq Q1 2026 Midwest",
+   "url": "https://www.northmarq.com/sites/default/files/docs/NMMarketInsights-Q12026-Midwest.pdf",
+   "fetched": false,
+   "dataDate": "2026-Q1",
+   "note": "Midwest multifamily avg cap 5.9"
+  },
+  {
+   "name": "Lev: SBA 504 owner-occupied CRE 2026 and CDC pages",
+   "url": "https://www.lev.com/blog/sba-504-loans-owner-occupied-cre-2026",
+   "fetched": false,
+   "dataDate": "2026",
+   "note": "debenture cap 5.5M standard, ~10% down, 25y (20y option), 51% owner occupancy"
+  },
+  {
+   "name": "Lev unanchored center bridge loans",
+   "url": "https://www.lev.com/blog/unanchored-center-bridge-loans-nationally",
+   "fetched": false,
+   "dataDate": "2026",
+   "note": "LTV 60-75, DSCR 1.20-1.35, median 70/1.25"
+  },
+  {
+   "name": "CLS CRE bridge loan rates",
+   "url": "https://clscre.com/financing/bridge-loan-rates.html",
+   "fetched": false,
+   "dataDate": "2026-10",
+   "note": "bridge 7.75-11.75%"
+  },
+  {
+   "name": "NPLA market report",
+   "url": "https://nplaonline.com/market-report/",
+   "fetched": false,
+   "dataDate": "2026",
+   "note": "bridge points median 2.4, DSCR points ~1.6, bridge cluster 10-11%"
+  },
+  {
+   "name": "DSCR loan guides (x2mortgage, lendfriend, financer)",
+   "url": "https://www.lendfriendmtg.com/learning-center/dscr-loan-requirements-in-2026",
+   "fetched": false,
+   "dataDate": "2026-06..08",
+   "note": "DSCR min 1.0, down 20-25%, rate 6.0-8.75, typical 7.25-7.75; conventional investor 6.0-6.75"
+  },
+  {
+   "name": "ATTOM Q2 2026 flipping",
+   "url": "https://www.attomdata.com/news/market-trends/flipping/q1-2026-home-flipping-report/",
+   "fetched": false,
+   "dataDate": "2026-Q2",
+   "note": "gross margin 21.5%, profit 60,526, 161 days hold; rehab 20-33% of ARV per flippers"
+  },
+  {
+   "name": "Cotality SFR index (via GlobeSt/CRE Daily)",
+   "url": "https://www.cotality.com/press-releases/annual-single-family-rent-growth-returns-to-seasonal-norms",
+   "fetched": false,
+   "dataDate": "2026-08",
+   "note": "SFR rent growth 2.0% YoY; no rent-to-price median found"
+  },
+  {
+   "name": "Commercial Loan Direct qualification guide",
+   "url": "https://commercialloandirect.com/how-to-qualify-for-a-commercial-mortgage-in-2026",
+   "fetched": false,
+   "dataDate": "2026",
+   "note": "net worth >= 1.0x loan rule of thumb; liquidity 5-10% of loan; 45-90+ days to close"
+  },
+  {
+   "name": "Property mgmt fee blogs (hellodata, apartmentlist)",
+   "url": "https://www.hellodata.ai/help-articles/what-are-typical-commercial-property-management-fees",
+   "fetched": false,
+   "dataDate": "2024-2026",
+   "note": "residential 8-12%, MF 4-10%, commercial 4-12%, NNN cap can be ~1%"
+  },
+  {
+   "name": "Freddie Mac - Primary Mortgage Market Survey (fetched directly 2026-11-08)",
+   "url": "https://www.freddiemac.com/pmms",
+   "fetched": true,
+   "dataDate": "2026-11-05",
+   "note": "Primary source. Week of 11/05/2026: 30-yr fixed 7.18% (7.24% prior week, 6.22% a year ago); 15-yr fixed 6.57% (6.60% prior, 5.50% a year ago)."
+  },
+  {
+   "name": "SBA.gov - 504 loans (fetched directly 2026-11-08)",
+   "url": "https://www.sba.gov/funding-programs/loans/504-loans",
+   "fetched": true,
+   "dataDate": "2026-11-08",
+   "note": "Primary source. Max $5.5M; 10/20/25-year fixed terms; rate pegged to 10-year Treasury."
+  }
+ ],
+ "rates": {
+  "prime": 6.75,
+  "primeNote": "unverified, dated 2026-09-02, conflicting",
+  "treasury10y": 4.98,
+  "treasury10yNote": "unverified, Oct 2026",
+  "mortgage30yPrimary": 7.18,
+  "mortgage30yInvestor": {
+   "low": null,
+   "high": null
+  },
+  "mortgage15y": 6.57,
+  "source": 14,
+  "dataDate": "2026-11-05",
+  "unverified": false,
+  "mortgage30yYearAgo": 6.22,
+  "mortgage15yYearAgo": 5.5,
+  "verified": true
+ },
+ "capRates": [
+  {
+   "type": "retail strip",
+   "low": null,
+   "median": 6.4,
+   "high": null,
+   "note": "national avg 2026-Q2; retail overall 6.7",
+   "source": 3,
+   "unverified": true
+  },
+  {
+   "type": "self-storage",
+   "low": 5.6,
+   "median": 6.0,
+   "high": 6.6,
+   "note": "undated lender table Class A/B/C; provenance unknown",
+   "source": 3,
+   "unverified": true
+  },
+  {
+   "type": "medical office",
+   "low": null,
+   "median": null,
+   "high": null,
+   "unverified": true
+  },
+  {
+   "type": "office general",
+   "low": null,
+   "median": 7.9,
+   "high": null,
+   "note": "national avg; Chicago suburban Class A 10-12.5 (CBRE H1 2026 via CRE Daily)",
+   "source": 2,
+   "unverified": true
+  },
+  {
+   "type": "industrial/flex",
+   "low": 5.25,
+   "median": 5.2,
+   "high": 7.5,
+   "note": "national avg 5.2; undated table 5.25/6.20/7.50",
+   "source": 3,
+   "unverified": true
+  },
+  {
+   "type": "multifamily",
+   "low": 5.2,
+   "median": 5.9,
+   "high": 6.25,
+   "note": "national 5.2; Midwest avg 5.9 (Northmarq Q1 2026); Detroit Class A 5.5-6.25 (CBRE H2 2025)",
+   "source": 4,
+   "unverified": true
+  }
+ ],
+ "opex": [
+  {
+   "type": "residential SFR / small multifamily",
+   "expenseRatioPct": {
+    "low": null,
+    "high": null
+   },
+   "vacancyPct": {
+    "low": null,
+    "high": null
+   },
+   "mgmtFeePct": {
+    "low": 8,
+    "high": 12
+   },
+   "source": 14,
+   "unverified": true
+  },
+  {
+   "type": "multifamily",
+   "expenseRatioPct": {
+    "low": null,
+    "high": null
+   },
+   "vacancyPct": {
+    "low": null,
+    "high": null
+   },
+   "mgmtFeePct": {
+    "low": 4,
+    "high": 10
+   },
+   "source": 14,
+   "unverified": true
+  },
+  {
+   "type": "commercial",
+   "expenseRatioPct": {
+    "low": null,
+    "high": null
+   },
+   "vacancyPct": {
+    "low": null,
+    "high": null
+   },
+   "mgmtFeePct": {
+    "low": 4,
+    "high": 12
+   },
+   "note": "NNN contracts sometimes ~1% of gross; some flat fee",
+   "source": 14,
+   "unverified": true
+  }
+ ],
+ "opexNote": "No BOMA/IREM/NCREIF expense ratio, vacancy, NNN-vs-gross or reserves/sf figures were found.",
+ "loans": {
+  "commercialBank": {
+   "maxLtvPct": 75,
+   "ltvRange": {
+    "low": 65,
+    "high": 80
+   },
+   "amortYears": {
+    "low": null,
+    "high": null
+   },
+   "ratePct": {
+    "low": null,
+    "high": null
+   },
+   "minDscr": 1.25,
+   "dscrRange": {
+    "low": 1.2,
+    "high": 1.35
+   },
+   "closingPct": {
+    "low": null,
+    "high": null
+   },
+   "note": "perm/life-co quoted mid-5 to high-6% (snippet); staying under 75% LTV saves 50-100bp",
+   "source": 13,
+   "unverified": true
+  },
+  "sba504": {
+   "downPct": 10,
+   "downPctSpecialUse": "15-20 for startups/special-use",
+   "maxDebenture": 5500000,
+   "ratePct": {
+    "low": null,
+    "high": null
+   },
+   "termYears": 25,
+   "termOptionYears": 20,
+   "ownerOccupancyPct": 51,
+   "note": "25% exception noted for some; rates reset monthly, not found",
+   "source": 15,
+   "unverified": true,
+   "termYearsOptions": [
+    10,
+    20,
+    25
+   ],
+   "maxVerified": true
+  },
+  "bridge": {
+   "maxLtvPct": 75,
+   "ltvLow": 60,
+   "ratePct": {
+    "low": 7.75,
+    "high": 11.75
+   },
+   "termMonths": {
+    "low": null,
+    "high": null
+   },
+   "pointsPct": {
+    "low": 1,
+    "high": 2.4
+   },
+   "source": 7,
+   "unverified": true
+  },
+  "sellerFinancing": {
+   "downPct": {
+    "low": null,
+    "high": null
+   },
+   "ratePct": {
+    "low": null,
+    "high": null
+   },
+   "termYears": {
+    "low": null,
+    "high": null
+   }
+  },
+  "investorMortgage": {
+   "downPct": {
+    "low": 15,
+    "high": 25
+   },
+   "ratePct": {
+    "low": 6.0,
+    "high": 6.75
+   },
+   "note": "rate from DSCR-guide snippet comparison; down payment not verified",
+   "source": 9,
+   "unverified": true
+  },
+  "dscrLoan": {
+   "downPct": {
+    "low": 20,
+    "high": 25
+   },
+   "ratePct": {
+    "low": 6.0,
+    "high": 8.75
+   },
+   "typicalRatePct": {
+    "low": 7.25,
+    "high": 7.75
+   },
+   "minDscr": 1.0,
+   "source": 9,
+   "unverified": true
+  },
+  "fha": {
+   "downPct": 3.5,
+   "rule": "owner-occupant 1-4 units; from background knowledge, no source fetched",
+   "unverified": true
+  },
+  "liquidityRules": "Net worth >= ~1.0x loan amount rule of thumb; liquidity ~5-10% of loan; recourse/personal guarantee typical for bank loans, nonrecourse still needs qualifying guarantor (Commercial Loan Direct, snippet)."
+ },
+ "singleFamily": {
+  "rentToPricePct": {
+   "low": null,
+   "median": null,
+   "high": null
+  },
+  "memphisExampleRentToPricePct": 0.69,
+  "taxPctOfValue": {
+   "low": null,
+   "high": null
+  },
+  "insurancePctOfValue": {
+   "low": null,
+   "high": null
+  },
+  "maintenancePctOfValue": {
+   "low": null,
+   "high": null
+  },
+  "cashFlowFeasibility": "Not found. At 7.18% 30y and 20% down, a 0.69% rent-to-price home (Memphis, blog) is unlikely to cash flow after tax/insurance; no share-of-markets stat found.",
+  "source": 11,
+  "unverified": true
+ },
+ "appreciation": {
+  "houseAnnualPct": {
+   "typical": null,
+   "strongMax": null
+  },
+  "commercialAnnualPct": {
+   "typical": null,
+   "strongMax": null
+  },
+  "note": "Case-Shiller/NCREIF long-run not retrieved.",
+  "source": null,
+  "unverified": true
+ },
+ "valueAdd": {
+  "flip": {
+   "arvUpliftPct": {
+    "low": null,
+    "high": null
+   },
+   "rehabPctOfArv": {
+    "low": 20,
+    "high": 33
+   },
+   "grossMarginPct": 21.5,
+   "medianGrossProfitUsd": 60526,
+   "holdDays": 161,
+   "holdingCostPct": {
+    "low": null,
+    "high": null
+   },
+   "typicalProfitPctOfPrice": {
+    "low": null,
+    "high": null
+   },
+   "dataDate": "2026-Q2"
+  },
+  "commercialRepositioning": {
+   "noiUpliftPct": {
+    "low": null,
+    "high": null
+   },
+   "valueUpliftPct": {
+    "low": null,
+    "high": null
+   }
+  },
+  "sellCostsPct": {
+   "houseAgent": {
+    "low": null,
+    "high": null
+   },
+   "commercialBroker": {
+    "low": null,
+    "high": null
+   }
+  },
+  "source": 10,
+  "unverified": true
+ },
+ "practical": {
+  "dealsPerYearSmallTeam": {
+   "low": null,
+   "high": null
+  },
+  "monthsToClose": {
+   "low": 1.5,
+   "high": 3
+  },
+  "note": "Commercial loans 45 days best case, 60-90+ typical, up to 120 (snippets, source 13). Deals/yr not found.",
+  "unverified": true
+ }
+}

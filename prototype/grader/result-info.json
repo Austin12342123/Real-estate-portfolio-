@@ -1,0 +1,19 @@
+{
+  "info": {
+    "earned": 8,
+    "max": 8,
+    "checks": [
+      {
+        "id": "H6",
+        "category": "H",
+        "name": "Optional fields left blank never break the plan or the finance verdict (job extras, improvements, exit fields, co-signers)",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "16/16 sub-checks pass",
+        "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
+        "seconds": 5.8
+      }
+    ]
+  }
+}

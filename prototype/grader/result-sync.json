@@ -1,0 +1,96 @@
+{
+  "sync": {
+    "earned": 99.91,
+    "max": 100,
+    "checks": [
+      {
+        "id": "G1",
+        "category": "G",
+        "name": "Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine)",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "44/44 sub-checks pass",
+        "repro": "Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)",
+        "seconds": 0.6
+      },
+      {
+        "id": "G2",
+        "category": "G",
+        "name": "Asset page <-> Portfolio sync (share line, hero, impact, edits propagate)",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "74/74 sub-checks pass",
+        "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
+        "seconds": 18.1
+      },
+      {
+        "id": "G3",
+        "category": "G",
+        "name": "Portfolio <-> Finances sync (cash flow, funding, extra scope, verdict, edge cases)",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "34/34 sub-checks pass",
+        "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
+        "seconds": 6.5
+      },
+      {
+        "id": "G4",
+        "category": "G",
+        "name": "Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences)",
+        "points": 18,
+        "earned": 18,
+        "ratio": 1,
+        "detail": "34/34 sub-checks pass",
+        "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit",
+        "seconds": 74.2
+      },
+      {
+        "id": "G5",
+        "category": "G",
+        "name": "Add page <-> created asset (loan option cards, option switching, 203(k) defaults)",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
+        "seconds": 5.9
+      },
+      {
+        "id": "G6",
+        "category": "G",
+        "name": "Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light)",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
+        "seconds": 19.1
+      },
+      {
+        "id": "G7",
+        "category": "G",
+        "name": "Shared settings (g.* and p.*) propagate to every dependent display",
+        "points": 10,
+        "earned": 9.91,
+        "ratio": 0.9913419913419913,
+        "detail": "149/150 sub-checks pass. FAIL: Portfolio afford note = Finances headline (minus the Yes/Tight prefix) (24/25 ok) [after p.cash=5000: Can I afford this?Lenders may decline a loan around month 180 (Nov 2041).Not yet › vs Tight. Your cash dips below your emergency reserve today.]",
+        "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
+        "seconds": 10.7
+      },
+      {
+        "id": "G8",
+        "category": "G",
+        "name": "No stale / duplicate / contradictory numbers",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
+        "repro": "Scan every page for repeated labels with different values, missing bases, redundant repeated numbers, subtext that restates the main value, and numbers that contradict adjacent statements",
+        "seconds": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "gest": {
+    "earned": 100,
+    "max": 100,
+    "checks": [
+      {
+        "id": "I1",
+        "category": "I",
+        "name": "Swipe right from the left edge goes back like iOS (touchstart within 24 px, dx > 70, |dy| < 45); ignored elsewhere",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
+        "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
+        "seconds": 5.7
+      },
+      {
+        "id": "I2",
+        "category": "I",
+        "name": "Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "14/14 sub-checks pass",
+        "repro": "Hold 600 ms, drag, release; check saved order",
+        "seconds": 6.9
+      },
+      {
+        "id": "I3",
+        "category": "I",
+        "name": "Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "8/8 sub-checks pass",
+        "repro": "Select row, press Move",
+        "seconds": 2.7
+      },
+      {
+        "id": "I4",
+        "category": "I",
+        "name": "Funding follows the list order by itself: the trust funds each asset from everything before it (1,2,3 and 1,3,2), the wait lines and purchase months re-work after each move, nothing is stored per asset, no per-asset Funds picker, no re-link on plain load",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
+        "repro": "Reorder with Move buttons; read wait lines + saved state + plan",
+        "seconds": 2.9
+      },
+      {
+        "id": "I5",
+        "category": "I",
+        "name": "Duplicate: from the row panel and the asset page; copy sits right after the original, named \"(copy)\", planned, funded by the trust like any later asset",
+        "points": 10,
+        "earned": 10,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "Panel > Duplicate; asset page > Duplicate",
+        "seconds": 2.2
+      },
+      {
+        "id": "I6",
+        "category": "I",
+        "name": "Portfolio = total row + Homes / Commercial / Businesses dropdowns (name left, chevron right, stat strip: count, before/after loan, worth, DSCR, lasts), empty sections, Sold section only when something sold",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Headers, subtitles, collapse state, empty portfolio",
+        "seconds": 1.6
+      },
+      {
+        "id": "I7",
+        "category": "I",
+        "name": "Selecting a row opens a nested panel with the extra payment and live effects: loan term, monthly payment, next down payment (with cash flow); all match the engine and the asset page",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "24/24 sub-checks pass",
+        "repro": "Panel on maple, type extra, compare with engine + asset page",
+        "seconds": 2.1
+      },
+      {
+        "id": "I8",
+        "category": "I",
+        "name": "Rent & expenses shows the loan payment (P&I + mortgage insurance, extra) and the cash flow after the loan, in sync with Payment now / Cash flow now",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "Asset page > Rent & expenses",
+        "seconds": 1.2
+      },
+      {
+        "id": "I9",
+        "category": "I",
+        "name": "Swipe down closes the keyboard (blurs the focused field); Enter / Done also closes it; swipes inside the field or upward do not",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "Focus the extra field, swipe",
+        "seconds": 2.4
+      },
+      {
+        "id": "I10",
+        "category": "I",
+        "name": "Layout and hygiene: no sideways scroll at 320 / 390 / 430 with a panel open and while dragging, new buttons >= 44 px, no console errors or outside requests",
+        "points": 4,
+        "earned": 4,
+        "ratio": 1,
+        "detail": "4/4 sub-checks pass",
+        "repro": "Resize, measure, collected errors",
+        "seconds": 2.1
+      }
+    ]
+  }
+}
