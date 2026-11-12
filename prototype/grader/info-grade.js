@@ -405,9 +405,9 @@ exports.run = async function run(X) {
     'Load crafted localStorage states; pasted old backup restore', async () => {
       const P = new Parts();
       /* v8 */
-      const v8 = E.seed(); delete v8.p; v8.v = 8; v8.houses[0].addr = 'Kept From V8'; v8.houses[0].extra = 4321; v8.g.cap = 77;
+      let h8; const v8 = E.seed(); delete v8.p; v8.v = 8; v8.houses[0].addr = 'Kept From V8'; v8.houses[0].extra = 4321; v8.g.cap = 77;
       await load(page, v8, '#finances'); let S = await stateOf(page);
-      P.t(S.v === DATA_V && !!S.p && S.p.jobs.length === 1 && S.p.jobs[0].kind === 'salary' && S.houses[0].addr === 'Kept From V8' && S.houses[0].extra === 4321 && S.g.cap === 77 && S.houses.length === v8.houses.length, 'a v8 save keeps its assets and settings, gains a finance profile with a salary job, and is bumped to the current version', 1.2, JSON.stringify([S.v, S.p && S.p.jobs.length, S.houses[0].addr, S.g.cap]));
+      P.t(S.v === DATA_V && !!S.p && S.p.jobs.length === 1 && S.p.jobs[0].kind === 'salary' && (h8 = S.houses.find((x) => x.id === v8.houses[0].id) || {}).addr === 'Kept From V8' && h8.extra === 4321 && S.g.cap === 77 && S.houses.length === v8.houses.length, 'a v8 save keeps its assets and settings, gains a finance profile with a salary job, and is bumped to the current version', 1.2, JSON.stringify([S.v, S.p && S.p.jobs.length, S.houses[0].addr, S.g.cap]));
       P.t(!(await scanBad(page)) && (await page.locator('[data-testid=verdict-chip]').count()) === 1 && (await page.locator('[data-addjob=hourly]').count()) === 1, 'the migrated Finances page renders (verdict, hourly button) with no NaN', 0.5);
       await nav(page, '#'); const chip = await page.evaluate(() => (document.querySelector('[data-testid=afford-chip]') || {}).textContent); P.t(chip === VL[E.finance(clone(S)).status], 'the Portfolio afford chip works on a migrated v8 save', 0.3, chip);
       /* v9 with legacy (pre-hourly) jobs */
@@ -424,7 +424,7 @@ exports.run = async function run(X) {
       await load(page, sampleS(), '#assumptions'); await page.evaluate(() => document.querySelector('[data-coll=backup]').click()); await page.click('[data-testid=export]').catch(() => {}); await page.waitForTimeout(40);
       const old = clone(sampleS()); old.p.jobs = [{ id: 'bk1', name: 'Backup job', gross: 70000, raise: 1, tax: 18, hours: 38, start: 0, end: null }]; old.houses[0].addr = 'From Old Backup';
       await page.fill('#bkin', JSON.stringify(old)).catch(() => {}); await page.click('[data-restore-text]').catch(() => {}); await page.waitForTimeout(50); await page.click('[data-import-yes]').catch(() => {}); await page.waitForTimeout(80); S = await stateOf(page);
-      P.t(S.houses[0].addr === 'From Old Backup' && S.p.jobs.length === 1 && S.p.jobs[0].kind === 'salary' && S.p.jobs[0].gross === 70000 && S.p.jobs[0].tax === 18 && S.p.jobs[0].weeks === 50, 'restoring a backup made before hourly jobs gives a normal salary job (no NaN, tax kept)', 0.8, JSON.stringify(S.p.jobs[0]));
+      P.t((S.houses.find((x) => x.id === old.houses[0].id) || {}).addr === 'From Old Backup' && S.p.jobs.length === 1 && S.p.jobs[0].kind === 'salary' && S.p.jobs[0].gross === 70000 && S.p.jobs[0].tax === 18 && S.p.jobs[0].weeks === 50, 'restoring a backup made before hourly jobs gives a normal salary job (no NaN, tax kept)', 0.8, JSON.stringify(S.p.jobs[0]));
       return P; });
 
   /* ================================================================ H8 automatic tax estimate */

@@ -490,7 +490,9 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     else if (k === 'refiTermY') { h.refiTerm = Math.max(12, Math.round(n * 12)); }
     else if (k === 'mat') { h.mat = Math.max(0, Math.round(n)); }
     else if (k === 'nnn') { h.nnn = Math.min(100, Math.max(0, n)); }
-    else if (k === 'payoff') { const B0 = E.balToday(h), i = h.rate / 1200, m = Math.max(1, Math.round(n)); h.extra = Math.max(0, E.pmt(B0, i, m) - v.P + 0.02); h.driver = 'extra'; /* +2 cents so rounding up never lands one month late */ }
+    else if (k === 'payoff') { const B0 = E.balToday(h), m = Math.max(1, Math.round(n)); /* smallest extra that pays the loan off in m months, found against the engine's own payoff (so balloon / refinance loans work too) */
+      let lo = 0, hi = Math.max(1, B0); if (E.payoffN(h, 0, S) <= m) hi = 0; else { for (let q = 0; q < 60; q++) { const mid = (lo + hi) / 2; if (E.payoffN(h, mid, S) <= m) hi = mid; else lo = mid; } hi = Math.ceil(hi * 100) / 100; }
+      h.extra = hi; h.driver = 'extra'; }
     else if (k === 'price') { h.price = Math.max(0, n); }
     else if (k === 'arv') { h.arv = Math.max(0, n); h.gain = null; h.arvAuto = false; }
     else if (k === 'gain') { h.gain = n; h.arvAuto = false; h.arv = Math.max(0, Math.round(h.price + (h.capex || 0) + n)); }

@@ -1,5 +1,5 @@
 {
-  "total": 84.25,
+  "total": 84.94,
   "max": 84.99900000000001,
   "categories": {
     "A": {
@@ -11,11 +11,11 @@
       "max": 12.000000000000004
     },
     "C": {
-      "earned": 9.603,
+      "earned": 9.936,
       "max": 9.999
     },
     "D": {
-      "earned": 7.649,
+      "earned": 8.001,
       "max": 8.001
     },
     "E": {
@@ -311,7 +311,7 @@
       "rawPoints": 0.5,
       "earned": 0.16,
       "ratio": 1,
-      "detail": "median 7.9ms",
+      "detail": "median 9.1ms",
       "repro": "node timing"
     },
     {
@@ -496,9 +496,9 @@
       "name": "Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps",
       "points": 1.333,
       "rawPoints": 2,
-      "earned": 1,
-      "ratio": 0.75,
-      "detail": "2/3 sub-checks pass. FAIL: one tap on the row opens its asset page [#house-cedar]",
+      "earned": 1.333,
+      "ratio": 1,
+      "detail": "3/3 sub-checks pass",
       "repro": "Tap row, Back; Add > Add (defaults)"
     },
     {
@@ -595,9 +595,9 @@
       "name": "Backup: Show backup gives valid JSON text; pasted text and file restore state (with confirm); invalid text rejected without damage",
       "points": 1.524,
       "rawPoints": 2,
-      "earned": 1.172,
-      "ratio": 0.7692307692307692,
-      "detail": "5/6 sub-checks pass. FAIL: backup text = valid JSON with all 19 assets + assumptions [{\"g\":{\"cap\":85,\"capBiz\":50,\"haircut\":0,\"]",
+      "earned": 1.524,
+      "ratio": 1,
+      "detail": "6/6 sub-checks pass",
       "repro": "Assumptions > Show backup; modify; Restore from pasted text / file"
     },
     {
@@ -856,7 +856,7 @@
         "ratio": 1,
         "detail": "89/89 sub-checks pass",
         "repro": "Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states",
-        "seconds": 8.5
+        "seconds": 8.9
       },
       {
         "id": "F4",
@@ -878,12 +878,12 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Playwright: edge inputs, names, tap targets, font size, overflow 320/390/430, chip contrast light+dark, typing, render storm, console errors",
-        "seconds": 19.9
+        "seconds": 20.7
       }
     ]
   },
   "sync": {
-    "earned": 98.54,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
@@ -895,7 +895,7 @@
         "ratio": 1,
         "detail": "42/42 sub-checks pass",
         "repro": "Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)",
-        "seconds": 0.3
+        "seconds": 0.4
       },
       {
         "id": "G2",
@@ -906,7 +906,7 @@
         "ratio": 1,
         "detail": "72/72 sub-checks pass",
         "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
-        "seconds": 7
+        "seconds": 8.1
       },
       {
         "id": "G3",
@@ -917,18 +917,18 @@
         "ratio": 1,
         "detail": "35/35 sub-checks pass",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 2.8
+        "seconds": 3.3
       },
       {
         "id": "G4",
         "category": "G",
         "name": "Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences)",
         "points": 18,
-        "earned": 17.3,
-        "ratio": 0.961340206185567,
-        "detail": "32/33 sub-checks pass. FAIL: typing \"Paid off in\" N months makes the loan pay off in exactly N months (or the scheduled date if later) (16/17 ok) [seq6 step1: r1 payoff=192 -> payoff now 180 (scheduled 314, extra 2240.17)]",
+        "earned": 18,
+        "ratio": 1,
+        "detail": "33/33 sub-checks pass",
         "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit",
-        "seconds": 40.2
+        "seconds": 49.7
       },
       {
         "id": "G5",
@@ -939,18 +939,18 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
-        "seconds": 3.8
+        "seconds": 4.7
       },
       {
         "id": "G6",
         "category": "G",
         "name": "Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light)",
         "points": 12,
-        "earned": 11.24,
-        "ratio": 0.9363057324840764,
-        "detail": "11/12 sub-checks pass. FAIL: v8 save is migrated: assets kept (incl. edited price), finance profile added, version bumped (0/1 ok) [{\"v\":15,\"p\":true,\"n\":14,\"price\":165000}]",
+        "earned": 12,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 9.8
+        "seconds": 11.6
       },
       {
         "id": "G7",
@@ -961,7 +961,7 @@
         "ratio": 1,
         "detail": "149/149 sub-checks pass",
         "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
-        "seconds": 6.3
+        "seconds": 7
       },
       {
         "id": "G8",
@@ -977,7 +977,7 @@
     ]
   },
   "info": {
-    "earned": 98.21,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
@@ -1000,7 +1000,7 @@
         "ratio": 1,
         "detail": "86/86 sub-checks pass",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 3.9
+        "seconds": 4.5
       },
       {
         "id": "H3",
@@ -1011,7 +1011,7 @@
         "ratio": 1,
         "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 8.9
+        "seconds": 11.1
       },
       {
         "id": "H4",
@@ -1033,7 +1033,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 2.6
+        "seconds": 2.9
       },
       {
         "id": "H6",
@@ -1044,18 +1044,18 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 3.8
+        "seconds": 4.2
       },
       {
         "id": "H7",
         "category": "H",
         "name": "Old saves migrate: v8 (assets only) and pre-hourly jobs (no kind / wage / tips / weeks) load, keep their numbers and show correctly",
         "points": 6,
-        "earned": 4.21,
-        "ratio": 0.7014925373134329,
-        "detail": "8/10 sub-checks pass. FAIL: a v8 save keeps its assets and settings, gains a finance profile with a salary job, and is bumped to the current version [[15,1,\"2207 Cedar Hollow Ln\",77]]; restoring a backup made before hourly jobs gives a normal salary job (no NaN, tax kept) [{\"id\":\"bk1\",\"name\":\"Backup job\",\"kind\":\"salary\",\"wage\":0,\"tips\":0,\"weeks\":50,\"gross\":70000,\"raise\":1,\"tax\":18,\"hours\":38,\"start\":0,\"end\":null}]",
+        "earned": 6,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
         "repro": "Load crafted localStorage states; pasted old backup restore",
-        "seconds": 0.9
+        "seconds": 1.1
       },
       {
         "id": "H8",
@@ -1077,7 +1077,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 1.8
+        "seconds": 2.2
       },
       {
         "id": "H10",
@@ -1093,7 +1093,7 @@
     ]
   },
   "gest": {
-    "earned": 87.25,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
@@ -1105,29 +1105,29 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
-        "seconds": 4.6
+        "seconds": 4.8
       },
       {
         "id": "I2",
         "category": "I",
         "name": "Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel",
         "points": 14,
-        "earned": 10.75,
-        "ratio": 0.768,
-        "detail": "11/13 sub-checks pass. FAIL: Homes list shows the saved (buy) order, sold homes live under Sold [cedar,maple,birch,willow,linden]; drop puts maple after cedar in the list [cedar,birch,maple,willow,linden]",
+        "earned": 14,
+        "ratio": 1,
+        "detail": "13/13 sub-checks pass",
         "repro": "Hold 600 ms, drag, release; check saved order",
-        "seconds": 5.3
+        "seconds": 5.5
       },
       {
         "id": "I3",
         "category": "I",
         "name": "Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open",
         "points": 8,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.click: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=move-up]')\u001b[22m\n\u001b[2m    - locator resolved to <button disabled class=\"pbtn\" data-move=\"cedar:-1\" data-testid=\"move-up\">↑ Move up</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled ",
+        "earned": 8,
+        "ratio": 1,
+        "detail": "7/7 sub-checks pass",
         "repro": "Select row, press Move",
-        "seconds": 4.7
+        "seconds": 1
       },
       {
         "id": "I4",
@@ -1138,18 +1138,18 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Reorder with Move buttons; read wait lines + saved state + plan",
-        "seconds": 1.8
+        "seconds": 2
       },
       {
         "id": "I5",
         "category": "I",
         "name": "Duplicate: from the row panel and the asset page; copy sits right after the original, named \"(copy)\", planned, funded by the trust like any later asset",
         "points": 10,
-        "earned": 8.5,
-        "ratio": 0.85,
-        "detail": "5/6 sub-checks pass. FAIL: the Homes list shows the copy right after the original [cedar,maple,hmwcvbt2i14,birch,willow,linden]",
+        "earned": 10,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
         "repro": "Panel > Duplicate; asset page > Duplicate",
-        "seconds": 0.9
+        "seconds": 1
       },
       {
         "id": "I6",
@@ -1171,7 +1171,7 @@
         "ratio": 1,
         "detail": "24/24 sub-checks pass",
         "repro": "Panel on maple, type extra, compare with engine + asset page",
-        "seconds": 1.1
+        "seconds": 1.3
       },
       {
         "id": "I8",
@@ -1182,7 +1182,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Asset page > Rent & expenses",
-        "seconds": 0.9
+        "seconds": 1.1
       },
       {
         "id": "I9",
@@ -1193,7 +1193,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Focus the extra field, swipe",
-        "seconds": 2
+        "seconds": 2.1
       },
       {
         "id": "I10",
@@ -1204,7 +1204,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "Resize, measure, collected errors",
-        "seconds": 1.4
+        "seconds": 1.5
       }
     ]
   }

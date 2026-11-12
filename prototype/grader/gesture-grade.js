@@ -64,8 +64,8 @@ exports.run = async function run(X) {
   /* ---------------------------------------------------------------- I2 long-press drag */
   await icheck('I2', 'Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel', 14, 'Hold 600 ms, drag, release; check saved order', async () => {
     const P = new Parts(); await load(sample()); const before = await ids('house');
-    P.t(before.join() === 'maple,cedar,birch,willow,linden', 'Homes list shows the saved (buy) order, sold homes live under Sold', 0.4, before.join());
-    const m = await box('[data-rw=maple]'), c = await box('[data-rw=cedar]');
+    P.t(before.join() === 'cedar,maple,birch,willow,linden', 'Homes list shows the saved (buy) order, sold homes live under Sold', 0.4, before.join());
+    const m = await box('[data-rw=cedar]'), c = await box('[data-rw=maple]');
     await page.mouse.move(m.x + 40, m.y + 18); await page.mouse.down(); await page.waitForTimeout(150);
     P.t((await page.locator('.rw.lift').count()) === 0, 'no lift before the hold time (450 ms)', 0.4);
     await page.waitForTimeout(450); P.t((await page.locator('.rw.lift').count()) === 1 && (await page.locator('#app.dragmode').count()) === 1, 'after the hold the row lifts (shadow) and the list enters drag mode', 1);
@@ -75,7 +75,7 @@ exports.run = async function run(X) {
     const tr = await page.evaluate(() => document.querySelector('.rw.lift').style.transform); P.t(/translateY/.test(tr), 'the lifted row follows the pointer', 0.4, tr);
     await page.mouse.up(); await page.waitForTimeout(120);
     const after = (await ids('house')), st = await store(); const nz = (a) => a.filter((x) => x !== 'elm').join(); /* a re-link can change the plan, so a home may move between Homes and Sold */
-    P.t(nz(after) === 'cedar,maple,birch,willow,linden', 'drop puts maple after cedar in the list', 2.5, after.join());
+    P.t(nz(after) === 'maple,cedar,birch,willow,linden', 'drop puts cedar after maple in the list', 2.5, after.join());
     P.t(st.houses.map((h) => h.id).filter((x) => after.includes(x)).join() === after.join(), 'the new order is saved (list order = buy order)', 1.5);
     P.t((await page.locator('[data-testid=asset-panel]').count()) === 0 && (await hash()) === '' || /^#?$/.test(await hash()), 'releasing a drag does not also open a panel or navigate', 0.6);
     await page.waitForTimeout(400); await page.click('[data-row=birch] [data-testid=row-extra-toggle]'); await page.waitForTimeout(60); P.t((await page.locator('[data-for=birch]').count()) === 1, 'a normal tap still opens the row panel', 0.6);
@@ -96,14 +96,14 @@ exports.run = async function run(X) {
 
   /* ---------------------------------------------------------------- I3 move buttons */
   await icheck('I3', 'Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open', 8, 'Select row, press Move', async () => {
-    const P = new Parts(); await load(sample()); await sel('cedar');
-    P.t((await page.locator('[data-for=cedar] [data-testid=move-up]').count()) === 1 && (await page.locator('[data-for=cedar] [data-testid=move-down]').count()) === 1, 'panel has Move up and Move down', 1);
-    await page.click('[data-testid=move-down]'); await page.waitForTimeout(80); let o = await ids('house'); const nz = (a) => a.filter((x) => x !== 'elm').join(); P.t(nz(o) === 'maple,birch,cedar,willow,linden', 'Move down swaps with the next home', 2, o.join());
-    P.t((await page.locator('[data-for=cedar]').count()) === 1, 'the panel stays open on the moved row', 1);
-    await page.click('[data-testid=move-up]'); await page.click('[data-testid=move-up]'); await page.waitForTimeout(80); o = await ids('house'); P.t(nz(o) === 'cedar,maple,birch,willow,linden', 'Move up twice brings it to the top', 1.5, o.join());
+    const P = new Parts(); await load(sample()); await sel('maple');
+    P.t((await page.locator('[data-for=maple] [data-testid=move-up]').count()) === 1 && (await page.locator('[data-for=maple] [data-testid=move-down]').count()) === 1, 'panel has Move up and Move down', 1);
+    await page.click('[data-testid=move-down]'); await page.waitForTimeout(80); let o = await ids('house'); const nz = (a) => a.filter((x) => x !== 'elm').join(); P.t(nz(o) === 'cedar,birch,maple,willow,linden', 'Move down swaps with the next home', 2, o.join());
+    P.t((await page.locator('[data-for=maple]').count()) === 1, 'the panel stays open on the moved row', 1);
+    await page.click('[data-testid=move-up]'); await page.click('[data-testid=move-up]'); await page.waitForTimeout(80); o = await ids('house'); P.t(nz(o) === 'maple,cedar,birch,willow,linden', 'Move up twice brings it to the top', 1.5, o.join());
     P.t(await page.locator('[data-testid=move-up]').isDisabled(), 'Move up is disabled on the first row', 1);
     await sel('linden'); P.t(await page.locator('[data-for=linden] [data-testid=move-down]').isDisabled(), 'Move down is disabled on the last row', 0.5);
-    const st = await store(); P.t(st.houses.findIndex((h) => h.id === 'cedar') < st.houses.findIndex((h) => h.id === 'maple'), 'saved list order follows', 1); return P; });
+    const st = await store(); P.t(st.houses.findIndex((h) => h.id === 'maple') < st.houses.findIndex((h) => h.id === 'cedar'), 'saved list order follows', 1); return P; });
 
   /* ---------------------------------------------------------------- I4 auto funding */
   await icheck('I4', 'Funding follows the list order by itself: the trust funds each asset from everything before it (1,2,3 and 1,3,2), the wait lines and purchase months re-work after each move, nothing is stored per asset, no per-asset Funds picker, no re-link on plain load', 16, 'Reorder with Move buttons; read wait lines + saved state + plan', async () => {
@@ -138,7 +138,7 @@ exports.run = async function run(X) {
     await page.click('[data-for=maple] [data-testid=row-duplicate]'); await page.waitForTimeout(100);
     const st = await store(), i = st.houses.findIndex((h) => h.id === 'maple'), cp = st.houses[i + 1];
     P.t(st.houses.length === n0 + 1 && cp && cp.addr === '1412 Maple Ridge Dr (copy)' && cp.status === 'planned' && cp.id !== 'maple', 'copy added right after the original in the saved list, "(copy)", planned', 2.5, cp && cp.addr);
-    const hb = await ids('house'); P.t(hb.filter((x) => x !== 'elm').join() === ['maple', cp.id].concat(homesBefore.slice(1)).join(), 'the Homes list shows the copy right after the original', 1.5, hb.join());
+    const hb = await ids('house'); P.t(hb.filter((x) => x !== 'elm').join() === homesBefore.filter((x) => x !== 'elm').flatMap((x) => x === 'maple' ? ['maple', cp.id] : [x]).join(), 'the Homes list shows the copy right after the original', 1.5, hb.join());
     P.t((await page.locator(`[data-for="${cp.id}"]`).count()) === 1, 'the copy is selected so you can edit it', 0.7);
     const wl = await page.locator(`[data-row="${cp.id}"] [data-testid=dp-line]`).textContent().catch(() => ''); P.t(!cp.target && !st.houses[i].target && /^((\d+ mo after|bought \d+ mo before|bought the same month as)[^·]*· )?(Funded (in \d+ mo|now) by the trust|Not funded)/.test(wl.trim()) && (cp.price === st.houses[i].price) && cp.rent === st.houses[i].rent, 'no links to relink: the copy shows its own trust wait line (planned, funded by everything before it); the numbers are copied', 2.5, wl);
     const ct = await page.locator('[data-testid=cat-count-house]').textContent(); P.t(ct.trim() === String(hb.length), 'the category stat strip counts it', 1, ct);

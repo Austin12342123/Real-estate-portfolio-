@@ -1,6 +1,6 @@
 {
   "gest": {
-    "earned": 99.6,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "7/7 sub-checks pass",
         "repro": "Select row, press Move",
-        "seconds": 1
+        "seconds": 0.9
       },
       {
         "id": "I4",
@@ -67,18 +67,18 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Headers, subtitles, collapse state, empty portfolio",
-        "seconds": 1.2
+        "seconds": 1.1
       },
       {
         "id": "I7",
         "category": "I",
         "name": "Selecting a row opens a nested panel with the extra payment and live effects: loan term, monthly payment, next down payment (with cash flow); all match the engine and the asset page",
         "points": 12,
-        "earned": 11.6,
-        "ratio": 0.9669421487603306,
-        "detail": "23/24 sub-checks pass. FAIL: Finances cash line drops by exactly the cash flow reinvested so far [101323]",
+        "earned": 12,
+        "ratio": 1,
+        "detail": "24/24 sub-checks pass",
         "repro": "Panel on maple, type extra, compare with engine + asset page",
-        "seconds": 1.3
+        "seconds": 1.2
       },
       {
         "id": "I8",
