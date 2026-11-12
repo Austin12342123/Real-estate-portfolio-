@@ -243,7 +243,7 @@
     if (page === 'real') {
       if (!ownedAll.length && !soldOwned.length) return head + `<section class="card realempty" data-testid="real-empty"><b data-testid="bought-empty">Nothing bought yet</b><p class="note">This page shows what you have really bought: the loan still due, the line of credit it opens and when each loan is paid off. Add something you already own to see it here. Your plan on the Planned page does not need anything bought.</p><button class="btn" data-add-owned data-testid="add-owned" aria-label="Add something you already own">+ Add owned</button></section>`;
       const rSn = pl.snap.filter((x) => ownedAll.some((h) => h.id === x.id)), rs = rSn.reduce((a, x) => ({ nw: a.nw + x.equity, pay: a.pay + x.payment, cf: a.cf + x.cf }), { nw: 0, pay: 0, cf: 0 });
-      const rst = rSn.length ? E.stress(S, pl, rSn, 0) : null, xOwn = ownedAll.reduce((a, h) => a + (pl.V[h.id].B0 > 0.5 ? pl.V[h.id].X : 0), 0);
+      const rst = rSn.length ? E.stress(S, pl, rSn, 0) : null, xOwn = pl.assetsAt(0).filter((x) => S.houses.some((h) => h.id === x.id && h.status === 'owned')).reduce((a, x) => a + (x.extra || 0), 0); /* the engine's extra now for the bought assets, so Planned + Real = the whole plan */
       const badOwn = ownedAll.filter((h) => (h.type || 'house') === 'house' && pl.V[h.id].cf < 0);
       const payTxt = !ownedAll.some((h) => pl.V[h.id].B0 > 0.5) ? 'no loans to pay off' : isFinite(lastPayoff) ? 'every loan paid off in <b>' + ym(lastPayoff) + '</b>' : 'not every loan is paid off within the plan';
       return head + `<section class="card" data-testid="summary"><div class="kg">

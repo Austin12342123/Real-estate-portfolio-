@@ -1,5 +1,5 @@
 {
- "run": "2026-11-12T04:48:50.010Z",
+ "run": "2026-11-12T05:23:45.194Z",
  "total": 100,
  "max": 100,
  "categories": {
@@ -773,7 +773,7 @@
   {
    "cat": "L8",
    "id": "L8.4b",
-   "name": "Default plan targets: net worth at the 28-year plan end is $125M to $135M AND the monthly cash flow at plan end (Cash flow / mo, before tax, after loan payments) is at least $1.2M; the cash flow is the sum of the asset rows (income minus operating costs and loan payments) and equals income before loans (net operating income) minus loan payments",
+   "name": "Default plan targets: net worth at the 28-year plan end is $125M to $135M AND the monthly cash flow at plan end (Cash flow / mo, before tax, after loan payments) is at least $1.3M; the cash flow is the sum of the asset rows (income minus operating costs and loan payments) and equals income before loans (net operating income) minus loan payments",
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,

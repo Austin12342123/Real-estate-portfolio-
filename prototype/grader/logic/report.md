@@ -1,6 +1,6 @@
 # Logic and math grader (LOGIC_ONLY)
 
-Run: 2026-11-12T04:48:50.010Z
+Run: 2026-11-12T05:23:45.194Z
 
 **TOTAL 100 / 100**
 
@@ -86,7 +86,7 @@ Run: 2026-11-12T04:48:50.010Z
 | L8.2 | Manager cost for businesses you do not run = max(0, businesses held - run yourself) x monthly pay, inflated, only while the business is held and not sold or merged into another (random 30) | 2 | 2 | PASS 0 disagree |  |
 | L8.3 | Hours check: weekly hours = job hours (while the job runs) + min(run yourself, businesses held) x hours per business; flagged tight above 70 (random 30) | 2 | 2 | PASS 0 / 30 disagree |  |
 | L8.4 | Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M (125-135M at the 28-year plan end, 80-140M at 25 years: the plan starts from zero owned assets and compounds) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative | 2 | 2 | PASS NW 25y $82.5M, 28y $125.7M; step ratios 1.25,1.25,1.25,1.24,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 23; business growth 4 |  |
-| L8.4b | Default plan targets: net worth at the 28-year plan end is $125M to $135M AND the monthly cash flow at plan end (Cash flow / mo, before tax, after loan payments) is at least $1.2M; the cash flow is the sum of the asset rows (income minus operating costs and loan payments) and equals income before loans (net operating income) minus loan payments | 1.5 | 1.5 | PASS NW $125.67M, cash flow $1.386M/mo (rows $1.386M), income before loans $1.482M, loan payments $0.096M |  |
+| L8.4b | Default plan targets: net worth at the 28-year plan end is $125M to $135M AND the monthly cash flow at plan end (Cash flow / mo, before tax, after loan payments) is at least $1.3M; the cash flow is the sum of the asset rows (income minus operating costs and loan payments) and equals income before loans (net operating income) minus loan payments | 1.5 | 1.5 | PASS NW $125.67M, cash flow $1.386M/mo (rows $1.386M), income before loans $1.482M, loan payments $0.096M |  |
 | L8.5 | Sell / merge: sale proceeds = value x (1 - selling cost) - balance - liens - line draw; merge lift scales value and income by (1 + lift) from the merge month (random 20) | 1 | 1 | PASS 0 disagree |  |
 | L9.1 | Default plan: list order = buy order (owned first, then non-decreasing purchase months), every asset gets a purchase month inside the plan, no unfunded asset | 1.5 | 1.5 | PASS 4,17,39,43,53,65,80,90,102,116,116,130,130,148,148,169,173,192,197,212,219,236,240; verdict yes, lowest liquid cash $28099 |  |
 | L9.2 | Combined portfolio total equals the sum of the rows at 12 months across the plan (net worth, value, debt, cash flow, payments) | 1.5 | 1.5 | PASS 0 months disagree |  |

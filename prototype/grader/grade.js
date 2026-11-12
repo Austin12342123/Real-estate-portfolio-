@@ -643,12 +643,22 @@ async function reqChecks(page) {
     const ls = await lsGet(SKEY), ui = await lsGet(UIK); P.t(Array.isArray(ls) && ls.length === 2 && ls.map((x) => x.name).sort().join() === 'Alpha,Beta' && ui && ui.openOn === 'real', 'Restore puts the saved portfolios and the start page back in storage', 0.6);
     await page.reload(); await page.waitForSelector('[data-testid=page-tabs]'); P.t((await tabOn()) === 'Real', 'after Restore and a reload the app opens on the restored start page', 0.2); await clickTab('saved'); const c = await cards(); P.t(c.length === 2 && c.some((x) => x.name === 'Alpha') && c.some((x) => x.name === 'Beta') && c.every((x) => /Net worth/.test(x.nw)), 'the Saved page lists both restored portfolios with their numbers', 0.4, c.map((x) => x.name).join());
     return P; });
-  await check('A27', 'A', 'Default plan on screen: net worth at least $125.0M (up to about $130M) and cash flow at least $1.2M a month in year 28, shown in one clear plan line and in the KPIs', 2, 'Fresh load: read the plan line and KPIs', async () => {
+  await check('A30', 'A', 'Opening an old save (v9-v16): no pop-up or Undo banner, the working portfolio is the current default plan (net worth >= $125M), and the old portfolio sits in Saved as "Portfolio N (before the update)" and loads back exactly', 2, 'Load a v16 state, read Planned and Saved, open the filed copy', async () => {
+    const P = new Parts(), old = SB(); old.v = 16; const oldHouses = JSON.stringify(old.houses.map((h) => h.id));
+    await loadState(page, old); const s = await snap(page), st = await store(page);
+    P.t((await page.locator('[data-testid=undo-banner]').count()) === 0 && !/Undo/.test(await page.evaluate(() => document.getElementById('app').innerText)), 'no undo banner or pop-up after migrating an old save', 0.5);
+    P.t(st.v === DATA_V && JSON.stringify(st.houses.map((h) => h.id)) === JSON.stringify(E.seedPlan().houses.map((h) => h.id)) && s.nw >= 125e6 && nearRel(s.nw, E.plan(E.seedPlan()).horizon.nw, 1, 0.004), 'the working portfolio is the current default plan with net worth >= $125M', 0.5, 'nw ' + s.nw);
+    await clickTab('saved'); const c = await cards();
+    P.t(c.length === 1 && /^Portfolio 1 \(before the update\)$/.test((c[0].name || '').trim()), 'the old portfolio is filed in Saved as "Portfolio 1 (before the update)"', 0.5, c.map((x) => x.name).join());
+    if (c.length) { await page.click('[data-sid="' + c[0].sid + '"] [data-testid=saved-open]'); await page.click('[data-load-yes]'); await page.waitForTimeout(100); const st2 = await store(page);
+      P.t(JSON.stringify(st2.houses.map((h) => h.id)) === oldHouses && st2.houses.every((h, i) => h.price === old.houses[i].price && h.status === old.houses[i].status), 'opening it brings the old portfolio back exactly', 0.5); }
+    return P; });
+  await check('A27', 'A', 'Default plan on screen: net worth at least $125.0M (up to about $130M) and cash flow at least $1.3M a month in year 28, shown in one clear plan line and in the KPIs', 2, 'Fresh load: read the plan line and KPIs', async () => {
     await reset(page); const P = new Parts(); const s = await snap(page), pl = E.plan(E.seedPlan()).horizon; const tg = await page.locator('[data-testid=plan-target]').textContent();
     const nwT = money((/net worth\s*(\$[\d.,]+[MB]?)/.exec(tg) || [])[1]), cfT = money((/·\s*(\$[\d.,]+[MB]?)\/mo/.exec(tg) || [])[1]);
-    P.t(nwT >= 125e6 && nwT <= 131e6 && cfT >= 1.2e6 && /year 28/.test(tg), 'the plan line reads net worth >= $125.0M (<= $131M) and cash flow >= $1.2M a month in year 28', 1, tg);
-    P.t(s.nw >= 125e6 && s.nw <= 131e6 && s.cf >= 1.2e6 && nearRel(s.nw, pl.nw, 1, 0.004) && nearRel(s.cf, pl.cf, 1, 0.002) && nearRel(nwT, s.nw, 1, 0.003) && nearRel(cfT, s.cf, 1, 0.003), 'the KPIs equal the engine and the plan line', 0.7, `nw ${s.nw} cf ${s.cf}`);
-    P.t(pl.nw >= 125e6 && pl.nw <= 135e6 && pl.cf >= 1.2e6 && E.seedPlan().houses.every((h) => h.status === 'planned'), 'engine: default plan nothing bought, NW 125-135M, cash flow >= 1.2M/mo', 0.3, `${Math.round(pl.nw)} ${Math.round(pl.cf)}`); return P; });
+    P.t(nwT >= 125e6 && nwT <= 131e6 && cfT >= 1.3e6 && /year 28/.test(tg), 'the plan line reads net worth >= $125.0M (<= $131M) and cash flow >= $1.3M a month in year 28', 1, tg);
+    P.t(s.nw >= 125e6 && s.nw <= 131e6 && s.cf >= 1.3e6 && nearRel(s.nw, pl.nw, 1, 0.004) && nearRel(s.cf, pl.cf, 1, 0.002) && nearRel(nwT, s.nw, 1, 0.003) && nearRel(cfT, s.cf, 1, 0.003), 'the KPIs equal the engine and the plan line', 0.7, `nw ${s.nw} cf ${s.cf}`);
+    P.t(pl.nw >= 125e6 && pl.nw <= 135e6 && pl.cf >= 1.3e6 && E.seedPlan().houses.every((h) => h.status === 'planned'), 'engine: default plan nothing bought, NW 125-135M, cash flow >= 1.3M/mo', 0.3, `${Math.round(pl.nw)} ${Math.round(pl.cf)}`); return P; });
   await check('A28', 'A', 'Saving survives a full or blocked storage: a clear message, no crash, the list is unchanged', 1, 'Make localStorage.setItem throw for the saved list; Save', async () => {
     await reset(page); const P = new Parts(); const e0 = collect.errors.length; await saveAs('Keeper');
     await page.evaluate(() => { const o = Storage.prototype.setItem; window.__setItem = o; Storage.prototype.setItem = function (k, v) { if (k === 'rep-v4-saved') throw new Error('QuotaExceededError'); return o.apply(this, arguments); }; });

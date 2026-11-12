@@ -1174,7 +1174,7 @@ main h1,#app>h1{font-size:24px;margin:2px 0 6px}
   let SAVED = []; try { SAVED = cleanSaved(JSON.parse(localStorage.getItem(SKEY))); } catch (e) { SAVED = []; }
   let saveName = '', renameName = '', savedMsg = '';
   let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
-  if (switched) undo = { text: 'Switched to the updated $125M plan (28 years, about $1.4M a month of cash flow at the end). It starts with nothing bought: the first purchase comes from your savings and job income, and every later one from the trust (everything bought before it) plus your job money. The main screen now has three pages: Planned (the plan and its math), Real (what you have bought: loan due, credit line, payoff time) and Saved (portfolios you keep and can open again). Profit and your job money pay loans down automatically, and every time is counted from today.', label: 'old portfolio', snap: switched };
+  /* no popup: an older save moves to the current plan silently; the previous portfolio is kept in Saved so nothing is lost (it is filed once SAVED is loaded, below) */
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const saveSaved = () => { try { localStorage.setItem(SKEY, JSON.stringify(SAVED)); return true; } catch (e) { return false; } };
   const backupJson = () => JSON.stringify(Object.assign({}, S, { saved: SAVED, openOn: UI.openOn })); /* the backup is the working portfolio plus the saved list and the start-page choice */
@@ -1390,7 +1390,7 @@ main h1,#app>h1{font-size:24px;margin:2px 0 6px}
     if (page === 'real') {
       if (!ownedAll.length && !soldOwned.length) return head + `<section class="card realempty" data-testid="real-empty"><b data-testid="bought-empty">Nothing bought yet</b><p class="note">This page shows what you have really bought: the loan still due, the line of credit it opens and when each loan is paid off. Add something you already own to see it here. Your plan on the Planned page does not need anything bought.</p><button class="btn" data-add-owned data-testid="add-owned" aria-label="Add something you already own">+ Add owned</button></section>`;
       const rSn = pl.snap.filter((x) => ownedAll.some((h) => h.id === x.id)), rs = rSn.reduce((a, x) => ({ nw: a.nw + x.equity, pay: a.pay + x.payment, cf: a.cf + x.cf }), { nw: 0, pay: 0, cf: 0 });
-      const rst = rSn.length ? E.stress(S, pl, rSn, 0) : null, xOwn = ownedAll.reduce((a, h) => a + (pl.V[h.id].B0 > 0.5 ? pl.V[h.id].X : 0), 0);
+      const rst = rSn.length ? E.stress(S, pl, rSn, 0) : null, xOwn = pl.assetsAt(0).filter((x) => S.houses.some((h) => h.id === x.id && h.status === 'owned')).reduce((a, x) => a + (x.extra || 0), 0); /* the engine's extra now for the bought assets, so Planned + Real = the whole plan */
       const badOwn = ownedAll.filter((h) => (h.type || 'house') === 'house' && pl.V[h.id].cf < 0);
       const payTxt = !ownedAll.some((h) => pl.V[h.id].B0 > 0.5) ? 'no loans to pay off' : isFinite(lastPayoff) ? 'every loan paid off in <b>' + ym(lastPayoff) + '</b>' : 'not every loan is paid off within the plan';
       return head + `<section class="card" data-testid="summary"><div class="kg">
@@ -1775,6 +1775,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     return true;
   }
   const newSid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  if (switched) { try { const old = JSON.parse(switched); if (old && Array.isArray(old.houses) && old.houses.length && SAVED.length < MAXSAVED) { SAVED.unshift({ id: newSid(), name: 'Portfolio ' + (SAVED.length + 1) + ' (before the update)', ts: Date.now(), state: old }); saveSaved(); } } catch (e) {} switched = null; }
   function showPage(k) { if (PAGES.indexOf(k) < 0 || k === page) return; page = k; selId = null; ask = null; savedMsg = ''; prev = {}; render(); }
   function doSave(name) {
     const nm = String(name || '').trim().slice(0, 60) || 'Portfolio ' + (SAVED.length + 1);
