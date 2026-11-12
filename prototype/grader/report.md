@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-12T16:44:42.639Z  |  507s
+Target: `prototype/v4`  |  Run: 2026-11-12T17:31:08.449Z  |  502s
 
 ## Automated score: **85.00 / 85.001** (a separate design review adds 15)
 
@@ -52,7 +52,7 @@ Target: `prototype/v4`  |  Run: 2026-11-12T16:44:42.639Z  |  507s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 29.0ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 17.8ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.48 | 0.48 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |
@@ -70,8 +70,8 @@ Target: `prototype/v4`  |  Run: 2026-11-12T16:44:42.639Z  |  507s
 | C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.33 | 228/228 targets >=44px. Small:  |
 | C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 43/43 ok  |
 | C06 | Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps | 1.33 | 1.33 | 3/3 sub-checks pass |
-| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 138px x 27, page 6435px |
-| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 1755/1755 text elements pass (light 875/875, dark 880/880).  |
+| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 138px x 27, page 6436px |
+| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 1745/1745 text elements pass (light 870/870, dark 875/875).  |
 | C09 | Summary-first: one concise summary card (single snapshot, short text), plan card collapsible | 1.00 | 1.00 | 3/3 sub-checks pass |
 | D01 | Manifest valid; icons load with true declared dimensions | 1.14 | 1.14 | 8/8 sub-checks pass |
 | D02 | Service worker (index.html) registers, activates, controls page after reload; precache complete | 1.14 | 1.14 | 3/3 sub-checks pass |
@@ -177,25 +177,28 @@ None.
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| J1 | Calendar dates: month 0 = today (Nov 12, 2026), month N = today + N months (Nov 12, 2026 / Nov 2026; never MM/DD/YY); every month-from-today field shows its date and updates as you type; the first asset says where its money comes from; no bare "starting point" | 6.45 | 6.45 | 9/9 sub-checks pass |
-| J2 | Math in number boxes: 650*3, 1,200+450, (2000-300)/2, 650x3 and $/% forms evaluate with a safe parser; the answer reaches rows, totals and the asset page; invalid, half-typed and divide-by-zero input never changes the data and says "Check the math"; no eval / Function in the source | 8.60 | 8.60 | 27/27 sub-checks pass |
-| J3 | Planned page Checks: one plain row per check, highlighted only past a safe amount; one calm line when everything is safe; Details link is in normal flow (no overlap at 320/390/430) and >= 44px | 7.53 | 7.53 | 16/16 sub-checks pass |
-| J4 | Sold assets show how much cash was profited: Sold row, Sold category and the asset page all match the engine (price - selling costs - loan - tax - cash put in) | 6.45 | 6.45 | 6/6 sub-checks pass |
-| J5 | Old saves move silently to the current plan with the default finance profile (no popup or undo banner); the old portfolio, with its own profile, is filed in Saved as "Portfolio N (before the update)" | 6.45 | 6.45 | 5/5 sub-checks pass |
-| J6 | Stretch scenario button loads a plan that buys 607 Siena Way ($135,000,000) and the Finances verdict is not "no"; the button and confirm text say so | 5.38 | 5.38 | 6/6 sub-checks pass |
-| J7 | Every (i) info button, the Details link and the tab buttons are >= 44px in both directions on Planned, asset, Finances and Assumptions at 390px | 4.30 | 4.30 | 4/4 sub-checks pass |
-| J8 | Loading a sample portfolio files the current plan in Saved as "Portfolio N (before <scenario>)", shows an Undo banner that restores it, lands on the Planned tab, and the buttons are neutral with short titles | 6.45 | 6.45 | 6/6 sub-checks pass |
-| J9 | Invalid math (5/0, 650*) never changes state or any dependent while typing or after leaving, the box goes back to its last good value with a Kept note, the field never moves, the hint is >= 13px, and labels keep their (i) beside the last word | 6.45 | 6.45 | 5/5 sub-checks pass |
-| J10 | Checks: no Last purchase / Lenders / "Down payments beyond the trust" rows, the Details button stays visible (and in the gutter) when something is flagged, DTI over the limit is red on the chip, the header and the row | 4.30 | 4.30 | 4/4 sub-checks pass |
-| J11 | A sold asset reads the same to the dollar everywhere: the Sale card, the note under it, the Net proceeds before tax field, the asset-page summary line and the Sold row; the card adds up exactly (several selling-cost rates) | 4.30 | 4.30 | 8/8 sub-checks pass |
-| J12 | Checks is its own card with a clear heading and a light Details button; flagged rows sit inside the card gutter, one row apart, labels do not wrap; when no purchase can be funded Checks says the plan cannot start (no "last purchase today", no fake DTI peak); the lowest cash never exceeds the savings | 6.45 | 6.45 | 9/9 sub-checks pass |
-| J13 | Finances writes every month as "month N (Mon YYYY)" (or "today"), including the Biggest cash calls rows; the Breakdown table keeps every figure inside the card at 320px | 3.23 | 3.23 | 3/3 sub-checks pass |
-| J14 | Number boxes: a half-typed or invalid entry typed key by key goes back to the value the box had when you tapped into it (not a typed prefix) and says "Kept $X"; a negative says "Can't be negative, kept $X"; a percent in a dollar box is refused with a note; a percent box still takes 9% | 6.45 | 6.45 | 8/8 sub-checks pass |
-| J15 | Singular and plural wording: "pool of 1 asset", "1 planned asset is possible", "Your 1 asset is bought", no "1 assets" / "1 months" / "1 homes" on Planned, Real, Saved, Finances or the asset page | 2.15 | 2.15 | 4/4 sub-checks pass |
-| J16 | After a silent migration the Planned page shows one dismissible line naming the Saved portfolio (no dialog, no Undo); it stays until dismissed, is gone afterwards and never shows for a current save or on the other pages | 4.30 | 4.30 | 6/6 sub-checks pass |
-| J17 | The Undo message is a floating toast: it does not move the page, stays readable (role=status), keeps Undo working, follows you across the tabs, and disappears by itself after about 10 seconds | 4.30 | 4.30 | 6/6 sub-checks pass |
-| J18 | Saved portfolio names never repeat ("Portfolio n" with n = saved count + 1, moved up when taken, also after a delete or a typed duplicate); the stretch sample no longer claims a net-worth figure the pages do not show | 3.23 | 3.23 | 4/4 sub-checks pass |
-| J19 | Planned rows: the verdict chip is separated from the sentence by a dot; "(Mon YYYY)" never splits across lines; "edit ›" stays on the same line as the last word of the name (320px) | 3.23 | 3.23 | 3/3 sub-checks pass |
+| J1 | Calendar dates: month 0 = today (Nov 12, 2026), month N = today + N months (Nov 12, 2026 / Nov 2026; never MM/DD/YY); every month-from-today field shows its date and updates as you type; the first asset says where its money comes from; no bare "starting point" | 5.77 | 5.77 | 9/9 sub-checks pass |
+| J2 | Math in number boxes: 650*3, 1,200+450, (2000-300)/2, 650x3 and $/% forms evaluate with a safe parser; the answer reaches rows, totals and the asset page; invalid, half-typed and divide-by-zero input never changes the data and says "Check the math"; no eval / Function in the source | 7.69 | 7.69 | 27/27 sub-checks pass |
+| J3 | Planned page Checks: one plain row per check, highlighted only past a safe amount; one calm line when everything is safe; Details link is in normal flow (no overlap at 320/390/430) and >= 44px | 6.73 | 6.73 | 16/16 sub-checks pass |
+| J4 | Sold assets show how much cash was profited: Sold row, Sold category and the asset page all match the engine (price - selling costs - loan - tax - cash put in) | 5.77 | 5.77 | 6/6 sub-checks pass |
+| J5 | Old saves move silently to the current plan with the default finance profile (no popup or undo banner); the old portfolio, with its own profile, is filed in Saved as "Portfolio N (before the update)" | 5.77 | 5.77 | 5/5 sub-checks pass |
+| J6 | Stretch scenario button loads a plan that buys 607 Siena Way ($135,000,000) and the Finances verdict is not "no"; the button and confirm text say so | 4.81 | 4.81 | 6/6 sub-checks pass |
+| J7 | Every (i) info button, the Details link and the tab buttons are >= 44px in both directions on Planned, asset, Finances and Assumptions at 390px | 3.85 | 3.85 | 4/4 sub-checks pass |
+| J8 | Loading a sample portfolio files the current plan in Saved as "Portfolio N (before <scenario>)", shows an Undo banner that restores it, lands on the Planned tab, and the buttons are neutral with short titles | 5.77 | 5.77 | 6/6 sub-checks pass |
+| J9 | Invalid math (5/0, 650*) never changes state or any dependent while typing or after leaving, the box goes back to its last good value with a Kept note, the field never moves, the hint is >= 13px, and labels keep their (i) beside the last word | 5.77 | 5.77 | 5/5 sub-checks pass |
+| J10 | Checks: no Last purchase / Lenders / "Down payments beyond the trust" rows, the Details button stays visible (and in the gutter) when something is flagged, DTI over the limit is red on the chip, the header and the row | 3.85 | 3.85 | 4/4 sub-checks pass |
+| J11 | A sold asset reads the same to the dollar everywhere: the Sale card, the note under it, the Net proceeds before tax field, the asset-page summary line and the Sold row; the card adds up exactly (several selling-cost rates) | 3.85 | 3.85 | 8/8 sub-checks pass |
+| J12 | Checks is its own card with a clear heading and a light Details button; flagged rows sit inside the card gutter, one row apart, labels do not wrap; when no purchase can be funded Checks says the plan cannot start (no "last purchase today", no fake DTI peak); the lowest cash never exceeds the savings | 5.77 | 5.77 | 9/9 sub-checks pass |
+| J13 | Finances writes every month as "month N (Mon YYYY)" (or "today"), including the Biggest cash calls rows; the Breakdown table keeps every figure inside the card at 320px | 2.88 | 2.88 | 3/3 sub-checks pass |
+| J14 | Number boxes: a half-typed or invalid entry typed key by key goes back to the value the box had when you tapped into it (not a typed prefix) and says "Kept $X"; a negative says "Can't be negative, kept $X"; a percent in a dollar box is refused with a note; a percent box still takes 9% | 5.77 | 5.77 | 8/8 sub-checks pass |
+| J15 | Singular and plural wording: "pool of 1 asset", "1 planned asset is possible", "Your 1 asset is bought", no "1 assets" / "1 months" / "1 homes" on Planned, Real, Saved, Finances or the asset page | 1.92 | 1.92 | 4/4 sub-checks pass |
+| J16 | After a silent migration the Planned page shows one dismissible line naming the Saved portfolio (no dialog, no Undo); it stays until dismissed, is gone afterwards and never shows for a current save or on the other pages | 3.85 | 3.85 | 6/6 sub-checks pass |
+| J17 | The Undo message is a floating toast: it does not move the page, stays readable (role=status), keeps Undo working, follows you across the tabs, and disappears by itself after about 10 seconds | 3.85 | 3.85 | 6/6 sub-checks pass |
+| J18 | Saved portfolio names never repeat ("Portfolio n" with n = saved count + 1, moved up when taken, also after a delete or a typed duplicate); the stretch sample no longer claims a net-worth figure the pages do not show | 2.88 | 2.88 | 4/4 sub-checks pass |
+| J19 | Planned rows: the verdict chip is separated from the sentence by a dot; "(Mon YYYY)" never splits across lines; "edit ›" stays on the same line as the last word of the name (320px) | 2.88 | 2.88 | 3/3 sub-checks pass |
+| J20 | Number boxes at rest and on leaving: 1000+500 then Tab leaves "1,500" and no hint; a blanked box tabbed away goes back (Kept $X), and abc after that keeps the stored value; 4% in a percent box shows 4; a typed prefix (5 of 5/0) never reaches the state | 4.81 | 4.81 | 7/7 sub-checks pass |
+| J21 | Names and layout: saved name "Portfolio 1 (before Stretch: 607 Siena Way)" has no nested parentheses; breakdown values never touch at 320; the long stretch title wraps with its edit link (320) | 2.88 | 2.88 | 3/3 sub-checks pass |
+| J22 | Planned page: headline says what Checks says (savings $0 -> "once you add $X from your own pocket"); Open Finances shows with Details closed; sold asset page has no "Can the plan buy it?" or trust-timing text; no "1 years" | 2.88 | 2.88 | 4/4 sub-checks pass |
 
 ### J failures
 

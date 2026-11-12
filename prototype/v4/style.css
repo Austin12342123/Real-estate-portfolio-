@@ -373,7 +373,7 @@ label.f .iw input,.f.ex .iw input{flex:1;width:auto;min-width:0}
 /* tables and category strips at narrow widths */
 table.cmp td,table.cmp th{overflow-wrap:normal}table.cmp td:not(:first-child){white-space:nowrap}
 table.cmp td:first-child,table.cmp th:first-child{width:30%}
-[data-testid=breakdown] td:first-child{font-size:12px}
+table.cmp[data-testid=breakdown] td:first-child{font-size:12px}
 @media(max-width:389px){.cathw .cats:has(.sc){grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 6px}.cathw .cats .cnt{font-size:20px}.cathw .cats .sc b{font-size:13px}}
 .cathw .cats .sc b.warn{color:var(--warn)}
 .sec[data-testid=sale-heading]{margin-top:10px}
@@ -387,5 +387,17 @@ table.cmp td:first-child,table.cmp th:first-child{width:30%}
 .migrate{display:flex;align-items:center;gap:6px;margin:0 0 10px;padding:4px 4px 4px 12px;font-size:13px;line-height:1.3;border-radius:12px;background:color-mix(in srgb,var(--acc) 9%,var(--card))}
 .migrate span{flex:1;min-width:0}.migrate .chip{margin:0;flex:none;background:none}
 [data-testid=breakdown]{table-layout:fixed}
-[data-testid=breakdown] th:first-child,[data-testid=breakdown] td:first-child{width:25%}
-[data-testid=breakdown] th:nth-child(4),[data-testid=breakdown] td:nth-child(4){width:30%;padding-right:0}
+table.cmptable.cmp[data-testid=breakdown] th:first-child,[data-testid=breakdown] td:first-child{width:25%}
+table.cmp[data-testid=breakdown] th:nth-child(4),[data-testid=breakdown] td:nth-child(4){width:30%;padding-right:0}
+.plan-line.warn{color:var(--warn);font-weight:600}
+/* breakdown: the value columns get the room, so neighbouring numbers never touch (320px) */
+table.cmp[data-testid=breakdown] th:first-child,table.cmp[data-testid=breakdown] td:first-child{width:26%!important;padding-left:0;white-space:normal;overflow-wrap:normal;word-break:normal}
+table.cmp[data-testid=breakdown] th:nth-child(4),table.cmp[data-testid=breakdown] td:nth-child(4){width:27%!important;padding-right:0}
+table.cmp[data-testid=breakdown] th:nth-child(2),table.cmp[data-testid=breakdown] td:nth-child(2),table.cmp[data-testid=breakdown] th:nth-child(3),table.cmp[data-testid=breakdown] td:nth-child(3){width:23.5%!important}
+table.cmp[data-testid=breakdown] td:not(:first-child),table.cmp[data-testid=breakdown] th:not(:first-child){padding-left:6px;font-size:12px;white-space:nowrap}
+table.cmp[data-testid=breakdown] th:not(:first-child){white-space:normal;vertical-align:bottom;overflow-wrap:normal;line-height:1.15}
+table.cmp[data-testid=breakdown] th .info{margin-left:2px}
+@media (max-width:359px){table.cmp[data-testid=breakdown] td:not(:first-child),table.cmp[data-testid=breakdown] th:not(:first-child){font-size:11.5px;padding-left:4px}}
+.row .addr{-webkit-line-clamp:3}
+.fulladdr{margin:-2px 4px 8px;font-size:13px;color:var(--mut);overflow-wrap:anywhere}
+.chkok,.chkflag{margin-top:6px;line-height:1.3}.chkh+.chkok,.chkh+.chkflag{padding-right:2px}

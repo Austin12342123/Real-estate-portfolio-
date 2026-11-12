@@ -191,7 +191,7 @@ exports.run = async function run(X) {
     P.t(/kept in Saved/.test(ct) && /28 to 20 years/.test(ct) && /Undo/.test(ct), 'the confirm text says the plan is kept in Saved and the projection changes from 28 to 20 years', 2, ct);
     await page.click('[data-stretch-yes]'); await page.waitForTimeout(150);
     const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '[]'), SKEY), st = await store();
-    P.t(saved.length === 1 && /^Portfolio 1 \(before stretch scenario \(607 Siena Way\)\)$/.test(saved[0].name) && saved[0].state.houses.length === S0.houses.length, 'the old plan is filed as "Portfolio 1 (before stretch scenario (607 Siena Way))"', 2, saved.map((x) => x.name).join(','));
+    P.t(saved.length === 1 && /^Portfolio 1 \(before Stretch: 607 Siena Way\)$/.test(saved[0].name) && saved[0].state.houses.length === S0.houses.length, 'the old plan is filed as "Portfolio 1 (before Stretch: 607 Siena Way)"', 2, saved.map((x) => x.name).join(','));
     const ban = await page.locator('[data-testid=undo-banner]').textContent().catch(() => ''), tab = await page.locator('[data-testid=tab-planned]').getAttribute('aria-selected').catch(() => '');
     P.t(/Loaded the stretch scenario \(607 Siena Way\)/.test(ban) && /Undo/.test(ban) && tab === 'true' && !/assumptions/.test(await page.evaluate(() => location.hash)), 'an Undo banner shows and the app is on the Planned tab', 2, ban + ' ' + tab);
     await page.click('[data-undo]'); await page.waitForTimeout(150); const st2 = await store(), saved2 = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '[]'), SKEY);
@@ -365,6 +365,46 @@ exports.run = async function run(X) {
     P.t(g.dates.length >= 5 && g.dates.every((n) => n === 1), 'every "(Mon YYYY)" in a row sits on one line', 2, JSON.stringify(g.dates));
     P.t(g.eds.length >= 5 && g.eds.every(Boolean), 'the "edit ›" link shares a line with the last word of its name in every row', 2, JSON.stringify(g.eds));
     await page.setViewportSize({ width: 390, height: 844 }); return P;
+  });
+
+  /* ---------- J20 round-3 review fixes ---------- */
+  await jcheck('J20', 'Number boxes at rest and on leaving: 1000+500 then Tab leaves "1,500" and no hint; a blanked box tabbed away goes back (Kept $X), and abc after that keeps the stored value; 4% in a percent box shows 4; a typed prefix (5 of 5/0) never reaches the state', 10, '#finances: Living costs, Cash interest, typed key by key', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 390, height: 844 }); await load(withV(E.seedPlan()), '#finances'); await openAllColl();
+    const L = '[data-p="p.living"]', C = '[data-p="p.cashApy"]', st = async () => (await store()).p, hints = () => page.locator('[data-testid=calc-hint]').allTextContents();
+    const L0 = (await st()).living;
+    await page.locator(L).click(); await page.keyboard.press('Control+A'); await page.keyboard.press('Delete'); await page.keyboard.type('1000+500', { delay: 20 }); await page.keyboard.press('Tab'); await page.waitForTimeout(150);
+    P.t((await page.inputValue(L)) === '1,500' && (await st()).living === 1500 && (await hints()).length === 0, 'expression + Tab: box "1,500", state 1500, no hint left', 2, (await page.inputValue(L)) + ' / ' + (await hints()).join());
+    await page.waitForTimeout(3500); P.t((await hints()).length === 0, 'no stale hint after 3.5 s', 1, (await hints()).join());
+    await page.locator(L).click(); await page.keyboard.press('Control+A'); await page.keyboard.press('Delete'); await page.keyboard.press('Tab'); await page.waitForTimeout(150);
+    P.t((await page.inputValue(L)) === '1,500' && (await st()).living === 1500 && /^Kept \$1,500$/.test((await hints())[0] || ''), 'a blanked box tabbed away goes back with "Kept $1,500"', 2, (await page.inputValue(L)) + ' / ' + (await hints()).join());
+    await page.locator(L).click(); await page.keyboard.press('Control+A'); await page.keyboard.type('abc'); await page.keyboard.press('Tab'); await page.waitForTimeout(150);
+    P.t((await page.inputValue(L)) === '1,500' && (await st()).living === 1500 && /^Kept \$1,500$/.test((await hints())[0] || ''), 'abc + Tab after that: still 1,500 and "Kept $1,500" (never "Kept $" or 0)', 2, (await page.inputValue(L)) + ' / ' + (await hints()).join());
+    await page.locator(C).click(); await page.keyboard.press('Control+A'); await page.keyboard.type('4%', { delay: 20 }); await page.keyboard.press('Enter'); await page.waitForTimeout(150);
+    P.t((await page.inputValue(C)) === '4' && (await st()).cashApy === 4, 'a percent box given "4%" shows 4 (no doubled %) and stores 4', 1.5, await page.inputValue(C));
+    await page.locator(L).click(); await page.keyboard.press('Control+A'); await page.keyboard.press('Delete'); await page.keyboard.press('5'); await page.waitForTimeout(40);
+    P.t((await st()).living === 1500, 'a single typed key (5 of 5/0) is not committed at once', 0.8, String((await st()).living));
+    await page.keyboard.type('/0', { delay: 20 }); await page.waitForTimeout(500); P.t((await st()).living === 1500, '5/0 typed key by key never changes the state, even after a pause', 0.7, String((await st()).living)); await page.keyboard.press('Enter'); await page.waitForTimeout(100);
+    return P;
+  });
+  await jcheck('J21', 'Names and layout: saved name "Portfolio 1 (before Stretch: 607 Siena Way)" has no nested parentheses; breakdown values never touch at 320; the long stretch title wraps with its edit link (320)', 6, 'load stretch, breakdown + row at 320', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 320, height: 700 }); await load(withV(E.seedStretch()), '');
+    await page.evaluate(() => { for (let i = 0; i < 20; i++) { const b = document.querySelector('#app [aria-expanded=false][data-coll],#app [data-testid^=cat-header][aria-expanded=false]'); if (!b) break; b.click(); } }); await page.waitForTimeout(100);
+    const g = await page.evaluate(() => { const t = document.querySelector('[data-testid=breakdown]'), o = { gaps: [], over: 0 }; if (!t) return o; t.querySelectorAll('tr').forEach((tr) => { const cs = [...tr.children].slice(1); const rs = cs.map((c) => { const r = document.createRange(); r.selectNodeContents(c); return [c.getBoundingClientRect(), r.getBoundingClientRect()]; }); rs.forEach(([cb, tb], i) => { if (tb.width > cb.width + 0.5) o.over++; if (i > 0 && tb.width > 0) { const pt = rs[i - 1][1]; if (pt.width > 0) o.gaps.push(Math.round(tb.left - pt.right)); } }); }); return o; });
+    P.t(g.over === 0 && g.gaps.length > 0 && Math.min(...g.gaps) >= 4, 'breakdown: no cell overflows and at least 4px between neighbouring values at 320', 3, JSON.stringify(g));
+    const row = await page.evaluate(() => { const a = [...document.querySelectorAll('.row .addr')].find((x) => /Siena/.test(x.textContent)); if (!a) return null; return { txt: a.textContent, ell: a.scrollHeight > a.clientHeight + 1, ed: !!a.querySelector('.ed') && Math.abs(a.querySelector('.ed').getBoundingClientRect().top - a.querySelector('.nb').getBoundingClientRect().top) < 8 }; });
+    P.t(row && !row.ell && /Los Angeles/.test(row.txt) && row.ed, 'the Siena Way row title shows in full with its edit link on the last line', 2, JSON.stringify(row));
+    await load(withV(E.seedPlan()), '#assumptions'); await openAllColl(); await page.click('[data-testid=load-stretch]'); await page.click('[data-stretch-yes]'); await page.waitForTimeout(100);
+    const sv = JSON.parse(await page.evaluate((k) => localStorage.getItem(k), SKEY) || '[]'); P.t(sv.length === 1 && /^Portfolio 1 \(before Stretch: 607 Siena Way\)$/.test(sv[0].name) && !/\([^)]*\(/.test(sv[0].name), 'saved name has no nested parentheses', 1, sv.map((x) => x.name).join());
+    await page.setViewportSize({ width: 390, height: 844 }); return P;
+  });
+  await jcheck('J22', 'Planned page: headline says what Checks says (savings $0 -> "once you add $X from your own pocket"); Open Finances shows with Details closed; sold asset page has no "Can the plan buy it?" or trust-timing text; no "1 years"', 6, 'savings 0; #house-birch', async () => {
+    const P = new Parts(); const S = withV(E.seedPlan()); S.p.cash = 0; await load(S, ''); const hl = await page.locator('[data-testid=plan-headline]').textContent(), oc = await page.locator('[data-testid=outside-cash]').textContent().catch(() => '');
+    const need = num((oc.match(/\$[\d,]+/) || [])[0]); P.t(/once you add \$[\d,]+ from your own pocket/.test(hl) && num((hl.match(/add (\$[\d,]+)/) || [])[1]) === need && need > 0, 'headline names the same amount Checks needs: ' + hl.slice(0, 90), 2, hl + ' | ' + oc.slice(0, 40));
+    await load(withV(E.seedPlan()), ''); P.t(await page.locator('[data-testid=checks-ok]').count() === 1 && await page.locator('[data-testid=checks-finances]').count() === 1 && await page.locator('[data-testid=checks-list]').count() === 0, 'Open Finances link shows while the safe Checks card is folded', 1.5, '');
+    await load(withV(E.seedPlan()), '#house-birch'); await openAllColl(); const txt = await page.evaluate(() => document.getElementById('app').innerText);
+    P.t(!/Can the plan buy it/.test(txt) && /Bought .*then sold/.test(txt) && !/The trust can pay for this at/.test(txt) && !/Before the sale it was/.test(txt) && /Sold in/.test(txt), 'sold asset page: no plan-buy verdict, no trust-timing note (a one-line "Bought ..., then sold ..." instead)', 2, '');
+    const S2 = withV(E.seedPlan()); S2.g.planYears = 1; await load(S2, ''); await page.locator('[data-testid=target-toggle]').click(); const t2 = await page.evaluate(() => document.getElementById('app').innerText); P.t(!/\b1 years\b/.test(t2), 'a 1-year projection never says "1 years"', 0.5, '');
+    return P;
   });
 
   await ctx.close();
