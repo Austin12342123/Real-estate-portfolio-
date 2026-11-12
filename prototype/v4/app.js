@@ -748,13 +748,26 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (v < 0 && !NEGOK(el.dataset.p)) return { live: "Can't be negative", end: "Can't be negative, kept" };
     return null;
   }
+  /* a box where blank is a real answer (no end date, estimate the tax): everywhere else a blank box is not a value */
+  const EMPTYOK = (p) => /^j\.[^.]+\.(end|tax)$/.test(p) || /^p\.(portfolioTaxPct|salesTaxPct)$/.test(p) || /^h\.[^.]+\.(refiRate|refiTermY)$/.test(p);
+  let pendT = null;
+  const clearHintDom = () => { clearTimeout(hintTimer); calcHint = null; document.querySelectorAll('#app .chint').forEach((n) => n.remove()); };
+  /* what a box shows when it is at rest: the number without %, $ or typed math; thousands grouped in dollar-style boxes */
+  const fmtBox = (el, v, was) => { const t = (Math.round(v * 1e4) / 1e4).toLocaleString('en-US', { maximumFractionDigits: 4, useGrouping: el.dataset.suf !== '%' && (el.dataset.pre === '$' || /,/.test(was || '')) }); return t; };
+  const boxNum = (el, c) => (c.kind === 'plain' ? parseFloat(String(el.value).replace(/[,$%\s]/g, '')) : c.ok ? c.v : NaN);
+  /* commit what is in the box right now, only if it is a complete valid entry for this box (never a prefix of something that turns out invalid) */
+  const liveCommit = (el, quiet) => { const p = el.dataset.p, c = calcEval(el.value); if (boxBad(el, c)) return false; let ok = false;
+    if (c.kind === 'plain') ok = setField(p, el.value); else if (c.ok) ok = setField(p, String(c.v));
+    if (ok) { save(); if (!quiet) render(); } return ok; };
   app.addEventListener('input', (e) => { const d = e.target.dataset; if (d.savedName !== undefined) { saveName = e.target.value; return; } if (d.renamedName !== undefined) { renameName = e.target.value; return; } const p = d.p; if (!p) return;
-    if (d.num !== undefined) { /* a number box: a plain number updates live; math (650*3) updates live once it is complete. Half-typed or invalid math (650*, 5/0) changes nothing at all: no state, no totals, no rows. The text you typed stays until you leave the box. */
-      const c = calcEval(e.target.value), bd = boxBad(e.target, c); clearTimeout(hintTimer);
-      if (bd) { calcHint = { p, text: bd.live, bad: true }; placeHint(); return; } /* nothing is committed while the text is not something this box can hold */
-      if (c.kind === 'plain') { calcHint = null; if (setField(p, e.target.value)) { save(); render(); } return; }
-      if (c.ok) { calcHint = { p, text: '= ' + c.v.toLocaleString('en-US', { maximumFractionDigits: 4 }) }; if (setField(p, String(c.v))) save(); render(); return; }
-      calcHint = { p, text: 'Check the math', bad: true }; placeHint(); return; }
+    if (d.num !== undefined) { /* a number box: the answer to complete math shows as a hint ('= 1,950'); half-typed or invalid math (650*, 5/0, 5%) changes nothing at all. A single typed key is only a possible prefix of something longer ('5' of '5/0'), so it lands after a short pause or when you leave the box; a pasted / complete entry lands at once. */
+      const c = calcEval(e.target.value), bd = boxBad(e.target, c); clearTimeout(hintTimer); clearTimeout(pendT);
+      if (bd) { calcHint = { p, text: bd.live, bad: true }; placeHint(); return; }
+      if (c.kind !== 'plain' && !c.ok) { calcHint = { p, text: 'Check the math', bad: true }; placeHint(); return; }
+      calcHint = c.kind === 'plain' ? null : { p, text: '= ' + c.v.toLocaleString('en-US', { maximumFractionDigits: 4 }) };
+      const keyed = /^(insertText|deleteContent|deleteWord|deleteByCut)/.test(e.inputType || '') && (e.inputType.indexOf('delete') === 0 || (e.data || '').length <= 1);
+      if (keyed) { placeHint(); const el = e.target; pendT = setTimeout(() => { if (document.activeElement === el && el.isConnected) liveCommit(el); }, 350); return; }
+      liveCommit(e.target); placeHint(); return; }
     if (setField(p, e.target.value)) { save(); render(); } });
   /* section headers are role=button divs, so Enter and Space must open them like a real button */
   app.addEventListener('keydown', (e) => { const cs = e.target.closest && e.target.closest('[data-coll][role=button]'); if (cs && cs === e.target && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); cs.click(); } });
@@ -763,18 +776,20 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   app.addEventListener('pointerleave', nwLeave, true); app.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') return; });
   /* leaving a number box that holds math: the box shows the answer. A half-typed or invalid expression goes back to the last valid value and says so for a moment ("Kept $3,600"). */
   app.addEventListener('focusin', (e) => { const el = e.target; if (el.dataset && el.dataset.num !== undefined && el.tagName === 'INPUT') { if (inRender && editGood && editGood.p === el.dataset.p) return; editGood = { p: el.dataset.p, text: el.value }; } }); /* editGood = the value the box had when you tapped into it; a re-render that gives the box its focus back never overwrites it with half-typed text */
-  app.addEventListener('focusout', (e) => { const el = e.target; if (!(el.dataset && el.dataset.num !== undefined && el.tagName === 'INPUT') || inRender) return; const c = calcEval(el.value), bd = boxBad(el, c), nxt = e.relatedTarget, p = el.dataset.p;
-    const fix = c.kind === 'expr' && !c.ok ? 'Kept' : bd ? bd.end : null;
-    if (fix) { /* back to what the box held when you started: the value, the data and every total, never a half-typed prefix */
-      const orig = editGood && editGood.p === p ? editGood.text : el.value;
-      if (!setField(p, orig) && String(orig).trim() === '') setField(p, '0'); save();
-      el.value = orig; showNote(p, fix + ' ' + (el.dataset.pre || '') + orig + (el.dataset.suf || ''));
-      if (nxt && nxt.dataset && nxt.dataset.p) setTimeout(render, 0); else render(); return; }
-    if (c.kind !== 'expr') { if (calcHint) { calcHint = null; if (nxt && nxt.dataset && nxt.dataset.p) setTimeout(render, 0); } return; }
-    calcHint = null;
-    if (nxt && nxt.dataset && nxt.dataset.p) { setTimeout(render, 0); return; }
-    if (nxt) { el.value = String(c.v); return; }
-    render(); });
+  let clickRender = false; /* a state change made as you leave a box for a button is drawn after that tap's click, so the tap is never swallowed */
+  const deferRender = () => { if (clickRender) return; clickRender = true; const go = () => { if (!clickRender) return; clickRender = false; document.removeEventListener('click', go, true); setTimeout(render, 0); }; document.addEventListener('click', go, { once: true }); setTimeout(go, 1500); };
+  app.addEventListener('focusout', (e) => { const el = e.target; if (!(el.dataset && el.dataset.num !== undefined && el.tagName === 'INPUT') || inRender) return; clearTimeout(pendT);
+    const p = el.dataset.p, nxt = e.relatedTarget, nxtP = !!(nxt && nxt.dataset && nxt.dataset.p), c = calcEval(el.value), bd = boxBad(el, c), blank = String(el.value).trim() === '', n = boxNum(el, c);
+    const fix = (blank && !EMPTYOK(p)) || (c.kind === 'expr' && !c.ok) || (c.kind === 'plain' && !blank && isNaN(n)) ? 'Kept' : bd ? bd.end : null;
+    if (fix) { /* back to what the box held when you started (always the stored value it showed then, never a blank or half-typed text): the value, the data and every total */
+      const orig = editGood && editGood.p === p ? editGood.text : '';
+      if (!setField(p, orig) && String(orig).trim() === '') { /* nothing was stored as text: leave the stored value alone */ } save();
+      el.value = orig; showNote(p, fix + ' ' + (String(orig).trim() === '' ? 'blank' : (el.dataset.pre || '') + orig + (el.dataset.suf || '')));
+      if (nxtP) setTimeout(render, 0); else if (nxt) deferRender(); else render(); return; }
+    const had = !!calcHint || !!document.querySelector('#app .chint'); clearHintDom();
+    const changed = liveCommit(el, true), txt = blank ? '' : fmtBox(el, n, editGood && editGood.p === p ? editGood.text : '');
+    if (el.value !== txt) el.value = txt;
+    if (nxtP) { if (changed || had) setTimeout(render, 0); } else if (nxt) { if (changed) deferRender(); } else if (changed || had) render(); });
   app.addEventListener('focusout', (e) => { if (e.target.dataset && e.target.dataset.p && e.target.tagName === 'INPUT' && !e.relatedTarget) setTimeout(() => { const a = document.activeElement; if (!(a && a.dataset && (a.dataset.p || a.dataset.sel))) render(); }, 0); });
   app.addEventListener('change', (e) => {
     const ln = e.target.dataset.loan; if (ln) { const h = H(ln); if (e.target.value === 'custom') h.loanId = 'custom'; else E.applyLoan(h, e.target.value); save(); render(); return; }
