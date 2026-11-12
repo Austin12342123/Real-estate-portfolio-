@@ -222,7 +222,7 @@ exports.run = async function run(X) {
       const last = g.chart.nw[g.chart.nw.length - 1];
       T('net worth chart value at the plan horizon = KPI net worth', Math.abs(g.chart.nw[Math.min(g.chart.nw.length - 1, pl.planM)] - money(nw.v)) <= dispTol(nw.v) + 1, 1, g.chart.nw[pl.planM] + ' vs ' + nw.v);
       T('net worth chart LAST point = KPI net worth', Math.abs(last - money(nw.v)) <= dispTol(nw.v) + 1, 1.5, 'chart ends at month ' + g.chart.t + ' = ' + $f(last) + ' but KPI (month ' + pl.planM + ') = ' + nw.v);
-      T('net worth chart starts at today\'s net worth', Math.abs(g.chart.nw[0] - pl.today.nw) <= 1, 0.5, g.chart.nw[0] + ' vs ' + pl.today.nw);
+      T('net worth chart starts at today\'s net worth of the planned assets', Math.abs(g.chart.nw[0] - (pl.today.nw - pl.assetsAt(0).filter((x) => isOwnH(S.houses.find((h) => h.id === x.id) || {})).reduce((q, x) => q + x.equity, 0))) <= 1, 0.5, g.chart.nw[0] + ' vs ' + pl.today.nw + ' minus the bought assets');
     }
     /* headline */
     const nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0], hl = g.t['plan-headline'] || '';
@@ -317,7 +317,9 @@ exports.run = async function run(X) {
         const parts = line.t.split('→'), withV = line.to, withoutV = (parts[0] || '').trim();
         T('impact "without" value = engine without this asset', eq(withoutV, a), 1, lb + ': ' + withoutV + ' vs ' + $f(a));
         const ref = kid ? kpiOf(main, kid).v : ((main.warns.find((w) => w.id === 'outside-cash') || { t: '$0' }).t.match(/\$[\d,.]+[MB]?/) || ['$0'])[0];
-        T('impact "with" value = Portfolio page ' + (kid ? 'KPI' : 'outside-cash warning'), eqT(withV, ref) || (kid === 'kpi-cashflow' && eqT(withV, ref)), 1.5, lb + ': with ' + withV + ' vs Portfolio ' + ref);
+        /* the impact is on the whole plan: it equals the Planned page figure plus the Real page figure (the bought assets' share) */
+        const rr = kid && main.real && main.real.kpis ? (main.real.kpis.find((k) => k.id === kid) || { v: '$0' }).v : null, okW = kid && rr != null ? Math.abs(money(withV) - money(ref) - money(rr)) <= dispTol(ref) + dispTol(rr) + dispTol(withV) + 1 : eqT(withV, ref);
+        T('impact "with" value = Planned page KPI + Real page KPI (the whole plan)' + (kid ? '' : ' / outside-cash warning'), okW, 1.5, lb + ': with ' + withV + ' vs Planned ' + ref + (rr != null ? ' + Real ' + rr : ''));
       }
     });
   }
@@ -366,9 +368,11 @@ exports.run = async function run(X) {
     const S = fg.state, pl = planOf(fg), f = E.finance(clone(S), pl), k = f.kpis, T = (key, ok, w, info) => A.t(key, ok, w, tag + ': ' + info);
     const picture = fg.tables['monthly-picture'] || [], row = (re) => (picture.find((r) => re.test(r[0])) || [])[1];
     const kc = mg.kpis.find((x) => x.id === 'kpi-cashflow').v, sync = fg.t['sync-cf'], card = fg.t['finances-sync'] || '';
-    T('Finances sync-cf = Portfolio KPI cash flow (exact text)', sync === kc, 2, sync + ' vs ' + kc);
+    /* Finances covers the whole plan: the Planned page cash flow plus the Real page cash flow (the bought assets) */
+    const rcf = mg.real && mg.real.kpis ? (mg.real.kpis.find((x) => x.id === 'kpi-cashflow') || { v: '$0' }).v : null, kcAll = money(kc) + (rcf != null ? money(rcf) : 0), tolAll = dispTol(kc) + (rcf != null ? dispTol(rcf) : 0) + 1;
+    T('Finances sync-cf = Planned KPI cash flow + Real KPI cash flow (the whole plan)', rcf == null ? sync === kc : Math.abs(money(sync) - kcAll) <= tolAll + dispTol(sync), 2, sync + ' vs ' + kc + (rcf != null ? ' + ' + rcf : ''));
     const pe = k.planEnd, bef = /Before tax\s*([−+]\$[\d,.]+[MB]?)/.exec(card), aft = /After tax\s*([−+]\$[\d,.]+[MB]?)/.exec(card), left = /Left over each month\s*([−+]\$[\d,.]+[MB]?)/.exec(card);
-    T('Finances "At plan end" card is headed as plan end and its Before tax = Portfolio KPI cash flow = engine', /^At plan end/.test(card) && !!bef && eq(bef[1], pe.cfBefore) && eqT(bef[1], kc), 1, card.slice(0, 80) + ' | ' + (bef && bef[1]) + ' vs ' + $f(pe.cfBefore));
+    T('Finances "At plan end" card is headed as plan end and its Before tax = Planned + Real KPI cash flow = engine', /^At plan end/.test(card) && !!bef && eq(bef[1], pe.cfBefore) && Math.abs(money(bef[1]) - kcAll) <= tolAll + dispTol(bef[1]), 1, card.slice(0, 80) + ' | ' + (bef && bef[1]) + ' vs ' + $f(pe.cfBefore));
     T('Finances after-tax (plan end) = engine cfAfter = cash flow - tax', !!aft && eq(aft[1], pe.cfAfter) && Math.abs(pe.cfAfter - (pe.cfBefore - pe.tax)) < 1, 1, (aft && aft[1]) + ' vs ' + $f(pe.cfAfter));
     T('Finances left over (plan end) = engine net at plan end', !!left && eq(left[1], pe.net), 1, (left && left[1]) + ' vs ' + $f(pe.net));
     const oc = mg.warns.find((w) => w.id === 'outside-cash'), ocAmt = oc ? (/\$[\d,.]+[MB]?/.exec(oc.t) || [''])[0] : '$0', fl = fg.t['funding-line'] || '', fm = /total (\$[\d,.]+[MB]?) over the plan/.exec(fl);
@@ -377,7 +381,9 @@ exports.run = async function run(X) {
     const cov = /cover (\$[\d,.]+[MB]?);/.exec(fl); T('funding-line "partners cover" = min(outside, capital lined up) when capital is listed; otherwise it says all of it comes from your savings and income', k.capitalTotal > 0 ? !!cov && eq(cov[1], Math.min(k.totalOutside, k.capitalTotal)) : /All of it comes out of your savings/.test(fl), 0.5, fl);
     /* extra now scope */
     const X0 = pl.extraNow, te = mg.t['total-extra'] || '', mx = /(\$[\d,.]+[MB]?)\/mo extra now/.exec(te), ex = row(/^Extra payments/);
-    T('Finances "Extra payments" (now) = Portfolio "extra now"', !!mx && eq(ex && ex.replace('−', '-').replace('+', ''), -money(mx[1])) || (!!mx && Math.abs(Math.abs(money(ex)) - money(mx[1])) <= 1), 2, 'Finances ' + ex + ' vs Portfolio header ' + te + ' (assets with an extra but no loan to pay down are counted in one but not the other)');
+    /* Finances covers the whole plan: the Planned header's extra now plus the Real page's (the bought assets) */
+    const rx = mg.real && mg.real.t ? /(\$[\d,.]+[MB]?)\/mo extra now/.exec(mg.real.t['total-extra'] || '') : null, xAll = mx ? money(mx[1]) + (rx ? money(rx[1]) : pl.extraNow - PLH(E).plannedExtraNow(S, pl)) : NaN; /* the Real page has no extra header: the bought assets' extra now comes from the engine */
+    T('Finances "Extra payments" (now) = Planned "extra now" + Real "extra now"', !!mx && (Math.abs(Math.abs(money(ex)) - xAll) <= 1 || eq(ex && ex.replace('−', '-').replace('+', ''), -xAll)), 2, 'Finances ' + ex + ' vs Planned header ' + te + ' + bought ' + (xAll - (mx ? money(mx[1]) : 0)).toFixed(0) + ' (assets with an extra but no loan to pay down are counted in one but not the other)');
     const later = pl.extraLater, ml = /\+ ?(\$[\d,.]+[MB]?) later/.exec(te), pn = /Plus (\$[\d,.]+[MB]?)\/mo of extra payments on assets you have not bought yet/.exec(fg.text);
     T('Finances "plus $X/mo extra on assets not bought yet" = Portfolio "+ later"', later > 0.5 ? !!pn && !!ml && eqT(pn[1], ml[1]) : !pn && !ml, 1, (pn && pn[1]) + ' vs ' + (ml && ml[1]) + ' engine ' + $f(later));
     /* monthly picture = engine */
@@ -630,7 +636,7 @@ exports.run = async function run(X) {
         if (key === 'dti') { const hw = mg.warns.find((w) => /Debt-to-income peaks/.test(w.t)); A.t('DTI limit shows in the Portfolio warning and the Finances reason', (pl.worst.dti > v ? !!hw && new RegExp('limit ' + v + '%').test(hw.t) : !hw) && (pl.worst.dti > v ? new RegExp('limit ' + v + '%').test(fg.text) /* passing reasons are shown as a short note without the limit */ : /lenders should approve/.test(fg.t['reasons-ok'] || '')), 1, (hw && hw.t) + ' | ' + (/limit \d+%/.exec(fg.text) || [])[0]); const ch = ag.chips.find((c) => /Debt-to-income/.test(c.t)); const af = E.afford(clone(S), S.houses.find((h) => h.id === 'a'), pl); A.t('DTI limit shows in the asset-page chip title', af.cls === 'ok' || af.cls === 'na' ? !ch : !!ch && new RegExp(v + '% limit').test(ch.title), 1, (ch && ch.title) + ' vs ' + af.why); }
         if (key === 'closing') { A.t('closing default shows on every asset with no own closing %', fnum(fld(ag, 'h.a.closingPct')) === v && fnum(fld(bg, 'h.b.closingPct')) === v && fnum(fld(cg, 'h.c.closingPct')) === v, 1, fld(ag, 'h.a.closingPct') + ',' + fld(bg, 'h.b.closingPct')); A.t('closing default changes "Cash needed" on the planned asset', close(fnum(fld(bg, 'h.b.need')), 240000 * 0.2 + 240000 * v / 100), 1, fld(bg, 'h.b.need') + ' vs ' + (48000 + 2400 * v)); }
         if (key === 'appr') A.t('appreciation default shows as the growth on assets with no own growth', [ag, bg, cg].every((x, i) => fnum(fld(x, 'h.' + 'abc'[i] + '.growth')) === v), 1, fld(ag, 'h.a.growth') + ',' + fld(bg, 'h.b.growth'));
-        if (key === 'planYears') { A.t('projection length changes the plan-end numbers everywhere', new RegExp('^\\d+ assets · ' + v + '-yr plan$').test(kpiOf(mg, 'kpi-networth').sub) && eq(mg.kpis.find((k) => k.id === 'kpi-networth').v, pl.horizon.nw) && eq((/Before tax\s*([−+]\$[\d,.]+[MB]?)/.exec(fg.t['finances-sync'] || '') || [])[1], pl.series.cf[Math.min(pl.T, pl.planM)]), 2, 'note/KPI/Finances for ' + v + ' years'); A.t('projection length reflected in plan-end month (' + pl.planM + ')', pl.planM === v * 12 || pl.planM === pl.T, 0.3, ''); }
+        if (key === 'planYears') { A.t('projection length changes the plan-end numbers everywhere', new RegExp('^\\d+ assets · ' + v + '-yr plan$').test(kpiOf(mg, 'kpi-networth').sub) && eq(mg.kpis.find((k) => k.id === 'kpi-networth').v, PLH(E).plannedHz(mg.state, pl).nw) && eq((/Before tax\s*([−+]\$[\d,.]+[MB]?)/.exec(fg.t['finances-sync'] || '') || [])[1], pl.series.cf[Math.min(pl.T, pl.planM)]), 2, 'note/KPI/Finances for ' + v + ' years'); A.t('projection length reflected in plan-end month (' + pl.planM + ')', pl.planM === v * 12 || pl.planM === pl.T, 0.3, ''); }
         if (key === 'otherDebt') { A.t('other debts edited on Assumptions shows on Finances', fnum(fld(fg, 'g.otherDebt')) === v && eq((fg.tables['monthly-picture'].find((r) => /^Other debts/.test(r[0])) || [])[1], -v), 2, fld(fg, 'g.otherDebt')); }
         if (['vac', 'mgmt', 'maint'].includes(key)) { A.t(key + ' edit re-derives NOI / cap rate on commercial and home pages', verifyAsset(ag, 'a', '').concat(verifyAsset(cg, 'c', '')).filter(([k]) => /NOI|cap rate/.test(k)).every(([, ok]) => ok) && new RegExp((key === 'maint' ? 'Repairs ' : key === 'vac' ? 'Vacancy ' : 'Mgmt ') + v + '%').test(ag.chips.map((c) => c.t).join(' ')), 1.5, 'chips ' + ag.chips.map((c) => c.t).join(' ')); }
         if (key === 'hrate') A.t('credit-line rate changes cash flow consistently on every page', true, 0.1, '');

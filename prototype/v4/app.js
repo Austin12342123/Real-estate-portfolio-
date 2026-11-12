@@ -27,7 +27,7 @@
   let SAVED = []; try { SAVED = cleanSaved(JSON.parse(localStorage.getItem(SKEY))); } catch (e) { SAVED = []; }
   let saveName = '', renameName = '', savedMsg = '';
   let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
-  if (switched) undo = { text: 'Switched to the updated $125M plan (28 years, about $1.4M a month of cash flow at the end). It starts with nothing bought: the first purchase comes from your savings and job income, and every later one from the trust (everything bought before it) plus your job money. The main screen now has three pages: Planned (the plan and its math), Real (what you have bought: loan due, credit line, payoff time) and Saved (portfolios you keep and can open again). Profit and your job money pay loans down automatically, and every time is counted from today.', label: 'old portfolio', snap: switched };
+  /* no popup: an older save moves to the current plan silently; the previous portfolio is kept in Saved so nothing is lost (it is filed once SAVED is loaded, below) */
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const saveSaved = () => { try { localStorage.setItem(SKEY, JSON.stringify(SAVED)); return true; } catch (e) { return false; } };
   const backupJson = () => JSON.stringify(Object.assign({}, S, { saved: SAVED, openOn: UI.openOn })); /* the backup is the working portfolio plus the saved list and the start-page choice */
@@ -85,6 +85,8 @@
   }
   function nwChart(pl) {
     const T = Math.max(12, Math.min(pl.T, pl.planM)), s = pl.series.nw.slice(0, T + 1);
+    /* the Planned page covers the planned assets only: take the bought assets' equity out of the curve */
+    if (S.houses.some((h) => h.status === 'owned')) for (let t = 0; t <= T; t++) s[t] -= pl.assetsAt(t).filter((x) => S.houses.some((q) => q.id === x.id && q.status === 'owned')).reduce((a, x) => a + x.equity, 0);
     const W = 340, Hh = 170, pad = 10, min = Math.min(0, ...s), max = Math.max(1, ...s);
     const x = (t) => pad + (t / T) * (W - 2 * pad), y = (v) => Hh - 24 - ((v - min) / (max - min || 1)) * (Hh - 44);
     const step = Math.max(1, Math.ceil(T / 160)); let d = '';
@@ -626,6 +628,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     return true;
   }
   const newSid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  if (switched) { try { const old = JSON.parse(switched); if (old && Array.isArray(old.houses) && old.houses.length && SAVED.length < MAXSAVED) { SAVED.unshift({ id: newSid(), name: 'Portfolio ' + (SAVED.length + 1) + ' (before the update)', ts: Date.now(), state: old }); saveSaved(); } } catch (e) {} switched = null; }
   function showPage(k) { if (PAGES.indexOf(k) < 0 || k === page) return; page = k; selId = null; ask = null; savedMsg = ''; prev = {}; render(); }
   function doSave(name) {
     const nm = String(name || '').trim().slice(0, 60) || 'Portfolio ' + (SAVED.length + 1);
