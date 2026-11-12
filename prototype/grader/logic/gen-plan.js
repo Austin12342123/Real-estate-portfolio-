@@ -32,6 +32,8 @@ function fit(r) { const o = r[2], S = build([r]), h = S.houses[0];
   for (let dp = lo; dp <= 60; dp += 5) { h.dp = dp; const v = E.view(S, h); if (v.noi / (v.P + v.mip) >= need + 0.03) { o.dp = dp; return r; } } o.dp = 60; return r; }
 let rows = [], price = +process.env.BASE || 110000; const used = {};
 for (let i = 0; i < STEPS; i++) { const r = fit(spec(i, price)); price *= STEP; while (used[r[2].id]) r[2].id += 'x'; used[r[2].id] = 1; if (r[0] === 'house' && used[r[2].addr]) r[2].addr += ' #2'; used[r[2].addr] = 1; rows.push(r); }
+const VA = (process.env.VA || '').split(',').map(Number), NVA = +process.env.NVA || 0; /* value-add: the first NVA homes get a rehab of VA[0]% of price and a new appraisal VA[1]% above price + rehab */
+if (VA[0]) rows.filter((r) => r[0] === 'house').slice(0, NVA).forEach((r) => { const o = r[2], cx = Math.round(o.price * VA[0] / 100 / 1000) * 1000; Object.assign(o, { capex: cx, capexMonths: 4, arv: Math.round((o.price + cx) * (1 + VA[1] / 100) / 1000) * 1000, liftIncome: +VA[2] || 0 }); });
 rows.forEach((r) => { if (r[2].id === 'birch') Object.assign(r[2], { capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8 }); });
 let S = build(rows), pl = E.plan(S); for (let k = 0; k < 4; k++) { flip(rows, pl); S = build(rows); pl = E.plan(S); }
 const f = E.finance(S, pl);
