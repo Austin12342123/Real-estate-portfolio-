@@ -32,6 +32,7 @@ class Parts {
   }
 }
 async function check(id, cat, name, points, repro, fn) {
+  if (process.env.ONLY_CHECKS && process.env.ONLY_CHECKS.split(',').indexOf(id) < 0) return; /* ONLY_CHECKS=A13,A16 runs single A-E checks (scores are then partial) */
   let r;
   try { r = await fn(); } catch (e) { r = { ratio: 0, detail: 'CRASH in check: ' + (e && e.message || e) }; }
   if (r instanceof Parts) r = { ratio: r.ratio, detail: r.detail };
@@ -123,9 +124,13 @@ async function goHash(page, h) {
   await expandAll(page);
 }
 /* Portfolio rows: tapping a row selects it and opens its panel (extra payment, effects, move / duplicate / details / remove) */
-async function selRow(page, id) { if (!(await page.$(`[data-for="${id}"]`))) { await page.click(`[data-row="${id}"] [data-testid=row-extra-toggle]`); await page.waitForTimeout(60); } }
+async function selRow(page, id) { await showRowPage(page, id); if (!(await page.$(`[data-for="${id}"]`))) { await page.click(`[data-row="${id}"] [data-testid=row-extra-toggle]`); await page.waitForTimeout(60); } }
 async function setExtra(page, id, val) { await selRow(page, id); await setVal(page, `[data-for="${id}"] [data-testid=extra-input]`, val); }
-const goMain = async (page) => { await goHash(page, '#'); await page.waitForSelector('[data-testid=summary],.empty'); };
+/* The main screen has three pages (Planned | Real | Saved). Planned is where the plan totals and the planned rows live; Real holds the bought rows. */
+async function showTab(page, k) { await page.waitForSelector('[data-testid=tab-' + k + ']'); if ((await page.getAttribute('[data-testid=tab-' + k + ']', 'aria-selected')) !== 'true') { await page.click('[data-testid=tab-' + k + ']'); await page.waitForTimeout(60); await expandAll(page); } }
+const goMain = async (page) => { await goHash(page, '#'); await showTab(page, 'planned'); await page.waitForSelector('[data-testid=summary],[data-testid=empty-note]'); };
+/* make sure the page that holds this asset's row is showing (Real for a bought one, Planned otherwise) */
+async function showRowPage(page, id) { if (await page.$(`[data-row="${id}"]`)) return true; for (const k of ['planned', 'real']) { if ((await page.getAttribute('[data-testid=tab-' + k + ']', 'aria-selected')) === 'true') continue; await showTab(page, k); if (await page.$(`[data-row="${id}"]`)) return true; } return false; }
 /* Set a field like a user finishing an edit: native value set + 'input' event, then blur. */
 async function setVal(page, sel, val) {
   /* a field inside a section the user has not opened yet: open collapsed sections first (as a person would) */
@@ -137,9 +142,7 @@ async function setVal(page, sel, val) {
 const routeFor = (p) => (p.startsWith('g.') ? '#assumptions' : '#house-' + p.split('.')[1]);
 async function edit(page, p, val) { await goHash(page, routeFor(p)); await setVal(page, `[data-p="${p}"]`, val); }
 const store = (page) => page.evaluate((k) => { try { const j = JSON.parse(localStorage.getItem(k)); if (j) return j; } catch (e) {} try { return JSON.parse(JSON.stringify(window.__app.state)); } catch (e) { return null; } }, KEY);
-async function snap(page) {
-  await goMain(page);
-  const d = await page.evaluate(() => {
+const READ_MAIN = () => {
     const txt = (s) => { const e = document.querySelector(s); return e ? e.textContent.trim() : null; };
     const rows = [...document.querySelectorAll('[data-testid=ledger-row]')].map((r) => { const loc = r.querySelector('[data-testid=loc-line]'), inp = r.querySelector('input'), cf = r.querySelector('[data-testid=row-cashflow] b'), ex = r.querySelector('.exitline');
       return { id: r.dataset.row || '', addr: (r.querySelector('.addr') || {}).textContent, tag: (r.querySelector('.tag') || {}).textContent, dp: ((r.querySelector('[data-testid=dp-line]') || {}).textContent || '').trim(), no: (r.querySelector('[data-testid=buy-no]') || {}).textContent, text: r.innerText, pay: (r.querySelector('[data-testid=row-payment]') || {}).textContent,
@@ -148,11 +151,21 @@ async function snap(page) {
     return { nw: txt('[data-testid=kpi-networth]'), mon: txt('[data-testid=kpi-monthly]'), cf: txt('[data-testid=kpi-cashflow]'), dscr: txt('[data-testid=kpi-dscr]'), totX: txt('[data-testid=total-extra]'), headline: txt('[data-testid=plan-headline]'),
       nwSub: (document.querySelector('[data-testid=kpi-networth]') || { nextElementSibling: null }).nextElementSibling ? document.querySelector('[data-testid=kpi-networth]').nextElementSibling.textContent : '',
       rows, bd, body: document.getElementById('app').innerText };
-  });
-  const s = { raw: d, nw: money(d.nw), mon: money(d.mon), cf: money(d.cf), dscr: parseFloat(d.dscr), totX: money(d.totX), headline: d.headline, rows: d.rows, bd: d.bd, body: d.body };
+};
+/* snap reads the Planned page (plan totals, planned rows, breakdown) and, when something is bought, the Real page too: its rows join the list (bought first, then planned, sold last, like the old single list) and its own totals come back as s.real */
+async function snap(page) {
+  await goMain(page);
+  const d = await page.evaluate(READ_MAIN);
+  const stt = await store(page); let real = null;
+  if (stt && (stt.houses || []).some((h) => h.status === 'owned')) { await showTab(page, 'real'); real = await page.evaluate(READ_MAIN); await showTab(page, 'planned'); }
+  const idx = (id) => ((stt && stt.houses) || []).findIndex((h) => h.id === id);
+  const isSoldRow = (r) => /sold/.test(r.pay || '');
+  let allRows = d.rows; if (real) { const rr = real.rows, pr = d.rows; allRows = rr.filter((r) => !isSoldRow(r)).concat(pr.filter((r) => !isSoldRow(r)), rr.concat(pr).filter(isSoldRow).sort((a, b) => idx(a.id) - idx(b.id))); d.body = d.body + '\n' + real.body; }
+  d.rows = allRows;
+  const s = { raw: d, nw: money(d.nw), mon: money(d.mon), cf: money(d.cf), dscr: parseFloat(d.dscr), totX: money(d.totX), headline: d.headline, rows: d.rows, bd: d.bd, body: d.body, real: real ? { nw: money(real.nw), mon: money(real.mon), cf: money(real.cf), dscr: parseFloat(real.dscr), raw: real } : null };
   s.rows.forEach((r) => { r.payN = (/\$([\d,.]+[MB]?)\/mo/.exec(r.pay) ? money('$' + /\$([\d,.]+[MB]?)\/mo/.exec(r.pay)[1]) : NaN); r.sold = /sold/.test(r.pay || ''); r.exN = r.extra == null ? 0 : money(r.extra); r.buy = buyOf(r.tag); r.cfN = /—/.test(r.cf) || r.sold ? 0 : money(r.cf); /* a sold row's cash cell shows the sale proceeds, not a monthly cash flow */ r.eqN = r.eqA ? +r.eqA : 0; });
   { const k = Object.keys(s.bd).find((x) => /^Trust cash$/.test(x)); s.soldCash = k ? money(s.bd[k][1]) : 0; }
-  { const st = await store(page); const plst = st && Array.isArray(st.houses) && st.houses.length ? E.plan(E.normalize(clone(st))) : null; if (st) s.rows.forEach((r) => { if (plst) r.buy = isFinite(plst.purchase[r.id]) ? plst.purchase[r.id] : Infinity; /* the rows no longer carry a tag: the buy month is the engine's */ const h = (st.houses || []).find((x) => x.id === r.id); if (h && !r.sold) { const X = E.view(st, h).X; r.extra = Math.round(X).toLocaleString('en-US'); r.exN = Math.round(X); } }); }
+  { const st = stt; const plst = st && Array.isArray(st.houses) && st.houses.length ? E.plan(E.normalize(clone(st))) : null; if (st) s.rows.forEach((r) => { if (plst) r.buy = isFinite(plst.purchase[r.id]) ? plst.purchase[r.id] : Infinity; /* the rows no longer carry a tag: the buy month is the engine's */ const h = (st.houses || []).find((x) => x.id === r.id); if (h && !r.sold) { const X = E.view(st, h).X; r.extra = Math.round(X).toLocaleString('en-US'); r.exN = Math.round(X); } }); }
   s.row = (id) => s.rows.find((r) => r.id === id);
   return s;
 }
@@ -459,7 +472,7 @@ async function reqChecks(page) {
     await selRow(page, 'a'); const nb = await page.locator('[data-testid=row-remove]').count(); P.t(nb === 1 && (await page.locator('[data-for="a"] [data-testid=row-remove]').count()) === 1, 'selecting a row reveals its Remove button in the row panel (' + nb + ')', 0.5);
     await page.click('[data-for="a"] [data-testid=row-remove]'); await page.waitForTimeout(60);
     const conf = await page.locator('[data-for="a"] .confirm [data-del-yes]').count(); P.t(conf === 1 && (await page.locator('.confirm [data-ask-cancel]').count()) >= 1, 'in-page confirm with Yes / Cancel', 0.5);
-    await page.click('.confirm [data-ask-cancel]'); P.t((await page.locator('[data-testid=ledger-row]').count()) === b.rows.length, 'Cancel keeps the asset', 0.3);
+    const nOnPage = await page.locator('[data-testid=ledger-row]').count(); await page.click('.confirm [data-ask-cancel]'); P.t((await page.locator('[data-testid=ledger-row]').count()) === nOnPage && nOnPage > 0 && nOnPage <= b.rows.length, 'Cancel keeps the asset (rows on the page it sits on)', 0.3);
     await page.click('[data-for="a"] [data-testid=row-remove]'); await page.click('[data-for="a"] [data-del-yes]'); await page.waitForTimeout(100);
     const a = await snap(page); const S = clone(SB()); E.orderByBuy(S); const Sw = E.without(S, 'a'); E.relink(Sw); const w = E.plan(Sw).horizon; /* the app sorts into buy order once, then relinks funding around the removed asset */
     P.t(a.rows.length === b.rows.length - 1 && !a.row('a'), 'row removed', 0.5);
@@ -530,6 +543,97 @@ async function reqChecks(page) {
     const okLoc = ['b', 'c'].every((id) => { const tr = pl.trust[id], m = pl.purchase[id], d = s.row(id).dp; return tr.pooled ? /^Possible/.test(d) && d.includes('needs $' + n0(tr.need)) && d.includes('pool of ' + tr.n + ' has $' + n0(tr.have)) && d.includes('room $' + n0(tr.room) + ' + cash $' + n0(tr.heldCash)) && d.includes('by ' + (tr.ready <= 0 ? 'now' : 'month ' + tr.ready)) : /^Possible/.test(d) && /own cash/.test(d); });
     P.t(okLoc, 'dp-line on each planned asset equals the engine trust numbers (Possible, cash needed, pool size, room, reinvested cash flow, month)', 1, s.row('b').dp + ' | ' + s.row('c').dp); P.t(s.row('b').buy === pl.purchase.b && s.row('c').buy === pl.purchase.c, 'buy months equal engine', 0.5);
     await setExtra(page, 'a', '2000'); const a = await snap(page); P.t(a.row('b').buy <= s.row('b').buy && a.row('c').buy <= s.row('c').buy && (a.row('b').buy < s.row('b').buy || a.row('c').buy < s.row('c').buy), 'more extra on an earlier asset -> later assets bought sooner', 0.5, `b ${s.row('b').buy}->${a.row('b').buy} c ${s.row('c').buy}->${a.row('c').buy}`); return P; });
+  /* ---------------- the three pages (Planned | Real | Saved), the start-page setting and saved portfolios ---------------- */
+  const SKEY = 'rep-v4-saved', UIK = 'rep-v4-ui';
+  const clickSel = (pg, sel) => pg.evaluate(async (sel) => { const el = document.querySelector(sel); if (!el) return false; el.click(); await new Promise((r) => setTimeout(r, 25)); return true; }, sel);
+  const tabTxt = () => page.evaluate(() => [...document.querySelectorAll('[data-testid=page-tabs] [role=tab]')].map((b) => b.textContent.trim()));
+  const tabOn = () => page.evaluate(() => { const b = document.querySelector('[data-testid=page-tabs] [aria-selected=true]'); return b ? b.textContent.trim() : ''; });
+  const clickTab = async (k) => { await page.click('[data-testid=tab-' + k + ']'); await page.waitForTimeout(70); await expandAll(page); };
+  const lsGet = (k) => page.evaluate((k) => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, k);
+  const today = () => page.evaluate(() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); });
+  const cards = () => page.evaluate(() => [...document.querySelectorAll('[data-testid=saved-card]')].map((c) => ({ sid: c.dataset.sid, name: (c.querySelector('[data-testid=saved-name]') || {}).textContent, date: (c.querySelector('[data-testid=saved-date]') || {}).textContent, assets: (c.querySelector('[data-testid=saved-assets]') || {}).textContent, nw: (c.querySelector('[data-testid=saved-nw]') || {}).textContent, cf: (c.querySelector('[data-testid=saved-cf]') || {}).textContent })));
+  const saveAs = async (name) => { await clickTab('saved'); await page.click('[data-testid=save-current]'); await page.waitForTimeout(40); if (name != null) await page.fill('[data-testid=save-name]', name); await page.click('[data-testid=save-confirm]'); await page.waitForTimeout(80); };
+  const swipe = async (cdp, x0, y0, x1, y1) => { await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: y0 }] }); for (let i = 1; i <= 8; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + (x1 - x0) * i / 8, y: y0 + (y1 - y0) * i / 8 }] }); await page.waitForTimeout(12); } await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await page.waitForTimeout(120); };
+  await check('A21', 'A', 'Main screen: always-visible tab bar Planned | Real | Saved (even when Real is empty), exactly one page at a time, tabs >= 44px at 320/390/430 with no sideways scroll, swipe or tap, page remembered while you move around', 3, 'Main page: read the tab bar, switch pages, resize, swipe, open an asset and come back', async () => {
+    const P = new Parts(); await reset(page); await goMain(page);
+    P.t(JSON.stringify(await tabTxt()) === JSON.stringify(['Planned', 'Real', 'Saved']) && (await tabOn()) === 'Planned', 'tabs read Planned, Real, Saved in that order, Planned selected by default (Real is empty here)', 0.8, JSON.stringify(await tabTxt()) + ' on ' + await tabOn());
+    const one = async (k, want, notWant) => page.evaluate(([w, nw]) => w.every((s) => document.querySelector(s)) && nw.every((s) => !document.querySelector(s)), [want, notWant]);
+    P.t(await one('planned', ['[data-testid=summary]', '[data-testid=cat-header-house]', '[data-testid=plan-target]', '[data-testid=ledger-total]'], ['[data-testid=real-empty]', '[data-testid=save-card]', '[data-testid=sec-bought]']), 'Planned page shows the plan (summary, plan line, total row, planned categories) and nothing of Real or Saved', 0.5);
+    await clickTab('real'); P.t((await tabOn()) === 'Real' && await one('real', ['[data-testid=real-empty]', '[data-testid=add-owned]', '[data-testid=page-tabs]'], ['[data-testid=ledger-row]', '[data-testid=cat-header-house]', '[data-testid=save-card]', '[data-testid=plan-target]']), 'Real page with nothing bought: tab bar still there, friendly empty state with "+ Add owned", no planned rows', 0.6);
+    await clickTab('saved'); P.t((await tabOn()) === 'Saved' && await one('saved', ['[data-testid=save-card]', '[data-testid=page-tabs]'], ['[data-testid=ledger-row]', '[data-testid=summary]', '[data-testid=real-empty]']), 'Saved page: save card, no plan rows', 0.4);
+    let bad = []; for (const w of [320, 390, 430]) { await page.setViewportSize({ width: w, height: 844 }); for (const k of ['planned', 'real', 'saved']) { await clickTab(k); const r = await page.evaluate(() => { const W = window.innerWidth, sw = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth); const t = [...document.querySelectorAll('[data-testid=page-tabs] [role=tab]')].map((b) => b.getBoundingClientRect()); return { sw, W, h: Math.min(...t.map((b) => b.height)), wd: Math.min(...t.map((b) => b.width)), off: [...document.querySelectorAll('#app *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > W + 1 || b.left < -1) && getComputedStyle(e).position !== 'fixed'; }).length }; }); if (r.sw > r.W || r.h < 43.5 || r.wd < 43.5 || r.off) bad.push(`${k}@${w}: sw ${r.sw} h ${Math.round(r.h)} off ${r.off}`); } }
+    await page.setViewportSize({ width: 390, height: 844 }); P.t(!bad.length, 'tabs are >= 44px tall and every page fits 320 / 390 / 430 without sideways scroll', 0.7, bad.join('; '));
+    await clickTab('real'); await goHash(page, '#house-maple'); await goHash(page, '#'); P.t((await tabOn()) === 'Real', 'the chosen page is remembered after opening an asset and coming back', 0.4, await tabOn());
+    await clickTab('planned'); const cdp = await page.context().newCDPSession(page); await swipe(cdp, 300, 560, 90, 566); const a = await tabOn(); await swipe(cdp, 300, 560, 90, 566); const b = await tabOn(); await swipe(cdp, 90, 560, 300, 566); const c = await tabOn(); await swipe(cdp, 120, 300, 130, 560); const d = await tabOn();
+    P.t(a === 'Real' && b === 'Saved' && c === 'Real' && d === 'Real', 'swiping sideways moves between the pages (left = next, right = previous); a vertical swipe does not', 0.6, [a, b, c, d].join('>')); return P; });
+  await check('A22', 'A', 'Planned and Real hold the right rows: Planned = planned assets with the plan totals, Real = bought assets only; each page total equals the sum of its rows (and the engine)', 3, 'Mixed portfolio: read both pages', async () => {
+    await loadState(page, SB()); const P = new Parts(); const S = SB(), pl = E.plan(S), s = await snap(page);
+    const owned = S.houses.filter((h) => h.status === 'owned').map((h) => h.id), planned = S.houses.filter((h) => h.status !== 'owned').map((h) => h.id);
+    await goMain(page); const pIds = await page.evaluate(() => [...document.querySelectorAll('[data-testid=ledger-row]')].map((r) => r.dataset.row)); await clickTab('real'); const rIds = await page.evaluate(() => [...document.querySelectorAll('[data-testid=ledger-row]')].map((r) => r.dataset.row));
+    P.t(pIds.length > 0 && pIds.every((id) => planned.includes(id)) && !pIds.some((id) => owned.includes(id)), 'Planned page lists only planned assets', 0.7, pIds.join()); P.t(rIds.length === owned.length && rIds.every((id) => owned.includes(id)), 'Real page lists only the bought assets', 0.7, rIds.join());
+    const ownSn = pl.snap.filter((x) => owned.includes(x.id)), eq = ownSn.reduce((a, x) => a + x.equity, 0), py = ownSn.reduce((a, x) => a + x.payment, 0), cfs = ownSn.reduce((a, x) => a + x.cf, 0);
+    const rr = s.real; const ownRows = s.rows.filter((r) => owned.includes(r.id));
+    P.t(!!rr && nearRel(rr.nw, eq, 1, 0.004) && nearRel(rr.mon, py, 1, 0.003) && nearRel(rr.cf, cfs, 1, 0.003), 'Real totals = the bought assets only (engine plan-end equity, payments, cash flow)', 0.8, rr && `nw ${rr.nw}/${Math.round(eq)} mon ${rr.mon}/${Math.round(py)} cf ${rr.cf}/${Math.round(cfs)}`);
+    P.t(!!rr && near(ownRows.reduce((a, r) => a + r.eqN, 0), rr.nw, Math.abs(rr.nw) * 0.004 + 600) && near(ownRows.reduce((a, r) => a + (r.payN || 0), 0), rr.mon, ownRows.length + 1 + rr.mon * 0.002) && near(ownRows.reduce((a, r) => a + r.cfN, 0), rr.cf, ownRows.length + 1 + Math.abs(rr.cf) * 0.002), 'Real totals equal the sum of the rows shown on the Real page', 0.8, rr && 'rows ' + ownRows.map((r) => r.cfN).join());
+    const due = await page.locator('[data-testid=real-due]').textContent(), line = await page.locator('[data-testid=real-line]').textContent();
+    P.t(near(money(due), ownSn.length ? owned.reduce((a, id) => a + pl.V[id].B0, 0) : 0, 1) && near(money(line), owned.reduce((a, id) => a + pl.V[id].head0, 0), 1) && (await page.locator('[data-testid=real-loans]').textContent()).includes('paid off in'), 'Real page shows loans due, credit line and the payoff time of the bought assets', 0.5, due + ' ' + line);
+    await goMain(page); P.t(nearRel(s.nw, pl.horizon.nw, 1, 0.004) && nearRel(s.cf, pl.horizon.cf, 1, 0.002) && /bought/.test(await page.locator('[data-testid=total-split]').textContent()), 'Planned totals are the plan totals including everything (engine), with the bought share spelled out under the total row', 0.5, `nw ${s.nw}/${Math.round(pl.horizon.nw)}`); return P; });
+  await check('A23', 'A', 'Setting "Open the app on" (Planned default / Real / Saved) on the Assumptions page with an (i); it survives reload; the app opens on the chosen page', 2, 'Assumptions > Open the app on; reload', async () => {
+    await reset(page); const P = new Parts(); await goHash(page, '#assumptions');
+    const sel = await page.evaluate(() => ({ n: document.querySelectorAll('[data-openon]').length, on: [...document.querySelectorAll('[data-openon]')].filter((b) => b.getAttribute('aria-checked') === 'true').map((b) => b.dataset.openon), txt: [...document.querySelectorAll('[data-openon]')].map((b) => b.textContent.trim()), tgt: [...document.querySelectorAll('[data-openon]')].map((b) => Math.round(b.getBoundingClientRect().height)), info: !!document.querySelector('[data-info=openon]') }));
+    P.t(sel.n === 3 && sel.txt.join() === 'Planned,Real,Saved' && sel.on.join() === 'planned' && sel.info && Math.min(...sel.tgt) >= 44, 'three choices Planned / Real / Saved (Planned selected by default, >= 44px) with an (i) glossary entry', 0.8, JSON.stringify(sel));
+    for (const k of ['real', 'saved', 'planned']) { await clickSel(page, `[data-openon=${k}]`); await page.waitForTimeout(60); const u = await lsGet(UIK); await page.reload(); await goHash(page, '#'); await page.waitForSelector('[data-testid=page-tabs]'); const on = (await tabOn()).toLowerCase(); const body = await page.evaluate(() => ({ real: !!document.querySelector('[data-testid=real-empty]'), saved: !!document.querySelector('[data-testid=save-card]'), plan: !!document.querySelector('[data-testid=plan-target]') }));
+      P.t(u && u.openOn === k && on === k && (k === 'real' ? body.real : k === 'saved' ? body.saved : body.plan), `choice "${k}" is stored, and after a reload the app opens on that page`, 0.4, `${JSON.stringify(u && u.openOn)} ${on}`); await goHash(page, '#assumptions'); }
+    return P; });
+  await check('A24', 'A', 'Saved portfolios: Save current portfolio (name field, default "Plan YYYY-MM-DD", confirm), the card shows name, date, assets, net worth and cash flow from the engine; Open replaces the working portfolio with exactly the saved numbers and Undo brings the previous one back', 4, 'Saved page: save, edit, save, open, undo', async () => {
+    await reset(page); const P = new Parts(); const eng = (st) => E.plan(E.normalize(clone(st))).horizon;
+    await clickTab('saved'); P.t((await page.locator('[data-testid=saved-empty]').count()) === 1 && (await page.locator('[data-testid=saved-card]').count()) === 0, 'empty state text when nothing is saved', 0.3);
+    await page.click('[data-testid=save-current]'); await page.waitForTimeout(40); const dv = await page.inputValue('[data-testid=save-name]'); P.t(dv === 'Plan ' + await today() && (await page.locator('[data-testid=save-confirm]').count()) === 1, 'name field defaults to "Plan <today>" and needs a confirm', 0.5, dv);
+    await page.fill('[data-testid=save-name]', 'Base plan'); await page.click('[data-testid=save-confirm]'); await page.waitForTimeout(80);
+    const st0 = await store(page), h0 = eng(st0), c1 = await cards(); const lsv = await lsGet(SKEY);
+    P.t(c1.length === 1 && c1[0].name === 'Base plan' && /\b20\d\d\b/.test(c1[0].date) && parseInt(c1[0].assets) === st0.houses.length && nearRel(money(c1[0].nw.replace('Net worth', '')), h0.nw, 1, 0.004) && nearRel(money(c1[0].cf.replace('Cash flow', '')), h0.cf, 1, 0.002), 'one card: name, date saved, number of assets, net worth and cash flow equal the engine on the snapshot', 1, JSON.stringify(c1[0]));
+    P.t(Array.isArray(lsv) && lsv.length === 1 && lsv[0].state.houses.length === st0.houses.length && JSON.stringify(lsv[0].state.houses) === JSON.stringify(st0.houses) && JSON.stringify(lsv[0].state.g) === JSON.stringify(st0.g) && JSON.stringify(lsv[0].state.p) === JSON.stringify(st0.p), 'the snapshot stores the full state (assets, assumptions g, finances p)', 0.5);
+    const s0 = await snap(page);
+    await edit(page, 'h.maple.rent', '2222'); await edit(page, 'g.cap', '70'); const sE = await snap(page), stE = await store(page); P.t(sE.cf !== s0.cf || sE.nw !== s0.nw, 'precondition: the edits change the working numbers', 0.1);
+    await saveAs('Edited try'); const c2 = await cards(); P.t(c2.length === 2 && c2[0].name === 'Edited try' && c2[1].name === 'Base plan', 'second save appears first, list keeps both', 0.4, c2.map((c) => c.name).join());
+    await page.click('[data-sid="' + c1[0].sid + '"] [data-testid=saved-open]'); await page.waitForTimeout(40); P.t((await page.locator('[data-load-yes]').count()) === 1 && (await page.locator('[data-ask-cancel]').count()) >= 1, 'Open asks for confirmation first', 0.4);
+    await page.click('[data-ask-cancel]'); P.t(JSON.stringify((await store(page)).houses) === JSON.stringify(stE.houses), 'Cancel leaves the working portfolio alone', 0.2);
+    await page.click('[data-sid="' + c1[0].sid + '"] [data-testid=saved-open]'); await page.click('[data-load-yes]'); await page.waitForTimeout(100);
+    const st1 = await store(page), s1 = await snap(page);
+    P.t(JSON.stringify(st1.houses) === JSON.stringify(st0.houses) && JSON.stringify(st1.g) === JSON.stringify(st0.g) && JSON.stringify(st1.p) === JSON.stringify(st0.p), 'after Open the working portfolio equals the saved one exactly (assets, g, p)', 0.7);
+    P.t(s1.nw === s0.nw && s1.mon === s0.mon && s1.cf === s0.cf && s1.dscr === s0.dscr && (await tabOn()) === 'Planned' && (await page.locator('[data-testid=undo-banner]').count()) === 1, 'the Planned page shows identical net worth, payments, cash flow and DSCR, with an Undo banner', 0.7, `nw ${s1.nw}/${s0.nw} cf ${s1.cf}/${s0.cf}`);
+    await page.click('[data-undo]'); await page.waitForTimeout(100); const st2 = await store(page); P.t(JSON.stringify(st2.houses) === JSON.stringify(stE.houses) && st2.g.cap === 70, 'Undo brings the previous working portfolio back', 0.5);
+    await clickTab('saved'); P.t((await cards()).length === 2, 'saved list is unchanged by Open / Undo', 0.2); return P; });
+  await check('A25', 'A', 'Saved portfolios: Rename, Duplicate and Delete (confirm; Cancel keeps it) work, persist after reload, and the empty state returns when the last one is deleted', 2.5, 'Saved page card buttons', async () => {
+    await reset(page); const P = new Parts(); await saveAs('One'); await saveAs('Two'); let c = await cards(); P.t(c.length === 2 && c[0].name === 'Two', 'two saved portfolios (newest first)', 0.2);
+    await page.click('[data-sid="' + c[0].sid + '"] [data-testid=saved-rename]'); await page.waitForTimeout(40); await page.fill('[data-testid=rename-input]', 'Renamed plan'); await page.click('[data-testid=rename-confirm]'); await page.waitForTimeout(60); c = await cards(); P.t(c[0].name === 'Renamed plan' && c[1].name === 'One', 'Rename changes the name', 0.5, c.map((x) => x.name).join());
+    await page.reload(); await page.waitForSelector('[data-testid=page-tabs]'); await clickTab('saved'); c = await cards(); P.t(c.length === 2 && c[0].name === 'Renamed plan', 'the new name survives a reload', 0.3);
+    await page.click('[data-sid="' + c[1].sid + '"] [data-testid=saved-duplicate]'); await page.waitForTimeout(60); c = await cards(); const st = (await lsGet(SKEY)); P.t(c.length === 3 && c.some((x) => x.name === 'One (copy)') && st.length === 3 && st.filter((x) => x.name === 'One' || x.name === 'One (copy)').length === 2 && JSON.stringify(st.find((x) => x.name === 'One').state) === JSON.stringify(st.find((x) => x.name === 'One (copy)').state), 'Duplicate adds "(copy)" with the same snapshot', 0.5, c.map((x) => x.name).join());
+    const target = c.find((x) => x.name === 'One (copy)'); await page.click('[data-sid="' + target.sid + '"] [data-testid=saved-delete]'); await page.waitForTimeout(40); P.t((await page.locator('[data-sdel-yes]').count()) === 1, 'Delete asks for confirmation', 0.2);
+    await page.click('[data-sid="' + target.sid + '"] [data-ask-cancel]'); P.t((await cards()).length === 3, 'Cancel keeps it', 0.2);
+    for (const x of (await cards())) { await page.click('[data-sid="' + x.sid + '"] [data-testid=saved-delete]'); await page.click('[data-sid="' + x.sid + '"] [data-sdel-yes]'); await page.waitForTimeout(50); }
+    P.t((await cards()).length === 0 && (await page.locator('[data-testid=saved-empty]').count()) === 1 && (await lsGet(SKEY)).length === 0, 'Delete removes the portfolio from the screen and from storage; the empty state returns', 0.6); return P; });
+  await check('A26', 'A', 'Backup includes the saved portfolios and the start-page choice; Restore brings them back (also after the storage was wiped)', 2.5, 'Assumptions > Show backup; wipe; paste; restore', async () => {
+    await reset(page); const P = new Parts(); await saveAs('Alpha'); await saveAs('Beta'); await goHash(page, '#assumptions'); await clickSel(page, '[data-openon=real]');
+    await clickSel(page, '[data-testid=export]'); await page.waitForTimeout(60); const txt = await page.inputValue('[data-testid=backup-text]'); let j = null; try { j = JSON.parse(txt); } catch (e) {}
+    P.t(j && Array.isArray(j.saved) && j.saved.length === 2 && j.saved.map((x) => x.name).sort().join() === 'Alpha,Beta' && j.saved.every((x) => Array.isArray(x.state.houses) && x.state.g && x.state.p) && j.openOn === 'real' && Array.isArray(j.houses) && j.v === DATA_V, 'backup text holds the working portfolio, both saved portfolios (full snapshots) and the start-page choice', 1, j && Object.keys(j).join());
+    await page.evaluate(() => { localStorage.clear(); }); await page.reload(); await goHash(page, '#'); await page.waitForSelector('[data-testid=page-tabs]'); await goHash(page, '#assumptions'); P.t((await page.evaluate(() => localStorage.getItem('rep-v4-saved'))) === null, 'precondition: storage wiped, nothing saved', 0.1);
+    await page.fill('#bkin', txt); await clickSel(page, '[data-restore-text]'); await page.waitForTimeout(60); await page.click('[data-import-yes]'); await page.waitForTimeout(100);
+    const ls = await lsGet(SKEY), ui = await lsGet(UIK); P.t(Array.isArray(ls) && ls.length === 2 && ls.map((x) => x.name).sort().join() === 'Alpha,Beta' && ui && ui.openOn === 'real', 'Restore puts the saved portfolios and the start page back in storage', 0.6);
+    await page.reload(); await page.waitForSelector('[data-testid=page-tabs]'); P.t((await tabOn()) === 'Real', 'after Restore and a reload the app opens on the restored start page', 0.2); await clickTab('saved'); const c = await cards(); P.t(c.length === 2 && c.some((x) => x.name === 'Alpha') && c.some((x) => x.name === 'Beta') && c.every((x) => /Net worth/.test(x.nw)), 'the Saved page lists both restored portfolios with their numbers', 0.4, c.map((x) => x.name).join());
+    return P; });
+  await check('A27', 'A', 'Default plan on screen: net worth at least $125.0M (up to about $130M) and cash flow at least $1.2M a month in year 28, shown in one clear plan line and in the KPIs', 2, 'Fresh load: read the plan line and KPIs', async () => {
+    await reset(page); const P = new Parts(); const s = await snap(page), pl = E.plan(E.seedPlan()).horizon; const tg = await page.locator('[data-testid=plan-target]').textContent();
+    const nwT = money((/net worth\s*(\$[\d.,]+[MB]?)/.exec(tg) || [])[1]), cfT = money((/·\s*(\$[\d.,]+[MB]?)\/mo/.exec(tg) || [])[1]);
+    P.t(nwT >= 125e6 && nwT <= 131e6 && cfT >= 1.2e6 && /year 28/.test(tg), 'the plan line reads net worth >= $125.0M (<= $131M) and cash flow >= $1.2M a month in year 28', 1, tg);
+    P.t(s.nw >= 125e6 && s.nw <= 131e6 && s.cf >= 1.2e6 && nearRel(s.nw, pl.nw, 1, 0.004) && nearRel(s.cf, pl.cf, 1, 0.002) && nearRel(nwT, s.nw, 1, 0.003) && nearRel(cfT, s.cf, 1, 0.003), 'the KPIs equal the engine and the plan line', 0.7, `nw ${s.nw} cf ${s.cf}`);
+    P.t(pl.nw >= 125e6 && pl.nw <= 135e6 && pl.cf >= 1.2e6 && E.seedPlan().houses.every((h) => h.status === 'planned'), 'engine: default plan nothing bought, NW 125-135M, cash flow >= 1.2M/mo', 0.3, `${Math.round(pl.nw)} ${Math.round(pl.cf)}`); return P; });
+  await check('A28', 'A', 'Saving survives a full or blocked storage: a clear message, no crash, the list is unchanged', 1, 'Make localStorage.setItem throw for the saved list; Save', async () => {
+    await reset(page); const P = new Parts(); const e0 = collect.errors.length; await saveAs('Keeper');
+    await page.evaluate(() => { const o = Storage.prototype.setItem; window.__setItem = o; Storage.prototype.setItem = function (k, v) { if (k === 'rep-v4-saved') throw new Error('QuotaExceededError'); return o.apply(this, arguments); }; });
+    await saveAs('Too big'); const msg = await page.locator('[data-testid=saved-msg]').textContent().catch(() => ''); const c = await cards();
+    P.t(/could not save/i.test(msg) && c.length === 1 && c[0].name === 'Keeper' && collect.errors.length === e0, 'a failed save shows "Could not save...", keeps the list and throws no error', 0.8, msg + ' | ' + c.map((x) => x.name).join());
+    await page.evaluate(() => { Storage.prototype.setItem = window.__setItem; }); await page.reload(); await page.waitForSelector('[data-testid=page-tabs]'); await clickTab('saved'); P.t((await cards()).length === 1, 'after the storage works again the earlier saved portfolio is still there', 0.2); return P; });
 }
 
 /* ================================================================ C: UX */
@@ -682,7 +786,7 @@ async function robustChecks(page) {
   await check('E03', 'E', 'Deleting a funding target clears references (select, storage, plan, merge-into)', 1.5, 'Remove Bravo; Alpha target must reset', async () => {
     await loadState(page, SB()); const P = new Parts(); await goMain(page); await selRow(page, 'b'); await page.click('[data-for="b"] [data-testid=row-remove]'); await page.click('[data-for="b"] [data-del-yes]'); await page.waitForTimeout(100);
     const s = await store(page); P.t(s.houses.every((h) => h.target !== 'b'), 'no asset still targets the deleted id', 0.4, JSON.stringify(s.houses.map((h) => h.target)));
-    const s3 = await store(page); const v = (s3.houses.find((h) => h.id === 'a').target || ''); P.t(v !== 'b' && v === (s3.houses.find((h) => h.id === 'a').target || ''), 'Alpha funding select no longer points at the deleted asset (relinked to the next home or cleared)', 0.3, v); const m = await snap(page); P.t(!/Bravo/.test(m.body.replace(/Removed Bravo House\./, '')), 'no mention of deleted asset on main (besides Undo banner)', 0.3);
+    const s3 = await store(page); const v = (s3.houses.find((h) => h.id === 'a').target || ''); P.t(v !== 'b' && v === (s3.houses.find((h) => h.id === 'a').target || ''), 'Alpha funding select no longer points at the deleted asset (relinked to the next home or cleared)', 0.3, v); const m = await snap(page); P.t(!/Bravo/.test(m.body.replace(/Removed Bravo House\./g, '')), 'no mention of deleted asset on either main page (besides the Undo banner)', 0.3);
     await goHash(page, '#house-e'); await page.click('[data-del=e]'); await page.click('[data-del-yes=e]'); await page.waitForTimeout(80); const s2 = await store(page); P.t(s2.houses.every((h) => h.mergeInto !== 'e'), 'merge-into reference cleared too', 0.2);
     await goHash(page, '#house-b'); P.t(!BAD.test(await page.evaluate(() => document.getElementById('app').innerText)), 'visiting a deleted asset URL is safe', 0.3); return P; });
   await check('E04', 'E', 'Every input/select/button has an accessible name (main, asset, assumptions, add, import)', 1, 'aria-label / label / text on all pages', async () => {

@@ -101,6 +101,9 @@ exports.run = async function run(X) {
   const expectOn = (pageName, fixture, hash, pre, list) => COV.push({ pageName, fixture, hash, pre, list });
   /* [label regex as shown on the page, allowed keys] */
   expectOn('Portfolio (sample)', sampleS, '#', null, [[/^Net worth$/, ['networth']], [/^Cash flow \/ mo$/, ['cashflow']], [/^DSCR$/, ['dscr']]]);
+  /* the main screen has three pages: Real (bought assets: totals, credit line) and Saved (portfolios you keep) carry their own (i) buttons */
+  expectOn('Portfolio: Real page', sampleS, '#', async (pg) => { await clickSel(pg, '[data-testid=tab-real]'); }, [[/^Net worth$/, ['networth']], [/^Cash flow \/ mo$/, ['cashflow']], [/^DSCR$/, ['dscr']]]);
+  expectOn('Portfolio: Saved page', sampleS, '#', async (pg) => { await clickSel(pg, '[data-testid=tab-saved]'); }, [[/^Saved portfolios$/, ['saved']]]);
   /* a list that starts with a planned asset has no trust behind its first purchase, so the outside-cash notice (and its (i)) appears */
   expectOn('Portfolio (first asset needs outside cash)', () => { const S = E.seed(); S.houses = S.houses.filter((h) => h.status !== 'owned'); S.v = DATA_V; return S; }, '#', null, [[/^Net worth$/, ['networth']]]);
   const houseList = [[/^Months already paid/, ['paid']], [/^Plan for this asset/, ['exit']], [/^Purchase/, ['auto']], [/^Down payment$/, ['downpayment']], [/^Down payment \$/, ['downamt']], [/^Loan amount/, ['loanamount']],
@@ -112,7 +115,7 @@ exports.run = async function run(X) {
   expectOn('Asset page: business that merges', sampleS, '#house-keystone', null, [[/^Price ÷ yearly profit/, ['multiple']], [/^Business growth/, ['growth']], [/^Synergy lift/, ['merge']], [/^Not before/, ['buyin']], [/^Cash needed/, ['cashneeded']], [/^Trust can pay at/, ['nextdp']], [/^Other liens/, ['liens']]]);
   expectOn('Asset page: owned business', sampleS, '#house-auto', null, [[/^Price ÷ yearly profit/, ['multiple']], [/^Months already paid/, ['paid']], [/^Other liens/, ['liens']]]);
   expectOn('Assumptions', sampleS, '#assumptions', null, [[/^Max loan vs value/, ['debtcap']], [/^Appraisal cut/, ['haircut']], [/^Closing costs/, ['closing']], [/^Line of credit rate/, ['creditline']], [/^Co-signer 1/, ['cosigner']], [/^Co-signer 2/, ['cosigner']],
-    [/^Debt-to-income limit/, ['dti']], [/^Rent counted/, ['rentcount']], [/^Other (monthly )?debts/, ['otherdebts']], [/^Vacancy/, ['vacancy']], [/^Management/, ['mgmt']], [/^Repairs/, ['repairs']], [/^Growth/, ['growth']], [/^Projection length/, ['projection']]]);
+    [/^Debt-to-income limit/, ['dti']], [/^Rent counted/, ['rentcount']], [/^Other (monthly )?debts/, ['otherdebts']], [/^Vacancy/, ['vacancy']], [/^Management/, ['mgmt']], [/^Repairs/, ['repairs']], [/^Growth/, ['growth']], [/^Projection length/, ['projection']], [/^Open the app on/, ['openon']]]);
   expectOn('Finances: salary job, cash, taxes, managers', sampleS, '#finances', null, [[/^Gross pay/, ['grosspay']], [/^Hours \/ week$/, ['hours']], [/^Ends in/, ['jobend']], [/^Yearly raise/, ['raise']], [/^Tax rate/, ['taxrate']], [/^Starts in/, ['jobstart']],
     [/^Liquid cash/, ['liquid']], [/^Cash interest/, ['cashapy']], [/^Cash cushion/, ['emergency']], [/^Living costs/, ['living']], [/^Cost increases/, ['inflation']], [/^Other debts/, ['otherdebts']], [/^Tax on portfolio income/, ['portfoliotax']],
     [/^Tax on gains/, ['salestax']], [/^Businesses you run yourself/, ['operating']], [/^Hours \/ week each takes/, ['bizhours']], [/^Manager pay/, ['gmpay']]]);

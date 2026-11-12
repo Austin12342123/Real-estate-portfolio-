@@ -1,57 +1,57 @@
 {
- "run": "2026-11-12T03:17:04.015Z",
+ "run": "2026-11-12T04:17:21.198Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 13.22,
-   "max": 13.22
+   "earned": 13.05,
+   "max": 13.05
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 8.26,
-   "max": 8.26
+   "earned": 8.16,
+   "max": 8.16
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 16.11,
-   "max": 16.11
+   "earned": 15.91,
+   "max": 15.91
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 9.09,
-   "max": 9.09
+   "earned": 8.97,
+   "max": 8.97
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 7.08,
-   "max": 7.08
+   "earned": 6.99,
+   "max": 6.99
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 8.26,
-   "max": 8.26
+   "earned": 8.16,
+   "max": 8.16
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 11.98,
-   "max": 11.98
+   "earned": 11.83,
+   "max": 11.83
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 5.78,
-   "max": 5.78
+   "earned": 6.93,
+   "max": 6.93
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 15.28,
-   "max": 15.28
+   "earned": 15.09,
+   "max": 15.09
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 4.96,
-   "max": 4.96
+   "earned": 4.9,
+   "max": 4.9
   }
  },
  "checks": [
@@ -414,7 +414,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "peak DTI 41.2% at month 240 vs limit 43",
+   "detail": "peak DTI 42.0% at month 240 vs limit 43",
    "source": "",
    "disclosedOnly": false
   },
@@ -425,7 +425,7 @@
    "pts": 0.5,
    "earned": 0.5,
    "pass": true,
-   "detail": "ok; peak 7(a) outstanding $4661739 at month 147",
+   "detail": "ok; peak 7(a) outstanding $4720967 at month 148",
    "source": "S2,S3,S4,S5",
    "disclosedOnly": false
   },
@@ -762,11 +762,22 @@
   {
    "cat": "L8",
    "id": "L8.4",
-   "name": "Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M (115-135M at the 28-year plan end, 80-140M at 25 years: the plan starts from zero owned assets and compounds) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative",
+   "name": "Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M (125-135M at the 28-year plan end, 80-140M at 25 years: the plan starts from zero owned assets and compounds) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative",
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "NW 25y $82.1M, 28y $124.9M; step ratios 1.24,1.26,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 23; business growth 4",
+   "detail": "NW 25y $82.5M, 28y $125.7M; step ratios 1.25,1.25,1.25,1.24,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 23; business growth 4",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L8",
+   "id": "L8.4b",
+   "name": "Default plan targets: net worth at the 28-year plan end is $125M to $135M AND the monthly cash flow at plan end (Cash flow / mo, before tax, after loan payments) is at least $1.2M; the cash flow is the sum of the asset rows (income minus operating costs and loan payments) and equals income before loans (net operating income) minus loan payments",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "NW $125.67M, cash flow $1.386M/mo (rows $1.386M), income before loans $1.482M, loan payments $0.096M",
    "source": "",
    "disclosedOnly": false
   },
@@ -788,7 +799,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "4,17,39,43,52,65,80,89,101,115,115,129,129,147,147,168,172,191,196,212,218,235,240; verdict yes, lowest liquid cash $28099",
+   "detail": "4,17,39,43,53,65,80,90,102,116,116,130,130,148,148,169,173,192,197,212,219,236,240; verdict yes, lowest liquid cash $28099",
    "source": "",
    "disclosedOnly": false
   },
@@ -909,7 +920,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "owned false first pooled false no-job unfunded 23 NW on/off 124.9/21.4",
+   "detail": "owned false first pooled false no-job unfunded 23 NW on/off 125.7/21.3",
    "source": "",
    "disclosedOnly": false
   },

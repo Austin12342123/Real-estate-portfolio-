@@ -110,7 +110,20 @@ exports.run = async function run(X) {
     const svg = document.querySelector('#app svg.nw'); if (svg) o.chart = { nw: svg.dataset.nw.split(',').map(Number), t: +svg.dataset.t, label: svg.getAttribute('aria-label') };
     return o;
   };
-  async function grab(page, h) { await nav(page, h); const g = await page.evaluate(GRAB); g.pl = null; return g; }
+  /* the main screen has three pages. grab('#') reads Planned (plan totals, planned rows); when something is bought it also reads Real and merges its rows in (bought first, planned next, sold last, like the old single list) and keeps the Real page's own reading as g.real */
+  const SWITCH = async (page, k) => { await page.evaluate(async (k) => { const b = document.querySelector('[data-testid=tab-' + k + ']'); if (b && b.getAttribute('aria-selected') !== 'true') b.click(); await new Promise((r) => setTimeout(r, 30)); }, k); };
+  async function grab(page, h) {
+    await nav(page, h);
+    if (h === '#') await SWITCH(page, 'planned');
+    const g = await page.evaluate(GRAB); g.pl = null;
+    if (h === '#' && g.state.houses.some((x) => x.status === 'owned') && g.state.houses.length) {
+      await SWITCH(page, 'real'); const rg = await page.evaluate(GRAB); await SWITCH(page, 'planned');
+      const soldRow = (r) => /sold/.test(r.pay || ''), idx = (id) => g.state.houses.findIndex((x) => x.id === id);
+      g.rows = rg.rows.filter((r) => !soldRow(r)).concat(g.rows.filter((r) => !soldRow(r)), rg.rows.concat(g.rows).filter(soldRow).sort((a, b) => idx(a.id) - idx(b.id)));
+      Object.keys(rg.t).forEach((k) => { if (!(k in g.t)) g.t[k] = rg.t[k]; }); g.text = g.text + '\n' + rg.text; g.notes = g.notes.concat(rg.notes); g.warns = g.warns.concat(rg.warns); g.real = rg;
+    }
+    return g;
+  }
   const planOf = (g) => g.pl || (g.pl = E.plan(clone(g.state)));
   async function editInput(page, sel, val) { return page.evaluate(async ([sel, val]) => { const el = document.querySelector(sel); if (!el) return false; el.focus(); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(el, val); el.dispatchEvent(new Event('input', { bubbles: true })); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); await new Promise((r) => setTimeout(r, 15)); return true; }, [sel, String(val)]); }
   async function selectOpt(page, sel, val) { return page.evaluate(async ([sel, val]) => { const el = document.querySelector(sel); if (!el) return false; el.value = val; el.dispatchEvent(new Event('change', { bubbles: true })); await new Promise((r) => setTimeout(r, 15)); return true; }, [sel, String(val)]); }

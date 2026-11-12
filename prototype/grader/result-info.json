@@ -1,6 +1,6 @@
 {
   "info": {
-    "earned": 100,
+    "earned": 99.83,
     "max": 100,
     "checks": [
       {
@@ -19,11 +19,11 @@
         "category": "H",
         "name": "Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries",
         "points": 16,
-        "earned": 16,
-        "ratio": 1,
-        "detail": "86/86 sub-checks pass",
+        "earned": 15.83,
+        "ratio": 0.9895833333333334,
+        "detail": "90/91 sub-checks pass. FAIL: Portfolio: Saved page: \"Saved portfolios$\" -> (i) saved [label not found on the page (page changed?)]",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 5
+        "seconds": 6.5
       },
       {
         "id": "H3",
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 14.3
+        "seconds": 15.2
       },
       {
         "id": "H4",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 3.1
+        "seconds": 3.2
       },
       {
         "id": "H6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 4.9
+        "seconds": 5.2
       },
       {
         "id": "H7",
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 2.5
+        "seconds": 2.9
       },
       {
         "id": "H10",

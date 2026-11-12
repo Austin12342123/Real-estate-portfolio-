@@ -1,13 +1,13 @@
 # Help / hourly-job grader (INFO_ONLY)
 
-Run: 2026-11-12T02:26:16.753Z  |  31s
+Run: 2026-11-12T03:50:14.048Z  |  35s
 
-## H. Help buttons and hourly jobs: **100.00 / 100** (separate scale; not included in the A-E + R total, F or G)
+## H. Help buttons and hourly jobs: **99.83 / 100** (separate scale; not included in the A-E + R total, F or G)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
 | H1 | Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained | 8.00 | 8.00 | 9/9 sub-checks pass |
-| H2 | Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries | 16.00 | 16.00 | 86/86 sub-checks pass |
+| H2 | Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries | 16.00 | 15.83 | 90/91 sub-checks pass. FAIL: Portfolio: Saved page: "Saved portfolios$" -> (i) saved [label not found on the page (page changed?)] |
 | H3 | Info sheet: opens with the right content, closes by button / Escape / backdrop / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data | 16.00 | 16.00 | 22/22 sub-checks pass |
 | H4 | Definitions are accurate: numbers quoted match the engine constants and loan table, examples do their own arithmetic, stated rules behave that way in the engine | 16.00 | 16.00 | 42/42 sub-checks pass |
 | H5 | Hourly jobs: add, gross = (wage + tips) x hours x weeks, automatic vs typed tax, blank tax returns to automatic, temporary end month, switching kind, clamps, persistence | 12.00 | 12.00 | 28/28 sub-checks pass |
@@ -19,4 +19,5 @@ Run: 2026-11-12T02:26:16.753Z  |  31s
 
 ### H failures
 
-None.
+- **H2 Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries** (-0.17): 90/91 sub-checks pass. FAIL: Portfolio: Saved page: "Saved portfolios$" -> (i) saved [label not found on the page (page changed?)]
+  - Reproduce: Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels

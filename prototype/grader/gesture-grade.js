@@ -29,10 +29,15 @@ exports.run = async function run(X) {
   }
   const store = () => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
   const hash = () => page.evaluate(() => location.hash);
-  const openCat = async (tp) => { const h = page.locator(`[data-testid=cat-header-${tp}]`); if ((await h.count()) && (await h.getAttribute('aria-expanded')) === 'false') { await h.click(); await page.waitForTimeout(40); } };
+  /* the main screen has three pages: Planned | Real | Saved. Planned rows and categories live on Planned, bought ones (owned-*) on Real. */
+  const tab = async (k) => { await page.waitForSelector('[data-testid=tab-' + k + ']'); if ((await page.getAttribute('[data-testid=tab-' + k + ']', 'aria-selected')) !== 'true') { await page.click('[data-testid=tab-' + k + ']'); await page.waitForTimeout(60); } };
+  const tabOf = async (id) => { const st = await store(); const h = st && st.houses.find((x) => x.id === id); return h && h.status === 'owned' ? 'real' : 'planned'; };
+  const openCat = async (tp) => { await tab(/^owned-/.test(tp) || tp === 'sold-owned' ? 'real' : 'planned'); return openCat0(tp); };
+  const openCat0 = async (tp) => { const h = page.locator(`[data-testid=cat-header-${tp}]`); if ((await h.count()) && (await h.getAttribute('aria-expanded')) === 'false') { await h.click(); await page.waitForTimeout(40); } };
   const openAll = async () => { for (const t of ['owned-house', 'owned-commercial', 'owned-business', 'house', 'commercial', 'business']) await openCat(t); };
-  const sel = async (id) => { if (!(await page.$(`[data-for="${id}"]`))) { await openAll(); await page.click(`[data-row="${id}"] [data-testid=row-extra-toggle]`); await page.waitForTimeout(60); } };
-  const ids = (tp) => page.evaluate((t) => [...document.querySelectorAll(`[data-catbody=${t}] [data-testid=ledger-row]`)].map((r) => r.dataset.row), tp);
+  const sel = async (id) => { await tab(await tabOf(id)); if (!(await page.$(`[data-for="${id}"]`))) { await openAll(); await tab(await tabOf(id)); await page.click(`[data-row="${id}"] [data-testid=row-extra-toggle]`); await page.waitForTimeout(60); } };
+  const ids = async (tp) => { await tab(/^owned-/.test(tp) ? 'real' : 'planned'); return ids0(tp); };
+  const ids0 = (tp) => page.evaluate((t) => [...document.querySelectorAll(`[data-catbody=${t}] [data-testid=ledger-row]`)].map((r) => r.dataset.row), tp);
   const box = async (sl) => (await page.locator(sl).first().boundingBox());
   async function touch(points) { /* points: [{x,y,wait?}] first = start, last = end */
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: points[0].x, y: points[0].y }] });
@@ -84,7 +89,7 @@ exports.run = async function run(X) {
     await touch([{ x: lake.x + 60, y: lake.y + 20, wait: 650 }].concat(line(lake.x + 60, lake.y + 20, lake.x + 60, harb.y - 4, 8).slice(1))); await page.waitForTimeout(150);
     const cb1 = await ids('commercial'); P.t(cb1.join() === cb0.slice().reverse().join(), 'touch long-press and drag up swaps the two commercial rows', 2.5, cb0.join() + ' -> ' + cb1.join());
     P.t(nz(await ids('house')) === nz(after), 'dragging stays inside its category (homes unchanged)', 0.5);
-    { await page.evaluate(() => document.querySelector('[data-rw=cedar]').scrollIntoView({ block: 'center' })); await page.waitForTimeout(60); const ob = await box('[data-rw=cedar]'); await page.mouse.move(ob.x + 40, ob.y + 18); await page.mouse.down(); await page.waitForTimeout(700); P.t((await page.locator('.rw.lift').count()) === 0, 'bought rows are ordered by age and cannot be dragged', 0.5); await page.mouse.move(5, 5); await page.mouse.up(); await page.waitForTimeout(100); if (await hash()) { await page.evaluate(() => { location.hash = ''; }); await page.waitForTimeout(100); } }
+    { await tab('real'); await page.evaluate(() => document.querySelector('[data-rw=cedar]').scrollIntoView({ block: 'center' })); await page.waitForTimeout(60); const ob = await box('[data-rw=cedar]'); await page.mouse.move(ob.x + 40, ob.y + 18); await page.mouse.down(); await page.waitForTimeout(700); P.t((await page.locator('.rw.lift').count()) === 0, 'bought rows are ordered by age and cannot be dragged', 0.5); await page.mouse.move(5, 5); await page.mouse.up(); await page.waitForTimeout(100); if (await hash()) { await page.evaluate(() => { location.hash = ''; }); await page.waitForTimeout(100); } await tab('planned'); }
         /* a quick swipe is a scroll, not a drag */
     await openCat('house'); const b0 = (await ids('house')).join(); await page.evaluate(() => { const e = document.querySelector('[data-catbody=house] [data-rw]'); if (e) e.scrollIntoView({ block: 'center' }); }); await page.waitForTimeout(60); const hb = await box('[data-catbody=house] [data-rw]'); await touch(line(hb.x + 60, hb.y + 20, hb.x + 60, hb.y + 80, 4)); await page.waitForTimeout(100); P.t((await ids('house')).join() === b0 && (await page.locator('.rw.lift').count()) === 0, 'a quick touch-and-move (scroll) does not start a drag', 0.8);
     /* auto-scroll near the screen edge while dragging */
@@ -113,7 +118,7 @@ exports.run = async function run(X) {
     const S0 = mk([home('h1', { status: 'owned', paid: 24 }), home('h2', { buyIn: 30 }), home('h3', { buyIn: 40 })]);
     await load(S0); const t0 = await tgt(); P.t(t0.h1 === '' && t0.h2 === '' && t0.h3 === '', 'plain load stores no per-asset links', 1.5, JSON.stringify(t0));
     const sm = await load(sample()).then(store); P.t(sm.houses.every((h) => !h.target), 'the sample carries no old funding links either (the trust decides)', 1, '');
-    const dpl = (id) => page.locator(`[data-row=${id}] [data-testid=dp-line]`).textContent().catch(() => ''); const mon = (t) => { const m = /by (?:month (\d+)|now)/.exec(t); return m ? (m[1] ? +m[1] : 0) : null; };
+    const dpl = async (id) => { await tab(await tabOf(id)); return page.locator(`[data-row=${id}] [data-testid=dp-line]`).textContent().catch(() => ''); }; const mon = (t) => { const m = /by (?:month (\d+)|now)/.exec(t); return m ? (m[1] ? +m[1] : 0) : null; };
     await load(S0); await sel('h2'); await page.click('[data-testid=move-down]'); await page.waitForTimeout(60); await page.click('[data-testid=move-up]'); await page.waitForTimeout(80);
     let t = await tgt(); let pl = E.plan(E.normalize(clone(await store())));
     P.t((await ids('house')).join() === 'h2,h3' && Object.values(t).every((v) => v === ''), 'order 1,2,3 after a move down and back up; still no stored links', 2, JSON.stringify(t));
@@ -136,7 +141,7 @@ exports.run = async function run(X) {
 
   /* ---------------------------------------------------------------- I5 duplicate */
   await icheck('I5', 'Duplicate: from the row panel and the asset page; copy sits right after the original, named "(copy)", planned, funded by the trust like any later asset', 10, 'Panel > Duplicate; asset page > Duplicate', async () => {
-    const P = new Parts(); await load(sample()); await sel('maple'); const n0 = (await store()).houses.length; const homesBefore = await ids('house');
+    const P = new Parts(); await load(sample()); await sel('maple'); const n0 = (await store()).houses.length; const homesBefore = await ids('house'); await sel('maple');
     await page.click('[data-for=maple] [data-testid=row-duplicate]'); await page.waitForTimeout(100);
     const st = await store(), i = st.houses.findIndex((h) => h.id === 'maple'), cp = st.houses[i + 1];
     P.t(st.houses.length === n0 + 1 && cp && cp.addr === '1412 Maple Ridge Dr (copy)' && cp.status === 'planned' && cp.id !== 'maple', 'copy added right after the original in the saved list, "(copy)", planned', 2.5, cp && cp.addr);
@@ -151,10 +156,11 @@ exports.run = async function run(X) {
   /* ---------------------------------------------------------------- I6 sections */
   await icheck('I6', 'Portfolio = total row + Homes / Commercial / Businesses dropdowns (name left, chevron right, stat strip: count, before/after loan, worth, DSCR, lasts), empty sections, Sold section only when something sold', 12, 'Headers, subtitles, collapse state, empty portfolio', async () => {
     const P = new Parts(); await load(sample());
-    const hd = await page.evaluate(() => [...document.querySelectorAll('[data-testid^=cat-header-]')].map((h) => ({ t: h.dataset.testid.replace('cat-header-', ''), name: h.querySelector('b').textContent, sub: h.parentElement.querySelector('.cats').textContent.trim(), chev: !!h.querySelector('.chev'), x: h.querySelector('b').getBoundingClientRect().left, cx: h.querySelector('.chev').getBoundingClientRect().left, exp: h.getAttribute('aria-expanded'), sy: h.parentElement.querySelector('.cats').getBoundingClientRect().top - h.querySelector('b').getBoundingClientRect().bottom })));
-    P.t(hd.map((h) => h.t).join() === 'owned-house,owned-business,house,commercial,business,sold' && hd.slice(0, 5).map((h) => h.name).join() === 'Homes,Businesses,Homes,Commercial,Businesses', 'a Bought section (categories that hold something) and a Planned section (three categories), plus Sold when something is sold', 1.5, hd.map((h) => h.name).join());
+    const heads = () => page.evaluate(() => [...document.querySelectorAll('[data-testid^=cat-header-]')].map((h) => ({ t: h.dataset.testid.replace('cat-header-', ''), name: h.querySelector('b').textContent, sub: h.parentElement.querySelector('.cats').textContent.trim(), chev: !!h.querySelector('.chev'), x: h.querySelector('b').getBoundingClientRect().left, cx: h.querySelector('.chev').getBoundingClientRect().left, exp: h.getAttribute('aria-expanded'), sy: h.parentElement.querySelector('.cats').getBoundingClientRect().top - h.querySelector('b').getBoundingClientRect().bottom })));
+    const hp = await heads(); await tab('real'); const hr = await heads(); await tab('planned'); const hd = hr.concat(hp); /* Real page first (Homes, Businesses), then the Planned page (Homes, Commercial, Businesses, Sold) */
+    P.t(hr.map((h) => h.t).join() === 'owned-house,owned-business' && hp.map((h) => h.t).join() === 'house,commercial,business,sold' && hd.slice(0, 5).map((h) => h.name).join() === 'Homes,Businesses,Homes,Commercial,Businesses', 'the Real page has the categories that hold something bought; the Planned page has its three categories, plus Sold when something is sold', 1.5, hd.map((h) => h.name).join());
     P.t(hd.every((h) => h.chev && h.cx > h.x + 150 && h.sy >= -2 && h.sy < 14), 'name on the left, chevron on the right, subtitle directly below the name', 1, JSON.stringify(hd.map((h) => [Math.round(h.x), Math.round(h.cx), Math.round(h.sy)])));
-    P.t(hd[0].exp === 'true' && hd[1].exp === 'false' && hd[2].exp === 'true' && hd[3].exp === 'false' && hd[4].exp === 'false' && hd[5].exp === 'false', 'default: the Homes of each section open, the others collapsed', 1, hd.map((h) => h.exp).join());
+    P.t(hd[0].exp === 'true' && hd[1].exp === 'false' && hd[2].exp === 'true' && hd[3].exp === 'false' && hd[4].exp === 'false' && hd[5].exp === 'false', 'default: the Homes of each page open, the others collapsed', 1, hd.map((h) => h.exp).join());
     const S = sample(), pl = E.plan(S), vis = (tp) => S.houses.filter((h) => (h.type || 'house') === tp && h.status !== 'owned' && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM));
     const cnt = (tp, own) => S.houses.filter((h) => (h.type || 'house') === tp && (h.status === 'owned') === !!own && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM)).length;
     const strip = (x, tp, own) => x.sub.startsWith(String(cnt(tp, own))) && /before loan/.test(x.sub) && /after loan/.test(x.sub) && /worth/.test(x.sub) && /DSCR/.test(x.sub) && /lasts/.test(x.sub);
@@ -232,11 +238,11 @@ exports.run = async function run(X) {
 
   /* ---------------------------------------------------------------- I10 layout and clean run */
   await icheck('I10', 'Layout and hygiene: no sideways scroll at 320 / 390 / 430 with a panel open and while dragging, new buttons >= 44 px, no console errors or outside requests', 4, 'Resize, measure, collected errors', async () => {
-    const P = new Parts(); await load(sample()); await sel('maple'); await openAll(); let bad = [];
+    const P = new Parts(); await load(sample()); await openAll(); await sel('maple'); let bad = [];
     for (const w of [320, 390, 430]) { await page.setViewportSize({ width: w, height: 844 }); await page.waitForTimeout(60); const r = await page.evaluate(() => ({ sw: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth), W: window.innerWidth })); if (r.sw > r.W + 1) bad.push(w + ':' + r.sw); }
     await page.setViewportSize({ width: 390, height: 844 }); P.t(bad.length === 0, 'no horizontal overflow with a panel open', 1, bad.join());
     const small = await page.evaluate(() => [...document.querySelectorAll('[data-testid=asset-panel] button, [data-testid^=cat-header-], [data-testid=row-toggle]')].filter((e) => e.offsetParent).map((e) => { const b = e.getBoundingClientRect(); return b.width >= 43.5 && b.height >= 43.5 ? null : (e.dataset.testid || e.className) + ' ' + Math.round(b.width) + 'x' + Math.round(b.height); }).filter(Boolean)); P.t(small.length === 0, 'panel buttons, row toggles and section headers are >= 44 px', 1.2, small.join());
-    const m = await box('[data-rw=cedar]'); await page.mouse.move(m.x + 40, m.y + 18); await page.mouse.down(); await page.waitForTimeout(600); await page.mouse.move(m.x + 40, m.y + 60); const sw = await page.evaluate(() => document.documentElement.scrollWidth); await page.mouse.up(); await page.waitForTimeout(100); P.t(sw <= 391, 'no sideways overflow while a row is lifted', 0.6, sw);
+    await tab('real'); const m = await box('[data-rw=cedar]'); await page.mouse.move(m.x + 40, m.y + 18); await page.mouse.down(); await page.waitForTimeout(600); await page.mouse.move(m.x + 40, m.y + 60); const sw = await page.evaluate(() => document.documentElement.scrollWidth); await page.mouse.up(); await page.waitForTimeout(100); P.t(sw <= 391, 'no sideways overflow while a row is lifted', 0.6, sw);
     const errs = collect.errors.slice(errStart), reqs = collect.requests.slice(reqStart), ext = reqs.filter((u) => !/^(http:\/\/127\.0\.0\.1|http:\/\/localhost|data:|blob:|about:)/.test(u));
     P.t(errs.length === 0 && ext.length === 0, 'no console errors / page errors and no outside requests (' + errs.length + ' / ' + ext.length + ')', 1.2, [...new Set(errs)].slice(0, 2).join(' || ').slice(0, 300)); return P; });
 

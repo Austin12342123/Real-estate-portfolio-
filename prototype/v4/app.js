@@ -1,12 +1,12 @@
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
-  const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui';
-  let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan', sect: 'all', addOwned: false };
+  const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
+  let S, UI = { tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan', openOn: 'planned', addOwned: false };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  const DATA_V = 16; /* bump when the sample portfolio changes so old saved samples are replaced */
+  const DATA_V = 17; /* bump when the sample portfolio changes so old saved samples are replaced */
   if (S && Array.isArray(S.houses) && S.g && S.v === 8) { S.p = S.p || E.samplePersonal(); S.v = DATA_V; } /* v8 saves keep their assets and gain a finance profile */
   let switched = null;
-  if (S && Array.isArray(S.houses) && S.g && (S.v === 9 || S.v === 10 || S.v === 11 || S.v === 12 || S.v === 13 || S.v === 14 || S.v === 15)) { switched = JSON.stringify(S); const keepP = S.p, plan = E.seedPlan(); if (keepP) plan.p = Object.assign({}, keepP, { capital: plan.p.capital }); S = plan; S.v = DATA_V; } /* v9-v15 saves switch to the current $125M plan once; Undo brings the old one back */
+  if (S && Array.isArray(S.houses) && S.g && (S.v === 9 || S.v === 10 || S.v === 11 || S.v === 12 || S.v === 13 || S.v === 14 || S.v === 15 || S.v === 16)) { switched = JSON.stringify(S); const keepP = S.p, plan = E.seedPlan(); if (keepP) plan.p = Object.assign({}, keepP, { capital: plan.p.capital }); S = plan; S.v = DATA_V; } /* v9-v16 saves switch to the current $125M plan once; Undo brings the old one back */
   if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seedPlan();
   E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
   /* the next planned asset below h in the list (the trust buys in list order), and the month it is bought if h's extra payment were x instead */
@@ -19,9 +19,19 @@
   const fixOrder = (s) => { s.seq = +s.seq || 0; s.houses.forEach((h) => { if (!h.created) h.created = Date.now(); }); if (s.orderV !== 2) E.orderByBuy(s); return s; }; /* list order = buy order, sorted once; after that the saved order is the truth */
   fixOrder(S);
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
+  const PAGES = ['planned', 'real', 'saved'];
+  if (PAGES.indexOf(UI.openOn) < 0) UI.openOn = 'planned';
+  let page = UI.openOn; /* the page shown on the main screen; kept while you move around the app, and reset to the "Open the app on" choice when the app starts */
+  /* saved portfolios: full snapshots (assets, assumptions, finances) kept on this device under their own key and included in Export / Restore */
+  const MAXSAVED = 40, cleanSaved = (a) => (Array.isArray(a) ? a.filter((x) => x && x.id && x.state && Array.isArray(x.state.houses) && x.state.g).slice(0, MAXSAVED).map((x) => ({ id: String(x.id), name: String(x.name || 'Saved portfolio').slice(0, 60), ts: +x.ts || Date.now(), state: x.state })) : []);
+  let SAVED = []; try { SAVED = cleanSaved(JSON.parse(localStorage.getItem(SKEY))); } catch (e) { SAVED = []; }
+  let saveName = '', renameName = '', savedMsg = '';
   let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
-  if (switched) undo = { text: 'Switched to the updated $125M plan (28 years). It starts with nothing bought: the first purchase comes from your savings and job income, and every later one from the trust (everything bought before it) plus your job money. The portfolio now has two sections, Bought and Planned: Bought rows show the loan still due, the line of credit and the payoff time; Planned rows show whether the plan is possible and the math. Profit and your job money now pay loans down automatically, and every time is counted from today.', label: 'old portfolio', snap: switched };
+  if (switched) undo = { text: 'Switched to the updated $125M plan (28 years, about $1.4M a month of cash flow at the end). It starts with nothing bought: the first purchase comes from your savings and job income, and every later one from the trust (everything bought before it) plus your job money. The main screen now has three pages: Planned (the plan and its math), Real (what you have bought: loan due, credit line, payoff time) and Saved (portfolios you keep and can open again). Profit and your job money pay loans down automatically, and every time is counted from today.', label: 'old portfolio', snap: switched };
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
+  const saveSaved = () => { try { localStorage.setItem(SKEY, JSON.stringify(SAVED)); return true; } catch (e) { return false; } };
+  const backupJson = () => JSON.stringify(Object.assign({}, S, { saved: SAVED, openOn: UI.openOn })); /* the backup is the working portfolio plus the saved list and the start-page choice */
+  const stamp = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
   const hashOf = (p) => (!p ? '#' : p === 'settings' ? '#assumptions' : p.startsWith('h/') ? '#house-' + p.slice(2) : p.startsWith('import/') ? '#import-' + p.slice(7) : p === 'add' ? '#add' : p === 'finances' ? '#finances' : '#');
@@ -209,17 +219,16 @@
       const nn = tp ? NOUN[tp] : ['sold', 'sold'], sub = list.length ? statStrip(tp, list, tid) : 'None yet';
       return `<section class="card cat${open ? ' open' : ''}${tp ? '' : ' soldcat'}" data-testid="cat-${tid}"><div class="cathw"><div class="cath" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}" data-testid="cat-header-${tid}"><span class="catt"><b>${title}</b></span><span class="chev" aria-hidden="true">›</span></div><div class="cats" data-testid="cat-sub-${tid}" aria-label="Latest added, for information only">${sub}</div></div>
         ${open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp && !pre ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length && tp ? '<p class="note" data-testid="cat-stat-note">Top numbers are per month at plan end. Lasts = how long your cash (as projected at plan end) covers the shortfall if about 45% of these assets (the biggest earners) stop paying rent while loans, taxes and insurance keep coming. If the rest still cover everything, it assumes every asset fails (“lasts, all fail”).</p>' : ''}${list.length > 1 && tp && !pre ? '<p class="note hold">Hold and drag ⋮⋮ to reorder. An asset is never bought before the ones above it, and they fund it.</p>' : ''}</div>` : ''}</section>`; };
-    const soldList = S.houses.filter(isSold), CATS = [['house', 'Homes'], ['commercial', 'Commercial'], ['business', 'Businesses']];
+    const CATS = [['house', 'Homes'], ['commercial', 'Commercial'], ['business', 'Businesses']];
+    const soldAll = S.houses.filter(isSold), soldOwned = soldAll.filter((h) => h.status === 'owned'), soldPlanned = soldAll.filter((h) => h.status !== 'owned');
     const typeList = (tp, own) => S.houses.filter((h) => (h.type || 'house') === tp && (h.status === 'owned') === own && !isSold(h));
     const ownedAll = S.houses.filter((h) => h.status === 'owned' && !isSold(h)), plannedAll = S.houses.filter((h) => h.status !== 'owned');
     const ownedSecs = CATS.filter(([tp]) => typeList(tp, true).length).map(([tp, title]) => secOf('cat-owned-' + tp, title, typeList(tp, true), tp, 'owned-')).join('');
     const plannedSecs = CATS.map(([tp, title]) => secOf('cat-' + tp, title, typeList(tp, false), tp, '')).join('');
-    const soldSec = soldList.length ? secOf('cat-sold', 'Sold', soldList, null) : '';
-    const sections = plannedSecs + soldSec;
-    const fin0 = fin, dueTot = ownedAll.reduce((a2, h) => a2 + pl.V[h.id].B0, 0), lineTot = ownedAll.reduce((a2, h) => a2 + pl.V[h.id].head0, 0);
-    const bEmpty = !ownedAll.length, sectV = bEmpty ? 'all' : UI.sect || 'all', showB = sectV !== 'planned', showP = sectV !== 'bought';
-    const sectCtl = bEmpty ? '' : `<div class="seg sectseg" role="tablist" aria-label="Show bought or planned assets" data-testid="sect-control"><button role="tab" data-sect="all" class="${sectV === 'all' ? 'on' : ''}" aria-selected="${sectV === 'all'}" data-testid="sect-all">Both</button><button role="tab" data-sect="bought" class="${UI.sect === 'bought' ? 'on' : ''}" aria-selected="${UI.sect === 'bought'}" data-testid="sect-bought">Bought ${ownedAll.length}</button><button role="tab" data-sect="planned" class="${UI.sect === 'planned' ? 'on' : ''}" aria-selected="${UI.sect === 'planned'}" data-testid="sect-planned">Planned ${plannedAll.length}</button></div>`;
-    const boughtHead = bEmpty ? `<div class="emptyb" data-testid="sec-bought"><span data-testid="bought-empty"><b>Bought</b> · nothing yet<small>Your plan builds from your savings and job income.</small></span><button class="chip link" data-add-owned data-testid="add-owned" aria-label="Add something you already own">+ Add owned</button></div>` : `<div class="sech" data-testid="sec-bought"><b>Bought</b><span class="sechs" data-testid="bought-sum">${ownedAll.length} asset${ownedAll.length === 1 ? '' : 's'} · loans due <b>${$f(dueTot)}</b> · credit line <b>${$f(lineTot)}</b>${infoBtn('creditline')}</span></div>`;
+    const soldSecP = soldPlanned.length ? secOf('cat-sold', 'Sold', soldPlanned, null) : '', soldSecO = soldOwned.length ? secOf('cat-owned-sold', 'Sold', soldOwned, null, 'owned-') : '';
+    const sections = plannedSecs + soldSecP;
+    const dueTot = ownedAll.reduce((a2, h) => a2 + pl.V[h.id].B0, 0), lineTot = ownedAll.reduce((a2, h) => a2 + pl.V[h.id].head0, 0);
+    const lastPayoff = Math.max(0, ...ownedAll.filter((h) => pl.V[h.id].B0 > 0.5).map((h) => pl.loanEnd[h.id]));
     const vds = plannedAll.map((h) => [h, verdictOf(h)]), okN = vds.filter((x) => x[1].cls !== 'bad').length, tightN = vds.filter((x) => x[1].cls === 'warn').length, pCls = !vds.length ? 'ok' : okN < vds.length ? 'bad' : tightN ? 'warn' : 'ok';
     const pool0 = pl.poolAt(0), jobNote = fin ? fin.kpis.jobSplit0 : 0;
     const pWord = !vds.length ? 'None' : pCls === 'bad' ? 'Not possible' : pCls === 'warn' ? 'Tight' : 'Possible';
@@ -227,7 +236,31 @@
         <p class="note" data-testid="planned-math">${vds.length ? `The test for each one: the pool of assets above it (what you own plus the planned assets above it) must have borrowing room + cash of at least the cash it needs (down payment, closing costs and improvements). ${pool0.n === 0 ? 'Nothing is owned yet, so there is no pool: the first asset is paid from your savings above your cash cushion plus the job money you save each month' + (fin ? ' (' + $f(fin.kpis.jobSurplus0) + '/mo left after living costs)' : '') + '. After that the pool is everything bought before an asset: ' : 'Today the pool is ' + pool0.n + ' asset' + (pool0.n === 1 ? '' : 's') + ' with ' + $f(pool0.head) + ' of borrowing room; '}its cash flow after loans, managers and taxes${pool0.n ? ' (' + $f(pool0.sweep) + '/mo)' : ''}${jobNote > 0.5 ? ' and your job money (' + $f(jobNote) + '/mo)' : ''} pay the line down and build cash. Months below count from today.` : 'Add a planned asset and the trust works out whether it can pay for it.'}</p>
         ${fin ? `<div class="vrow ${fin.status}" data-go="finances" data-testid="planned-finance" role="link" style="min-height:44px"><span class="vq"><b>Your money</b><span class="note">${esc(fin.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, ''))} Debt-to-income tops out at ${r(pl.worst.dti)}% (limit ${g.dti}%).</span></span><span class="vgo"><span class="vchip ${fin.status}">${VL[fin.status]}</span> ›</span></div>` : ''}</section>`;
     const plannedHead = `<details class="psumd" data-testid="sec-planned"><summary class="sec cs" role="button"><span><b>Planned</b> <span class="vchip sm ${pCls}" data-testid="planned-chip">${pWord}</span> <span class="sechs">${plannedAll.length}</span></span><span class="cx">details ▸</span></summary>${plannedInner}</details>`;
-    if (empty) return `<h1>Portfolio <span class="hb"><button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>${undo ? `<div class="warnbox okbox" data-testid="undo-banner">Removed ${esc(undo.label)}. <button class="chip link" data-undo>Undo</button></div>` : ''}<p class="note" style="margin:0 4px 8px" data-testid="empty-note">Nothing added yet. Add a home, a commercial property or a business to see your plan.</p>${sections}<button class="linkbtn" data-go="import/new" data-testid="import-link">Import a home from a listing</button>`;
+    const head = `<h1>Portfolio <span class="hb"><button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>
+    ${undo ? `<div class="warnbox okbox" data-testid="undo-banner">${undo.text ? esc(undo.text) : 'Removed ' + esc(undo.label) + '.'} <button class="chip link" data-undo>Undo</button></div>` : ''}
+    ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
+    <div class="seg pagetabs" role="tablist" aria-label="Portfolio pages" data-testid="page-tabs">${[['planned', 'Planned'], ['real', 'Real'], ['saved', 'Saved']].map(([k, l]) => `<button type="button" role="tab" id="tab-${k}" data-page="${k}" class="${page === k ? 'on' : ''}" aria-selected="${page === k}" data-testid="tab-${k}">${l}</button>`).join('')}</div>`;
+    const tail = `<button class="linkbtn" data-go="import/new" data-testid="import-link">Import from a listing</button>`;
+    if (page === 'saved') return head + savedPage(pl);
+    /* ---------- Real: only what you have bought. Its totals are the sums of the rows shown (plan-end numbers, like every row) ---------- */
+    if (page === 'real') {
+      if (!ownedAll.length && !soldOwned.length) return head + `<section class="card realempty" data-testid="real-empty"><b data-testid="bought-empty">Nothing bought yet</b><p class="note">This page shows what you have really bought: the loan still due, the line of credit it opens and when each loan is paid off. Add something you already own to see it here. Your plan on the Planned page does not need anything bought.</p><button class="btn" data-add-owned data-testid="add-owned" aria-label="Add something you already own">+ Add owned</button></section>`;
+      const rSn = pl.snap.filter((x) => ownedAll.some((h) => h.id === x.id)), rs = rSn.reduce((a, x) => ({ nw: a.nw + x.equity, pay: a.pay + x.payment, cf: a.cf + x.cf }), { nw: 0, pay: 0, cf: 0 });
+      const rst = rSn.length ? E.stress(S, pl, rSn, 0) : null, xOwn = ownedAll.reduce((a, h) => a + (pl.V[h.id].B0 > 0.5 ? pl.V[h.id].X : 0), 0);
+      const badOwn = ownedAll.filter((h) => (h.type || 'house') === 'house' && pl.V[h.id].cf < 0);
+      const payTxt = !ownedAll.some((h) => pl.V[h.id].B0 > 0.5) ? 'no loans to pay off' : isFinite(lastPayoff) ? 'every loan paid off in <b>' + ym(lastPayoff) + '</b>' : 'not every loan is paid off within the plan';
+      return head + `<section class="card" data-testid="summary"><div class="kg">
+        ${kpi('kpi-networth', 'Net worth', $f(rs.nw), `${ownedAll.length} bought · at year ${endYr}`)}
+        ${kpi('kpi-monthly', 'Total monthly payments', $f(rs.pay), 'sum of the rows below')}
+        ${kpi('kpi-cashflow', 'Cash flow / mo', $s(rs.cf), 'before tax · at plan end', rs.cf < 0 ? 'bad' : '', 1)}
+        ${kpi('kpi-dscr', 'DSCR', rst && rst.dscr !== null && isFinite(rst.dscr) ? r(rst.dscr, 2) : '—', rst && rst.dscr !== null && isFinite(rst.dscr) ? '1.25+ is healthy' : 'no loan left', rst && rst.dscr !== null && rst.dscr < 1 ? 'bad' : '', 1)}</div>
+        <p class="plan-line" data-testid="real-loans">Loans due today <b data-testid="real-due">${$f(dueTot)}</b> · credit line <b data-testid="real-line">${$f(lineTot)}</b>${infoBtn('creditline')} · ${payTxt}.</p></section>
+      <section class="card" id="ledger" style="margin-top:10px" data-testid="ledger"><div class="row totrow" data-testid="ledger-total"><div class="r1"><span class="nm"><span class="addr">Bought total</span><div class="pay">${$f(rs.pay)}/mo payments<br><span data-testid="total-extra" data-k="tot">${$f(xOwn)}/mo extra now</span></div></span><span class="cfl ${rs.cf < 0 ? 'bad' : 'ok'}"><b data-testid="total-cf">${$s(rs.cf)}/mo</b><small>cash flow</small></span></div></div></section>
+      ${badOwn.length ? `<div class="warnbox" data-testid="home-warning">⚠ Homes must cash flow positive. Losing money each month at today's terms: ${badOwn.map((h) => esc(h.addr)).join(', ')}.</div>` : ''}
+      <div class="sech" data-testid="sec-bought"><b>Bought</b><span class="sechs" data-testid="bought-sum">${ownedAll.length} asset${ownedAll.length === 1 ? '' : 's'} · loans due <b>${$f(dueTot)}</b> · credit line <b>${$f(lineTot)}</b></span></div>${ownedSecs}${ownedAll.length ? '<button class="addrow" data-add-owned data-testid="add-owned">+ Add something you already own</button>' : ''}${soldSecO}`;
+    }
+    /* ---------- Planned (the default page): the plan and its math ---------- */
+    if (empty) return head + `<p class="note" style="margin:0 4px 8px" data-testid="empty-note">Nothing added yet. Add a home, a commercial property or a business to see your plan.</p>${sections}<button class="linkbtn" data-go="import/new" data-testid="import-link">Import a home from a listing</button>`;
     const c3 = (label, a, b, c, f, cls) => `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td data-k="c-${label}-b">${f(b)}</td><td class="${cls || ''}" data-k="c-${label}-c"><b>${f(c)}</b></td></tr>`;
     const bt = (tp) => pl.snap.filter((x) => x.type === tp).reduce((a, x) => ({ n: a.n + 1, value: a.value + x.value, equity: a.equity + x.equity, cf: a.cf + x.cf }), { n: 0, value: 0, equity: 0, cf: 0 });
     const bRow = (label, o, cls) => `<tr class="${cls || ''}"><td>${label}</td><td>${$c(o.value)}</td><td>${$c(o.equity)}</td><td class="${o.cf < 0 ? 'bad' : ''}">${$cs(o.cf)}</td></tr>`;
@@ -245,27 +278,44 @@
     const headline = nPl ? (pl.unfunded.length ? `${n - nPl ? n - nPl + ' bought. ' : 'Nothing bought yet. '}${nPl - pl.unfunded.length} of ${nPl} planned are possible; ${pl.unfunded.length} cannot. ` : `${n - nPl ? n - nPl + ' bought. ' : 'Nothing bought yet. '}All ${nPl} planned are possible; the last is funded at <b>${mon(lastReady)}</b>. `) : `All ${n} assets are bought. `;
     const drv = pl.assetsAt(pl.planM).sort((a, b) => b.equity - a.equity), drvOpen = !UI.coll.drivers;
     const drivers = `<button class="linkbtn leftbtn" data-coll="drivers" aria-expanded="${drvOpen}">What drives net worth ${drvOpen ? '▾' : '▸'}</button>${drvOpen ? `<div data-testid="drivers">${drv.slice(0, 6).map((d) => `<div class="drv"><span>${esc(d.addr)}</span><span><b>${$f(d.equity)}</b> <small>${th.nw > 0 ? r((d.equity / th.nw) * 100) : 0}%</small></span></div>`).join('')}<p class="note">Equity = value − loans − credit lines drawn. A sample like this leans on a few fast-growing businesses; check the growth rate on each.</p></div>` : ''}`;
-    return `<h1>Portfolio <span class="hb"><button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>
-    ${undo ? `<div class="warnbox okbox" data-testid="undo-banner">${undo.text ? esc(undo.text) : 'Removed ' + esc(undo.label) + '.'} <button class="chip link" data-undo>Undo</button></div>` : ''}
-    ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
-    <section class="card" data-testid="summary"><div class="kg">
+    const bar = `<div class="bar"><i class="${sn.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (sn.cltv / g.cap) * 100)}%"></i></div><div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>`;
+    const plSn = pl.snap.filter((x) => x.type !== 'cash'), isOwnSn = (x) => S.houses.some((h) => h.id === x.id && h.status === 'owned'), bCf = plSn.filter(isOwnSn).reduce((a, x) => a + x.cf, 0), bN = plSn.filter(isOwnSn).length;
+    return head + `
+    <section class="card" data-testid="summary"><p class="plantarget" data-testid="plan-target">Plan, year ${endYr}: net worth <b>${$f(sn.nw)}</b> · <b>${$c(sn.cf)}/mo</b> cash flow</p><div class="kg">
       ${kpi('kpi-networth', 'Net worth', $f(sn.nw), `${n} assets · ${yrs}-yr plan`)}
       ${kpi('kpi-monthly', 'Total monthly payments', $f(sn.monthly), sn.extra > 0.5 ? `incl. ${$f(sn.extra)} extra` : 'sum of the rows below')}
       ${kpi('kpi-cashflow', 'Cash flow / mo', $s(sn.cf), sn.extra > 0.5 ? `${$s(sn.cfx)} after extra` : 'before tax · at plan end', sn.cf < 0 ? 'bad' : '', 1)}
-      ${kpi('kpi-dscr', 'DSCR', sn.ds > 0.5 ? r(sn.dscr, 2) : '—', sn.ds <= 0.5 ? 'no loan left' : sn.dscr >= 1.25 ? 'income ÷ loan payments (1.25+ is healthy)' : sn.dscr >= 1 ? 'thin (1.25+ is healthy)' : 'below 1.0', sn.ds > 0.5 && sn.dscr < 1 ? 'bad' : '', 1)}</div>
-      <div class="bar"><i class="${sn.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (sn.cltv / g.cap) * 100)}%"></i></div>
-      <div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>
+      ${kpi('kpi-dscr', 'DSCR', sn.ds > 0.5 ? r(sn.dscr, 2) : '—', sn.ds <= 0.5 ? 'no loan left' : sn.dscr >= 1.25 ? '1.25+ is healthy' : sn.dscr >= 1 ? 'thin (1.25+ is healthy)' : 'below 1.0', sn.ds > 0.5 && sn.dscr < 1 ? 'bad' : '', 1)}</div>
       ${(() => { const pp = S.p || {}, inf = +pp.inflation || 0, real = sn.nw / Math.pow(1 + inf / 100, yrs), open = !!UI.coll.tgt; return `<div class="tgt" data-testid="target-years"><button type="button" class="linkbtn leftbtn tgtb" data-coll="tgt" aria-expanded="${open}" data-testid="target-toggle">${yrs}-year target · ${$f(real)} in today's dollars ${open ? '▾' : '▸'}</button>${open ? `<div class="tgtf">${field('Years to reach this net worth', 'g.planYears', g.planYears, { info: 'projection' })}${S.p ? field('Inflation / year', 'p.inflation', r(pp.inflation, 2), { suf: '%', info: 'inflation' }) : ''}</div><p class="note" data-testid="real-nw">${$f(sn.nw)} in ${yrs} years at ${r(inf, 1)}% inflation buys what ${$f(real)} buys today. Change the years to move the target date.</p>` : ''}</div>`; })()}
             <p class="plan-line" data-testid="plan-headline">${headline}</p>
       ${fin ? `<div class="vrow big ${fin.status}" data-go="finances" data-testid="afford-line" role="link"><span class="vq"><b>Can I afford this?</b><span class="note">${esc(fin.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, ''))}</span></span><span class="vgo"><span class="vchip ${fin.status}" data-testid="afford-chip">${VL[fin.status]}</span> ›</span></div>` : ''}</section>
-    <section class="card" id="ledger" style="margin-top:10px" data-testid="ledger"><div class="row totrow" data-testid="ledger-total"><div class="r1"><span class="nm"><span class="addr">Portfolio total</span><div class="pay">${$f(sn.monthly)}/mo payments<br><span data-testid="total-extra" data-k="tot">${$f(totNow)}/mo extra now${totLater > 0.5 ? ' · +' + $f(totLater) + ' later' : ''}</span></div></span><span class="cfl ${sn.cf < 0 ? 'bad' : 'ok'}"><b data-testid="total-cf">${$s(sn.cf)}/mo</b><small>cash flow</small></span></div></div></section>
-    ${sectCtl}${showB ? boughtHead + ownedSecs + (bEmpty ? '' : '<button class="addrow" data-add-owned data-testid="add-owned">+ Add something you already own</button>') : ''}${showP ? plannedHead + plannedSecs : ''}${soldSec}
-    <button class="linkbtn" data-go="import/new" data-testid="import-link">Import from a listing</button>
+    <section class="card" id="ledger" style="margin-top:10px" data-testid="ledger"><div class="row totrow" data-testid="ledger-total"><div class="r1"><span class="nm"><span class="addr">Portfolio total</span><div class="pay">${$f(sn.monthly)}/mo payments<br><span data-testid="total-extra" data-k="tot">${$f(totNow)}/mo extra now${totLater > 0.5 ? ' · +' + $f(totLater) + ' later' : ''}</span></div></span><span class="cfl ${sn.cf < 0 ? 'bad' : 'ok'}"><b data-testid="total-cf">${$s(sn.cf)}/mo</b><small>cash flow</small></span></div></div>${bN ? `<p class="note" data-testid="total-split" style="margin:4px 0 0">Planned assets ${$s(sn.cf - bCf)}/mo + ${bN} bought ${$s(bCf)}/mo (see Real).</p>` : ''}</section>
+    ${plannedHead}${plannedSecs}${soldSecP}
+    ${tail}
     <section class="card" data-testid="plan-card"><b>Portfolio breakdown</b> <span class="note">${n} assets · last purchase ${mo(pl.lastBuy)}</span>
-      ${breakdown}
+      ${bar}${breakdown}
       ${homeWarn}${outside}${warn}${health}${sn.cash > 0.5 ? `<p class="note" data-testid="cash-note">Trust cash = cash the trust holds: what is kept after selling costs and the loan payoff, and pooled cash flow not yet spent${infoBtn('cashfromselling')}. It counts in net worth.</p>` : ''}${drivers}
       <div class="seg" role="tablist"><button data-tab="timeline" class="${tab === 'timeline' && UI.open ? 'on' : ''}" data-testid="timeline-toggle">Timeline</button><button data-tab="nw" class="${tab === 'nw' && UI.open ? 'on' : ''}" data-testid="networth-toggle">Net worth</button><button data-tab="hide" class="${!UI.open ? 'on' : ''}">Hide</button></div>
       ${UI.open ? (tab === 'nw' ? nwChart(pl) : timeline(pl)) : ''}</section>`;
+  }
+
+  /* ---------- Saved page: portfolios kept on this device ---------- */
+  const savedMemo = new Map();
+  const statsOf = (rec) => { const k = rec.id + ':' + rec.ts; let m = savedMemo.get(k);
+    if (!m) { try { const st = E.normalize(JSON.parse(JSON.stringify(rec.state))); if (!st.p) st.p = E.samplePersonal(); st.p = E.normalizePersonal(st.p); const p = E.plan(st); m = { n: st.houses.length, nw: p.horizon.nw, cf: p.horizon.cf, yrs: Math.round(p.planM / 12) }; savedMemo.set(k, m); } catch (e) { m = null; } }
+    return m; };
+  function savedPage(pl) {
+    const th = pl.horizon, yrs = Math.round(pl.planM / 12), nm = (id) => { const x = SAVED.find((q) => q.id === id); return x ? x.name : ''; };
+    const form = ask === 'save' ? `<div class="confirm" data-testid="save-form" role="group" aria-label="Save current portfolio"><label class="f"><span class="lb">Name</span><span class="iw"><input type="text" data-saved-name data-testid="save-name" maxlength="60" aria-label="Name for this saved portfolio" value="${esc(saveName)}"></span></label><button class="btn" data-save-yes data-testid="save-confirm">Save</button><button class="btn plain" data-ask-cancel>Cancel</button></div>` : `<button class="btn" data-save-open data-testid="save-current">Save current portfolio</button>`;
+    const cards = SAVED.map((rec) => { const m = statsOf(rec), id = rec.id, d = new Date(rec.ts);
+      return `<section class="card scard" data-testid="saved-card" data-sid="${id}">
+        ${ask === 'ren:' + id ? `<label class="f"><span class="lb">Name</span><span class="iw"><input type="text" data-renamed-name data-testid="rename-input" maxlength="60" aria-label="New name" value="${esc(renameName)}"></span></label><button class="btn" data-ren-yes="${id}" data-testid="rename-confirm">Save name</button><button class="btn plain" data-ask-cancel>Cancel</button>` : `<b class="sname" data-testid="saved-name">${esc(rec.name)}</b>`}
+        <div class="smeta" data-testid="saved-date">Saved ${isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+        ${m ? `<div class="sstat"><span data-testid="saved-assets"><b>${m.n}</b> asset${m.n === 1 ? '' : 's'}</span><span data-testid="saved-nw">Net worth <b>${$f(m.nw)}</b></span><span data-testid="saved-cf">Cash flow <b>${$s(m.cf)}/mo</b></span></div><div class="smeta">numbers at year ${m.yrs}</div>` : '<p class="note">This saved portfolio could not be read.</p>'}
+        ${ask === 'load:' + id ? confirmBox('Replace your working portfolio with “' + esc(rec.name) + '”? Tap Undo afterwards to get your current one back.', 'data-load-yes="' + id + '" data-testid="load-confirm"', 'Yes, open it') : ask === 'sdel:' + id ? confirmBox('Delete “' + esc(rec.name) + '”? This cannot be undone.', 'data-sdel-yes="' + id + '" data-testid="delete-confirm"', 'Yes, delete') : `<div class="sact"><button class="btn" data-load="${id}" data-testid="saved-open">Open</button><button class="pbtn" data-rename="${id}" data-testid="saved-rename">Rename</button><button class="pbtn" data-sdup="${id}" data-testid="saved-duplicate">Duplicate</button><button class="pbtn" data-sdel="${id}" data-testid="saved-delete">Delete</button></div>`}</section>`; }).join('');
+    return `<div class="sec">Saved portfolios${infoBtn('saved')}</div><section class="card" data-testid="save-card"><p class="note" style="margin:4px 0 8px" data-testid="save-now">Working portfolio now: ${S.houses.length} asset${S.houses.length === 1 ? '' : 's'} · net worth ${$f(th.nw)} · cash flow ${$s(th.cf)}/mo in year ${yrs}.</p>${savedMsg ? `<div class="warnbox okbox" data-testid="saved-msg">${esc(savedMsg)}</div>` : ''}${form}</section>
+      ${SAVED.length ? cards : '<p class="note" style="margin:8px 4px" data-testid="saved-empty">Nothing saved yet. Tap Save current portfolio to keep a copy of your assets and numbers here, then open it again any time.</p>'}
+      ${SAVED.length ? '<p class="note" style="margin:0 4px">Saved portfolios stay on this device and are included in the backup under Assumptions. Opening one replaces your working portfolio; Undo brings it back.</p>' : ''}`;
   }
 
   /* ---------- house page ---------- */
@@ -426,7 +476,7 @@
   function addPage() {
     const tp = E.TYPES[UI.addType] ? UI.addType : 'house', list = E.loansFor(tp), sel = list.find((l) => l.id === UI.addLoan) ? UI.addLoan : list[0].id;
     const blurb = { house: 'A single-family rental or primary home.', commercial: 'Retail, office, storage or industrial. Valued on rent and cap rate.', business: 'An operating business you buy. Valued on owner profit and growth.' }[tp];
-    return `<div class="top"><button class="ic" data-go="" aria-label="Cancel and go back">‹</button><h2>${UI.addOwned ? 'Add something you own' : 'Add to portfolio'}</h2></div>${UI.addOwned ? '<p class="note" style="margin:0 4px 8px" data-testid="add-owned-note">It goes in the Bought section. Next you set the price, loan and how many months you have already paid.</p>' : ''}
+    return `<div class="top"><button class="ic" data-go="" aria-label="Cancel and go back">‹</button><h2>${UI.addOwned ? 'Add something you own' : 'Add to portfolio'}</h2></div>${UI.addOwned ? '<p class="note" style="margin:0 4px 8px" data-testid="add-owned-note">It goes on the Real page. Next you set the price, loan and how many months you have already paid.</p>' : ''}
     <section class="card"><div class="seg" role="tablist">${['house', 'commercial', 'business'].map((x) => `<button data-addtype="${x}" class="${x === tp ? 'on' : ''}">${TL[x]}</button>`).join('')}</div><p class="note">${blurb} You will set the price and income on the next screen.</p>${tp === 'house' ? '<button class="linkbtn" data-go="import/new">Have a Zillow listing? Import it</button>' : ''}</section>
     <div class="sec">Pick a loan option</div><section class="card" data-testid="loan-options">${(() => { const one = (l) => `<div class="loanrow"><button class="loanopt ${l.id === sel ? 'on' : ''}" data-pickloan="${l.id}" aria-pressed="${l.id === sel}"><b>${esc(l.name.replace(/\s*\(you live there\)/i, ''))}</b><span>${l.dp >= 100 ? 'No loan · pay the full price' : l.dp + '% down · ' + l.rate + '% · ' + (l.io ? 'interest-only, ' : '') + r(l.term / 12, 1) + ' yr'}</span>${l.dp >= 100 ? '' : `<small>${esc(l.note.split(/(?<=\.)\s/)[0])}</small>`}</button>${infoBtn(GL.LOAN[l.id])}</div>`; const inv = list.filter((l) => !l.ownerOcc), live = list.filter((l) => l.ownerOcc); return inv.map(one).join('') + (live.length ? `<p class="note" style="margin:10px 4px 2px"><b>If you will live there</b><br>FHA and 203(k) loans need you to move in.</p>` + live.map(one).join('') : ''); })()}</section>
     <button class="btn" style="width:100%" data-confirm-add="${tp}|${sel}" data-testid="confirm-add">Add ${TL[tp].toLowerCase()}</button>`;
@@ -437,7 +487,9 @@
     const g = S.g, F = (l, k, o) => field(l, 'g.' + k, o && o.pre === '$' ? grp(g[k]) : g[k], o);
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Assumptions</h2></div>
     <p class="note" style="margin:0 4px 6px">Defaults work for most people. Change them when you know your lender.</p>
+    <div class="sec">Open the app on${infoBtn('openon')}</div><section class="card" data-testid="openon-card"><div class="seg" style="margin-top:0" role="radiogroup" aria-label="Open the app on">${[['planned', 'Planned'], ['real', 'Real'], ['saved', 'Saved']].map(([k, l]) => `<button type="button" role="radio" data-openon="${k}" class="${UI.openOn === k ? 'on' : ''}" aria-checked="${UI.openOn === k}" data-testid="openon-${k}">${l}</button>`).join('')}</div><p class="note">The page you see first when you open the app. Planned is the default. You can switch pages with the buttons at the top of the main screen.</p></section>
     <details class="card" data-testid="model-notes" style="margin:0 0 8px;padding:10px 12px"><summary style="cursor:pointer;font-weight:600">How the numbers are built</summary><ul class="note" style="margin:8px 0 0 16px;padding:0">
+      <li>The main screen has three pages. Planned is the plan and its math (net worth and cash flow at the end of the plan, every planned asset). Real is only what you have already bought: its totals are the sum of its rows. Saved holds copies of whole portfolios (assets, assumptions and finances) that you can open later; they are kept on this device and are part of the backup. Choose which page opens first at the top of this screen.</li>
       <li>All dollars are nominal (future) dollars, not adjusted for inflation. Living costs and manager pay rise by the cost-increase rate; loan payments stay fixed.</li>
       <li>Rent, profit and costs of each asset grow at that asset's growth rate, the same rate as its value. Property taxes are assumed to rise with value (some states cap this).</li>
       <li>Every asset sits in one trust and the trust borrows against all of it. Walking down the list, each planned asset is bought the first month the pool of everything before it (what you own today plus the planned assets above it) can pay its down payment, closing costs and improvements: the pool's borrowing room plus the cash it holds. Each asset adds room up to the max loan vs value (85% is the regulators' ceiling for real estate) less the appraisal cut, its own loan balance and other liens; a business is not backed by real estate, so it uses a separate, lower cap (50% by default, a conservative choice you can change). What the trust has already drawn on its line is subtracted. The pool's whole cash flow (income minus costs, loan payments and line interest, after the managers and taxes) goes first to paying the line down, which raises the room, then is held for the next purchase. Each asset's cash flow grows with its income, and extra payments still shorten loans and raise room. Move an asset up or down the list and the funding order changes with it. Savings are not counted; sale proceeds are held as cash. Planned assets are always funded in list order, so none is bought before one above it. Every time on screen is one clock: months from today.</li>
@@ -453,7 +505,7 @@
     ${colSec('backup', 'Backup and restore', 'copy or restore', `<section class="card">
       ${notice ? `<div class="warnbox">${esc(notice)}</div>` : ''}
       <button class="btn" data-export data-testid="export">${exportOpen ? 'Hide backup' : 'Show backup to copy'}</button>
-      ${exportOpen ? `<textarea readonly rows="5" id="bkout" aria-label="Backup data" data-testid="backup-text">${esc(JSON.stringify(S))}</textarea><button class="btn plain" data-copybackup>Copy backup</button><p class="note" id="cbm">Save this text somewhere safe, such as a note or file. Paste it below to restore.</p>` : ''}
+      ${exportOpen ? `<textarea readonly rows="5" id="bkout" aria-label="Backup data" data-testid="backup-text">${esc(backupJson())}</textarea><button class="btn plain" data-copybackup>Copy backup</button><p class="note" id="cbm">Save this text somewhere safe, such as a note or file. Paste it below to restore.</p>` : ''}
       <label class="btn plain filebtn">Restore from backup file<input type="file" accept="application/json,.json,text/plain" hidden id="imp" aria-label="Choose backup file" data-testid="import-file"></label>
       <textarea rows="2" id="bkin" aria-label="Or paste backup text" placeholder="…or paste backup text here"></textarea><button class="btn plain" data-restore-text>Restore from pasted text</button>
       ${pendingImport ? confirmBox('Replace all current data with this backup?', 'data-import-yes', 'Yes, replace') : ''}
@@ -462,7 +514,7 @@
       ${ask === 'stretch' ? confirmBox('Replace your assets with the $380M stretch scenario?', 'data-stretch-yes', 'Yes, load it') : '<button class="btn plain" style="color:var(--bad)" data-stretch data-testid="load-stretch">Load $380M stretch scenario</button>'}
       ${ask === 'big' ? confirmBox('Replace your assets with the $120M scenario?', 'data-big-yes', 'Yes, load it') : '<button class="btn plain" style="color:var(--bad)" data-big data-testid="load-big">Load $120M scenario (affords a $35M house)</button>'}
       ${ask === 'stradella' ? confirmBox('Replace your assets with the $38.7M house scenario?', 'data-stradella-yes', 'Yes, load it') : '<button class="btn plain" style="color:var(--bad)" data-stradella data-testid="load-stradella">Load $38.7M house scenario (900 Stradella Rd)</button>'}
-      <p class="note">These replace your current assets. The samples keep a few assets already bought, to show the Bought section; your default plan starts with nothing bought. The realistic sample uses market-checked prices, loans and growth. Every scenario is funded by the trust: each asset is bought when the pooled cash flow and borrowing room of the assets before it can pay for it, so the purchase months differ from the ones the scenarios were first tuned for. The stretch scenario reaches about $380M and +$1.1M a month after 20 years, but needs 21-25% yearly business growth. The $38.7M house scenario builds about $140M of net worth and $0.94M a month of cash flow with seller financing, SBA, bridge, DSCR and bank loans, then buys 900 Stradella Rd for cash in month 200. The $120M scenario keeps business growth at 8% a year, and the trust's own cash buys a $35M waterfront estate in month 200. None of them needs outside money for the purchases.</p></section>`, true)}`;
+      <p class="note">These replace your current assets. The samples keep a few assets already bought, to show the Real page; your default plan starts with nothing bought. The realistic sample uses market-checked prices, loans and growth. Every scenario is funded by the trust: each asset is bought when the pooled cash flow and borrowing room of the assets before it can pay for it, so the purchase months differ from the ones the scenarios were first tuned for. The stretch scenario reaches about $380M and +$1.1M a month after 20 years, but needs 21-25% yearly business growth. The $38.7M house scenario builds about $140M of net worth and $0.94M a month of cash flow with seller financing, SBA, bridge, DSCR and bank loans, then buys 900 Stradella Rd for cash in month 200. The $120M scenario keeps business growth at 8% a year, and the trust's own cash buys a $35M waterfront estate in month 200. None of them needs outside money for the purchases.</p></section>`, true)}`;
   }
 
   /* ---------- import from listing ---------- */
@@ -578,10 +630,26 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (['dp', 'down', 'rate', 'termY'].indexOf(k) >= 0) h.loanId = 'custom';
     return true;
   }
+  const newSid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  function showPage(k) { if (PAGES.indexOf(k) < 0 || k === page) return; page = k; selId = null; ask = null; savedMsg = ''; prev = {}; render(); }
+  function doSave(name) {
+    const nm = String(name || '').trim().slice(0, 60) || 'Plan ' + stamp();
+    if (SAVED.length >= MAXSAVED) { savedMsg = 'You can keep up to ' + MAXSAVED + ' saved portfolios. Delete one first.'; return false; }
+    SAVED.unshift({ id: newSid(), name: nm, ts: Date.now(), state: JSON.parse(JSON.stringify(S)) });
+    if (!saveSaved()) { SAVED.shift(); savedMsg = 'Could not save: this device has no storage space left (or storage is switched off). Use Show backup in Assumptions to keep a copy.'; return false; }
+    savedMsg = 'Saved “' + nm + '”.'; return true;
+  }
+  /* opening a saved portfolio replaces the working one; the old one comes back with Undo */
+  function loadSaved(id) {
+    const x = SAVED.find((q) => q.id === id); ask = null; if (!x) { render(); return; }
+    undo = { text: 'Opened “' + x.name + '”. Your previous portfolio is kept: tap Undo to bring it back.', label: 'previous portfolio', snap: JSON.stringify(S) };
+    S = E.normalize(JSON.parse(JSON.stringify(x.state))); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V; S.seq = +S.seq || 0; selId = null; page = 'planned'; prev = {}; savedMsg = ''; save(); render();
+  }
   const app = document.getElementById('app');
-  app.addEventListener('input', (e) => { const p = e.target.dataset.p; if (p && setField(p, e.target.value)) { save(); render(); } });
+  app.addEventListener('input', (e) => { const d = e.target.dataset; if (d.savedName !== undefined) { saveName = e.target.value; return; } if (d.renamedName !== undefined) { renameName = e.target.value; return; } const p = d.p; if (p && setField(p, e.target.value)) { save(); render(); } });
   /* section headers are role=button divs, so Enter and Space must open them like a real button */
   app.addEventListener('keydown', (e) => { const cs = e.target.closest && e.target.closest('[data-coll][role=button]'); if (cs && cs === e.target && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); cs.click(); } });
+  app.addEventListener('keydown', (e) => { const tb = e.target.closest && e.target.closest('[data-page]'); if (tb && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { const i = PAGES.indexOf(page) + (e.key === 'ArrowRight' ? 1 : -1); if (i >= 0 && i < PAGES.length) { showPage(PAGES[i]); const n = app.querySelector('[data-page="' + PAGES[i] + '"]'); if (n) n.focus(); } } });
   app.addEventListener('pointermove', nwHover); app.addEventListener('pointerdown', nwHover);
   app.addEventListener('pointerleave', nwLeave, true); app.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') return; });
   app.addEventListener('focusout', (e) => { if (e.target.dataset && e.target.dataset.p && e.target.tagName === 'INPUT' && !e.relatedTarget) setTimeout(() => { const a = document.activeElement; if (!(a && a.dataset && (a.dataset.p || a.dataset.sel))) render(); }, 0); });
@@ -597,7 +665,17 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.readListing !== undefined) { const ta = document.querySelector('[data-listing-text]'); readListing(ta ? ta.value : ''); return; }
     if (t.dataset.applyListing) { applyListing(t.dataset.applyListing); return; }
     const ap = t.closest('[data-autopay]'); if (ap) { S.g.autoPay = ap.dataset.autopay === 'on'; undo = null; save(); render(); return; }
-    const sc = t.closest('[data-sect]'); if (sc) { UI.sect = sc.dataset.sect; selId = null; prev = {}; save(); render(); return; }
+    const pg = t.closest('[data-page]'); if (pg) { showPage(pg.dataset.page); return; }
+    const oo = t.closest('[data-openon]'); if (oo) { UI.openOn = PAGES.indexOf(oo.dataset.openon) >= 0 ? oo.dataset.openon : 'planned'; save(); render(); return; }
+    if (t.dataset.saveOpen !== undefined) { saveName = 'Plan ' + stamp(); savedMsg = ''; ask = 'save'; render(); const i = app.querySelector('[data-saved-name]'); if (i) { i.focus(); try { i.select(); } catch (x) {} } return; }
+    if (t.dataset.saveYes !== undefined) { if (doSave(saveName)) ask = null; render(); return; }
+    if (t.dataset.rename) { const x = SAVED.find((q) => q.id === t.dataset.rename); if (x) { renameName = x.name; savedMsg = ''; ask = 'ren:' + x.id; render(); const i = app.querySelector('[data-renamed-name]'); if (i) { i.focus(); try { i.select(); } catch (e2) {} } } return; }
+    if (t.dataset.renYes) { const x = SAVED.find((q) => q.id === t.dataset.renYes), old = x && x.name; if (x) { x.name = String(renameName).trim().slice(0, 60) || old; if (saveSaved()) savedMsg = 'Renamed to “' + x.name + '”.'; else { x.name = old; savedMsg = 'Could not rename: this device has no storage space left.'; } } ask = null; render(); return; }
+    if (t.dataset.sdup) { const x = SAVED.find((q) => q.id === t.dataset.sdup); if (x) { if (SAVED.length >= MAXSAVED) savedMsg = 'You can keep up to ' + MAXSAVED + ' saved portfolios. Delete one first.'; else { SAVED.splice(SAVED.indexOf(x) + 1, 0, { id: newSid(), name: (x.name + ' (copy)').slice(0, 60), ts: Date.now(), state: JSON.parse(JSON.stringify(x.state)) }); if (saveSaved()) savedMsg = 'Duplicated “' + x.name + '”.'; else { SAVED.splice(SAVED.indexOf(x) + 1, 1); savedMsg = 'Could not duplicate: this device has no storage space left.'; } } } ask = null; render(); return; }
+    if (t.dataset.sdel) { ask = 'sdel:' + t.dataset.sdel; savedMsg = ''; render(); return; }
+    if (t.dataset.sdelYes) { const i = SAVED.findIndex((q) => q.id === t.dataset.sdelYes); if (i >= 0) { const gone = SAVED.splice(i, 1)[0]; if (saveSaved()) savedMsg = 'Deleted “' + gone.name + '”.'; else { SAVED.splice(i, 0, gone); savedMsg = 'Could not delete: storage is unavailable.'; } } ask = null; render(); return; }
+    if (t.dataset.load) { ask = 'load:' + t.dataset.load; savedMsg = ''; render(); return; }
+    if (t.dataset.loadYes) { loadSaved(t.dataset.loadYes); return; }
     if (t.dataset.addOwned !== undefined) { UI.addOwned = true; UI.addType = 'house'; UI.addLoan = ''; goto('add'); return; }
     const vw = t.closest('[data-view]'); if (vw) { UI.view = vw.dataset.view; prev = {}; save(); render(); return; }
     const ex = t.closest('[data-exit]'); if (ex) { const hh = H(routeOf().slice(2)); if (hh) { hh.exit = ex.dataset.exit; save(); render(); } return; }
@@ -613,7 +691,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.add !== undefined) { if (E.TYPES[t.dataset.add]) { UI.addType = t.dataset.add; UI.addLoan = ''; } UI.addOwned = false; goto('add'); return; }
     const at = t.closest('[data-addtype]'); if (at) { UI.addType = at.dataset.addtype; UI.addLoan = ''; render(); return; }
     const pk = t.closest('[data-pickloan]'); if (pk) { UI.addLoan = pk.dataset.pickloan; render(); return; }
-    if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const own = !!UI.addOwned, h = E.newAsset(tp, lid, own ? { fresh: true, status: 'owned', paid: 12 } : { fresh: true }); UI.addOwned = false; E.register(S, h); S.houses.push(h); UI.coll[(own ? 'cat-owned-' : 'cat-') + tp] = false; selId = null; save(); goto('h/' + h.id); return; }
+    if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const own = !!UI.addOwned, h = E.newAsset(tp, lid, own ? { fresh: true, status: 'owned', paid: 12 } : { fresh: true }); UI.addOwned = false; E.register(S, h); S.houses.push(h); UI.coll[(own ? 'cat-owned-' : 'cat-') + tp] = false; selId = null; page = own ? 'real' : 'planned'; save(); goto('h/' + h.id); return; }
     if (t.dataset.del) { ask = 'del:' + t.dataset.del; render(); return; }
     if (t.dataset.delYes) { const gone = H(t.dataset.delYes); undo = gone ? { label: gone.addr, snap: JSON.stringify(S) } : null; S = E.without(S, t.dataset.delYes); E.relink(S); if (selId === t.dataset.delYes) selId = null; ask = null; save(); goto(''); render(); return; }
     if (t.dataset.undo !== undefined) { if (undo) { S = E.normalize(JSON.parse(undo.snap)); S.v = DATA_V; undo = null; save(); render(); } return; }
@@ -626,7 +704,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.copybackup !== undefined) { const m = document.getElementById('cbm'), ta = document.getElementById('bkout'); const fail = () => { ta.focus(); ta.select(); m.textContent = 'Select the text above and copy it by hand.'; };
       try { navigator.clipboard.writeText(ta.value).then(() => { m.textContent = 'Copied.'; }, fail); } catch (x) { fail(); } return; }
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
-    if (t.dataset.importYes !== undefined) { S = E.normalize(pendingImport); if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; fixOrder(S); pendingImport = null; notice = ''; save(); goto(''); render(); return; }
+    if (t.dataset.importYes !== undefined) { const bk = { saved: pendingImport.saved, openOn: pendingImport.openOn }; S = E.normalize(pendingImport); delete S.saved; delete S.openOn; if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; fixOrder(S); if (Array.isArray(bk.saved)) { SAVED = cleanSaved(bk.saved); saveSaved(); } if (PAGES.indexOf(bk.openOn) >= 0) UI.openOn = bk.openOn; page = UI.openOn; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     if (t.dataset.reset !== undefined) { ask = 'reset'; render(); return; }
     if (t.dataset.stradella !== undefined) { ask = 'stradella'; render(); return; }
     if (t.dataset.stradellaYes !== undefined) { S = E.seedStradella(); S.v = DATA_V; fixOrder(S); ask = null; save(); render(); return; }
@@ -636,7 +714,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.stretchYes !== undefined) { S = E.seedStretch(); S.v = DATA_V; fixOrder(S); ask = null; save(); render(); return; }
     if (t.dataset.resetYes !== undefined) { S = E.seed(); S.v = DATA_V; fixOrder(S); ask = null; save(); render(); return; }
     const mvb = t.closest('[data-move]'); if (mvb) { const [id, d] = mvb.dataset.move.split(':'); moveBy(id, +d); return; }
-    const dpb = t.closest('[data-dup]'); if (dpb) { const c = E.duplicate(S, dpb.dataset.dup); if (c) { ask = null; UI.coll['cat-' + (c.type || 'house')] = false; save(); if (routeOf().startsWith('h/')) { selId = null; goto('h/' + c.id); } else { selId = c.id; render(); } } return; }
+    const dpb = t.closest('[data-dup]'); if (dpb) { const c = E.duplicate(S, dpb.dataset.dup); if (c) { ask = null; UI.coll['cat-' + (c.type || 'house')] = false; save(); if (routeOf().startsWith('h/')) { selId = null; goto('h/' + c.id); } else { selId = c.id; page = 'planned'; /* the copy is always planned */ render(); } } return; }
     const rwEl = t.closest('[data-row]'); if (rwEl && !t.closest('[data-go]') && !t.closest('.panel')) { if (Date.now() - lastDragEnd < 350) return; if (t.closest('[data-panel]')) { selId = selId === rwEl.dataset.row ? null : rwEl.dataset.row; ask = null; render(); return; } if (!t.closest('select,input,textarea,a,[data-info],button:not(.addrbtn)')) { goto('h/' + rwEl.dataset.row); return; } }
     const go = t.closest('[data-go]'); if (go) goto(go.dataset.go);
   });
@@ -694,19 +772,23 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (infoKey) { infoKey = null; render(); return; }
     if (!routeOf()) return; if (navSeen > 0 && history.length > 1) history.back(); else goto('');
   }
-  let sw = null, kb = null; const FIELD = 'input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select';
+  let sw = null, kb = null, pgSw = null; const FIELD = 'input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select';
   document.addEventListener('touchstart', (e) => {
     const t = e.touches[0]; sw = null; kb = null; if (!t || e.touches.length !== 1) return;
     if (t.clientX <= 24 && !drag && !(e.target.closest && e.target.closest('input,select,textarea,[type=range],.sheet'))) sw = { x: t.clientX, y: t.clientY };
     if (!(e.target.closest && e.target.closest(FIELD))) kb = { y: t.clientY };
+    pgSw = !routeOf() && t.clientX > 24 && !drag && !infoKey && !(e.target.closest && e.target.closest('input,select,textarea,[type=range],.sheet,svg.nw,.row,.panel')) ? { x: t.clientX, y: t.clientY } : null;
   }, { passive: true });
   document.addEventListener('touchmove', (e) => {
     const t = e.touches[0]; if (!t) return;
     if (sw && (Math.abs(t.clientY - sw.y) > 45 || drag)) sw = null;
+    if (pgSw && (Math.abs(t.clientY - pgSw.y) > 45 || drag)) pgSw = null;
     const a = document.activeElement; if (kb && a && a.matches && a.matches(FIELD) && t.clientY - kb.y > 28 && !drag) { kb = null; a.blur(); }
   }, { passive: true });
-  document.addEventListener('touchend', (e) => { const t = e.changedTouches[0]; if (sw && t && t.clientX - sw.x > 70 && Math.abs(t.clientY - sw.y) < 45 && !drag) swipeBack(); sw = null; kb = null; }, { passive: true });
-  document.addEventListener('touchcancel', () => { sw = null; kb = null; }, { passive: true });
+  document.addEventListener('touchend', (e) => { const t = e.changedTouches[0]; if (sw && t && t.clientX - sw.x > 70 && Math.abs(t.clientY - sw.y) < 45 && !drag) swipeBack();
+    else if (pgSw && t && !routeOf() && Math.abs(t.clientX - pgSw.x) > 70 && Math.abs(t.clientY - pgSw.y) < 45 && !drag) { const i = PAGES.indexOf(page) + (t.clientX < pgSw.x ? 1 : -1); if (i >= 0 && i < PAGES.length) showPage(PAGES[i]); }
+    sw = null; kb = null; pgSw = null; }, { passive: true });
+  document.addEventListener('touchcancel', () => { sw = null; kb = null; pgSw = null; }, { passive: true });
   app.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && !/^(checkbox|radio|file|range)$/.test(e.target.type)) e.target.blur(); });
 
   render();

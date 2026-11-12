@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* Generator for the default 28-year plan (engine.seedPlan). It starts from ZERO owned assets: the first purchase is paid from your savings (above the cash cushion) plus the job money saved since, every later one by the trust of everything bought before it plus your job money.
-   Run: BASE=110000 STEP=1.25 OUT=1 node gen-plan.js [steps] -> prints the A(...) rows to paste into engine.js seedPlan.
+   Run: BASE=120500 STEP=1.25 OUT=1 node gen-plan.js 23   (the current default: 23 steps from BASE 120500 gives $125.7M net worth and $1.39M/mo cash flow at year 28)  [general form: BASE=.. STEP=.. OUT=1 node gen-plan.js [steps]] -> prints the A(...) rows to paste into engine.js seedPlan.
    Rules: purchase sizes grow about 25% per step; homes are priced from rent so they cash flow positive; each commercial row is priced at a cap rate on NET operating income (tenants repay costs under NNN) and each business at a multiple of owner profit (never below 3.3x);
    dp is raised until the loan meets the lender DSCR minimum (SBA 1.15, bank 1.25); purchase month = earliest month the pool can pay (the engine decides). No partner capital. */
 const E = require('../../v4/engine.js');
