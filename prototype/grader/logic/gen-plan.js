@@ -23,17 +23,18 @@ function spec(i, price0) {
   return ['business', price * 0.9 < 3.2e6 && price < 3.4e6 ? 'sba7a' : 'bankbiz', { id, addr: n, price, rent, growth: GB, buyIn: 0 }]; }
 /* birch is flipped after about 40 months (a value-add rehab), so the plan also shows a sale */
 function flip(rows, pl) { rows.forEach((r) => { if (r[2].id === 'birch') { r[2].exit = 'sell'; r[2].exitMonth = (isFinite(pl && pl.purchase.birch) ? pl.purchase.birch : 28) + 40; } }); }
-const PROFILES = { default: {}, weak: { living: 5050 }, weakOld: { living: 5050, portfolioTaxPct: 20, salesTaxPct: 25 }, old: { portfolioTaxPct: 20, salesTaxPct: 25 } };
+const PROFILES = { default: {}, mid: { living: 4200 }, weak: { living: 5050 }, weakOld: { living: 5050, portfolioTaxPct: 20, salesTaxPct: 25 }, old: { portfolioTaxPct: 20, salesTaxPct: 25 } };
 const prof = (name) => Object.assign(E.samplePersonal(), { capital: [] }, PROFILES[name || 'default']);
 function build(rows, pn) { return E.normalize({ g: Object.assign({}, g0), p: prof(pn || process.env.PROFILE), houses: rows.map((r) => A(r[0], r[1], Object.assign({}, r[2]))) }); }
 function fit(r) { const o = r[2], S = build([r]), h = S.houses[0];
   if (r[0] === 'house') { for (let k = 0; k < 40; k++) { if (E.view(S, h).cf >= 120) break; h.rent += 10; } o.rent = h.rent; return r; }
   const need = r[1] === 'sba7a' ? 1.15 : 1.25, lo = r[1] === 'sba7a' ? 10 : r[1] === 'bankbiz' ? 25 : 35;
-  for (let dp = lo; dp <= 60; dp += 5) { h.dp = dp; const v = E.view(S, h); if (v.noi / (v.P + v.mip) >= need + 0.03) { o.dp = dp; return r; } } o.dp = 60; return r; }
+  for (let dp = lo; dp <= 60; dp += 5) { h.dp = dp; const v = E.view(S, h); if (v.noi / (v.P + v.mip) >= need + (+process.env.DSCRX || 0.03)) { o.dp = Math.min(60, dp + (+process.env.DPADD || 0)); return r; } } o.dp = 60; return r; }
 let rows = [], price = +process.env.BASE || 110000; const used = {};
 for (let i = 0; i < STEPS; i++) { const r = fit(spec(i, price)); price *= STEP; while (used[r[2].id]) r[2].id += 'x'; used[r[2].id] = 1; if (r[0] === 'house' && used[r[2].addr]) r[2].addr += ' #2'; used[r[2].addr] = 1; rows.push(r); }
-const VA = (process.env.VA || '').split(',').map(Number), NVA = +process.env.NVA || 0; /* value-add: the first NVA homes get a rehab of VA[0]% of price and a new appraisal VA[1]% above price + rehab */
-if (VA[0]) rows.filter((r) => r[0] === 'house').slice(0, NVA).forEach((r) => { const o = r[2], cx = Math.round(o.price * VA[0] / 100 / 1000) * 1000; Object.assign(o, { capex: cx, capexMonths: 4, arv: Math.round((o.price + cx) * (1 + VA[1] / 100) / 1000) * 1000, liftIncome: +VA[2] || 0 }); });
+/* renovations on the first homes: RENO='25000,30000,15000' = rehab budget of homes 1, 2, 3 (paid from savings / the trust's cash, not financed); the new appraisal adds MULT x the rehab cost on top of the price, and rents lift LIFT% */
+const RENO = (process.env.RENO || '').split(',').filter(Boolean).map(Number), MULT = +process.env.MULT || 1.4, LIFT = +process.env.LIFT || 10;
+rows.filter((r) => r[0] === 'house' && r[2].id !== 'birch').slice(0, RENO.length).forEach((r, i) => { const o = r[2], cx = RENO[i]; Object.assign(o, { capex: cx, capexMonths: 3, arv: Math.round((o.price + cx * MULT) / 1000) * 1000, liftIncome: LIFT }); });
 rows.forEach((r) => { if (r[2].id === 'birch') Object.assign(r[2], { capex: 30000, capexMonths: 4, liftValue: 12, liftIncome: 8 }); });
 let S = build(rows), pl = E.plan(S); for (let k = 0; k < 4; k++) { flip(rows, pl); S = build(rows); pl = E.plan(S); }
 const f = E.finance(S, pl);
