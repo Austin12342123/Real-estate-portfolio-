@@ -1,9 +1,9 @@
 {
-  "total": 84.94,
+  "total": 81.94,
   "max": 84.99900000000001,
   "categories": {
     "A": {
-      "earned": 17.999,
+      "earned": 14.991999999999997,
       "max": 17.999
     },
     "B": {
@@ -45,9 +45,9 @@
       "name": "Changing an asset's loan option re-populates dp/rate/term/closing and changes the plan numbers",
       "points": 0.789,
       "rawPoints": 2.5,
-      "earned": 0.789,
-      "ratio": 1,
-      "detail": "12/12 sub-checks pass",
+      "earned": 0.46,
+      "ratio": 0.5833333333333334,
+      "detail": "7/12 sub-checks pass. FAIL: dscr main KPIs equal engine for that loan [ui 1653547/1490 eng 2211636/1840]; conv15 main KPIs equal engine for that loan [ui 1639071/1490 eng 2197159/1840]; fha main KPIs equal engine for that loan [ui 1668339/1490 eng 2226427/1840]; cashh main KPIs equal engine for that loan [ui 1569447/1490 eng 2127535/1840]; conv30 main KPIs equal engine for that loan [ui 1660076/1490 eng 2218164/1840]",
       "repro": "Asset page > Loan option select"
     },
     {
@@ -56,9 +56,9 @@
       "name": "Edit matrix: every input (43 edits incl. improvements/exit/loan/assumptions) moves the main-page KPIs exactly as the engine says",
       "points": 1.895,
       "rawPoints": 6,
-      "earned": 1.895,
-      "ratio": 1,
-      "detail": "44/44 sub-checks pass",
+      "earned": 0.064,
+      "ratio": 0.033707865168539325,
+      "detail": "1/44 sub-checks pass. FAIL: h.a.price=400000 [ui nw 1611679 mon 1490 cf 10834; engine 2355797 1840 14236]; h.a.dp=35 [ui nw 1736477 mon 1490 cf 10903; engine 2294565 1840 14455]; h.a.rate=8 [ui nw 1648126 mon 1490 cf 10841; engine 2206214 1840 14393]; h.a.termY=15 [ui nw 1631867 mon 1490 cf 10862; engine 2189955 1840 14414]; h.a.extra=900 [ui nw 1615891 mon 1490 cf 10855; engine 2173979 1840 14407]; h.a.rent=3600 [ui nw 1714135 mon 1490 cf 10875; engine 2272223 1840 15355]; h.a.tax=500 [ui nw 1622405 mon 1490 cf 10827; engine 2180493 2090 13928]; h.a.ins=200 [ui nw 1646516 mon 1490 cf 10841; engine 2204604 1940 14213]; h.a.hoa=150 [ui nw 1636832 mon 1490 cf 10841; engine 2194921 1990 14122]; h.a.liens=40000 [ui nw 1613269 mon 1490 cf 10807; engine 2131357 1840 14359]; h.a.paid=60 [ui nw 1711875 mon 1490 cf 10896; engine 2340008 1840 14448]; h.a.growth=6 [ui nw 1733611 mon 1490 cf 10910; engine 2753480 1840 17218]; h.a.closingPct=5 [ui nw 1660210 mon 1490 cf 10848; engine 2218298 1840 14400]; h.b.price=320000 [ui nw 1663801 mon 1490 cf 10755; engine 2221889 1840 14308]; h.b.dp=30 [ui nw 1649430 mon 1490 cf 10848; engine 2207518 1840 14400]; h.c.price=1200000 [ui nw 1587186 mon 7995 cf 3915; engine 2145275 8345 7467]; h.c.rent=12000 [ui nw 1670885 mon 1490 cf 13842; engine 2228974 1840 17395]; h.d.price=600000 [ui nw 1619351 mon 1490 cf 10787; engine 2177440 1840 14339]; h.d.rent=14000 [ui nw 1790505 mon 1490 cf 10855; engine 2348593 1840 14407]; h.d.buyIn=48 [ui nw 1660076 mon 1490 cf 10848; engine 2218164 1840 14400]; h.d.sellCost=15 [ui nw 1638753 mon 1490 cf 10855; engine 2196841 1840 14407]; h.d.exitMonth=150 [ui nw 1926526 mon 1490 cf 10740; engine 2484614 1840 14293]; h.d.growth=12 [ui nw 1720568 mon 1490 cf 10827; engine 2278656 1840 14380]; h.e.capex=40000 [ui nw 1643774 mon 1490 cf 10834; engine 2201862 1840 14386]; h.e.capexMonths=12 [ui nw 1652372 mon 1490 cf 10848; engine 2210460 1840 14400]; h.e.arv=260000 [ui nw 1727123 mon 1490 cf 10848; engine 2285212 1840 14400]; h.e.liftIncome=15 [ui nw 1660774 mon 1490 cf 11028; engine 2218862 1840 14580]; h.e.exitLift=30 [ui nw 1727384 mon 1490 cf 11353; engine 2285472 1840 14906]; h.e.exitMonth=120 [ui nw 1659920 mon 1490 cf 10848; engine 2218008 1840 14400]; h.e.buyIn=30 [ui nw 1660076 mon 1490 cf 10848; engine 2218164 1840 14400]; g.cap=60 [ui nw 1443992 mon 1490 cf 10650; engine 2002080 1840 14202]; g.vac=20 [ui nw 1562903 mon 1490 cf 8892; engine 2120992 1840 11797]; g.mgmt=20 [ui nw 1566529 mon 1490 cf 9020; engine 2124617 1840 11968]; g.maint=3 [ui nw 1536673 mon 1490 cf 8441; engine 2094761 1840 11090]; g.closing=10 [ui nw 1660076 mon 1490 cf 10848; engine 2218164 1840 14400]; g.haircut=20 [ui nw 1488925 mon 1490 cf 10688; engine 2047014 1840 14240]; g.hrate=15 [ui nw 1642592 mon 1490 cf 10841; engine 2200680 1840 14393]; g.appr=3 [ui nw 2325502 mon 1490 cf 15730; engine 2883591 1840 19282]; g.planYears=10 [ui nw 854970 mon 8344 cf 3282; engine 1152281 10572 4247]; g.rentCount=50 [ui nw 1660076 mon 1490 cf 10848; engine 2218164 1840 14400]; g.p1=0 [ui nw 1660076 mon 1490 cf 10848; engine 2218164 1840 14400]; g.dti=5 [ui nw 1660076 mon 1490 cf 10848; engine 2218164 1840 14400]; g.otherDebt=20000 [ui nw 636110 mon 8344 cf 3647; engine 1173441 10572 5522]",
       "repro": "Edit field on asset/assumptions page; compare main KPIs with Engine.plan(S).horizon on the edited state"
     },
     {
@@ -133,9 +133,9 @@
       "name": "Exit and improvements through the UI: Hold/Sell/Merge buttons and fields propagate to rows, KPIs and breakdown",
       "points": 1.105,
       "rawPoints": 3.5,
-      "earned": 1.105,
-      "ratio": 1,
-      "detail": "8/8 sub-checks pass",
+      "earned": 0.491,
+      "ratio": 0.4444444444444444,
+      "detail": "4/8 sub-checks pass. FAIL: main KPIs follow; row shows sale [sold for $84,952 in 120 mo]; merge: KPIs follow engine, row shows \"merges into\" [merges into Echo House in 90 mo]; back to Hold restores numbers; improvement budget/lift propagate and show on the row [improve $50,000]",
       "repro": "Asset page > Value-add & exit"
     },
     {
@@ -188,9 +188,9 @@
       "name": "Planned and Real hold the right rows: Planned = planned assets with the plan totals, Real = bought assets only; each page total equals the sum of its rows (and the engine)",
       "points": 0.947,
       "rawPoints": 3,
-      "earned": 0.947,
-      "ratio": 1,
-      "detail": "6/6 sub-checks pass",
+      "earned": 0.829,
+      "ratio": 0.875,
+      "detail": "5/6 sub-checks pass. FAIL: Planned totals are the plan totals including everything (engine), with the bought share spelled out under the total row [nw 1660076/2218164]",
       "repro": "Mixed portfolio: read both pages"
     },
     {
@@ -210,9 +210,9 @@
       "name": "Saved portfolios: Save current portfolio (name field, default \"Plan YYYY-MM-DD\", confirm), the card shows name, date, assets, net worth and cash flow from the engine; Open replaces the working portfolio with exactly the saved numbers and Undo brings the previous one back",
       "points": 1.263,
       "rawPoints": 4,
-      "earned": 1.263,
-      "ratio": 1,
-      "detail": "12/12 sub-checks pass",
+      "earned": 1.148,
+      "ratio": 0.9090909090909093,
+      "detail": "11/12 sub-checks pass. FAIL: name field defaults to \"Plan <today>\" and needs a confirm [Portfolio 1]",
       "repro": "Saved page: save, edit, save, open, undo"
     },
     {
@@ -399,7 +399,7 @@
       "rawPoints": 0.5,
       "earned": 0.16,
       "ratio": 1,
-      "detail": "median 26.8ms",
+      "detail": "median 18.5ms",
       "repro": "node timing"
     },
     {
@@ -563,8 +563,8 @@
       "points": 1.333,
       "rawPoints": 2,
       "earned": 1.277,
-      "ratio": 0.9582401029966088,
-      "detail": "208/214 targets >=44px. Small: main:BUTTON.info\"What does Net wort\" 32x32; main:BUTTON.info\"What does Cash flo\" 32x32; main:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash flo\" 32x32; asset:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash-on-\" 32x32",
+      "ratio": 0.9580454508448333,
+      "detail": "207/213 targets >=44px. Small: main:BUTTON.info\"What does Net wort\" 32x32; main:BUTTON.info\"What does Cash flo\" 32x32; main:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash flo\" 32x32; asset:BUTTON.info\"What does DSCR mea\" 32x32; asset:BUTTON.info\"What does Cash-on-\" 32x32",
       "repro": "Measure interactive elements on main/asset/assumptions/add"
     },
     {
@@ -597,7 +597,7 @@
       "rawPoints": 1,
       "earned": 0.667,
       "ratio": 1,
-      "detail": "avg row 124px x 23, page 5107px",
+      "detail": "avg row 124px x 23, page 5059px",
       "repro": "Measure ledger rows"
     },
     {
@@ -608,7 +608,7 @@
       "rawPoints": 2,
       "earned": 1.333,
       "ratio": 1,
-      "detail": "1327/1327 text elements pass (light 661/661, dark 666/666). ",
+      "detail": "1299/1299 text elements pass (light 647/647, dark 652/652). ",
       "repro": "emulate prefers-color-scheme; compute WCAG ratio for every text element"
     },
     {
@@ -910,7 +910,7 @@
     }
   ],
   "finance": {
-    "earned": 90,
+    "earned": 89.84,
     "max": 90,
     "checks": [
       {
@@ -922,7 +922,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "node: simulate from the definitions, compare E.finance on 80 random states; hand-calculated cases; NaN scan",
-        "seconds": 0.9
+        "seconds": 0.7
       },
       {
         "id": "F2",
@@ -933,18 +933,18 @@
         "ratio": 1,
         "detail": "17/17 sub-checks pass",
         "repro": "node: constructed states for yes / tight (5 causes) / no; fix amounts; apply the fix; monotonicity; stretch",
-        "seconds": 2.8
+        "seconds": 2.5
       },
       {
         "id": "F3",
         "category": "F",
         "name": "UI features",
         "points": 24,
-        "earned": 24,
-        "ratio": 1,
-        "detail": "89/89 sub-checks pass",
+        "earned": 23.84,
+        "ratio": 0.9932470455824424,
+        "detail": "88/89 sub-checks pass. FAIL: an older (v7) save is replaced by the current sample with a profile",
         "repro": "Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states",
-        "seconds": 12.1
+        "seconds": 11.1
       },
       {
         "id": "F4",
@@ -955,7 +955,7 @@
         "ratio": 1,
         "detail": "24/24 sub-checks pass",
         "repro": "node: perturb one factor at a time on the sample",
-        "seconds": 0.7
+        "seconds": 0.8
       },
       {
         "id": "F5",
@@ -966,12 +966,12 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Playwright: edge inputs, names, tap targets, font size, overflow 320/390/430, chip contrast light+dark, typing, render storm, console errors",
-        "seconds": 25
+        "seconds": 23
       }
     ]
   },
   "sync": {
-    "earned": 100,
+    "earned": 87.9,
     "max": 100,
     "checks": [
       {
@@ -979,33 +979,33 @@
         "category": "G",
         "name": "Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine)",
         "points": 14,
-        "earned": 14,
-        "ratio": 1,
-        "detail": "41/41 sub-checks pass",
+        "earned": 9.76,
+        "ratio": 0.6973684210526315,
+        "detail": "29/41 sub-checks pass. FAIL: KPI net worth = engine plan-horizon value (2/26 ok) [sample: $17.7M vs $21.5M || rand#1: $26.0M vs $66.9M || rand#2: $3,640,569 vs $7,710,088]; KPI monthly payments = engine (3/26 ok) [sample: $5,185 vs $5,755 || rand#1: $327 vs $1,526 || rand#2: $1,643 vs $2,322]; KPI cash flow = engine (2/26 ok) [sample: +$269,059 vs $363,638 || rand#1: +$319,887 vs $528,468 || rand#2: +$26,881 vs $105,887]; KPI DSCR = engine (2 dp), or a dash when no loan payment is left (24/26 ok) [rand#12: 0.79 vs 0.93 || rand#24: 0 vs 39.78]; sum of row payments = KPI monthly payments (2/25 ok) [sample: 5755 vs $5,185 || rand#1: 1526 vs $327 || rand#2: 2322 vs $1,643]; sum of row cash flows = KPI cash flow (1/25 ok) [sample: 363638 vs +$269,059 || rand#1: 528468 vs +$319,887 || rand#2: 105887 vs +$26,881]; sum of row equity + cash from sales = KPI net worth (1/25 ok) [sample: 19415036+2125378.729966328 vs $17.7M || rand#1: 66432185+450816.3133803533 vs $26.0M || rand#2: 6882161+827926.4240205497 vs $3,640,569]; breakdown rows add up to the Portfolio row (net worth and cash flow) (2/26 ok) [sample: [\"$1.76M\",\"$5.40M\",\"$12.3M\",\"$2.13M\"] vs $17.7M || rand#1: [\"$3.03M\",\"$39.9M\",\"$23.5M\",\"$450,816\"] vs $26.0M || rand#2: [\"$2.05M\",\"$1.21M\",\"$3.62M\",\"$827,926\"] vs $3.64M]; cash flow subtext \"after extra\" = cash flow minus extra (25/26 ok) [rand#12: −$2,773 after extra vs −$1,192]; net worth chart value at the plan horizon = KPI net worth (2/26 ok) [sample: 21540415 vs $17.7M || rand#1: 66883001 vs $26.0M || rand#2: 7710088 vs $3,640,569]; net worth chart LAST point = KPI net worth (2/26 ok) [sample: chart ends at month 240 = $21.5M but KPI (month 240) = $17.7M || rand#1: chart ends at month 456 = $66.9M but KPI (month 456) = $26.0M || rand#2: chart ends at month 360 = $7,710,088 but KPI (month 360) = $3,640,569]; tooltip at the right end of the chart = KPI net worth (0/1 ok) [tooltip \"$21.5Min 240 mo (20y 0m)\" vs KPI $17.7M]",
         "repro": "Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)",
-        "seconds": 0.5
+        "seconds": 0.4
       },
       {
         "id": "G2",
         "category": "G",
         "name": "Asset page <-> Portfolio sync (share line, hero, impact, edits propagate)",
         "points": 14,
-        "earned": 14,
-        "ratio": 1,
-        "detail": "71/71 sub-checks pass",
+        "earned": 11.21,
+        "ratio": 0.8006644518272424,
+        "detail": "59/71 sub-checks pass. FAIL: impact \"with\" value = Portfolio page KPI (13/204 ok) [sample ridge: Net worth: with $21.5M vs Portfolio $17.7M || sample north: Net worth: with $21.5M vs Portfolio $17.7M || sample keystone: Net worth: with $21.5M vs Portfolio $17.7M]; KPI net worth = engine plan-horizon value (0/38 ok) [sample after maple.rent=2600: $17.8M vs $21.6M || sample after maple.extra=900: $17.7M vs $21.6M || sample after cedar.price=190000: $17.7M vs $21.6M]; KPI monthly payments = engine (0/38 ok) [sample after maple.rent=2600: $5,185 vs $5,755 || sample after maple.extra=900: $5,185 vs $5,755 || sample after cedar.price=190000: $5,185 vs $5,755]; KPI cash flow = engine (0/38 ok) [sample after maple.rent=2600: +$269,059 vs $364,829 || sample after maple.extra=900: +$269,059 vs $364,829 || sample after cedar.price=190000: +$269,059 vs $364,788]; KPI DSCR = engine (2 dp), or a dash when no loan payment is left (30/38 ok) [rand1 after r0.rent=34411: 1.75 vs 27.88 || rand1 after r0.price=1633600: 1.75 vs 28.2 || rand1 after r0.extra=135: 1.75 vs 28.2]; sum of row payments = KPI monthly payments (0/38 ok) [sample after maple.rent=2600: 5755 vs $5,185 || sample after maple.extra=900: 5755 vs $5,185 || sample after cedar.price=190000: 5755 vs $5,185]; sum of row cash flows = KPI cash flow (0/38 ok) [sample after maple.rent=2600: 364830 vs +$269,059 || sample after maple.extra=900: 364830 vs +$269,059 || sample after cedar.price=190000: 364789 vs +$269,059]; sum of row equity + cash from sales = KPI net worth (0/38 ok) [sample after maple.rent=2600: 19415036+2169837.7286010007 vs $17.8M || sample after maple.extra=900: 19415036+2139660.9825229007 vs $17.7M || sample after cedar.price=190000: 19469249+2131719.2129410477 vs $17.7M]; breakdown rows add up to the Portfolio row (net worth and cash flow) (0/38 ok) [sample after maple.rent=2600: [\"$1.76M\",\"$5.40M\",\"$12.3M\",\"$2.17M\"] vs $17.8M || sample after maple.extra=900: [\"$1.76M\",\"$5.40M\",\"$12.3M\",\"$2.14M\"] vs $17.7M || sample after cedar.price=190000: [\"$1.81M\",\"$5.40M\",\"$12.3M\",\"$2.13M\"] vs $17.7M]; cash flow subtext \"after extra\" = cash flow minus extra (30/38 ok) [rand1 after r0.rent=34411: +$7 after extra vs $50,189 || rand1 after r0.price=1633600: +$7 after extra vs $50,811 || rand1 after r0.extra=135: +$7 after extra vs $50,811]; net worth chart value at the plan horizon = KPI net worth (0/38 ok) [sample after maple.rent=2600: 21584874 vs $17.8M || sample after maple.extra=900: 21554697 vs $17.7M || sample after cedar.price=190000: 21600967 vs $17.7M]; net worth chart LAST point = KPI net worth (0/38 ok) [sample after maple.rent=2600: chart ends at month 240 = $21.6M but KPI (month 240) = $17.8M || sample after maple.extra=900: chart ends at month 240 = $21.6M but KPI (month 240) = $17.7M || sample after cedar.price=190000: chart ends at month 240 = $21.6M but KPI (month 240) = $17.7M]",
         "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
-        "seconds": 17.5
+        "seconds": 15.3
       },
       {
         "id": "G3",
         "category": "G",
         "name": "Portfolio <-> Finances sync (cash flow, funding, extra scope, verdict, edge cases)",
         "points": 14,
-        "earned": 14,
-        "ratio": 1,
-        "detail": "35/35 sub-checks pass",
+        "earned": 12.59,
+        "ratio": 0.898989898989899,
+        "detail": "33/35 sub-checks pass. FAIL: Finances sync-cf = Portfolio KPI cash flow (exact text) (2/40 ok) [sample: +$363,638 vs +$269,059 || rand#1: +$528,468 vs +$319,887 || rand#2: +$105,887 vs +$26,881]; Finances \"At plan end\" card is headed as plan end and its Before tax = Portfolio KPI cash flow = engine (2/40 ok) [sample: At plan end (same as the Portfolio page)Before tax+$363,638After tax+$234,677Lef | +$363,638 vs $363,638 || rand#1: At plan end (same as the Portfolio page)Before tax+$528,468After tax+$325,050Lef | +$528,468 vs $528,468 || rand#2: At plan end (same as the Portfolio page)Before tax+$105,887After tax+$68,607Left | +$105,887 vs $105,887]",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 5.9
+        "seconds": 5.5
       },
       {
         "id": "G4",
@@ -1016,7 +1016,7 @@
         "ratio": 1,
         "detail": "34/34 sub-checks pass",
         "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit",
-        "seconds": 71
+        "seconds": 62.4
       },
       {
         "id": "G5",
@@ -1027,29 +1027,29 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
-        "seconds": 5.8
+        "seconds": 5.2
       },
       {
         "id": "G6",
         "category": "G",
         "name": "Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light)",
         "points": 12,
-        "earned": 12,
-        "ratio": 1,
-        "detail": "12/12 sub-checks pass",
+        "earned": 9.71,
+        "ratio": 0.8089171974522293,
+        "detail": "10/12 sub-checks pass. FAIL: after reload the Portfolio numbers still equal the engine (0/2 ok) [KPI net worth = engine plan-horizon value: sample after reload: $17.7M vs $21.5M | KPI monthly payments = engine: sample after reload: $5,185 vs $5,755 || KPI net worth = engine plan-horizon value: random after reload: $1,119,508 vs $6,626,302 | KPI monthly payments = engine: random after reload: $918 vs $2,293]; after the v8 migration every Portfolio/Finances number equals the engine and each other (0/1 ok) [KPI net worth = engine plan-horizon value: v8: $17.7M vs $21.6M | KPI monthly payments = engine: v8: $5,185 vs $5,755]",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 16.4
+        "seconds": 15.4
       },
       {
         "id": "G7",
         "category": "G",
         "name": "Shared settings (g.* and p.*) propagate to every dependent display",
         "points": 10,
-        "earned": 10,
-        "ratio": 1,
-        "detail": "148/148 sub-checks pass",
+        "earned": 8.63,
+        "ratio": 0.8628318584070798,
+        "detail": "134/148 sub-checks pass. FAIL: KPI net worth = engine plan-horizon value (0/25 ok) [after g.cap=70: $1,493,808 vs $1,954,550 || after g.dti=25: $1,493,808 vs $1,954,550 || after g.closing=5: $1,484,428 vs $1,945,171]; KPI monthly payments = engine (0/25 ok) [after g.cap=70: $1,190 vs $1,540 || after g.dti=25: $1,190 vs $1,540 || after g.closing=5: $1,190 vs $1,540]; KPI cash flow = engine (0/25 ok) [after g.cap=70: +$10,593 vs $13,007 || after g.dti=25: +$10,593 vs $13,007 || after g.closing=5: +$10,524 vs $12,938]; KPI DSCR = engine (2 dp), or a dash when no loan payment is left (15/25 ok) [after g.planYears=10: 1.53 vs 1.51 || after p.living=4800: 1.14 vs 1.49 || after p.inflation=5: 1.14 vs 1.49]; sum of row payments = KPI monthly payments (0/25 ok) [after g.cap=70: 1540 vs $1,190 || after g.dti=25: 1540 vs $1,190 || after g.closing=5: 1540 vs $1,190]; sum of row cash flows = KPI cash flow (0/25 ok) [after g.cap=70: 13007 vs +$10,593 || after g.dti=25: 13007 vs +$10,593 || after g.closing=5: 12938 vs +$10,524]; sum of row equity + cash from sales = KPI net worth (0/25 ok) [after g.cap=70: 1941563+12988.138297975063 vs $1,493,808 || after g.dti=25: 1941563+12988.138297975063 vs $1,493,808 || after g.closing=5: 1932183+12988.138297975063 vs $1,484,428]; breakdown rows add up to the Portfolio row (net worth and cash flow) (0/25 ok) [after g.cap=70: [\"$800,144\",\"$1.14M\",\"$12,988\"] vs $1.49M || after g.dti=25: [\"$800,144\",\"$1.14M\",\"$12,988\"] vs $1.49M || after g.closing=5: [\"$800,144\",\"$1.13M\",\"$12,988\"] vs $1.48M]; cash flow subtext \"after extra\" = cash flow minus extra (24/25 ok) [after g.planYears=10: +$3,135 after extra vs $3,862]; net worth chart value at the plan horizon = KPI net worth (0/25 ok) [after g.cap=70: 1954550 vs $1,493,808 || after g.dti=25: 1954550 vs $1,493,808 || after g.closing=5: 1945171 vs $1,484,428]; net worth chart LAST point = KPI net worth (0/25 ok) [after g.cap=70: chart ends at month 240 = $1,954,550 but KPI (month 240) = $1,493,808 || after g.dti=25: chart ends at month 240 = $1,954,550 but KPI (month 240) = $1,493,808 || after g.closing=5: chart ends at month 240 = $1,945,171 but KPI (month 240) = $1,484,428]; Finances sync-cf = Portfolio KPI cash flow (exact text) (0/25 ok) [after g.cap=70: +$13,007 vs +$10,593 || after g.dti=25: +$13,007 vs +$10,593 || after g.closing=5: +$12,938 vs +$10,524]; Finances \"At plan end\" card is headed as plan end and its Before tax = Portfolio KPI cash flow = engine (0/25 ok) [after g.cap=70: At plan end (same as the Portfolio page)Before tax+$13,007After tax+$9,727Left o | +$13,007 vs $13,007 || after g.dti=25: At plan end (same as the Portfolio page)Before tax+$13,007After tax+$9,727Left o | +$13,007 vs $13,007 || after g.closing=5: At plan end (same as the Portfolio page)Before tax+$12,938After tax+$9,706Left o | +$12,938 vs $12,938]; projection length changes the plan-end numbers everywhere (0/2 ok) [note/KPI/Finances for 10 years || note/KPI/Finances for 30 years]",
         "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
-        "seconds": 10.5
+        "seconds": 9.8
       },
       {
         "id": "G8",
@@ -1065,7 +1065,7 @@
     ]
   },
   "info": {
-    "earned": 100,
+    "earned": 99.42,
     "max": 100,
     "checks": [
       {
@@ -1088,7 +1088,7 @@
         "ratio": 1,
         "detail": "91/91 sub-checks pass",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 6.9
+        "seconds": 6.1
       },
       {
         "id": "H3",
@@ -1099,7 +1099,7 @@
         "ratio": 1,
         "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 17
+        "seconds": 14.9
       },
       {
         "id": "H4",
@@ -1121,18 +1121,18 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 3.4
+        "seconds": 3.1
       },
       {
         "id": "H6",
         "category": "H",
         "name": "Optional fields left blank never break the plan or the finance verdict (job extras, improvements, exit fields, co-signers)",
         "points": 8,
-        "earned": 8,
-        "ratio": 1,
-        "detail": "16/16 sub-checks pass",
+        "earned": 7.42,
+        "ratio": 0.9277108433734939,
+        "detail": "15/16 sub-checks pass. FAIL: Portfolio net worth still equals the engine after those fields were blanked [$17.7M vs 21508891]",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 5.6
+        "seconds": 5.1
       },
       {
         "id": "H7",
@@ -1165,7 +1165,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 2.8
+        "seconds": 2.7
       },
       {
         "id": "H10",
@@ -1193,7 +1193,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
-        "seconds": 5.7
+        "seconds": 5.4
       },
       {
         "id": "I2",
@@ -1204,7 +1204,7 @@
         "ratio": 1,
         "detail": "14/14 sub-checks pass",
         "repro": "Hold 600 ms, drag, release; check saved order",
-        "seconds": 6.9
+        "seconds": 6.8
       },
       {
         "id": "I3",
@@ -1237,7 +1237,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Panel > Duplicate; asset page > Duplicate",
-        "seconds": 2.2
+        "seconds": 2.1
       },
       {
         "id": "I6",
@@ -1248,7 +1248,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Headers, subtitles, collapse state, empty portfolio",
-        "seconds": 1.7
+        "seconds": 1.6
       },
       {
         "id": "I7",
@@ -1259,7 +1259,7 @@
         "ratio": 1,
         "detail": "24/24 sub-checks pass",
         "repro": "Panel on maple, type extra, compare with engine + asset page",
-        "seconds": 2.1
+        "seconds": 1.9
       },
       {
         "id": "I8",
@@ -1270,7 +1270,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Asset page > Rent & expenses",
-        "seconds": 1.4
+        "seconds": 1.2
       },
       {
         "id": "I9",
@@ -1281,7 +1281,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Focus the extra field, swipe",
-        "seconds": 2.5
+        "seconds": 2.4
       },
       {
         "id": "I10",
@@ -1292,7 +1292,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "Resize, measure, collected errors",
-        "seconds": 2.3
+        "seconds": 2.2
       }
     ]
   }
