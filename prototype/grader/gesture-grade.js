@@ -42,7 +42,7 @@ exports.run = async function run(X) {
   }
   const line = (x0, y0, x1, y1, n = 8, wait0) => Array.from({ length: n + 1 }, (_, i) => ({ x: x0 + (x1 - x0) * i / n, y: y0 + (y1 - y0) * i / n, wait: i === 0 ? wait0 : 16 }));
   const home = (id, o) => E.newAsset('house', 'conv30', Object.assign({ id, addr: id.toUpperCase() + ' House', price: 200000, rent: 2400, tax: 150, ins: 80, growth: 3, closingPct: 3 }, o || {}));
-  const mk = (houses, extra) => { const S = mkS({}, houses); S.orderV = 1; return Object.assign(S, extra || {}); };
+  const mk = (houses, extra) => { const S = mkS({}, houses); S.orderV = 2; return Object.assign(S, extra || {}); };
   const $f = (n) => { const a = Math.abs(n), sg = n < -0.5 ? '−' : ''; return sg + '$' + Math.round(a).toLocaleString('en-US'); };
   const sample = () => { const S = E.seed(); E.orderByBuy(S); S.v = X.DATA_V; return S; };
 

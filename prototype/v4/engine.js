@@ -588,8 +588,8 @@
   const catOf = (h) => h.type || 'house';
   /* Sort the list once into purchase order (owned first; ties keep their order). S.orderV marks it done so a saved order is never re-sorted. */
   function orderByBuy(S) {
-    const pl = plan(S), rk = (h) => (isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9);
-    S.houses = S.houses.map((h, i) => [h, i]).sort((a, b) => rk(a[0]) - rk(b[0]) || a[1] - b[1]).map((x) => x[0]); S.orderV = 1; return S;
+    const pl = plan(S), rk = (h) => (h.status === 'owned' ? -(+h.paid || 0) : isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9); /* an owned asset was bought 'paid' months ago, so the oldest comes first */
+    S.houses = S.houses.map((h, i) => [h, i]).sort((a, b) => rk(a[0]) - rk(b[0]) || a[1] - b[1]).map((x) => x[0]); S.orderV = 2; return S;
   }
   /* Funding no longer uses per-asset links: the trust (everything earlier in the list plus what is owned today) funds each purchase, so the list order IS the funding order and nothing needs relinking.
      The old h.target field is kept only so old saves load; it is ignored by plan(). relink() just clears it. */

@@ -12,8 +12,8 @@
   /* the next planned asset below h in the list (the trust buys in list order), and the month it is bought if h's extra payment were x instead */
   const nextPlanned = (h) => { const i = S.houses.indexOf(h); for (let k = i + 1; k < S.houses.length; k++) if (S.houses[k].status === 'planned') return S.houses[k]; return null; };
   const monthWith = (h, x, id) => { const c = JSON.parse(JSON.stringify(S)), q = c.houses.find((y) => y.id === h.id); q.extra = x; q.driver = 'extra'; return E.plan(c).purchase[id]; };
-  const buyOrder = (pl) => { const no = {}; S.houses.map((h, i) => [h, i]).sort((a, b) => (isFinite(pl.purchase[a[0].id]) ? pl.purchase[a[0].id] : 1e9) - (isFinite(pl.purchase[b[0].id]) ? pl.purchase[b[0].id] : 1e9) || a[1] - b[1]).forEach(([h], k) => { no[h.id] = k + 1; }); return no; };
-  const fixOrder = (s) => { s.seq = +s.seq || 0; s.houses.forEach((h) => { if (!h.created) h.created = Date.now(); }); if (s.orderV !== 1) E.orderByBuy(s); return s; }; /* list order = buy order, sorted once; after that the saved order is the truth */
+  const buyKey = (h, pl) => (h.status === 'owned' ? -(+h.paid || 0) : isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9); const buyOrder = (pl) => { const no = {}; S.houses.map((h, i) => [h, i]).sort((a, b) => buyKey(a[0], pl) - buyKey(b[0], pl) || a[1] - b[1]).forEach(([h], k) => { no[h.id] = k + 1; }); return no; };
+  const fixOrder = (s) => { s.seq = +s.seq || 0; s.houses.forEach((h) => { if (!h.created) h.created = Date.now(); }); if (s.orderV !== 2) E.orderByBuy(s); return s; }; /* list order = buy order, sorted once; after that the saved order is the truth */
   fixOrder(S);
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
   let storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
