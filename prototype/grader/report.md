@@ -1,15 +1,15 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-11T04:00:15.226Z  |  243s
+Target: `prototype/v4`  |  Run: 2026-11-12T01:27:45.132Z  |  250s
 
-## Automated score: **84.94 / 84.99900000000001** (a separate design review adds 15)
+## Automated score: **84.25 / 84.99900000000001** (a separate design review adds 15)
 
 | Category | Score |
 |---|---|
 | A. Requirement / propagation | 18.00 / 18.00 |
 | B. Engine correctness | 12.00 / 12.00 |
-| C. UX conciseness & usability | 9.94 / 10.00 |
-| D. PWA / local-first | 8.00 / 8.00 |
+| C. UX conciseness & usability | 9.60 / 10.00 |
+| D. PWA / local-first | 7.65 / 8.00 |
 | E. Robustness & accessibility | 7.00 / 7.00 |
 | R. Realism & market accuracy | 30.00 / 30.00 |
 
@@ -42,7 +42,7 @@ Target: `prototype/v4`  |  Run: 2026-11-11T04:00:15.226Z  |  243s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 8.6ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 7.9ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.48 | 0.48 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |
@@ -59,7 +59,7 @@ Target: `prototype/v4`  |  Run: 2026-11-11T04:00:15.226Z  |  243s
 | C03 | No horizontal overflow at 320/390/430 on main, asset, assumptions, add, import | 1.33 | 1.33 | 15/15 sub-checks pass |
 | C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.27 | 182/188 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32 |
 | C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 42/42 ok  |
-| C06 | Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps | 1.33 | 1.33 | 3/3 sub-checks pass |
+| C06 | Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps | 1.33 | 1.00 | 2/3 sub-checks pass. FAIL: one tap on the row opens its asset page [#house-cedar] |
 | C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 125px x 19, page 4526px |
 | C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 1149/1149 text elements pass (light 572/572, dark 577/577).  |
 | C09 | Summary-first: one concise summary card (single snapshot, short text), plan card collapsible | 1.00 | 1.00 | 3/3 sub-checks pass |
@@ -68,7 +68,7 @@ Target: `prototype/v4`  |  Run: 2026-11-11T04:00:15.226Z  |  243s
 | D03 | Works offline: reload, deep-link, and edit with network off | 1.52 | 1.52 | 4/4 sub-checks pass |
 | D04 | Zero external (non-localhost) network requests across every flow | 0.76 | 0.76 | 896 requests, 0 external  |
 | D05 | Data persists across reload and new tab (localStorage rep-v4, v7); no server round-trip | 1.14 | 1.14 | 5/5 sub-checks pass |
-| D06 | Backup: Show backup gives valid JSON text; pasted text and file restore state (with confirm); invalid text rejected without damage | 1.52 | 1.52 | 6/6 sub-checks pass |
+| D06 | Backup: Show backup gives valid JSON text; pasted text and file restore state (with confirm); invalid text rejected without damage | 1.52 | 1.17 | 5/6 sub-checks pass. FAIL: backup text = valid JSON with all 19 assets + assumptions [{"g":{"cap":85,"capBiz":50,"haircut":0,"] |
 | D07 | iOS install meta: apple-touch-icon loads, viewport-fit=cover, apple-mobile-web-app-capable, theme-color | 0.38 | 0.38 | 4/4 sub-checks pass |
 | D08 | navigator.storage.persist() requested on load | 0.38 | 0.38 | persist() calls: 1 |
 | E01 | Edge inputs (57 cases + compound: zero, 100% down, blanks, garbage, negatives, 1e12, caps, sale/merge/improvement fields) leave no NaN/Infinity/undefined in any page or crash | 1.91 | 1.91 | 62/62 sub-checks pass |
@@ -92,7 +92,13 @@ Target: `prototype/v4`  |  Run: 2026-11-11T04:00:15.226Z  |  243s
 
 ## Top failures
 
-1. **C04 Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)** (-0.06)
+1. **D06 Backup: Show backup gives valid JSON text; pasted text and file restore state (with confirm); invalid text rejected without damage** (-0.35)
+   - Detail: 5/6 sub-checks pass. FAIL: backup text = valid JSON with all 19 assets + assumptions [{"g":{"cap":85,"capBiz":50,"haircut":0,"]
+   - Reproduce: Assumptions > Show backup; modify; Restore from pasted text / file
+2. **C06 Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps** (-0.33)
+   - Detail: 2/3 sub-checks pass. FAIL: one tap on the row opens its asset page [#house-cedar]
+   - Reproduce: Tap row, Back; Add > Add (defaults)
+3. **C04 Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs)** (-0.06)
    - Detail: 182/188 targets >=44px. Small: main:BUTTON.info"What does Net wort" 32x32; main:BUTTON.info"What does Cash flo" 32x32; main:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash flo" 32x32; asset:BUTTON.info"What does DSCR mea" 32x32; asset:BUTTON.info"What does Cash-on-" 32x32
    - Reproduce: Measure interactive elements on main/asset/assumptions/add
 
@@ -110,24 +116,27 @@ Target: `prototype/v4`  |  Run: 2026-11-11T04:00:15.226Z  |  243s
 
 None.
 
-## G. Number sync: **100.00 / 100** (separate scale; not included in the A-E + R total or in F)
+## G. Number sync: **98.54 / 100** (separate scale; not included in the A-E + R total or in F)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
 | G1 | Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine) | 14.00 | 14.00 | 42/42 sub-checks pass |
 | G2 | Asset page <-> Portfolio sync (share line, hero, impact, edits propagate) | 14.00 | 14.00 | 72/72 sub-checks pass |
 | G3 | Portfolio <-> Finances sync (cash flow, funding, extra scope, verdict, edge cases) | 14.00 | 14.00 | 35/35 sub-checks pass |
-| G4 | Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences) | 18.00 | 18.00 | 33/33 sub-checks pass |
+| G4 | Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences) | 18.00 | 17.30 | 32/33 sub-checks pass. FAIL: typing "Paid off in" N months makes the loan pay off in exactly N months (or the scheduled date if later) (16/17 ok) [seq6 step1: r1 payoff=192 -> payoff now 180 (scheduled 314, extra 2240.17)] |
 | G5 | Add page <-> created asset (loan option cards, option switching, 203(k) defaults) | 6.00 | 6.00 | 12/12 sub-checks pass |
-| G6 | Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light) | 12.00 | 12.00 | 12/12 sub-checks pass |
+| G6 | Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light) | 12.00 | 11.24 | 11/12 sub-checks pass. FAIL: v8 save is migrated: assets kept (incl. edited price), finance profile added, version bumped (0/1 ok) [{"v":15,"p":true,"n":14,"price":165000}] |
 | G7 | Shared settings (g.* and p.*) propagate to every dependent display | 10.00 | 10.00 | 149/149 sub-checks pass |
 | G8 | No stale / duplicate / contradictory numbers | 12.00 | 12.00 | 10/10 sub-checks pass |
 
 ### G failures
 
-None.
+- **G4 Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences)** (-0.70): 32/33 sub-checks pass. FAIL: typing "Paid off in" N months makes the loan pay off in exactly N months (or the scheduled date if later) (16/17 ok) [seq6 step1: r1 payoff=192 -> payoff now 180 (scheduled 314, extra 2240.17)]
+  - Reproduce: Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit
+- **G6 Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light)** (-0.76): 11/12 sub-checks pass. FAIL: v8 save is migrated: assets kept (incl. edited price), finance profile added, version bumped (0/1 ok) [{"v":15,"p":true,"n":14,"price":165000}]
+  - Reproduce: Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct
 
-## H. Help buttons and hourly jobs: **100.00 / 100** (separate scale; not included in the A-E + R total, F or G)
+## H. Help buttons and hourly jobs: **98.21 / 100** (separate scale; not included in the A-E + R total, F or G)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -137,24 +146,25 @@ None.
 | H4 | Definitions are accurate: numbers quoted match the engine constants and loan table, examples do their own arithmetic, stated rules behave that way in the engine | 16.00 | 16.00 | 42/42 sub-checks pass |
 | H5 | Hourly jobs: add, gross = (wage + tips) x hours x weeks, automatic vs typed tax, blank tax returns to automatic, temporary end month, switching kind, clamps, persistence | 12.00 | 12.00 | 28/28 sub-checks pass |
 | H6 | Optional fields left blank never break the plan or the finance verdict (job extras, improvements, exit fields, co-signers) | 8.00 | 8.00 | 16/16 sub-checks pass |
-| H7 | Old saves migrate: v8 (assets only) and pre-hourly jobs (no kind / wage / tips / weeks) load, keep their numbers and show correctly | 6.00 | 6.00 | 10/10 sub-checks pass |
+| H7 | Old saves migrate: v8 (assets only) and pre-hourly jobs (no kind / wage / tips / weeks) load, keep their numbers and show correctly | 6.00 | 4.21 | 8/10 sub-checks pass. FAIL: a v8 save keeps its assets and settings, gains a finance profile with a salary job, and is bumped to the current version [[15,1,"2207 Cedar Hollow Ln",77]]; restoring a backup made before hourly jobs gives a normal salary job (no NaN, tax kept) [{"id":"bk1","name":"Backup job","kind":"salary","wage":0,"tips":0,"weeks":50,"gross":70000,"raise":1,"tax":18,"hours":38,"start":0,"end":null}] |
 | H8 | Automatic tax estimate: matches an independent 2026 single-filer calculation (IRS Rev. Proc. 2025-32, Pub. 15) (federal after standard deduction + Social Security + Medicare, no state tax), is monotone and bounded | 6.00 | 6.00 | 6/6 sub-checks pass |
 | H9 | Disclosure defaults and new wording: collapsed sections open on tap (and stay open), renamed labels, Hold/Sell/Merge + Status, loan grouping, import preview title | 8.00 | 8.00 | 12/12 sub-checks pass |
 | H10 | Clean run: no console / page errors and no network requests outside localhost during all help and hourly-job flows | 4.00 | 4.00 | 2/2 sub-checks pass |
 
 ### H failures
 
-None.
+- **H7 Old saves migrate: v8 (assets only) and pre-hourly jobs (no kind / wage / tips / weeks) load, keep their numbers and show correctly** (-1.79): 8/10 sub-checks pass. FAIL: a v8 save keeps its assets and settings, gains a finance profile with a salary job, and is bumped to the current version [[15,1,"2207 Cedar Hollow Ln",77]]; restoring a backup made before hourly jobs gives a normal salary job (no NaN, tax kept) [{"id":"bk1","name":"Backup job","kind":"salary","wage":0,"tips":0,"weeks":50,"gross":70000,"raise":1,"tax":18,"hours":38,"start":0,"end":null}]
+  - Reproduce: Load crafted localStorage states; pasted old backup restore
 
-## I. Portfolio sections, gestures and funding order: **100.00 / 100** (separate scale; not included in A-E + R, F, G or H)
+## I. Portfolio sections, gestures and funding order: **87.25 / 100** (separate scale; not included in A-E + R, F, G or H)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
 | I1 | Swipe right from the left edge goes back like iOS (touchstart within 24 px, dx > 70, |dy| < 45); ignored elsewhere | 12.00 | 12.00 | 9/9 sub-checks pass |
-| I2 | Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel | 14.00 | 14.00 | 13/13 sub-checks pass |
-| I3 | Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open | 8.00 | 8.00 | 7/7 sub-checks pass |
+| I2 | Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel | 14.00 | 10.75 | 11/13 sub-checks pass. FAIL: Homes list shows the saved (buy) order, sold homes live under Sold [cedar,maple,birch,willow,linden]; drop puts maple after cedar in the list [cedar,birch,maple,willow,linden] |
+| I3 | Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open | 8.00 | 0.00 | CRASH in check: page.click: Timeout 4000ms exceeded. Call log: [2m  - waiting for locator('[data-testid=move-up]')[22m [2m    - locator resolved to <button disabled class="pbtn" data-move="cedar:-1" data-testid="move-up">↑ Move up</button>[22m [2m  - attempting click action[22m [2m    2 × waiting for element to be visible, enabled and stable[22m [2m      - element is not enabled[22m [2m    - retrying click action[22m [2m    - waiting 20ms[22m [2m    2 × waiting for element to be visible, enabled  |
 | I4 | Funding follows the list order by itself: the trust funds each asset from everything before it (1,2,3 and 1,3,2), the wait lines and purchase months re-work after each move, nothing is stored per asset, no per-asset Funds picker, no re-link on plain load | 16.00 | 16.00 | 10/10 sub-checks pass |
-| I5 | Duplicate: from the row panel and the asset page; copy sits right after the original, named "(copy)", planned, funded by the trust like any later asset | 10.00 | 10.00 | 6/6 sub-checks pass |
+| I5 | Duplicate: from the row panel and the asset page; copy sits right after the original, named "(copy)", planned, funded by the trust like any later asset | 10.00 | 8.50 | 5/6 sub-checks pass. FAIL: the Homes list shows the copy right after the original [cedar,maple,hmwcvbt2i14,birch,willow,linden] |
 | I6 | Portfolio = total row + Homes / Commercial / Businesses dropdowns (name left, chevron right, stat strip: count, before/after loan, worth, DSCR, lasts), empty sections, Sold section only when something sold | 12.00 | 12.00 | 12/12 sub-checks pass |
 | I7 | Selecting a row opens a nested panel with the extra payment and live effects: loan term, monthly payment, next down payment (with cash flow); all match the engine and the asset page | 12.00 | 12.00 | 24/24 sub-checks pass |
 | I8 | Rent & expenses shows the loan payment (P&I + mortgage insurance, extra) and the cash flow after the loan, in sync with Payment now / Cash flow now | 6.00 | 6.00 | 6/6 sub-checks pass |
@@ -163,4 +173,18 @@ None.
 
 ### I failures
 
-None.
+- **I2 Press-and-hold then drag reorders a row inside its category (mouse and touch); list order is saved; a plain tap still opens the panel** (-3.25): 11/13 sub-checks pass. FAIL: Homes list shows the saved (buy) order, sold homes live under Sold [cedar,maple,birch,willow,linden]; drop puts maple after cedar in the list [cedar,birch,maple,willow,linden]
+  - Reproduce: Hold 600 ms, drag, release; check saved order
+- **I3 Move up / Move down buttons in the row panel (accessible alternative): reorder, disabled at the ends, panel stays open** (-8.00): CRASH in check: page.click: Timeout 4000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid=move-up]')[22m
+[2m    - locator resolved to <button disabled class="pbtn" data-move="cedar:-1" data-testid="move-up">↑ Move up</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled 
+  - Reproduce: Select row, press Move
+- **I5 Duplicate: from the row panel and the asset page; copy sits right after the original, named "(copy)", planned, funded by the trust like any later asset** (-1.50): 5/6 sub-checks pass. FAIL: the Homes list shows the copy right after the original [cedar,maple,hmwcvbt2i14,birch,willow,linden]
+  - Reproduce: Panel > Duplicate; asset page > Duplicate
