@@ -105,7 +105,7 @@ exports.run = async function run(X) {
     document.querySelectorAll('#app .warnbox, #app .chk[data-lvl=bad], #app [data-testid=outside-cash]').forEach((n) => o.warns.push({ id: n.dataset.testid || '', t: clean(n.textContent) })); /* a Checks row counts as a warning only when it is highlighted red (the outside-cash row is always listed so its amount can be compared) */
     document.querySelectorAll('#app .chip,#app .warnchip').forEach((n) => o.chips.push({ t: clean(n.textContent), title: n.getAttribute('title') || '' }));
     document.querySelectorAll('#app [data-testid=ledger-row]').forEach((r) => { const loc = r.querySelector('[data-testid=loc-line],[data-testid=dp-line]'), inp = r.querySelector('input'), cf = r.querySelector('[data-testid=row-cashflow] b'), ex = r.querySelector('.exitline'), pay = r.querySelector('[data-testid=row-payment]');
-      o.rows.push({ id: r.dataset.row || '', addr: clean((r.querySelector('.addr') || {}).textContent), tag: clean((r.querySelector('.tag') || {}).textContent), pay: clean(pay ? pay.textContent : ''), extra: inp ? inp.value : null, loc: clean(loc ? loc.textContent : ''), cf: clean(cf ? cf.textContent : ''), exit: clean(ex ? ex.textContent : ''), hi: [...r.querySelectorAll('.hi')].map((x) => clean(x.textContent)), eqAttr: pay ? pay.dataset.equity : null, hasExtra: !!inp }); });
+      o.rows.push({ id: r.dataset.row || '', addr: clean((r.querySelector('.addr') || {}).textContent), tag: clean((r.querySelector('.tag') || {}).textContent), pay: r.classList.contains('sold') ? 'sold' : clean(pay ? pay.textContent : ''), extra: inp ? inp.value : null, loc: clean(loc ? loc.textContent : ''), cf: clean(cf ? cf.textContent : ''), exit: clean(ex ? ex.textContent : ''), hi: [...r.querySelectorAll('.hi')].map((x) => clean(x.textContent)), eqAttr: pay ? pay.dataset.equity : null, hasExtra: !!inp }); });
     document.querySelectorAll('#app [data-testid=impact] .f').forEach((f) => { const lb = f.querySelector('.lb'), b = f.querySelector('b'); o.impact.push({ lb: clean(lb ? lb.textContent : ''), t: clean(f.textContent.replace(lb ? lb.textContent : '', '')), to: clean(b ? b.textContent : '') }); });
     document.querySelectorAll('#app [data-testid=drivers] .drv').forEach((d) => { const sp = d.querySelectorAll('span'); o.drivers.push({ addr: clean(sp[0].textContent), t: clean(sp[1].textContent) }); });
     const svg = document.querySelector('#app svg.nw'); if (svg) o.chart = { nw: svg.dataset.nw.split(',').map(Number), t: +svg.dataset.t, label: svg.getAttribute('aria-label') };
@@ -173,7 +173,7 @@ exports.run = async function run(X) {
     const heldPay = [], heldCf = [], heldEq = [], rPay = [], rCf = [], rEq = []; /* held* = planned rows (Planned page), r* = bought rows (Real page) */
     S.houses.forEach((h) => { const r = byId[h.id]; if (!r) return; const { sp, sold } = rowEng(S, pl, h), pm = /(−?\$[\d,.]+[MB]?)\/mo/.exec(r.pay), cfm = /(−|\+)?\$[\d,.]+[MB]?/.exec(r.cf), eqm = /equity (−?\$[\d,.]+[MBK]?)/.exec(r.pay);
       if (sold) {
-        const sm = /sold for (−?\$[\d,.]+[MB]?) in month (\d+) \(\d\d\/\d\d\/\d\d\) · cash profit ([+−])(\$[\d,.]+[MB]?)/.exec(r.exit), ex0 = pl.exits[h.id], pr = ex0.price, pf = ex0.profit;
+        const sm = /sold for (−?\$[\d,.]+[MB]?) in month (\d+) \([A-Z][a-z]{2} \d{4}\)(?: · cash profit)? ?([+−])(\$[\d,.]+[MB]?)/.exec(r.exit + ' ' + r.cf), ex0 = pl.exits[h.id], pr = ex0.price, pf = ex0.profit;
         T('sold asset: row says sold; the exit line has the sale price, month and cash profit from the plan', /sold/i.test(r.pay) && !!sm && eq(sm[1], pr) && +sm[2] === pl.sellAt[h.id] && eq(sm[4], Math.abs(pf)) && (sm[3] === '+') === (pf >= -0.5), 1, h.id + ': ' + r.pay + ' | ' + r.exit + ' (engine ' + $f(pr) + ' in ' + pl.sellAt[h.id] + ', profit ' + $f(pf) + ')');
         T('sold asset: cash cell shows the cash profit (sign and amount)', eq(r.cf.replace(/^[+−]/, ''), Math.abs(pf)) && (/^\+/.test(r.cf) === (pf >= -0.5)), 1, h.id + ': ' + r.cf + ' vs ' + $f(pf));
         T('sold asset: no Extra input on a sold row', !r.hasExtra, 0.5, h.id + ' has an input');
@@ -214,7 +214,7 @@ exports.run = async function run(X) {
       const cashRow = find(/^Trust cash$/); T('breakdown "Trust cash" row = cash the trust holds (sale proceeds and reinvested cash flow not yet spent; shown only when > 0)', sn.cash > 0.5 ? !!cashRow && eq(cashRow[2], sn.cash) : !cashRow, 0.5, JSON.stringify(cashRow) + ' vs ' + $f(sn.cash));
     }
     /* KPI subtext */
-    T('net worth subtext: asset count and plan length match (cash from sales is in the breakdown Sold row)', new RegExp('^' + S.houses.filter((h) => !isOwnH(h)).length + ' assets · ' + S.g.planYears + '-yr plan$').test(nw.sub), 0.5, nw.sub + ' (planned assets ' + S.houses.filter((h) => !isOwnH(h)).length + ', years ' + S.g.planYears + ')');
+    T('net worth subtext: asset count and plan length match (cash from sales is in the breakdown Sold row)', new RegExp('^' + S.houses.filter((h) => !isOwnH(h)).length + ' assets · by year ' + S.g.planYears + '$').test(nw.sub), 0.5, nw.sub + ' (planned assets ' + S.houses.filter((h) => !isOwnH(h)).length + ', years ' + S.g.planYears + ')');
     T('monthly payments subtext extra = plan-horizon extra', sn.extra > 0.5 ? /incl\. (\$[\d,.]+[MB]?) extra/.test(mon.sub) && eq(/incl\. (\$[\d,.]+[MB]?) extra/.exec(mon.sub)[1], sn.extra) : !/extra/.test(mon.sub), 0.5, mon.sub + ' vs ' + $f(sn.extra));
     T('cash flow subtext "after extra" = cash flow minus extra', sn.extra > 0.5 ? /([−+]\$[\d,.]+[MB]?) after extra/.test(cf.sub) && eq(/([−+]\$[\d,.]+[MB]?) after extra/.exec(cf.sub)[1], sn.cfx) && Math.abs(sn.cf - sn.extra - sn.cfx) < 1 : true, 0.5, cf.sub + ' vs ' + $f(sn.cfx));
     /* chart */
@@ -254,7 +254,7 @@ exports.run = async function run(X) {
     }
     /* afford chip = engine */
     const fin = E.finance(clone(S), pl), chip = g.t['afford-chip'];
-    T('afford chip = engine verdict', !fin || chip === { yes: 'Yes', tight: 'Tight', no: 'Not yet' }[fin.status], 1, chip + ' vs ' + (fin && fin.status));
+    T('afford chip = engine verdict', !fin || chip === { yes: 'Yes', tight: 'Tight', no: 'Not yet' }[pl.worst.dti > S.g.dti && fin.status === 'tight' ? 'no' : fin.status], 1, chip + ' vs ' + (fin && fin.status) + ' (lenders who would decline make a tight verdict read Not yet everywhere)');
   }
 
   /* ================================================================ shared data (sample + random states) */
@@ -298,7 +298,7 @@ exports.run = async function run(X) {
   function chkAssetHero(main, hg, id, A, tag) {
     const S = main.state, h = S.houses.find((x) => x.id === id), v = planOf(main).V[id], T = (key, ok, w, info) => A.t(key, ok, w, tag + ' ' + id + ': ' + info);
     const pay = kpiOf(hg, 'h-payment'), cf = kpiOf(hg, 'h-cf'), ds = kpiOf(hg, 'h-dscr'), coc = kpiOf(hg, 'h-coc');
-    T('hero is labeled "Payment now" and "Cash flow now"', /Payment now/i.test(pay.label) && /Cash flow now/i.test(cf.label), 0.5, pay.label + ' / ' + cf.label);
+    T('hero is labeled "Payment now" and "Cash flow now"', /Payment (now|while held)/i.test(pay.label) && /Cash flow (now|while held)/i.test(cf.label), 0.5, pay.label + ' / ' + cf.label);
     T('"Payment now" = P&I + extra + costs + insurance (engine view)', eq(pay.v, v.payment), 1, pay.v + ' vs ' + $f(v.payment));
     T('"Cash flow now" = NOI - payment (engine view)', eq(cf.v, v.cf), 1, cf.v + ' vs ' + $f(v.cf));
     const dscr = v.P > 0 ? v.noi / v.P : NaN; T('DSCR now = NOI / P&I', isFinite(dscr) ? Math.abs(parseFloat(ds.v) - dscr) <= 0.0051 : /—|NaN/.test(ds.v), 0.5, ds.v + ' vs ' + R(dscr, 2));
@@ -394,15 +394,15 @@ exports.run = async function run(X) {
     T('portfolio "after tax" now = engine cash flow now - tax', Math.abs(k.portfolioAfterTax - (pl.series.cf[0] - E.portTaxAt(S, 0, pl.series.txRE[0], pl.series.txBiz[0]))) < 1, 0.5, 'engine');
     /* verdict */
     const VL = { yes: 'Yes', tight: 'Tight', no: 'Not yet' };
-    T('Finances verdict chip = engine status', fg.t['verdict-chip'] === VL[f.status], 1, fg.t['verdict-chip'] + ' vs ' + VL[f.status]);
-    T('Finances verdict headline = engine', fg.t['verdict-headline'] === f.headline, 1, fg.t['verdict-headline'] + ' vs ' + f.headline);
+    T('Finances verdict chip = engine status', fg.t['verdict-chip'] === VL[pl.worst.dti > S.g.dti && f.status === 'tight' ? 'no' : f.status], 1, fg.t['verdict-chip'] + ' vs ' + VL[f.status]);
+    T('Finances verdict headline = engine', (fg.t['verdict-headline'] === f.headline || (pl.worst.dti > S.g.dti && f.status === 'tight' && /^Not yet\. Lenders may decline/.test(fg.t['verdict-headline']))), 1, fg.t['verdict-headline'] + ' vs ' + f.headline);
     T('Portfolio afford chip = Finances verdict chip', mg.t['afford-chip'] === fg.t['verdict-chip'], 2, mg.t['afford-chip'] + ' vs ' + fg.t['verdict-chip']);
-    T('Portfolio afford note = Finances headline (minus the Yes/Tight prefix)', (mg.t['afford-line'] || '').includes(f.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, '')), 1, mg.t['afford-line'] + ' vs ' + f.headline);
+    T('Portfolio afford note = Finances headline (minus the Yes/Tight prefix)', ((mg.t['afford-line'] || '').includes(f.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, '')) || (pl.worst.dti > S.g.dti && f.status === 'tight' && /Lenders may decline a loan around/.test(mg.t['afford-line'] || ''))), 1, mg.t['afford-line'] + ' vs ' + f.headline);
     const dti = /debt payments (?:peak at|reach) (\d+)% of qualifying income/.exec(fg.text), hw = mg.warns.find((w) => /Debt-to-income peaks/.test(w.t));
     if (pl.worst.dti > S.g.dti) T('DTI percentage: Finances reason = engine worst DTI', !!dti && +dti[1] === Math.round(pl.worst.dti), 1, (dti && dti[1]) + ' vs ' + pl.worst.dti);
     else T('DTI within the limit: Finances shows the short "lenders should approve" note (no percentage is shown for passing reasons) and no Portfolio DTI warning', /lenders should approve/.test(fg.t['reasons-ok'] || '') && !hw, 1, (fg.t['reasons-ok'] || '').slice(0, 120) + ' vs worst ' + pl.worst.dti);
     if (hw) T('DTI percentage: Portfolio warning = Finances reason', !!dti && Math.abs(+(/peaks at (\d+(?:\.\d+)?)%/.exec(hw.t) || [])[1] - +dti[1]) <= 0.5, 0.5, hw.t + ' vs ' + (dti && dti[0]));
-    const lc = fg.t['lowest-cash'] || '', lm = /(−?\$[\d,.]+[MB]?) · month (\d+)/.exec(lc);
+    const lc = fg.t['lowest-cash'] || '', lm = /(−?\$[\d,.]+[MB]?) · (?:month (\d+)|(today))/.exec(lc); if (lm && lm[3]) lm[2] = '0';
     T('lowest cash and month = engine', !!lm && eq(lm[1], k.minLiquid) && +lm[2] === k.minLiquidMonth, 1, lc + ' vs ' + $f(k.minLiquid) + ' month ' + k.minLiquidMonth);
     if (fg.chart) { const mn = Math.min.apply(null, fg.chart.nw); T('lowest cash = minimum of the cash chart', Math.abs(mn - k.minLiquid) <= Math.max(1, dispTol(lm ? lm[1] : '') + 1), 1.5, 'chart minimum ' + $f(mn) + ' (chart covers ' + fg.chart.t + ' of ' + pl.T + ' months) vs lowest cash ' + $f(k.minLiquid)); }
     const rw = /Months you could last without a paycheck\s*([\d.]+|No limit — portfolio income covers it)/.exec(fg.text);
@@ -636,7 +636,7 @@ exports.run = async function run(X) {
         if (key === 'dti') { const hw = mg.warns.find((w) => /Debt-to-income peaks/.test(w.t)); A.t('DTI limit shows in the Portfolio warning and the Finances reason', (pl.worst.dti > v ? !!hw && new RegExp('limit ' + v + '%').test(hw.t) : !hw) && (pl.worst.dti > v ? new RegExp('limit ' + v + '%').test(fg.text) /* passing reasons are shown as a short note without the limit */ : /lenders should approve/.test(fg.t['reasons-ok'] || '')), 1, (hw && hw.t) + ' | ' + (/limit \d+%/.exec(fg.text) || [])[0]); const ch = ag.chips.find((c) => /Debt-to-income/.test(c.t)); const af = E.afford(clone(S), S.houses.find((h) => h.id === 'a'), pl); A.t('DTI limit shows in the asset-page chip title', af.cls === 'ok' || af.cls === 'na' ? !ch : !!ch && new RegExp(v + '% limit').test(ch.title), 1, (ch && ch.title) + ' vs ' + af.why); }
         if (key === 'closing') { A.t('closing default shows on every asset with no own closing %', fnum(fld(ag, 'h.a.closingPct')) === v && fnum(fld(bg, 'h.b.closingPct')) === v && fnum(fld(cg, 'h.c.closingPct')) === v, 1, fld(ag, 'h.a.closingPct') + ',' + fld(bg, 'h.b.closingPct')); A.t('closing default changes "Cash needed" on the planned asset', close(fnum(fld(bg, 'h.b.need')), 240000 * 0.2 + 240000 * v / 100), 1, fld(bg, 'h.b.need') + ' vs ' + (48000 + 2400 * v)); }
         if (key === 'appr') A.t('appreciation default shows as the growth on assets with no own growth', [ag, bg, cg].every((x, i) => fnum(fld(x, 'h.' + 'abc'[i] + '.growth')) === v), 1, fld(ag, 'h.a.growth') + ',' + fld(bg, 'h.b.growth'));
-        if (key === 'planYears') { A.t('projection length changes the plan-end numbers everywhere', new RegExp('^\\d+ assets · ' + v + '-yr plan$').test(kpiOf(mg, 'kpi-networth').sub) && eq(mg.kpis.find((k) => k.id === 'kpi-networth').v, PLH(E).plannedHz(mg.state, pl).nw) && eq((/Before tax\s*([−+]\$[\d,.]+[MB]?)/.exec(fg.t['finances-sync'] || '') || [])[1], pl.series.cf[Math.min(pl.T, pl.planM)]), 2, 'note/KPI/Finances for ' + v + ' years'); A.t('projection length reflected in plan-end month (' + pl.planM + ')', pl.planM === v * 12 || pl.planM === pl.T, 0.3, ''); }
+        if (key === 'planYears') { A.t('projection length changes the plan-end numbers everywhere', new RegExp('^\\d+ assets · by year ' + v + '$').test(kpiOf(mg, 'kpi-networth').sub) && eq(mg.kpis.find((k) => k.id === 'kpi-networth').v, PLH(E).plannedHz(mg.state, pl).nw) && eq((/Before tax\s*([−+]\$[\d,.]+[MB]?)/.exec(fg.t['finances-sync'] || '') || [])[1], pl.series.cf[Math.min(pl.T, pl.planM)]), 2, 'note/KPI/Finances for ' + v + ' years'); A.t('projection length reflected in plan-end month (' + pl.planM + ')', pl.planM === v * 12 || pl.planM === pl.T, 0.3, ''); }
         if (key === 'otherDebt') { A.t('other debts edited on Assumptions shows on Finances', fnum(fld(fg, 'g.otherDebt')) === v && eq((fg.tables['monthly-picture'].find((r) => /^Other debts/.test(r[0])) || [])[1], -v), 2, fld(fg, 'g.otherDebt')); }
         if (['vac', 'mgmt', 'maint'].includes(key)) { A.t(key + ' edit re-derives NOI / cap rate on commercial and home pages', verifyAsset(ag, 'a', '').concat(verifyAsset(cg, 'c', '')).filter(([k]) => /NOI|cap rate/.test(k)).every(([, ok]) => ok) && new RegExp((key === 'maint' ? 'Repairs ' : key === 'vac' ? 'Vacancy ' : 'Mgmt ') + v + '%').test(ag.chips.map((c) => c.t).join(' ')), 1.5, 'chips ' + ag.chips.map((c) => c.t).join(' ')); }
         if (key === 'hrate') A.t('credit-line rate changes cash flow consistently on every page', true, 0.1, '');
@@ -665,14 +665,14 @@ exports.run = async function run(X) {
           const noi = hg.notes.find((n) => /^Net operating income/.test(n)), cfv = kpiOf(hg, 'h-cf').v;
           if (noi) A.t('the same cash flow is not shown twice on one asset page', !(noi.match(money$) || []).some((x) => x === cfv.replace(/^\+?/, '+') || x === cfv), 1.5, d.tag + ' ' + id + ': hero "Cash flow now" ' + cfv + ' and again in "' + noi + '"');
           /* now vs plan-end basis: share line is labeled "In your portfolio total" and hero is labeled "now" */
-          A.t('asset hero and portfolio-share are labeled with their different bases', /now/i.test(kpiOf(hg, 'h-cf').label) && /portfolio total|portfolio row \(at plan end\)/i.test(hg.t['asset-share'] || ''), 1, d.tag + ' ' + id);
+          A.t('asset hero and portfolio-share are labeled with their different bases', /now|while held/i.test(kpiOf(hg, 'h-cf').label) && /portfolio total|portfolio row \(at (plan end|year \d+)\)/i.test(hg.t['asset-share'] || ''), 1, d.tag + ' ' + id);
         }
         /* contradictions on Portfolio rows */
         main.rows.forEach((r) => { const h = S.houses.find((x) => x.id === r.id), v = pl.V[r.id]; const losing = /home loses money/.test(r.hi.join(' ')), shown = /^−/.test(r.cf);
           A.t('"home loses money" flag does not contradict the row cash flow beside it', !losing || shown || r.cf === '—', 2, d.tag + ' ' + r.id + ': flag "home loses money" (cash flow NOW ' + $f(v.cf) + ') next to a row cash flow of ' + r.cf + ' (plan-end share)'); });
         /* header vs KPI subtext: both extras are labeled with their basis */
         const te = main.t['total-extra'] || '', ms = kpiOf(main, 'kpi-monthly').sub;
-        A.t('"extra now" header is not contradicted by the KPI subtext (different basis is named)', /extra now/.test(te) && (!/extra/.test(ms) || /incl\./.test(ms)) && /\d+-yr plan/.test(main.text), 1, te + ' | ' + ms);
+        A.t('"extra now" header is not contradicted by the KPI subtext (different basis is named)', /extra now/.test(te) && (!/extra/.test(ms) || /incl\./.test(ms)) && /by year \d+/.test(main.text), 1, te + ' | ' + ms);
         const warnSum = main.warns.map((w) => w.t).join(' ');
         A.t('"not bought yet" claims agree between warning, headline and rows', pl.unfunded.length ? /not funded yet/.test(main.t['plan-headline']) && /never funded/.test(warnSum) && main.rows.filter((r) => /unfunded/.test(r.tag)).length === pl.unfunded.length : !/not funded yet/.test(main.t['plan-headline']) && !/never funded/.test(warnSum), 1, d.tag + ': ' + main.t['plan-headline'] + ' | ' + warnSum.slice(0, 80));
         /* Finances: same label for two bases */

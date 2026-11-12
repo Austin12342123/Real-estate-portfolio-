@@ -166,7 +166,7 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
 
 .info{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-13px -10px -13px 0;padding:0;border:0;background:none;vertical-align:middle;cursor:pointer;flex:none}
 .info span{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--acc);color:var(--acc);font:700 12px/1 Georgia,serif;font-style:italic}
-.lb{display:inline-flex;align-items:center;flex-wrap:wrap}
+.lb{display:block;min-width:0}.lb .nw{white-space:nowrap}
 .kpi small .info{width:44px;height:44px;margin:-15px -14px -15px -6px}.kpi small .info span{width:16px;height:16px;font-size:10px}
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50}
 .sheet{position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;background:var(--card);color:var(--ink);border-radius:18px 18px 0 0;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 18px);z-index:51;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
@@ -231,7 +231,7 @@ select.notarget{max-width:9em}
 .catbody{padding:0 14px 4px;border-top:1px solid var(--line)}
 .none{margin:0;padding:14px 0 6px;text-align:center;color:var(--mut);font-size:14px}
 .hold{margin:4px 0 8px;text-align:center}
-.soldcat .catt b{color:var(--mut)}.soldcat .row{opacity:.8}
+.soldcat .row{opacity:.85}
 .rw+.rw{border-top:1px solid var(--line)}
 .rw>.row{border-top:0!important}
 .row{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -337,14 +337,44 @@ main h1,#app>h1{font-size:24px;margin:2px 0 6px}
 .checks{margin:10px 0 0;border-top:1px solid var(--line);padding-top:8px}
 .chkh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px;font-size:14px}
 .chkok{color:var(--mut);font-size:13px;margin:0 0 2px}
-.chkflag{font-size:12px;font-weight:700;border-radius:12px;padding:2px 10px}.chkflag.warn{background:color-mix(in srgb,var(--warn) 16%,var(--card));color:var(--warn)}.chkflag.bad{background:color-mix(in srgb,var(--bad) 16%,var(--card));color:var(--bad)}
-.chk{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 6px;border-top:1px solid var(--line);font-size:13px;border-radius:8px}
-.chk .ck{min-width:0;flex:1}.chk .ck b{font-weight:600;color:var(--ink)}.chk small{display:block;color:var(--mut);font-size:12px;line-height:1.3;margin-top:2px}
-.chk .cv{flex:none;max-width:48%;text-align:right;font-weight:600;font-size:13px;color:var(--ink)}
+.chkflag{display:block;font-size:13px;font-weight:700;margin:0 0 2px;padding:0}.chkflag.warn{color:var(--warn)}.chkflag.bad{color:var(--bad)}
+.chklist{margin-top:2px}
+.chk{display:block;padding:8px 0;border-top:1px solid var(--line);font-size:13px;border-radius:0}.chk:first-child{border-top:0}
+.chk .ct{display:flex;align-items:center;gap:6px;min-height:28px}.chk .ct b{font-weight:600;color:var(--ink);font-size:14px;min-width:0;overflow-wrap:break-word}
+.chk .ct .info{margin:-8px -10px -8px -4px;flex:none}
+.chk small{display:block;color:var(--mut);font-size:12px;line-height:1.35;margin-top:1px}
+.chk .cv{margin-left:auto;flex:none;text-align:right;font-weight:600;font-size:14px;color:var(--ink);white-space:nowrap;padding-left:8px}
+.chk.lv-warn,.chk.lv-bad{padding-left:10px;padding-right:10px;margin:0 -10px;border-top-color:transparent}.chk.lv-warn+.chk,.chk.lv-bad+.chk{border-top-color:transparent}
 .chk.lv-warn{background:color-mix(in srgb,var(--warn) 14%,var(--card))}.chk.lv-warn .cv{color:var(--warn)}
 .chk.lv-bad{background:color-mix(in srgb,var(--bad) 14%,var(--card))}.chk.lv-bad .cv{color:var(--bad)}
-.chkbtn{margin:0 -4px 0 0;flex:none}
-.lb .dh,.lb .chint{flex-basis:100%;font-size:11.5px;color:var(--mut);font-weight:400;line-height:1.3}
-.lb .chint{color:var(--acc);font-weight:600}.lb .chint.bad{color:var(--bad)}
+.chkbtn{margin:0;flex:none;padding:0 10px;border-radius:12px}
+.lb .dh{display:block;font-size:12px;color:var(--mut);font-weight:400;line-height:1.3}
 .sold-profit{font-weight:700}.sold-profit.neg{color:var(--bad)}
 .ed{white-space:nowrap}
+
+/* ---- review fixes ---- */
+/* number boxes: one input column width, a floating hint that never moves the field */
+.iw{position:relative}
+label.f .iw,.f.ex .iw{width:118px;flex:none;justify-content:flex-end}
+label.f .iw input,.f.ex .iw input{flex:1;width:auto;min-width:0}
+.chint{position:absolute;right:0;bottom:calc(100% + 2px);z-index:7;font-size:13px;line-height:1.25;font-weight:600;white-space:nowrap;color:var(--acc);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:3px 9px;box-shadow:0 2px 8px rgba(0,0,0,.18);pointer-events:none}
+.chint.bad{color:var(--bad);border-color:var(--bad)}
+.f .lb{font-size:16px;line-height:1.25;padding-right:8px}
+.f .lb .info{margin:-13px -10px -13px 0}
+.nw .info{vertical-align:middle}
+/* sold / renovation tags */
+.renotag{display:inline-block;max-width:100%;font-size:12px;font-weight:600;color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,var(--card));border-radius:10px;padding:1px 8px;margin:3px 0 1px;line-height:1.35}
+.addrbtn .renotag{display:inline-block}
+.bn{margin-right:8px;flex:none}
+.row .addr .bn{display:inline-flex}
+/* sample portfolio buttons: neutral, one-line titles with a grey sub-line */
+.scn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 14px;margin:0 0 8px;min-height:56px}
+.scn b{font-size:15px;color:var(--acc)}.scn span{font-size:13px;color:var(--mut);line-height:1.3}
+/* tables and category strips at narrow widths */
+table.cmp td,table.cmp th{overflow-wrap:normal}table.cmp td:not(:first-child){white-space:nowrap}
+table.cmp td:first-child,table.cmp th:first-child{width:30%}
+[data-testid=breakdown] td:first-child{font-size:12px}
+@media(max-width:389px){.cathw .cats:has(.sc){grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 6px}.cathw .cats .cnt{font-size:20px}.cathw .cats .sc b{font-size:13px}}
+.cathw .cats .sc b.warn{color:var(--warn)}
+.sec[data-testid=sale-heading]{margin-top:10px}
+.rtag{margin:2px 0 0}

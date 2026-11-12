@@ -35,18 +35,18 @@ exports.run = async function run(X) {
   const openAllColl = async () => { for (let i = 0; i < 30; i++) { const b = await page.$('#app [data-coll][aria-expanded=false]'); if (!b) break; await b.click(); await page.waitForTimeout(30); } };
 
   /* ---------- J1 dates on the one clock ---------- */
-  await jcheck('J1', 'Calendar dates: month 0 = today (11/12/26), month N = today + N months (MM/DD/YY); every month-from-today field shows its date and updates as you type; the first asset says where its money comes from; no bare "starting point"', 12, 'node: compare window.RepDate with grader/dates.js for months 0-480; open an asset page and edit Not before / Sell in; read the note', async () => {
+  await jcheck('J1', 'Calendar dates: month 0 = today (Nov 12, 2026), month N = today + N months (Nov 12, 2026 / Nov 2026; never MM/DD/YY); every month-from-today field shows its date and updates as you type; the first asset says where its money comes from; no bare "starting point"', 12, 'node: compare window.RepDate with grader/dates.js for months 0-480; open an asset page and edit Not before / Sell in; read the note', async () => {
     const P = new Parts(); const S = withV(E.seedPlan()); await load(S, '#house-maple');
     const got = await page.evaluate(() => { const o = []; for (let m = 0; m <= 480; m++) o.push(window.RepDate.dt(m)); return o; });
     let bad = ''; for (let m = 0; m <= 480; m++) if (got[m] !== D.fmt(m)) { bad = m + ': ' + got[m] + ' vs ' + D.fmt(m); break; }
-    P.t(!bad && D.fmt(0) === '11/12/26' && D.fmt(19) === '06/12/28', 'dt(m) equals the independent reference for months 0-480 (today = 11/12/26, month 19 = 06/12/28)', 3, bad);
+    P.t(!bad && D.fmt(0) === 'Nov 12, 2026' && D.fmt(19) === 'Jun 12, 2028' && !got.some((x) => /\d\/\d/.test(x)), 'dt(m) equals the independent reference for months 0-480 (today = Nov 12, 2026, month 19 = Jun 12, 2028; no MM/DD/YY)', 3, bad);
     const hint = async (p) => (await page.locator(`[data-dh="${p}"]`).first().textContent().catch(() => '')) || '';
-    P.t((await hint('h.maple.buyIn')) === 'on 11/12/26', 'Not before (months) = 0 shows the date 11/12/26', 1.5, await hint('h.maple.buyIn'));
+    P.t((await hint('h.maple.buyIn')) === 'today (Nov 12, 2026)', 'Not before (months) = 0 shows today (Nov 12, 2026)', 1.5, await hint('h.maple.buyIn'));
     await typeIn('[data-p="h.maple.buyIn"]', '19'); await page.waitForTimeout(80);
-    P.t((await hint('h.maple.buyIn')) === 'on 06/12/28', 'typing 19 live-updates the hint to 06/12/28', 1.5, await hint('h.maple.buyIn'));
+    P.t((await hint('h.maple.buyIn')) === 'on Jun 12, 2028', 'typing 19 live-updates the hint to Jun 12, 2028', 1.5, await hint('h.maple.buyIn'));
     await typeIn('[data-p="h.maple.buyIn"]', '0'); await blur();
     const note = (await page.locator('[data-testid=buyin-note]').textContent()) || '', mo = E.plan(E.normalize(clone(S))).purchase.maple;
-    P.t(note.includes('month ' + mo + ' (' + D.fmt(mo) + ')') && /savings above your cushion plus your job money/.test(note) && !/starting point/i.test(note) && !/paid from your own cash/.test(note), 'the first asset note names its money (savings above the cushion + job money) with month ' + mo + ' and its date', 2.5, note);
+    P.t(note.includes(D.mond(mo)) && /savings above your cushion plus your job money/.test(note) && !/starting point/i.test(note) && !/paid from your own cash/.test(note), 'the first asset note names its money (savings above the cushion + job money) with month ' + mo + ' and its date', 2.5, note);
     await page.evaluate(() => { const b = [...document.querySelectorAll('#app [data-coll]')]; b.forEach((x) => x.getAttribute('aria-expanded') === 'false' && x.click()); }); await page.waitForTimeout(60);
     const body = await page.evaluate(() => document.getElementById('app').innerText);
     P.t(!/starting point/i.test(body) && !/by month \d+\s+now/i.test(body), 'no bare "starting point" / "by month N now" wording on the asset page', 1, '');
@@ -59,7 +59,7 @@ exports.run = async function run(X) {
     const ph = await page.locator('[data-dh$=".month"]').first().textContent(); P.t(ph === 'on ' + D.fmt(12), 'planned expense "Happens in (months)" 12 shows ' + D.fmt(12), 1, ph);
     await load(withV(E.seedPlan()), '');
     const headTxt = await page.locator('[data-testid=plan-headline]').textContent(), lr = E.plan(E.seedPlan()), lastM = Math.max(...E.seedPlan().houses.map((h) => lr.purchase[h.id]).filter(isFinite));
-    P.t(headTxt.includes('month ' + lastM + ' (' + D.fmt(lastM) + ')'), 'plan headline shows the last purchase month with its date', 1, headTxt);
+    P.t(headTxt.includes(D.mond(lastM)), 'plan headline shows the last purchase month with its date', 1, headTxt);
     return P;
   });
 
@@ -117,7 +117,7 @@ exports.run = async function run(X) {
     P.t((await lvlOf(mk((T) => { T.g.dti = Math.floor(pk) - 2; }), '[data-testid=check-dti]')) === 'bad', 'DTI over the limit is red (limit ' + (Math.floor(pk) - 2) + '% vs peak ' + pk.toFixed(1) + '%)', 1.5, '');
     P.t((await lvlOf(mk((T) => { T.g.dti = Math.floor(pk / 0.85); }), '[data-testid=check-dti]')) === 'warn', 'DTI inside 85% of the limit but under it is amber', 1.5, '');
     P.t((await lvlOf(mk(() => {}), '[data-testid=check-dti]')) === 'ok', 'DTI far under the limit is plain', 0.5, '');
-    P.t((await lvlOf(mk((T) => { T.p.living = 5050; }), '[data-testid=check-pace]')) === 'bad', 'a tight profile (about $580/mo of job money) shows the last-purchase row red', 1.5, '');
+    P.t((await lvlOf(mk((T) => { T.p.living = 5050; }), '[data-testid=check-pace]')) === 'warn', 'a tight profile (about $580/mo of job money) shows the plan-timing row amber (the last purchase comes after the plan ends)', 1.5, '');
     await load(mk((T) => { T.p.living = 5050; }), ''); const chip = await page.locator('[data-testid=afford-chip]').getAttribute('data-lvl'), chk = await page.locator('[data-testid=checks-flag]').count();
     P.t(chip === 'warn' && chk === 1, 'the Can I afford this chip and the Checks header turn amber together only when a number is past safe', 1, chip + ' flag ' + chk);
     await load(S, ''); P.t((await page.locator('[data-testid=afford-chip]').getAttribute('data-lvl')) === 'ok', 'afford chip is neutral (level ok) when the verdict is Yes', 0.5, '');
@@ -130,9 +130,9 @@ exports.run = async function run(X) {
     await load(withV(S0), ''); await page.click('[data-testid=cat-header-sold]').catch(() => {}); await page.waitForTimeout(60);
     const line = (await page.locator(`[data-row=${id}] .exitline`).textContent().catch(() => '')) || '', cell = (await page.locator(`[data-row=${id}] [data-testid=row-cashflow]`).textContent().catch(() => '')) || '', strip = (await page.locator('[data-testid^=cat-profit-]').first().evaluate((e) => e.parentElement.textContent).catch(() => '')) || '';
     const money = (t) => num(t) * (/M/.test(t) ? 1e6 : /B/.test(t) ? 1e9 : 1), signOk = (t, v) => (/^[+]/.test(t.trim()) || t.includes('+')) === (v >= 0);
-    const pf = /cash profit ([+−])(\$[\d,.]+[MB]?)/.exec(line);
-    P.t(!!pf && Math.abs(money(pf[2]) - Math.abs(ex.profit)) <= Math.max(1, Math.abs(ex.profit) * 0.006) && (pf[1] === '+') === (ex.profit >= 0), 'Sold row line says "sold for $X in month N · cash profit ±$Y" = engine profit ($' + Math.round(ex.profit) + ')', 3, line);
-    P.t(line.includes('month ' + pl.sellAt[id] + ' (' + D.fmt(pl.sellAt[id]) + ')'), 'the sold row names the month and its date', 1, line);
+    const rp = ((await page.locator(`[data-row=${id}] [data-testid=row-payment]`).textContent().catch(() => 'x')) || '').trim();
+    P.t(/^sold for \$[\d,.]+[MB]? in month/.test(line.trim()) && !/cash profit/.test(line) && rp === '', 'Sold row states the cash profit once (right column and category header, not again inline) and has no stray lone "sold" word under edit', 3, line + ' / pay: [' + rp + ']');
+    P.t(line.includes(D.mond(pl.sellAt[id])), 'the sold row names the month and its date', 1, line);
     P.t(/cash profit/.test(cell) && Math.abs(money(cell.replace(/cash profit/, '')) - Math.abs(ex.profit)) <= Math.max(1, Math.abs(ex.profit) * 0.006), 'the big number on the Sold row is the cash profit', 2, cell);
     P.t(/cash profit/.test(strip) && Math.abs(money(strip.replace(/cash profit/, '')) - Math.abs(ex.profit)) <= Math.max(1, Math.abs(ex.profit) * 0.006), 'the Sold category strip shows the total cash profit', 2, strip);
     await load(withV(S0), '#house-' + id); await openAllColl();
@@ -140,7 +140,7 @@ exports.run = async function run(X) {
     P.t(card === 1 && Math.abs(money(cp) - Math.abs(ex.profit)) <= Math.max(1, Math.abs(ex.profit) * 0.001), 'the asset page has a Sale card with the same cash profit', 2, cp);
     const rows = await page.evaluate(() => [...document.querySelectorAll('[data-testid=sale-profit] .f')].map((f) => f.textContent.replace(/\s+/g, ' ').trim()));
     const vals = rows.map((r) => ({ lab: r.replace(/[−+]?\$[\d,.]+[MB]?.*$/, ''), n: money(r.replace(/^.*?([−+]?\$[\d,.]+[MB]?)(?!.*\$).*$/, '$1')) * (/−\$/.test(r.replace(/^.*?([−+]?\$[\d,.]+[MB]?)(?!.*\$).*$/, '$1')) ? -1 : 1) }));
-    P.t(rows.length === 6, 'the Sale card lists price, selling costs, loan paid off, tax, cash put in and cash profit', 1.5, rows.join(' | '));
+    P.t(rows.length === 7 && (await page.locator('[data-testid=sale-heading]').textContent()) === 'Sale' && /after tax/.test(await page.locator('[data-testid=sale-tax]').textContent().catch(() => 'after tax')) && /before tax/.test(rows.join(' ')), 'the asset page Sale card has a Sale heading and lists price, selling costs, loan paid off, net proceeds before tax, tax, cash put in and cash profit after tax', 1.5, rows.join(' | '));
     return P;
   });
 
@@ -176,6 +176,51 @@ exports.run = async function run(X) {
     const P = new Parts(); const S = withV(E.seedPlan());
     for (const hash of ['', '#house-maple', '#finances', '#assumptions']) { await load(S, hash); await openAllColl(); const small = await page.evaluate(() => [...document.querySelectorAll('#app [data-info], #app .linkbtn, #app [data-testid^=tab-]')].filter((e) => { const r = e.getBoundingClientRect(); return r.width && (r.width < 43.5 || r.height < 43.5); }).map((e) => (e.dataset.info || e.dataset.testid || e.className) + ' ' + Math.round(e.getBoundingClientRect().width) + 'x' + Math.round(e.getBoundingClientRect().height)));
       P.t(small.length === 0, (hash || 'Planned') + ': all info / link / tab buttons >= 44px', 2, small.slice(0, 5).join(', ')); }
+    return P;
+  });
+
+
+  /* ---------- J8 scenario loads never lose the current plan ---------- */
+  await jcheck('J8', 'Loading a sample portfolio files the current plan in Saved as "Portfolio N (before <scenario>)", shows an Undo banner that restores it, lands on the Planned tab, and the buttons are neutral with short titles', 12, 'Assumptions > Sample portfolios > each button, then Undo', async () => {
+    const P = new Parts(); const S0 = withV(E.seedPlan());
+    await load(S0, '#assumptions'); await openAllColl();
+    const btns = await page.evaluate(() => [...document.querySelectorAll('[data-testid=samples-card] .scn')].map((b) => ({ t: b.querySelector('b').textContent, sub: b.querySelector('span').textContent, red: getComputedStyle(b.querySelector('b')).color })));
+    P.t(btns.length === 4 && btns.every((b) => b.t.length <= 28 && b.sub.length > 0 && b.red !== 'rgb(196, 39, 31)'), 'four neutral buttons with one-line titles and a grey sub-line: ' + btns.map((b) => b.t).join(' | '), 2, JSON.stringify(btns));
+    const note = await page.locator('[data-testid=samples-card] > .note').textContent(); P.t(note.split(/\s+/).length < 90 && !/relisted/.test(note) && /None of them needs outside money/.test(note), 'the grey note is short and has no stale listing sentence (' + note.split(/\s+/).length + ' words)', 1, note);
+    await page.click('[data-testid=load-stretch]'); const ct = await page.locator('[role=alertdialog]').textContent();
+    P.t(/kept in Saved/.test(ct) && /28 to 20 years/.test(ct) && /Undo/.test(ct), 'the confirm text says the plan is kept in Saved and the projection changes from 28 to 20 years', 2, ct);
+    await page.click('[data-stretch-yes]'); await page.waitForTimeout(150);
+    const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '[]'), SKEY), st = await store();
+    P.t(saved.length === 1 && /^Portfolio 1 \(before \$540M stretch scenario\)$/.test(saved[0].name) && saved[0].state.houses.length === S0.houses.length, 'the old plan is filed as "Portfolio 1 (before $540M stretch scenario)"', 2, saved.map((x) => x.name).join(','));
+    const ban = await page.locator('[data-testid=undo-banner]').textContent().catch(() => ''), tab = await page.locator('[data-testid=tab-planned]').getAttribute('aria-selected').catch(() => '');
+    P.t(/Loaded the \$540M stretch scenario/.test(ban) && /Undo/.test(ban) && tab === 'true' && !/assumptions/.test(await page.evaluate(() => location.hash)), 'an Undo banner shows and the app is on the Planned tab', 2, ban + ' ' + tab);
+    await page.click('[data-undo]'); await page.waitForTimeout(150); const st2 = await store(), saved2 = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '[]'), SKEY);
+    P.t(st2.houses.length === S0.houses.length && st2.g.planYears === 28 && saved2.length === 0, 'Undo restores the 28-year default plan (and takes the filed copy out of Saved)', 3, st2.houses.length + ' ' + st2.g.planYears + ' ' + saved2.length);
+    return P;
+  });
+
+  /* ---------- J9 calculator inputs: invalid math never commits; no layout shift; readable hint ---------- */
+  await jcheck('J9', 'Invalid math (5/0, 650*) never changes state or any dependent while typing or after leaving, the box goes back to its last good value with a Kept note, the field never moves, the hint is >= 13px, and labels keep their (i) beside the last word', 12, 'asset page rent field at 320px', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 320, height: 700 }); await load(withV(E.seedPlan()), '#house-maple'); await openAllColl();
+    const sel = '[data-p="h.maple.rent"]', top = () => page.evaluate((q) => document.querySelector(q).getBoundingClientRect().top + scrollY, sel), noi = () => page.locator('[data-testid=rent-noi]').first().textContent();
+    const before = (await store()).houses.find((h) => h.id === 'maple').rent, n0 = await noi(), y0 = await top();
+    for (const bad of ['5/0', '650*']) { await typeIn(sel, bad); await page.waitForTimeout(80); const y1 = await top(), n1 = await noi(), st = (await store()).houses.find((h) => h.id === 'maple').rent, fs = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('[data-testid=calc-hint]')).fontSize));
+      P.t(st === before && n1 === n0 && Math.abs(y1 - y0) < 1 && fs >= 13, `"${bad}" while typing: state ${st}, dependents unchanged, field moved ${Math.round(y1 - y0)}px, hint ${fs}px`, 2, ''); await blur();
+      const kept = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => ''); P.t(/^Kept \$[\d,]+$/.test(kept) && num(await page.inputValue(sel)) === before && (await noi()) === n0, `after leaving "${bad}": box back to ${before}, note "${kept}"`, 1.5, kept); }
+    const lab = await page.evaluate(() => [...document.querySelectorAll('#app label.f')].map((l) => { const lb = l.querySelector('.lb'), i = lb.querySelector('.info'); if (!i) return null; const w = lb.querySelector('.nw'); return { h: l.getBoundingClientRect().height, ok: !!w && w.contains(i) }; }).filter(Boolean));
+    P.t(lab.length > 4 && lab.every((x) => x.ok && x.h < 80), 'every label keeps its (i) glued to the last word and no row is taller than 80px at 320px (' + Math.max(...lab.map((x) => x.h)) + ')', 2, JSON.stringify(lab.filter((x) => !x.ok || x.h >= 80)));
+    await page.setViewportSize({ width: 390, height: 844 }); return P;
+  });
+
+  /* ---------- J10 Checks wording and states ---------- */
+  await jcheck('J10', 'Checks: no Last purchase / Lenders / "Down payments beyond the trust" rows, the Details button stays visible (and in the gutter) when something is flagged, DTI over the limit is red on the chip, the header and the row', 8, 'default plan and a tight DTI limit', async () => {
+    const P = new Parts(); await load(withV(E.seedPlan()), ''); await page.click('[data-testid=checks-details]');
+    const t = await page.locator('[data-testid=checks]').textContent(); P.t(!/Last purchase/.test(t) && !/Lenders/.test(t) && !/beyond the trust/.test(t) && /Paid from your own pocket/.test(t) && /grows with inflation/.test(t), 'plain-word rows only; cushion says it grows with inflation', 2, t.slice(0, 200));
+    const pk = E.plan(E.seedPlan()).worst.dti, T = withV(E.seedPlan()); T.g.dti = Math.floor(pk) - 2; await load(T, '');
+    const o = await page.evaluate(() => { const b = document.querySelector('[data-testid=checks-details]'), c = document.querySelector('[data-testid=checks]'); const r = b.getBoundingClientRect(), cr = c.getBoundingClientRect(); return { vis: !!r.width, edge: r.right <= cr.right + 0.5, flag: (document.querySelector('[data-testid=checks-flag]') || {}).className, chip: document.querySelector('[data-testid=afford-chip]').dataset.lvl, row: document.querySelector('[data-testid=check-dti]').dataset.lvl, lender: !!document.querySelector('[data-testid=check-lender]') }; });
+    P.t(o.vis && o.edge && /bad/.test(o.flag) && o.chip === 'bad' && o.row === 'bad' && !o.lender, 'flagged: Details visible and inside the card edge; chip, header and DTI row are all red; no separate Lenders row', 4, JSON.stringify(o));
+    await page.click('[data-testid=checks-details]'); await page.waitForTimeout(60); P.t((await page.locator('[data-testid=checks-details]').count()) === 1, 'Details stays tappable while flagged', 1, '');
+    const hr = await page.evaluate(() => [...document.querySelectorAll('[data-testid=checks] .chk')].every((e) => getComputedStyle(e).borderRadius === '0px')); P.t(hr, 'check rows have no rounded borders (no clipped arcs)', 1, '');
     return P;
   });
 

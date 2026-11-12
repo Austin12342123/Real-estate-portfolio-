@@ -163,7 +163,7 @@ exports.run = async function run(X) {
     /* 'no' */
     const no1 = run({ cash: 0, living: 3000, jobs: [] }), no2 = run({ cash: 20000, living: 1000, jobs: [salary(5000)], planned: [{ id: 'x', name: 'house', amount: 60000, month: 6 }] });
     const firstNeg = (o) => o.f.series.total.findIndex((x) => x < 0);
-    P.t(no1.f.status === 'no' && no1.f.kpis.firstShortMonth === 0 && firstNeg(no1) === 0 && /month 0/.test(no1.f.headline) && no1.f.reasons.some((x) => x.sev === 'bad'), "'no' headline names month 0 when you start with no cash and no pay", 1, no1.f.headline);
+    P.t(no1.f.status === 'no' && no1.f.kpis.firstShortMonth === 0 && firstNeg(no1) === 0 && /today/.test(no1.f.headline) && no1.f.reasons.some((x) => x.sev === 'bad'), "'no' headline names month 0 when you start with no cash and no pay", 1, no1.f.headline);
     P.t(no2.f.status === 'no' && no2.f.kpis.firstShortMonth === firstNeg(no2) && no2.f.kpis.firstShortMonth > 0 && new RegExp('month ' + no2.f.kpis.firstShortMonth + '\\b').test(no2.f.headline), "'no' headline names the first month total goes negative (" + firstNeg(no2) + ')', 1.5, no2.f.headline + ' / ' + no2.f.kpis.firstShortMonth);
     P.t(closeAbs(no2.f.kpis.shortAmount, -Math.min(...no2.f.series.total), 0.01) && closeAbs(no2.f.kpis.minLiquid, Math.min(...no2.f.series.total), 0.01) && no2.f.series.total[no2.f.kpis.minLiquidMonth] === Math.min(...no2.f.series.total), 'kpis.shortAmount = -min(total); minLiquidMonth points at the minimum', 1);
     /* fix text amounts equal kpis */
