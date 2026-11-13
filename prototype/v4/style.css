@@ -424,3 +424,7 @@ details>summary{min-height:44px;display:flex;align-items:center}
 details[data-testid=model-notes]{padding-top:0!important;padding-bottom:0!important}
 details[data-testid=model-notes][open]{padding-bottom:10px!important}
 .tgtb{white-space:normal;text-align:left}
+
+.txtbtn.dng{color:var(--bad,#c0392b)}
+.btn.danger-o{background:none;border:1px solid var(--bad,#c0392b);color:var(--bad,#c0392b)}
+@media(max-width:359px){.hb .txtbtn{padding:0 6px}.hb .ic{padding:0 6px}}
