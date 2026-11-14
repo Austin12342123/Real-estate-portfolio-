@@ -1655,7 +1655,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     const L = (label, val, cls, tip) => `<div class="bkr ${cls || ''}"><span>${label}</span><b>${val}</b></div>`, m = (x) => '−' + $f(Math.abs(x)), inc = T.rent + T.reimb;
     const allBiz = biz > 0 && list.every((h) => (h.type || 'house') === 'business'); /* a list of businesses: Revenue, then the costs it takes to keep only the margin, so the lines add up to owner profit */
     const rows = [allBiz ? L('Revenue per month', $f(rev)) + L('Profit margin (' + r(rev > 0 ? (T.rent / rev) * 100 : 0, 1) + '% of revenue)', m(Math.max(0, rev - T.rent))) : L((biz && !T.tax && !T.maint ? 'Owner profit' : 'Rent') + ' per month', $f(T.rent)), T.reimb > 0.5 ? L('Costs tenants pay back (NNN)', $f(T.reimb)) : '',
-      L(allBiz ? 'Owner profit <small>(cash flow without any expense)</small>' : 'Total income <small>(cash flow without any expense)</small>', $f(inc), 'tot'),
+      L('Total income <small>(cash flow without any expense)</small>', $f(inc), 'tot'),
       T.vac > 0.5 ? L('Vacancy (' + r(g.vac, 1) + '% of income)', m(T.vac)) : '', T.tax > 0.5 ? L('Property tax', m(T.tax)) : '', T.ins > 0.5 ? L('Insurance', m(T.ins)) : '', T.hoa > 0.5 ? L('HOA', m(T.hoa)) : '',
       T.maint > 0.5 ? L('Maintenance (' + r(g.maint, 1) + '% of price a year)', m(T.maint)) : '', T.mgmt > 0.5 ? L('Property management (' + r(g.mgmt, 1) + '%)', m(T.mgmt)) : '',
       L('Cash flow before the loan payment', $s(T.noi), 'tot'),

@@ -564,6 +564,7 @@ exports.run = async function run(X) {
     const bk = await page.evaluate(() => { const c = [...document.querySelectorAll('[data-testid=cat-breakdown]')]; return c.map((x) => x.innerText.replace(/\s+/g, ' ')); }); 
     await page.evaluate(() => { location.hash = ''; }); await page.waitForTimeout(150); await openAllColl();
     const bk2 = await page.evaluate(() => [...document.querySelectorAll('[data-testid=cat-breakdown]')].map((x) => x.innerText.replace(/\s+/g, ' ')));
+    { const t = bk2.find((x) => /Revenue per month/.test(x)) || '', n = (re) => { const m = re.exec(t); if (!m) return NaN; const v = +m[1].replace(/,/g, ''); return m[2] === 'M' ? v * 1e6 : m[2] === 'K' ? v * 1e3 : v; }; const R = n(/Revenue per month \$([\d,.]+)([MK]?)/), M = n(/Profit margin \([^)]*\) [−-]\$([\d,.]+)([MK]?)/), I = n(/Total income[^$]*\$([\d,.]+)([MK]?)/); P.t(isFinite(R) && isFinite(M) && I > 0 && Math.abs(R - M - I) <= 0.06 * R, 'breakdown: revenue minus the margin line equals the total income (owner profit, within the rounding of the shown $M): ' + R + ' - ' + M + ' = ' + I, 1, t.slice(0, 200)); }
     P.t(bk2.some((t) => /Revenue per month/.test(t) && /Profit margin \(\d/.test(t) && /of revenue/.test(t)), 'breakdown for businesses lists Revenue and Profit margin (x% of revenue)', 1, bk2.map((t) => t.slice(0, 200)).join(' | '));
     return P; });
 
