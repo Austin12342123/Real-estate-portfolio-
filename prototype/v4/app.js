@@ -3,12 +3,17 @@
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
   let S, UI = { unit: 'today', tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', view: 'plan', openOn: 'planned', addOwned: false };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  const DATA_V = 19; /* bump when the sample portfolio changes so old saved samples are replaced */
-  if (S && Array.isArray(S.houses) && S.g && S.v === 8) { S.p = S.p || E.samplePersonal(); S.v = DATA_V; } /* v8 saves keep their assets and gain a finance profile */
+  const DATA_V = 20; /* bump when a release changes the data; NEVER replace a user's portfolio in a migration (new assets go through ADDITIONS in engine.js) */
+  const ADDED_ALL = () => E.ADDITIONS.map((x) => x.key);
   let switched = null;
-  if (S && Array.isArray(S.houses) && S.g && S.v >= 9 && S.v <= 18) { switched = JSON.stringify(S); S = E.seedPlan(); S.v = DATA_V; } /* v9-v18 saves switch silently to the current plan ($125M+ in today's dollars) with its default finance profile (the old plan keeps its own profile when it is filed in Saved, below). The plan needs about $2,000/mo of job money left after living costs; an older, tighter profile would only reach about a third of it. */
-  if (!S || !Array.isArray(S.houses) || !S.g || S.v !== DATA_V) S = E.seedPlan();
-  E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
+  if (S && Array.isArray(S.houses) && S.g) {
+    if (S.v === 8) { S.p = S.p || E.samplePersonal(); S.added = ADDED_ALL(); } /* v8 saves keep their assets and gain a finance profile */
+    else if (S.v >= 9 && S.v <= 18) { switched = JSON.stringify(S); S = E.seedPlan(); } /* v9-v18 saves switch silently to the plan of that time ($125M+ in today's dollars) and the old portfolio is filed in Saved (below); the plan needs about $2,000/mo of job money left after living costs. This is the ONLY migration that replaces a portfolio and it never runs for v19 or later. */
+    else if (S.v === 19) S.added = ADDED_ALL(); /* v19 already has (or has removed) the added house: add nothing */
+    else if (!(S.v >= 20)) S = null; /* unknown or very old: start from the default plan */
+  }
+  if (!S || !Array.isArray(S.houses) || !S.g) S = E.seedPlan();
+  E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V; E.applyAdditions(S);
   /* the next planned asset below h in the list (the trust buys in list order), and the month it is bought if h's extra payment were x instead */
   const nextPlanned = (h) => { const i = S.houses.indexOf(h); for (let k = i + 1; k < S.houses.length; k++) if (S.houses[k].status === 'planned') return S.houses[k]; return null; };
   const planWith = (h, x) => { const c = JSON.parse(JSON.stringify(S)), q = c.houses.find((y) => y.id === h.id); q.extra = x; q.driver = 'extra'; return E.plan(c); };
@@ -745,7 +750,8 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   const portNo = () => { let n = SAVED.length + 1; while (SAVED.some((x) => new RegExp('^Portfolio ' + n + '(\\D|$)').test(x.name))) n++; return n; };
   const uniqueName = (nm) => { let out = nm, k = 2; while (SAVED.some((x) => x.name === out)) out = (nm + ' (' + k++ + ')').slice(0, 60); return out; };
   const newSid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  if (switched) { try { const old = JSON.parse(switched); if (old && Array.isArray(old.houses) && old.houses.length && SAVED.length < MAXSAVED) { SAVED.unshift({ id: newSid(), name: 'Portfolio ' + portNo() + ' (before the update)', ts: Date.now(), state: old }); if (saveSaved()) UI.migNote = SAVED[0].name; } } catch (e) {} switched = null; save(); }
+  if (switched) { try { const old = JSON.parse(switched); if (old && Array.isArray(old.houses) && old.houses.length && SAVED.length < MAXSAVED) { SAVED.unshift({ id: newSid(), name: 'Portfolio ' + portNo() + ' (before the update)', ts: Date.now(), state: old }); if (saveSaved()) UI.migNote = SAVED[0].name; } } catch (e) {} switched = null; }
+  save(); /* persist the migrated state (S.v, S.added) so it is stored right after load */
   function showPage(k) { if (PAGES.indexOf(k) < 0 || k === page) return; page = k; selId = null; ask = null; savedMsg = ''; prev = {}; render(); }
   function doSave(name) {
     const nm = uniqueName(String(name || '').trim().slice(0, 60) || 'Portfolio ' + portNo());
@@ -758,7 +764,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   function loadSaved(id) {
     const x = SAVED.find((q) => q.id === id); ask = null; if (!x) { render(); return; }
     setUndo({ text: 'Opened “' + x.name + '”. Your previous portfolio is kept: tap Undo to bring it back.', label: 'previous portfolio', snap: JSON.stringify(S) });
-    S = E.normalize(JSON.parse(JSON.stringify(x.state))); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V; S.seq = +S.seq || 0; selId = null; page = 'planned'; prev = {}; savedMsg = ''; save(); render();
+    S = E.normalize(JSON.parse(JSON.stringify(x.state))); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V; E.applyAdditions(S); S.seq = +S.seq || 0; selId = null; page = 'planned'; prev = {}; savedMsg = ''; save(); render();
   }
   const app = document.getElementById('app');
   /* what a number box cannot hold: a percent in a box that is not a percent box, and a negative number where the value cannot be below zero. Returns null when the text is fine. */
@@ -861,7 +867,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.clearAsk !== undefined) { ask = 'clearplan'; render(); return; }
     if (t.dataset.clearYes !== undefined) { clearPlanned(); return; }
     if (t.dataset.delYes) { const gone = H(t.dataset.delYes); setUndo(gone ? { label: gone.addr, snap: JSON.stringify(S) } : null); S = E.without(S, t.dataset.delYes); E.relink(S); if (selId === t.dataset.delYes) selId = null; ask = null; save(); goto(''); render(); return; }
-    if (t.dataset.undo !== undefined) { if (undo) { S = E.normalize(JSON.parse(undo.snap)); S.v = DATA_V; if (undo.sid) { SAVED = SAVED.filter((q) => q.id !== undo.sid); saveSaved(); } setUndo(null); page = 'planned'; selId = null; save(); render(); } return; }
+    if (t.dataset.undo !== undefined) { if (undo) { S = E.normalize(JSON.parse(undo.snap)); S.v = DATA_V; E.applyAdditions(S); if (undo.sid) { SAVED = SAVED.filter((q) => q.id !== undo.sid); saveSaved(); } setUndo(null); page = 'planned'; selId = null; save(); render(); } return; }
     if (t.dataset.migDismiss !== undefined) { UI.migNote = null; save(); render(); return; }
     if (t.dataset.undoDismiss !== undefined) { setUndo(null); render(); return; }
     if (t.dataset.askCancel !== undefined) { ask = null; pendingImport = null; render(); return; }
@@ -873,7 +879,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.copybackup !== undefined) { const m = document.getElementById('cbm'), ta = document.getElementById('bkout'); const fail = () => { ta.focus(); ta.select(); m.textContent = 'Select the text above and copy it by hand.'; };
       try { navigator.clipboard.writeText(ta.value).then(() => { m.textContent = 'Copied.'; }, fail); } catch (x) { fail(); } return; }
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
-    if (t.dataset.importYes !== undefined) { const bk = { saved: pendingImport.saved, openOn: pendingImport.openOn }; S = E.normalize(pendingImport); delete S.saved; delete S.openOn; if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; fixOrder(S); if (Array.isArray(bk.saved)) { SAVED = cleanSaved(bk.saved); saveSaved(); } if (PAGES.indexOf(bk.openOn) >= 0) UI.openOn = bk.openOn; page = UI.openOn; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
+    if (t.dataset.importYes !== undefined) { const bk = { saved: pendingImport.saved, openOn: pendingImport.openOn }; S = E.normalize(pendingImport); delete S.saved; delete S.openOn; if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; E.applyAdditions(S); fixOrder(S); if (Array.isArray(bk.saved)) { SAVED = cleanSaved(bk.saved); saveSaved(); } if (PAGES.indexOf(bk.openOn) >= 0) UI.openOn = bk.openOn; page = UI.openOn; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     { const bt = t.closest('button') || t, sc = SCN.find((x) => bt.dataset[x.k] !== undefined || bt.dataset[x.k + 'Yes'] !== undefined); if (sc) { if (bt.dataset[sc.k + 'Yes'] !== undefined) loadScenario(sc); else { ask = sc.k; render(); } return; } }
     const mvb = t.closest('[data-move]'); if (mvb) { const [id, d] = mvb.dataset.move.split(':'); moveBy(id, +d); return; }
     const dpb = t.closest('[data-dup]'); if (dpb) { const c = E.duplicate(S, dpb.dataset.dup); if (c) { ask = null; UI.coll['cat-' + (c.type || 'house')] = false; save(); if (routeOf().startsWith('h/')) { selId = null; goto('h/' + c.id); } else { selId = c.id; page = 'planned'; /* the copy is always planned */ render(); } } return; }

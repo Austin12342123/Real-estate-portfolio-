@@ -1,8 +1,8 @@
 # Number-sync grader (SYNC_ONLY)
 
-Run: 2026-11-12T15:48:47.565Z  |  156s
+Run: 2026-11-14T04:07:17.678Z  |  118s
 
-## G. Number sync: **99.91 / 100** (separate scale; not included in the A-E + R total or in F)
+## G. Number sync: **100.00 / 100** (separate scale; not included in the A-E + R total or in F)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -12,10 +12,9 @@ Run: 2026-11-12T15:48:47.565Z  |  156s
 | G4 | Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences) | 18.00 | 18.00 | 34/34 sub-checks pass |
 | G5 | Add page <-> created asset (loan option cards, option switching, 203(k) defaults) | 6.00 | 6.00 | 12/12 sub-checks pass |
 | G6 | Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light) | 12.00 | 12.00 | 12/12 sub-checks pass |
-| G7 | Shared settings (g.* and p.*) propagate to every dependent display | 10.00 | 9.91 | 149/150 sub-checks pass. FAIL: Portfolio afford note = Finances headline (minus the Yes/Tight prefix) (24/25 ok) [after p.cash=5000: Can I afford this?Lenders may decline a loan around month 180 (Nov 2041).Not yet › vs Tight. Your cash dips below your emergency reserve today.] |
+| G7 | Shared settings (g.* and p.*) propagate to every dependent display | 10.00 | 10.00 | 150/150 sub-checks pass |
 | G8 | No stale / duplicate / contradictory numbers | 12.00 | 12.00 | 10/10 sub-checks pass |
 
 ### G failures
 
-- **G7 Shared settings (g.* and p.*) propagate to every dependent display** (-0.09): 149/150 sub-checks pass. FAIL: Portfolio afford note = Finances headline (minus the Yes/Tight prefix) (24/25 ok) [after p.cash=5000: Can I afford this?Lenders may decline a loan around month 180 (Nov 2041).Not yet › vs Tight. Your cash dips below your emergency reserve today.]
-  - Reproduce: Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)
+None.

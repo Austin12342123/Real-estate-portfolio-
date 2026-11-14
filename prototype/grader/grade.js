@@ -718,6 +718,52 @@ async function reqChecks(page) {
     P.t(s.nw >= 125e6 && s.nw <= 135e6 && s.cf >= 1.3e6, 'it reads $125M+ and $1.3M+ a month in today\'s dollars', 0.2, s.nw + ' ' + s.cf);
     await clickTab('saved'); const c = await cards(); P.t(c.length === 1 && /^Portfolio 1 \(before the update\)$/.test((c[0].name || '').trim()), 'the old portfolio is filed as "Portfolio 1 (before the update)"', 0.4, c.map((x) => x.name).join());
     return P; });
+  await check('A35', 'A', 'A release never overwrites or resurrects the user\'s own portfolio (v19 -> v20 keeps it, S.added bookkeeping): empty stays empty, own assets kept with no second Lost Creek, missing S.added adds nothing, a new ADDITIONS entry lands once as the LAST planned asset and never returns after removal, Undo / Saved / backup keep S.added, v<=18 still switch with the "before the update" entry, new default plan targets hold', 4, 'Load v19 states (empty, partial, with Lost Creek), v20 without S.added, a state lacking a test addition key; reload, remove, Undo, Saved open, backup', async () => {
+    const P = new Parts(), KEYS = E.ADDITIONS.map((a) => a.key), ids = (s) => s.houses.map((h) => h.id);
+    P.t(KEYS.length >= 1 && KEYS[0] === 'lost-creek-704' && E.seedPlan().added && JSON.stringify(E.seedPlan().added) === JSON.stringify(KEYS) && [E.seedStretch(), E.seedBig(), E.seedStradella(), E.seed()].every((s) => JSON.stringify(s.added) === JSON.stringify(KEYS)), 'ADDITIONS has lost-creek-704 first; the default plan and every scenario seed set S.added to all keys', 0.3, JSON.stringify(E.seedPlan().added));
+    /* (a) v19 with an emptied planned portfolio stays empty */
+    const e19 = E.seedPlan(); e19.houses = []; delete e19.added; e19.v = 19; await loadState(page, e19); let st = await store(page);
+    P.t(st.houses.length === 0 && st.v === DATA_V && JSON.stringify(st.added) === JSON.stringify(KEYS) && (await page.locator('[data-testid=migrate-note]').count()) === 0, '(a) an emptied v19 portfolio stays empty (no default plan, no Lost Creek, no note); S.added is set', 0.5, JSON.stringify(ids(st)));
+    await page.reload(); await page.waitForSelector('#app > *'); st = await store(page); P.t(st.houses.length === 0, '(a) and stays empty after another reload', 0.1);
+    /* (b) v19 with some assets keeps exactly those; with Lost Creek present there is no second copy */
+    const base = E.seedPlan(), some = base.houses.filter((h) => h.id !== 'lostcreek').slice(0, 5), p19 = E.seedPlan(); p19.houses = some; delete p19.added; p19.v = 19;
+    await loadState(page, p19); st = await store(page); P.t(JSON.stringify(ids(st)) === JSON.stringify(some.map((h) => h.id)), '(b) a v19 portfolio keeps exactly its own assets (no resurrection, no Lost Creek appended)', 0.4, JSON.stringify(ids(st)));
+    const w19 = E.seedPlan(); delete w19.added; w19.v = 19; await loadState(page, w19); st = await store(page);
+    P.t(ids(st).filter((x) => x === 'lostcreek').length === 1 && st.houses.length === NSEED && JSON.stringify(ids(st)) === JSON.stringify(ids(E.seedPlan())), '(b) a v19 portfolio that has Lost Creek keeps one copy', 0.2, st.houses.length);
+    /* (c) a v20 state with S.added missing gets nothing appended */
+    const m20 = E.seedPlan(); m20.houses = some.slice(0, 2); delete m20.added; m20.v = DATA_V; await loadState(page, m20); st = await store(page);
+    P.t(st.houses.length === 2 && JSON.stringify(st.added) === JSON.stringify(KEYS), '(c) a state with S.added missing gets nothing appended', 0.3, JSON.stringify(ids(st)));
+    /* (d) a new ADDITIONS entry (test hook: pushed when the engine loads) */
+    const c2 = await mkCtx(); await c2.addInitScript(() => { let _E; Object.defineProperty(window, 'Engine', { configurable: true, get() { return _E; }, set(v) { _E = v; v.ADDITIONS.push({ key: 'test-house-1', make: () => v.newAsset('house', 'conv30', { id: 'testhouse1', addr: '1 Test Ln, Testville', price: 100000, rent: 1200, tax: 100, ins: 50 }) }); } }); });
+    const p2 = await mkPage(c2, 'additions'); try {
+      const u = some.slice(0, 3), s20 = E.seedPlan(); s20.houses = JSON.parse(JSON.stringify(u)); s20.added = KEYS.slice(); s20.v = DATA_V; await loadState(p2, s20); st = await store(p2);
+      P.t(JSON.stringify(ids(st)) === JSON.stringify(u.map((h) => h.id).concat(['testhouse1'])) && st.houses[3].status === 'planned' && st.added.indexOf('test-house-1') >= 0 && st.added.indexOf(KEYS[0]) >= 0, '(d) a new ADDITIONS entry is appended as the LAST planned asset and its key recorded', 0.5, JSON.stringify(ids(st)) + JSON.stringify(st.added));
+      await p2.reload(); await p2.waitForSelector('#app > *'); st = await store(p2); P.t(st.houses.filter((h) => h.id === 'testhouse1').length === 1, '(d) not appended again after a reload', 0.3, st.houses.length);
+      await goMain(p2); await selRow(p2, 'testhouse1'); await p2.click('[data-for="testhouse1"] [data-testid=row-remove]').catch(() => {}); await p2.waitForTimeout(80);
+      await p2.evaluate(() => { const b = document.querySelector('[data-del-yes]'); if (b) b.click(); }); await p2.waitForTimeout(100); st = await store(p2);
+      P.t(!st.houses.some((h) => h.id === 'testhouse1'), '(d) the user can remove the added asset', 0.1);
+      await p2.reload(); await p2.waitForSelector('#app > *'); st = await store(p2); P.t(!st.houses.some((h) => h.id === 'testhouse1') && st.added.indexOf('test-house-1') >= 0, '(d) after the user removes it, it does not come back (its key stays in S.added)', 0.4, JSON.stringify(ids(st)));
+    } finally { await c2.close(); }
+    /* (e) Undo, Saved open and backup export/import keep S.added */
+    const eS = E.seedPlan(); eS.houses = some.slice(0, 3).map((h) => JSON.parse(JSON.stringify(h))); eS.added = KEYS.slice(); eS.v = DATA_V; await loadState(page, eS);
+    await saveAs('Keep me'); await goMain(page); st = await store(page); const okSave = JSON.stringify(st.added) === JSON.stringify(KEYS);
+    await clickTab('saved'); const cs = await cards(); await page.click('[data-sid="' + cs[0].sid + '"] [data-testid=saved-open]'); await page.click('[data-load-yes]'); await page.waitForTimeout(100); st = await store(page);
+    P.t(okSave && JSON.stringify(st.added) === JSON.stringify(KEYS) && st.houses.length === 3, '(e) Saved portfolios and opening one keep S.added', 0.3, JSON.stringify(st.added));
+    const un = await page.$('[data-undo]'); if (un) { await un.click(); await page.waitForTimeout(100); } st = await store(page); P.t(!!un && JSON.stringify(st.added) === JSON.stringify(KEYS) && st.houses.length === 3, '(e) Undo keeps S.added', 0.2, JSON.stringify(st.added));
+    await goHash(page, '#assumptions'); await page.click('[data-testid=export]'); await page.waitForTimeout(60); const txt = await page.inputValue('[data-testid=backup-text]').catch(() => ''); let j = null; try { j = JSON.parse(txt); } catch (e) {}
+    P.t(j && JSON.stringify(j.added) === JSON.stringify(KEYS), '(e) the backup text contains S.added', 0.2, txt.slice(0, 30));
+    const j2 = JSON.parse(txt); j2.added = KEYS.slice(); j2.houses = j2.houses.slice(0, 2); await page.fill('#bkin', JSON.stringify(j2)); await page.click('[data-restore-text]'); await page.waitForTimeout(60); await page.click('[data-import-yes]'); await page.waitForTimeout(100); st = await store(page);
+    P.t(st.houses.length === 2 && JSON.stringify(st.added) === JSON.stringify(KEYS), '(e) importing a backup keeps S.added and adds nothing', 0.2, JSON.stringify(ids(st)));
+    delete j2.added; await goHash(page, '#assumptions'); await page.click('[data-testid=export]'); await page.waitForTimeout(60); await page.fill('#bkin', JSON.stringify(j2)); await page.click('[data-restore-text]'); await page.waitForTimeout(60); await page.click('[data-import-yes]'); await page.waitForTimeout(100); st = await store(page);
+    P.t(st.houses.length === 2 && JSON.stringify(st.added) === JSON.stringify(KEYS), '(e) an old backup without S.added is treated like v19 (no re-adding)', 0.2, JSON.stringify(ids(st)));
+    /* (f) v<=18 still switch silently and file the old portfolio */
+    for (const ver of [9, 18]) { const o = SB(); o.v = ver; await loadState(page, o); st = await store(page); await clickTab('saved'); const c = await cards();
+      P.t(st.v === DATA_V && JSON.stringify(ids(st)) === JSON.stringify(ids(E.seedPlan())) && (await page.locator('[data-testid=undo-banner]').count()) === 0 && c.length === 1 && /^Portfolio 1 \(before the update\)$/.test((c[0].name || '').trim()) && JSON.stringify(st.added) === JSON.stringify(KEYS), '(f) a v' + ver + ' state switches silently to the new default plan and is filed as "Portfolio 1 (before the update)"', 0.2, c.map((x) => x.name).join()); }
+    /* (g) the new default plan */
+    const d = E.seedPlan(), h = E.planR(d).horizon; await reset(page); const s = await snap(page), st2 = await store(page), vch = await page.evaluate(() => (document.querySelector('[data-testid=plan-headline]') || {}).textContent || '');
+    P.t(E.plan(d).unfunded.length === 0 && /^Nothing bought yet\. All 36 planned are possible/.test(vch) && !/once you add/.test(vch), '(g) the verdict is Yes (the headline says all 36 planned are possible with nothing from your own pocket, none unfunded)', 0.2, vch.slice(0, 200));
+    P.t(d.houses.length === 36 && NSEED === 36 && d.houses.every((x) => x.status === 'planned') && h.nw >= 125e6 && h.cf >= 1.3e6 && st2.houses.length === 36 && st2.houses.every((x) => x.status !== 'owned') && s.nw >= 125e6 && s.cf >= 1.3e6, '(g) a fresh install: 36 assets, nothing owned, >= $125M and >= $1.3M/mo in today\'s dollars', 0.4, 'nw ' + h.nw + ' cf ' + h.cf);
+    return P; });
   await check('A28', 'A', 'Saving survives a full or blocked storage: a clear message, no crash, the list is unchanged', 1, 'Make localStorage.setItem throw for the saved list; Save', async () => {
     await reset(page); const P = new Parts(); const e0 = collect.errors.length; await saveAs('Keeper');
     await page.evaluate(() => { const o = Storage.prototype.setItem; window.__setItem = o; Storage.prototype.setItem = function (k, v) { if (k === 'rep-v4-saved') throw new Error('QuotaExceededError'); return o.apply(this, arguments); }; });

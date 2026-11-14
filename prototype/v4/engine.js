@@ -555,6 +555,7 @@
     S.g = Object.assign({}, GDEF, S.g || {}); S.g.autoPay = S.g.autoPay !== false;
     ['cap', 'capBiz', 'vac', 'refiRate', 'refiTerm'].forEach((k) => { if (!isFinite(+S.g[k])) S.g[k] = GDEF[k]; });
     if (S.p) S.p = normalizePersonal(S.p);
+    if (Array.isArray(S.added)) S.added = S.added.filter((k, i, a) => typeof k === 'string' && a.indexOf(k) === i); else delete S.added; /* keys of ADDITIONS already applied to this portfolio */
     S.houses = (S.houses || []).filter((h) => h && h.id).map((h) => { const type = TYPES[h.type] ? h.type : 'house'; return Object.assign(newAsset(type, undefined, { id: h.id }), h, { type }); });
     S.houses.forEach((h) => {
       ['price', 'dp', 'rate', 'term', 'extra', 'rent', 'tax', 'ins', 'hoa', 'liens', 'paid', 'buyIn', 'wait', 'capex', 'capexMonths', 'arv', 'liftIncome', 'exitMonth', 'exitLift', 'sellCost', 'mat', 'nnn'].forEach((k) => { if (!isFinite(+h[k])) h[k] = newAsset(h.type, undefined)[k]; else h[k] = +h[k]; });
@@ -601,7 +602,7 @@
   /* STRETCH scenario (listed in the order the assets are bought; the trust decides every purchase month): about $540M of net worth and +$1.5M/mo of cash flow after 20 years, and it buys 607 Siena Way, Bel Air, Los Angeles CA 90077 ("Villa Siena", about 35,000 sq ft; relisted at about $135,000,000 in December 2025, price may have changed) outright in month 170 (14 years in): $137.7M of cash (price plus 2% closing) = about $54M of cash the trust holds (sale proceeds and reinvested cash flow) + about $83M drawn on its line of credit against the other assets. Its rent is the amount the house would rent for ($520,000/mo), so the carry (tax $135,000, insurance $40,000, upkeep 1% of value a year) shows and the house never cash-flows negative; the line interest is paid from the portfolio's cash flow, which is still about $1.9M/mo after the purchase. It leans on two large business exits at 21-25%/yr growth. Not a forecast. */
   /* The older samples and scenarios list commercial costs net of what tenants repay, so their tenants repay 0% (their numbers are unchanged by the NNN field). */
   const netCosts = (S) => { S.houses.forEach((h) => { if (h.type === 'commercial') h.nnn = 0; }); return S; };
-  const seedStretch = () => { const A = newAsset; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: samplePersonal(), houses: [
+  const seedStretch = () => { const A = newAsset; return netCosts(normalize({ added: ak(), g: Object.assign({}, GDEF, { otherDebt: 450 }), p: samplePersonal(), houses: [
     A('house', 'conv30', { id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4 }),
     A('house', 'conv30', { id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4 }),
     A('business', 'sba7a', { id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 9 }),
@@ -623,7 +624,7 @@
     A('commercial', 'comm25', { id: 'west', addr: 'Westfield Office Park', price: 11000000, rent: 112000, tax: 4200, ins: 3300, hoa: 2400, growth: 5, buyIn: 120 }),
     A('house', 'cashh', { id: 'siena', addr: '607 Siena Way, Los Angeles CA 90077', price: 135000000, rent: 520000, tax: 135000, ins: 40000, growth: 3.5, buyIn: 0 })] })); };
   /* $120M scenario: net worth about $120M at the end of the plan (it was tuned for $130M under the old per-asset funding chains), and the trust's own cash (sale proceeds and cash flow) buys a $35M waterfront estate in month 200. Business growth is capped at 8%/yr; partner capital is listed but the trust no longer needs it for purchases. */
-  const seedBig = () => { const A = newAsset; const p = samplePersonal(); p.capital = [{ id: 'cap0', name: 'Family and friends', month: 11, amount: 100000 }, { id: 'cap1', name: 'Seed partners', month: 17, amount: 2850000 }, { id: 'cap2', name: 'Growth partners', month: 47, amount: 2910000 }, { id: 'cap3', name: 'Institutional partner', month: 79, amount: 6260000 }, { id: 'cap4', name: 'Follow-on partner', month: 119, amount: 1880000 }]; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p, houses: [
+  const seedBig = () => { const A = newAsset; const p = samplePersonal(); p.capital = [{ id: 'cap0', name: 'Family and friends', month: 11, amount: 100000 }, { id: 'cap1', name: 'Seed partners', month: 17, amount: 2850000 }, { id: 'cap2', name: 'Growth partners', month: 47, amount: 2910000 }, { id: 'cap3', name: 'Institutional partner', month: 79, amount: 6260000 }, { id: 'cap4', name: 'Follow-on partner', month: 119, amount: 1880000 }]; return netCosts(normalize({ added: ak(), g: Object.assign({}, GDEF, { otherDebt: 450 }), p, houses: [
     A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4}),
     A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4}),
     A('business', 'sba7a', {id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 9}),
@@ -645,7 +646,7 @@
     A('commercial', 'comm25', {id: 'west', addr: 'Westfield Office Park', price: 6710000, rent: 68320, tax: 2562, ins: 2013, hoa: 1464, growth: 5, buyIn: 120}),
     A('house', 'cashh', {id: 'estate', addr: 'Lakeshore Waterfront Estate', price: 35000000, rent: 130000, tax: 32000, ins: 12000, growth: 3.5, buyIn: 200})] })); };
   /* $38.7M residence scenario (900 Stradella Rd, Los Angeles; Zestimate $38,731,700). Creative financing: seller financing, SBA 504 and 7(a), bridge loan, DSCR, bank term loans, seller notes, the trust's pooled line of credit, partner capital (listed, not needed for purchases). The portfolio's own cash buys the house outright; its rent is the amount the house would rent for, so the carry (tax, insurance, upkeep) is visible and the house never cash-flows negative. */
-  const seedStradella = () => { const A = newAsset; const p = samplePersonal(); p.capital = [{ id: 'cap0', name: 'Family and friends', month: 11, amount: 100000 }, { id: 'cap1', name: 'Seed partners', month: 17, amount: 4400000 }, { id: 'cap2', name: 'Growth partners', month: 47, amount: 4170000 }, { id: 'cap3', name: 'Institutional partner', month: 79, amount: 7490000 }, { id: 'cap4', name: 'Follow-on partner', month: 119, amount: 2820000 }]; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p, houses: [
+  const seedStradella = () => { const A = newAsset; const p = samplePersonal(); p.capital = [{ id: 'cap0', name: 'Family and friends', month: 11, amount: 100000 }, { id: 'cap1', name: 'Seed partners', month: 17, amount: 4400000 }, { id: 'cap2', name: 'Growth partners', month: 47, amount: 4170000 }, { id: 'cap3', name: 'Institutional partner', month: 79, amount: 7490000 }, { id: 'cap4', name: 'Follow-on partner', month: 119, amount: 2820000 }]; return netCosts(normalize({ added: ak(), g: Object.assign({}, GDEF, { otherDebt: 450 }), p, houses: [
     A('house', 'conv30', {id: 'maple', addr: '1412 Maple Ridge Dr', status: 'owned', price: 185000, rate: 6.5, paid: 18, extra: 600, rent: 1900, tax: 215, ins: 90, growth: 4}),
     A('house', 'conv30', {id: 'cedar', addr: '2207 Cedar Hollow Ln', status: 'owned', price: 165000, rate: 6.75, paid: 30, extra: 400, rent: 1750, tax: 180, ins: 85, growth: 4}),
     A('business', 'sba7a', {id: 'auto', addr: 'Precision Auto Care', status: 'owned', price: 1100000, paid: 12, rent: 34000, growth: 9}),
@@ -670,7 +671,21 @@
   /* 704 Lost Creek Cir, Stone Mountain GA (prototype/listing-import/704-lost-creek-cir.house.json): built with fromListing, the same helper the importer uses, plus the user's own renovation ($17,000, after-repair value $245,000) */
   const lostCreek = () => { const L = fromListing({ schema: 'house-listing/1', address: '704 Lost Creek Cir, Stone Mountain, GA 30088', price: { value: 140000 }, rentMonthly: { value: 1887 }, taxAnnual: { value: 2070 }, insuranceAnnual: { value: 2400 }, hoaMonthly: { value: null } });
     return newAsset('house', 'conv30', Object.assign({ id: 'lostcreek' }, L.patch, { growth: 4, buyIn: 0, capex: 17000, capexMonths: 3, arv: 245000 })); };
-  const seedPlan = () => { const A = newAsset; const p = samplePersonal(); p.capital = []; return orderByBuy(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450, planYears: 28 }), p, houses: [
+  /* ADDITIONS: assets a release adds to EVERY device's own planned portfolio, once (never replacing it). S.added lists the keys already applied (or deliberately excluded, as in the seeds), so a removed asset never comes back.
+     To add an asset: append { key, make } here and bump DATA_V in app.js. NEVER replace users' portfolios in a migration. */
+  const ADDITIONS = [{ key: 'lost-creek-704', make: lostCreek }];
+  const ak = () => ADDITIONS.map((a) => a.key);
+  function applyAdditions(S) {
+    if (!Array.isArray(S.added)) { S.added = ak(); return S; } /* a state without S.added (v19 or an old backup) already has whatever it wants: add nothing */
+    ADDITIONS.forEach((a) => {
+      if (S.added.indexOf(a.key) >= 0) return;
+      const h = a.make(), norm = (s) => String(s || '').trim().toLowerCase();
+      if (!S.houses.some((x) => x.id === h.id || norm(x.addr) === norm(h.addr))) { h.status = 'planned'; S.houses.push(h); register(S, h); relink(S); }
+      S.added.push(a.key);
+    });
+    return S;
+  }
+  const seedPlan = () => { const A = newAsset; const p = samplePersonal(); p.capital = []; return orderByBuy(normalize({ added: ak(), g: Object.assign({}, GDEF, { otherDebt: 450, planYears: 28 }), p, houses: [
     A('house', 'conv30', {id: "maple", addr: "1412 Maple Ridge Dr", price: 35000, rent: 470, tax: 60, ins: 53, growth: 4, buyIn: 0, capex: 25000, capexMonths: 3, arv: 70000, liftIncome: 10}),
     A('house', 'conv30', {id: "cedar", addr: "2207 Cedar Hollow Ln", price: 45000, rent: 570, tax: 77, ins: 58, growth: 4, buyIn: 0, capex: 30000, capexMonths: 3, arv: 87000, liftIncome: 10}),
     A('house', 'dscr', {id: "birch", addr: "908 Birchwood Ct", price: 55000, rent: 660, tax: 94, ins: 63, growth: 4, buyIn: 0, capex: 30000, capexMonths: 4, arv: 109000, liftIncome: 8, exit: "sell", exitMonth: 57}),
@@ -709,7 +724,7 @@
     lostCreek() ] })); };
   /* LEGACY small sample (the Load realistic sample button; the app's default is seedPlan above; listed in the order the assets are bought). Every loan, price, cap rate, multiple and growth rate is checked against
      the grader's benchmark file (prototype/grader). Homes cash flow positive. Recycles sale cash; needs about $1.3M of outside cash. */
-  const seed = () => { const A = newAsset; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: Object.assign(samplePersonal(), { cash: 100000 }), houses: [
+  const seed = () => { const A = newAsset; return netCosts(normalize({ added: ak(), g: Object.assign({}, GDEF, { otherDebt: 450 }), p: Object.assign(samplePersonal(), { cash: 100000 }), houses: [
     A('house', undefined, { id: 'maple', status: 'owned', extra: 600, paid: 18, growth: 3.5, loanId: 'custom', rate: 6.5, addr: '1412 Maple Ridge Dr', price: 185000, rent: 1900, tax: 215, ins: 90 }),
     A('house', undefined, { id: 'cedar', status: 'owned', extra: 400, paid: 30, growth: 3.5, loanId: 'custom', rate: 6.75, addr: '2207 Cedar Hollow Ln', price: 165000, rent: 1750, tax: 180, ins: 85 }),
     A('business', undefined, { id: 'auto', status: 'owned', paid: 12, growth: 5, loanId: 'custom', rate: 9.5, addr: 'Precision Auto Care', price: 1100000, rent: 33950 }),
@@ -749,6 +764,6 @@
     const cur = slots.map((i) => S.houses[i].id); if (cur.join() === ids.join()) return false;
     const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); return true;
   }
-  const E = { dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

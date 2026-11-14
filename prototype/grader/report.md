@@ -1,8 +1,8 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-14T03:28:05.208Z  |  483s
+Target: `prototype/v4`  |  Run: 2026-11-14T04:33:35.415Z  |  476s
 
-## Automated score: **85.00 / 85.004** (a separate design review adds 15)
+## Automated score: **85.00 / 85.00000000000001** (a separate design review adds 15)
 
 | Category | Score |
 |---|---|
@@ -17,33 +17,34 @@ Target: `prototype/v4`  |  Run: 2026-11-14T03:28:05.208Z  |  483s
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| A01 | Add flow: each type x each loan option auto-fills dp/rate/term/closing, opens the asset page, adds a ledger row and changes plan numbers | 1.01 | 1.01 | 3/3 sub-checks pass |
-| A02 | Changing an asset's loan option re-populates dp/rate/term/closing and changes the plan numbers | 0.63 | 0.63 | 12/12 sub-checks pass |
-| A03 | Edit matrix: every input (43 edits incl. improvements/exit/loan/assumptions) moves the main-page KPIs exactly as the engine says | 1.52 | 1.52 | 44/44 sub-checks pass |
-| A04 | Two-way back-solves: payoff->extra, down$->%, and main page follows | 0.76 | 0.76 | 6/6 sub-checks pass |
-| A05 | Remove from the MAIN page: Edit mode, confirm, Undo, totals update; removing a funding source leaves the target listed | 1.01 | 1.01 | 10/10 sub-checks pass |
-| A06 | Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has | 0.38 | 0.38 | 6/6 sub-checks pass |
-| A07 | No "Today" / "20 years" view toggle anywhere (single portfolio snapshot) | 0.25 | 0.25 | 3/3 sub-checks pass |
-| A08 | Homes cannot cash-flow negative: warning on the asset page and on the main page; clears when fixed; not shown for non-homes | 0.63 | 0.63 | 7/7 sub-checks pass |
-| A09 | Per-row numbers sum to the portfolio headline (cash flow, monthly payments, net worth) on the sample, and match the engine | 0.76 | 0.76 | 7/7 sub-checks pass |
-| A10 | Exit and improvements through the UI: Hold/Sell/Merge buttons and fields propagate to rows, KPIs and breakdown | 0.89 | 0.89 | 8/8 sub-checks pass |
-| A11 | Sample portfolio on screen: all rows, three types, sane finite headline, no unfunded warning, no DTI warning | 0.51 | 0.51 | 6/6 sub-checks pass |
-| A12 | Trust funding on screen: every row after the first shows "Funded in N mo by the trust: cash flow $X/mo + borrowing room $Y) · pool of K assets", the numbers match the engine; raising an earlier asset's extra opens later purchases sooner | 0.51 | 0.51 | 3/3 sub-checks pass |
-| A13 | FHA 203(k) through the UI: add flow auto-fills rehab + terms, owner-occupied notice, financed-rehab note, Limited cap warning, switching loan option resets | 0.51 | 0.51 | 11/11 sub-checks pass |
-| A21 | Main screen: always-visible tab bar Planned | Real | Saved (even when Real is empty), exactly one page at a time, tabs >= 44px at 320/390/430 with no sideways scroll, swipe or tap, page remembered while you move around | 0.76 | 0.76 | 7/7 sub-checks pass |
-| A22 | Planned and Real hold the right rows: Planned = planned assets with the plan totals, Real = bought assets only; each page total equals the sum of its rows (and the engine) | 0.76 | 0.76 | 7/7 sub-checks pass |
-| A23 | Setting "Open the app on" (Planned default / Real / Saved) on the Assumptions page with an (i); it survives reload; the app opens on the chosen page | 0.51 | 0.51 | 4/4 sub-checks pass |
-| A24 | Saved portfolios: Save current portfolio (name field, default "Portfolio n", confirm), the card shows name, date, assets, net worth and cash flow from the engine; Open replaces the working portfolio with exactly the saved numbers and Undo brings the previous one back | 1.01 | 1.01 | 13/13 sub-checks pass |
-| A25 | Saved portfolios: Rename, Duplicate and Delete (confirm; Cancel keeps it) work, persist after reload, and the empty state returns when the last one is deleted | 0.63 | 0.63 | 7/7 sub-checks pass |
-| A26 | Backup includes the saved portfolios and the start-page choice; Restore brings them back (also after the storage was wiped) | 0.63 | 0.63 | 5/5 sub-checks pass |
-| A27 | Default plan on screen: in TODAY'S dollars net worth at least $125.0M (up to about $135M) and cash flow at least $1.3M a month at year 28 (the future-dollar amounts, at the cost-increase rate, shown smaller), in one clear plan line and in the KPIs | 0.51 | 0.51 | 4/4 sub-checks pass |
-| A28 | Saving survives a full or blocked storage: a clear message, no crash, the list is unchanged | 0.25 | 0.25 | 2/2 sub-checks pass |
-| A29 | Each page's totals are unique to it: with 2 bought and 4 planned assets, Planned totals = sum of the planned rows (never the bought ones), Real totals = sum of the bought rows, the two differ, and together they equal the whole plan | 0.76 | 0.76 | 9/9 sub-checks pass |
-| A30 | Opening an old save (v9-v18): no pop-up or Undo banner, the working portfolio is the current default plan (net worth >= $125M in today's dollars), and the old portfolio sits in Saved as "Portfolio N (before the update)" and loads back exactly | 0.51 | 0.51 | 4/4 sub-checks pass |
-| A31 | Today's dollars on screen: with 5% cost increase and a sold asset, the Planned top card, category strips, breakdown and every row show the engine's future-dollar figure divided by 1.05^(months/12) (28 years at the plan end), the smaller line shows the future-dollar figure, and the Saved card follows the same rule | 0.76 | 0.76 | 9/9 sub-checks pass |
-| A32 | Show figures in: Assumptions has Today's dollars | Future dollars with an (i), default Today's, tap targets >= 44px; switching shows the engine's future-dollar figures on the Planned and Real top cards and the breakdown; the choice persists in the UI storage and after a reload; nothing in the portfolio data changes | 0.76 | 0.76 | 11/11 sub-checks pass |
-| A33 | Prices stay today's prices: every planned asset's price on screen is the entered price (nothing is inflated), the cash a purchase needs is its down payment + closing + improvements on that price whatever month it is bought, and the glossary says so | 0.51 | 0.51 | 5/5 sub-checks pass |
-| A34 | An older default plan (v18) opens silently on the new default: no pop-up or Undo banner, the working portfolio is the new plan, the old portfolio is filed in Saved as "Portfolio N (before the update)" and loads back exactly; the unit choice is not touched | 0.25 | 0.25 | 3/3 sub-checks pass |
+| A01 | Add flow: each type x each loan option auto-fills dp/rate/term/closing, opens the asset page, adds a ledger row and changes plan numbers | 0.96 | 0.96 | 3/3 sub-checks pass |
+| A02 | Changing an asset's loan option re-populates dp/rate/term/closing and changes the plan numbers | 0.60 | 0.60 | 12/12 sub-checks pass |
+| A03 | Edit matrix: every input (43 edits incl. improvements/exit/loan/assumptions) moves the main-page KPIs exactly as the engine says | 1.44 | 1.44 | 44/44 sub-checks pass |
+| A04 | Two-way back-solves: payoff->extra, down$->%, and main page follows | 0.72 | 0.72 | 6/6 sub-checks pass |
+| A05 | Remove from the MAIN page: Edit mode, confirm, Undo, totals update; removing a funding source leaves the target listed | 0.96 | 0.96 | 10/10 sub-checks pass |
+| A06 | Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has | 0.36 | 0.36 | 6/6 sub-checks pass |
+| A07 | No "Today" / "20 years" view toggle anywhere (single portfolio snapshot) | 0.24 | 0.24 | 3/3 sub-checks pass |
+| A08 | Homes cannot cash-flow negative: warning on the asset page and on the main page; clears when fixed; not shown for non-homes | 0.60 | 0.60 | 7/7 sub-checks pass |
+| A09 | Per-row numbers sum to the portfolio headline (cash flow, monthly payments, net worth) on the sample, and match the engine | 0.72 | 0.72 | 7/7 sub-checks pass |
+| A10 | Exit and improvements through the UI: Hold/Sell/Merge buttons and fields propagate to rows, KPIs and breakdown | 0.84 | 0.84 | 8/8 sub-checks pass |
+| A11 | Sample portfolio on screen: all rows, three types, sane finite headline, no unfunded warning, no DTI warning | 0.48 | 0.48 | 6/6 sub-checks pass |
+| A12 | Trust funding on screen: every row after the first shows "Funded in N mo by the trust: cash flow $X/mo + borrowing room $Y) · pool of K assets", the numbers match the engine; raising an earlier asset's extra opens later purchases sooner | 0.48 | 0.48 | 3/3 sub-checks pass |
+| A13 | FHA 203(k) through the UI: add flow auto-fills rehab + terms, owner-occupied notice, financed-rehab note, Limited cap warning, switching loan option resets | 0.48 | 0.48 | 11/11 sub-checks pass |
+| A21 | Main screen: always-visible tab bar Planned | Real | Saved (even when Real is empty), exactly one page at a time, tabs >= 44px at 320/390/430 with no sideways scroll, swipe or tap, page remembered while you move around | 0.72 | 0.72 | 7/7 sub-checks pass |
+| A22 | Planned and Real hold the right rows: Planned = planned assets with the plan totals, Real = bought assets only; each page total equals the sum of its rows (and the engine) | 0.72 | 0.72 | 7/7 sub-checks pass |
+| A23 | Setting "Open the app on" (Planned default / Real / Saved) on the Assumptions page with an (i); it survives reload; the app opens on the chosen page | 0.48 | 0.48 | 4/4 sub-checks pass |
+| A24 | Saved portfolios: Save current portfolio (name field, default "Portfolio n", confirm), the card shows name, date, assets, net worth and cash flow from the engine; Open replaces the working portfolio with exactly the saved numbers and Undo brings the previous one back | 0.96 | 0.96 | 13/13 sub-checks pass |
+| A25 | Saved portfolios: Rename, Duplicate and Delete (confirm; Cancel keeps it) work, persist after reload, and the empty state returns when the last one is deleted | 0.60 | 0.60 | 7/7 sub-checks pass |
+| A26 | Backup includes the saved portfolios and the start-page choice; Restore brings them back (also after the storage was wiped) | 0.60 | 0.60 | 5/5 sub-checks pass |
+| A27 | Default plan on screen: in TODAY'S dollars net worth at least $125.0M (up to about $135M) and cash flow at least $1.3M a month at year 28 (the future-dollar amounts, at the cost-increase rate, shown smaller), in one clear plan line and in the KPIs | 0.48 | 0.48 | 4/4 sub-checks pass |
+| A28 | Saving survives a full or blocked storage: a clear message, no crash, the list is unchanged | 0.24 | 0.24 | 2/2 sub-checks pass |
+| A29 | Each page's totals are unique to it: with 2 bought and 4 planned assets, Planned totals = sum of the planned rows (never the bought ones), Real totals = sum of the bought rows, the two differ, and together they equal the whole plan | 0.72 | 0.72 | 9/9 sub-checks pass |
+| A30 | Opening an old save (v9-v18): no pop-up or Undo banner, the working portfolio is the current default plan (net worth >= $125M in today's dollars), and the old portfolio sits in Saved as "Portfolio N (before the update)" and loads back exactly | 0.48 | 0.48 | 4/4 sub-checks pass |
+| A31 | Today's dollars on screen: with 5% cost increase and a sold asset, the Planned top card, category strips, breakdown and every row show the engine's future-dollar figure divided by 1.05^(months/12) (28 years at the plan end), the smaller line shows the future-dollar figure, and the Saved card follows the same rule | 0.72 | 0.72 | 9/9 sub-checks pass |
+| A32 | Show figures in: Assumptions has Today's dollars | Future dollars with an (i), default Today's, tap targets >= 44px; switching shows the engine's future-dollar figures on the Planned and Real top cards and the breakdown; the choice persists in the UI storage and after a reload; nothing in the portfolio data changes | 0.72 | 0.72 | 11/11 sub-checks pass |
+| A33 | Prices stay today's prices: every planned asset's price on screen is the entered price (nothing is inflated), the cash a purchase needs is its down payment + closing + improvements on that price whatever month it is bought, and the glossary says so | 0.48 | 0.48 | 5/5 sub-checks pass |
+| A34 | An older default plan (v18) opens silently on the new default: no pop-up or Undo banner, the working portfolio is the new plan, the old portfolio is filed in Saved as "Portfolio N (before the update)" and loads back exactly; the unit choice is not touched | 0.24 | 0.24 | 3/3 sub-checks pass |
+| A35 | A release never overwrites or resurrects the user's own portfolio (v19 -> v20 keeps it, S.added bookkeeping): empty stays empty, own assets kept with no second Lost Creek, missing S.added adds nothing, a new ADDITIONS entry lands once as the LAST planned asset and never returns after removal, Undo / Saved / backup keep S.added, v<=18 still switch with the "before the update" entry, new default plan targets hold | 0.96 | 0.96 | 19/19 sub-checks pass |
 | B01 | P&I for 240k @6.5% 30y = 1516.96 | 0.32 | 0.32 | got 1516.9632563831167 |
 | B02 | Scheduled balance after 60 mo = 224666.35 | 0.32 | 0.32 | 2/2 sub-checks pass |
 | B03 | Balance after 60 mo with +500 extra = 189329.36 | 0.32 | 0.32 | got 189329.3620868643 |
@@ -56,7 +57,7 @@ Target: `prototype/v4`  |  Run: 2026-11-14T03:28:05.208Z  |  483s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.64 | 0.64 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.32 | 0.32 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.32 | 0.32 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 24.0ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.16 | 0.16 | median 15.3ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.48 | 0.48 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.48 | 0.48 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.64 | 0.64 | 5/5 sub-checks pass |
@@ -80,7 +81,7 @@ Target: `prototype/v4`  |  Run: 2026-11-14T03:28:05.208Z  |  483s
 | D01 | Manifest valid; icons load with true declared dimensions | 1.14 | 1.14 | 8/8 sub-checks pass |
 | D02 | Service worker (index.html) registers, activates, controls page after reload; precache complete | 1.14 | 1.14 | 3/3 sub-checks pass |
 | D03 | Works offline: reload, deep-link, and edit with network off | 1.52 | 1.52 | 4/4 sub-checks pass |
-| D04 | Zero external (non-localhost) network requests across every flow | 0.76 | 0.76 | 1126 requests, 0 external  |
+| D04 | Zero external (non-localhost) network requests across every flow | 0.76 | 0.76 | 1231 requests, 0 external  |
 | D05 | Data persists across reload and new tab (localStorage rep-v4, v7); no server round-trip | 1.14 | 1.14 | 5/5 sub-checks pass |
 | D06 | Backup: Show backup gives valid JSON text; pasted text and file restore state (with confirm); invalid text rejected without damage | 1.52 | 1.52 | 6/6 sub-checks pass |
 | D07 | iOS install meta: apple-touch-icon loads, viewport-fit=cover, apple-mobile-web-app-capable, theme-color | 0.38 | 0.38 | 4/4 sub-checks pass |
