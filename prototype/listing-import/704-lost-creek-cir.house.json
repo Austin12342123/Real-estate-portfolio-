@@ -1,0 +1,12 @@
+{
+  "schema": "house-listing/1",
+  "listingUrl": "https://www.zillow.com/homedetails/704-Lost-Creek-Cir-Stone-Mountain-GA-30088/14488431_zpid/",
+  "capturedOn": "2026-11-14",
+  "address": "704 Lost Creek Cir, Stone Mountain, GA 30088",
+  "price": { "value": null, "source": "missing" },
+  "rentMonthly": { "value": null, "source": "missing" },
+  "taxAnnual": { "value": null, "source": "missing" },
+  "insuranceAnnual": { "value": null, "source": "missing" },
+  "hoaMonthly": { "value": null, "source": "missing" },
+  "info": { "beds": null, "baths": null, "sqft": null, "yearBuilt": null, "propertyType": null }
+}
