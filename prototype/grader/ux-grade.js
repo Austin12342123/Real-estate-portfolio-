@@ -522,6 +522,18 @@ exports.run = async function run(X) {
     await page.setViewportSize({ width: 390, height: 844 }); return P;
   });
 
+  await jcheck('J30', 'Calculated boxes always match the price you typed: type a plain price, stop for a moment while still in the box, and Down payment $ and Loan amount show 25% / 75% of it (no stale numbers); math such as 1000000*16 is still not applied until you leave the box', 5, 'asset page of a planned business', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 390, height: 844 }); const S = withV(E.seedPlan()); const bz = S.houses.find((h) => (h.type || 'house') === 'business'); await load(S, '#house-' + bz.id); await openAllColl();
+    const ps = '[data-p="h.' + bz.id + '.price"]', dp = async () => (await store()).houses.find((h) => h.id === bz.id);
+    const ro = async (re) => page.evaluate((src) => { const r = new RegExp(src); const el = [...document.querySelectorAll('label.f')].find((l) => r.test(l.textContent)); const i = el && el.querySelector('input'); return i ? +String(i.value).replace(/[^0-9.]/g, '') : NaN; }, re.source);
+    await page.locator(ps).first().click(); await page.keyboard.press('Control+A'); await page.keyboard.type('16000000', { delay: 30 }); await page.waitForTimeout(1100);
+    const h1 = await dp(), dpm = await ro(/^\s*Down payment \$/), la = await ro(/^\s*Loan amount/);
+    P.t(h1.price === 16000000 && Math.abs(dpm - 16000000 * (h1.dp || 25) / 100) < 2 && Math.abs(la - 16000000 * (1 - (h1.dp || 25) / 100)) < 2, 'after a short pause the price lands and Down payment $ / Loan amount follow it while the box is still focused', 3, JSON.stringify({ price: h1.price, dpm, la, dp: h1.dp }));
+    await page.keyboard.press('Control+A'); await page.keyboard.type('1000000*16', { delay: 30 }); await page.waitForTimeout(1100);
+    P.t((await dp()).price === 16000000 && /16,000,000/.test(await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => '')), 'math in the box shows "= 16,000,000" but is not applied while you are still in the box', 2, '');
+    await page.setViewportSize({ width: 390, height: 844 }); return P;
+  });
+
   await ctx.close();
   const earned = checks.reduce((a, c) => a + c.earned, 0), max = checks.reduce((a, c) => a + c.points, 0);
   return { earned: Math.round(earned / max * 10000) / 100, max: 100, checks: checks.map((c) => Object.assign({}, c, { points: Math.round(c.points / max * 10000) / 100, earned: Math.round(c.earned / max * 10000) / 100 })) };
