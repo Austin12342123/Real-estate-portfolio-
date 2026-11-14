@@ -12,7 +12,7 @@
         "ratio": 1,
         "detail": "44/44 sub-checks pass",
         "repro": "Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)",
-        "seconds": 0.5
+        "seconds": 0.6
       },
       {
         "id": "G2",
@@ -23,7 +23,7 @@
         "ratio": 1,
         "detail": "74/74 sub-checks pass",
         "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
-        "seconds": 14.5
+        "seconds": 18.2
       },
       {
         "id": "G3",
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "34/34 sub-checks pass",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 5.5
+        "seconds": 6.7
       },
       {
         "id": "G4",
@@ -45,7 +45,7 @@
         "ratio": 1,
         "detail": "34/34 sub-checks pass",
         "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit",
-        "seconds": 52.2
+        "seconds": 73.3
       },
       {
         "id": "G5",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
-        "seconds": 4.8
+        "seconds": 6.5
       },
       {
         "id": "G6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 14.2
+        "seconds": 20.6
       },
       {
         "id": "G7",
@@ -78,7 +78,7 @@
         "ratio": 1,
         "detail": "150/150 sub-checks pass",
         "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
-        "seconds": 9.6
+        "seconds": 11.4
       },
       {
         "id": "G8",

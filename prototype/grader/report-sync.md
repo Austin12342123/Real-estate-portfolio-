@@ -1,6 +1,6 @@
 # Number-sync grader (SYNC_ONLY)
 
-Run: 2026-11-14T04:07:17.678Z  |  118s
+Run: 2026-11-14T19:24:04.239Z  |  160s
 
 ## G. Number sync: **100.00 / 100** (separate scale; not included in the A-E + R total or in F)
 
