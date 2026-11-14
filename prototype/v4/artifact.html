@@ -453,6 +453,10 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 .loanopt .why{margin-top:2px}
 .loanrow .info{flex:none}
 
+/* example editor: the Edit button inside a row (same chip, link colour and tap size) */
+.loanrow .chip.link{margin:0 0 0 2px;align-self:center;flex:none;padding:2px 8px}
+.loanopt b .tag{font-weight:400}
+
 </style>
 <main id="app" aria-live="polite"></main>
 <script>
@@ -1366,8 +1370,109 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
       why: (m, x) => [TYP + 'A larger established company (about $9 million of yearly revenue, a management team under the owner) bought with an SBA 7(a) loan. Businesses above $1 million of owner profit sell for about 4-7 times that profit (EBITDA). The SBA 7(a) loan caps at $5 million, so the price is set so the loan stays under it. SBA lenders also look at what you pay yourself, so treat the DSCR below as a rough check.',
         'Revenue ' + usd(m.revenue) + '/mo x 14% margin = owner profit ' + usd(m.rent) + '/mo = ' + usd(m.rent * 12) + ' a year. Price ' + usd(m.price) + ' = ' + m.mult.toFixed(1) + ' x profit and ' + (m.price / (m.revenue * 12)).toFixed(2) + ' x revenue. Loan ' + usd(m.loan) + ' (90%, under the $5,000,000 cap) at 9.75% over 10 years = ' + usd(m.pay) + '/mo: DSCR ' + m.dscr.toFixed(2) + ' (SBA wants 1.15), cash flow ' + usd(m.cf) + '/mo. Cash needed ' + usd(m.down) + ' down + ' + usd(m.closing) + ' closing = ' + usd(m.cash) + '.'] }];
   const exCat = (type, multi) => (type === 'house' ? (multi ? 'multi' : 'house') : type);
-  const examplesFor = (type, multi) => EXAMPLES.filter((x) => x.cat === exCat(type, multi)).sort((a, b) => a.tier - b.tier);
-  const exampleById = (id) => EXAMPLES.find((x) => x.id === id) || null;
+  /* ---------- editable examples. EXAMPLES above is the shipped table and is never changed. The user's own edits are a separate map of overrides { <example id>: { field: value } } (EXOV below, kept in localStorage 'rep-v4-examples' by the app).
+     EVERY consumer reads an example through exEff(): shipped fields merged with the overrides. A field the user never edited follows the shipped value; an edited field wins. Overrides are not part of any portfolio, Saved portfolio or Undo snapshot. ---------- */
+  const EXKEY = 'rep-v4-examples', EXV = 1;
+  const ALLC = ['house', 'multi', 'commercial', 'business'], RECATS = ['house', 'multi'], PROPC = ['house', 'multi', 'commercial'];
+  /* the editable fields: kind usd / pct / int, the allowed range, and the categories that have the field */
+  const EXF = { price: { kind: 'usd', min: 1, max: 1e10, cats: ALLC }, rent: { kind: 'usd', min: 0, max: 1e9, cats: PROPC }, revenue: { kind: 'usd', min: 0, max: 1e10, cats: ['business'] }, margin: { kind: 'pct', min: 0, max: 100, cats: ['business'] },
+    tax: { kind: 'usd', min: 0, max: 1e9, cats: PROPC }, ins: { kind: 'usd', min: 0, max: 1e9, cats: PROPC }, hoa: { kind: 'usd', min: 0, max: 1e9, cats: PROPC }, nnn: { kind: 'pct', min: 0, max: 100, cats: ['commercial'] },
+    capex: { kind: 'usd', min: 0, max: 1e10, cats: RECATS }, arv: { kind: 'usd', min: 0, max: 1e10, cats: RECATS }, capexMonths: { kind: 'int', min: 0, max: 120, cats: RECATS },
+    growth: { kind: 'pct', min: -50, max: 100, cats: ALLC }, sellCost: { kind: 'pct', min: 0, max: 50, cats: ALLC }, dp: { kind: 'pct', min: 0, max: 100, cats: ALLC }, units: { kind: 'int', min: 2, max: 500, cats: ['multi'] } };
+  const EXORDER = { house: ['price', 'capex', 'arv', 'capexMonths', 'rent', 'tax', 'ins', 'hoa', 'growth', 'sellCost', 'dp'], multi: ['units', 'price', 'capex', 'arv', 'capexMonths', 'rent', 'tax', 'ins', 'hoa', 'growth', 'sellCost', 'dp'],
+    commercial: ['price', 'rent', 'tax', 'ins', 'hoa', 'nnn', 'growth', 'sellCost', 'dp'], business: ['price', 'revenue', 'margin', 'growth', 'sellCost', 'dp'] };
+  const exFields = (cat) => (EXORDER[cat] || []).slice();
+  const EXLBL = { price: 'Price', rent: 'Monthly rent', revenue: 'Total revenue', margin: 'Profit margin', tax: 'Property tax / mo', ins: 'Insurance / mo', hoa: 'HOA / mo', nnn: 'Tenants pay costs (NNN)', capex: 'Improvement budget', arv: 'New appraised value', capexMonths: 'Months to finish', growth: 'Growth / yr', sellCost: 'Selling costs', dp: 'Down payment', units: 'Number of units', loanId: 'Loan' };
+  const exLabel = (k, cat) => (k === 'price' && (cat === 'commercial' || cat === 'business') ? 'Purchase price' : k === 'rent' && cat === 'multi' ? 'Total rent / mo' : k === 'rent' && cat === 'commercial' ? 'Monthly rent (all tenants)' : k === 'hoa' && cat === 'commercial' ? 'CAM & operating / mo' : k === 'growth' ? (cat === 'house' || cat === 'multi' ? 'Appreciation / yr' : cat === 'commercial' ? 'Value growth / yr' : 'Business growth / yr') : EXLBL[k] || k);
+  const exLoanOk = (cat, type, id) => typeof id === 'string' && (cat === 'multi' ? MFLOANS.some((l) => l.id === id) : LOANS.some((l) => l.id === id && l.types.indexOf(type) >= 0));
+  /* the ONE validation function: a value the user typed (number or text) for one field -> { ok, v } or { ok:false, msg }. Blocking only for impossible values (not a number, negative, out of range); the last good value is kept by the caller. */
+  function exCheck(cat, k, raw) {
+    const sp = EXF[k]; if (!sp || sp.cats.indexOf(cat) < 0) return { ok: false, msg: 'Not an editable number' };
+    let v = raw;
+    if (typeof v === 'string') { const t = v.replace(/[,\s$]/g, ''); if (t === '') return { ok: false, msg: "Can't be blank" }; v = /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(t) ? Number(t) : NaN; } else if (typeof v !== 'number') return { ok: false, msg: 'Enter a number' };
+    if (!isFinite(v)) return { ok: false, msg: 'Enter a number' };
+    if (k === 'units') { if (v !== Math.round(v) || v < 2 || v > 500) return { ok: false, msg: 'Use a whole number, 2 to 500' }; return { ok: true, v }; }
+    if (v < 0 && sp.min >= 0) return { ok: false, msg: "Can't be negative" };
+    if (v < sp.min) return { ok: false, msg: sp.min > 0 && sp.min < 2 ? 'Must be more than 0' : 'At least ' + sp.min + '%' };
+    if (v > sp.max) return { ok: false, msg: sp.kind === 'pct' ? 'At most ' + sp.max + '%' : 'Too large' };
+    v = sp.kind === 'int' ? Math.round(v) : sp.kind === 'usd' ? Math.round(v * 100) / 100 : Math.round(v * 1e4) / 1e4;
+    return { ok: true, v };
+  }
+  /* shipped fields merged with the overrides -> the effective example every consumer uses (a new object; the shipped one is never touched). A different loan drops the shipped down payment, so the loan's own terms apply unless the user typed one. */
+  function exEff(ex, ov) {
+    ov = ov || {}; const f = Object.assign({}, ex.f), cat = ex.cat;
+    ['price', 'rent', 'tax', 'ins', 'hoa', 'nnn', 'capex', 'arv', 'capexMonths', 'growth', 'sellCost', 'dp'].forEach((k) => { if (ov[k] !== undefined && EXF[k].cats.indexOf(cat) >= 0) f[k] = ov[k]; });
+    const loanId = ov.loanId !== undefined && exLoanOk(cat, ex.type, ov.loanId) ? ov.loanId : ex.loanId;
+    if (loanId !== ex.loanId && ov.dp === undefined) delete f.dp;
+    if (cat === 'business' && (ov.revenue !== undefined || ov.margin !== undefined)) { const rv = ov.revenue !== undefined ? ov.revenue : f.revenue, mg = ov.margin !== undefined ? ov.margin : f.margin; f.revenue = rv; f.margin = mg; f.rent = Math.round(rv * mg / 100); } /* owner profit = revenue x margin */
+    const units = cat === 'multi' && ov.units !== undefined ? ov.units : ex.units;
+    return Object.assign({}, ex, { f, loanId, units, shipped: ex.shipped || ex, edited: Object.keys(ov).filter((k) => ov[k] !== undefined && (k === 'loanId' || (EXF[k] && EXF[k].cats.indexOf(cat) >= 0))), ov: Object.assign({}, ov) });
+  }
+  /* what a field holds on the asset an example makes (the value the editor shows) */
+  const exVal = (ex, k) => { const h = exampleAsset(ex); return k === 'units' ? unitsOf(h) : k === 'loanId' ? ex.loanId : h[k]; };
+  /* drop overrides that equal what the example would have anyway, so 'Edited' means different from the shipped example and a later shipped change flows through */
+  function exPrune(ex, ov) {
+    const sh = ex.shipped || ex, o = Object.assign({}, ov);
+    if (o.loanId !== undefined && (o.loanId === sh.loanId || !exLoanOk(sh.cat, sh.type, o.loanId))) delete o.loanId;
+    Object.keys(o).forEach((k) => { if (o[k] === undefined) { delete o[k]; return; } if (k === 'loanId') return; const t = Object.assign({}, o); delete t[k]; if (exVal(exEff(sh, t), k) === o[k]) delete o[k]; });
+    return o;
+  }
+  /* cleaning stored overrides: unknown ids and fields dropped, bad types ignored, numbers clamped */
+  function exClean(raw) {
+    const out = { v: EXV, ov: {} }; if (!raw || typeof raw !== 'object' || Array.isArray(raw) || !raw.ov || typeof raw.ov !== 'object' || Array.isArray(raw.ov)) return out;
+    Object.keys(raw.ov).forEach((id) => { const ex = EXAMPLES.find((x) => x.id === id), src = raw.ov[id]; if (!ex || !src || typeof src !== 'object' || Array.isArray(src)) return; const o = {};
+      Object.keys(src).forEach((k) => { const x = src[k];
+        if (k === 'loanId') { if (exLoanOk(ex.cat, ex.type, x)) o.loanId = x; return; }
+        const sp = EXF[k]; if (!sp || sp.cats.indexOf(ex.cat) < 0 || typeof x !== 'number' || !isFinite(x)) return;
+        let v = Math.min(sp.max, Math.max(sp.min, x)); v = sp.kind === 'int' ? Math.round(v) : sp.kind === 'usd' ? Math.round(v * 100) / 100 : Math.round(v * 1e4) / 1e4; o[k] = v; });
+      const p = exPrune(ex, o); if (Object.keys(p).length) out.ov[id] = p; });
+    return out;
+  }
+  let EXOV = {};
+  const exOverrides = () => EXOV;
+  const exSet = (map) => { EXOV = exClean({ v: EXV, ov: map }).ov; return EXOV; };
+  const exEffective = (id, ov) => { const ex = EXAMPLES.find((x) => x.id === id); return ex ? exEff(ex, ov !== undefined ? ov : EXOV[id]) : null; };
+  const examplesFor = (type, multi) => EXAMPLES.filter((x) => x.cat === exCat(type, multi)).sort((a, b) => a.tier - b.tier).map((x) => exEff(x, EXOV[x.id]));
+  const exampleById = (id) => exEffective(id);
+  const exampleShipped = (id) => EXAMPLES.find((x) => x.id === id) || null;
+  /* storage helpers: storage = anything with getItem / setItem (the app passes localStorage; tests pass a stub). Every call is wrapped; failure keeps the overrides in memory. */
+  function exRead(storage) { try { const t = storage.getItem(EXKEY); if (t == null) return { ok: true, ov: {} }; let j; try { j = JSON.parse(t); } catch (e) { return { ok: true, ov: {}, bad: true }; } return { ok: true, ov: exClean(j).ov }; } catch (e) { return { ok: false, ov: null }; } }
+  function exWrite(storage) { try { storage.setItem(EXKEY, JSON.stringify({ v: EXV, ov: EXOV })); return true; } catch (e) { return false; } }
+  function exLoad(storage) { const r = exRead(storage); if (r.ov) EXOV = r.ov; return r.ok; }
+  /* save ONE example's overrides (empty = reset it). Re-reads the stored map first so another tab's edits to other examples are kept. Returns true when it reached storage. */
+  function exCommit(storage, id, ov) {
+    const ex = EXAMPLES.find((x) => x.id === id); if (!ex) return false;
+    const r = exRead(storage), base = r.ov || EXOV, next = Object.assign({}, base), p = exPrune(ex, exClean({ v: EXV, ov: { [id]: ov || {} } }).ov[id] || {});
+    if (Object.keys(p).length) next[id] = p; else delete next[id]; EXOV = next; return exWrite(storage);
+  }
+  const exExport = () => ({ v: EXV, ov: JSON.parse(JSON.stringify(EXOV)) });
+  function exImport(obj, storage) { EXOV = exClean(obj).ov; return exWrite(storage); }
+  const exClearAll = (storage) => { EXOV = {}; try { storage.removeItem(EXKEY); return true; } catch (e) { return false; } };
+  /* editing a draft (a plain overrides object). Returns { ok, draft } or { ok:false, msg }; a draft is never stored until exCommit. Units rescale the money fields like the asset page does, so the per-unit figures stay the same. */
+  function exDraftSet(ex0, draft, k, raw) {
+    const sh = ex0.shipped || ex0, cat = sh.cat, d = Object.assign({}, draft);
+    if (k === 'loanId') { if (!exLoanOk(cat, sh.type, raw)) return { ok: false, msg: 'Pick a loan from the list' }; d.loanId = raw; delete d.dp; return { ok: true, draft: d }; }
+    const c = exCheck(cat, k, raw); if (!c.ok) return c;
+    if (k === 'units') { const cur = exEff(sh, d), a0 = exampleAsset(cur), f = c.v / unitsOf(a0);
+      ['price', 'rent', 'capex', 'arv'].forEach((q) => { if (q === 'price' || q === 'rent' || a0[q] > 0) d[q] = Math.max(EXF[q].min, Math.min(EXF[q].max, Math.round(a0[q] * f))); });
+      ['tax', 'ins', 'hoa'].forEach((q) => { if (d[q] !== undefined) d[q] = Math.max(0, Math.min(EXF[q].max, Math.round(d[q] * f))); }); }
+    d[k] = c.v; return { ok: true, draft: d };
+  }
+  const exDirty = (ex0, a, b) => JSON.stringify(sortKeys(exPrune(ex0.shipped || ex0, a || {}))) !== JSON.stringify(sortKeys(exPrune(ex0.shipped || ex0, b || {})));
+  const sortKeys = (o) => Object.keys(o).sort().reduce((q, k) => { q[k] = o[k]; return q; }, {});
+  /* the example's own sanity rules; each fires exactly when its rule is broken. Non-blocking: the app shows them as warnings. m = exampleMetrics(S, ex). */
+  function exWarnings(S, ex, m) {
+    m = m || exampleMetrics(S, ex); const w = [], l = loanById(ex.loanId);
+    if (m.cf < 0) w.push({ id: 'cf', text: 'Cash flow is negative: ' + usd(m.cf).replace('$-', '-$') + ' a month.' });
+    if (m.pay > 0.5 && m.minDscr > 0 && m.dscr < m.minDscr) w.push({ id: 'dscr', text: 'DSCR ' + m.dscr.toFixed(2) + ' is below the ' + m.minDscr + ' this loan usually wants.' });
+    if (ex.cat === 'multi' && l && !mfFit(l, ex.units, !!ex.pack).ok) w.push({ id: 'elig', text: 'This loan is not for ' + ex.units + (ex.pack ? ' houses' : ' units') + ': ' + l.only.charAt(0).toLowerCase() + l.only.slice(1) + '.' });
+    if (ex.loanId === 'sba7a' && m.loan > 5e6) w.push({ id: 'sba', text: 'An SBA 7(a) loan tops out at $5,000,000; this one is ' + usd(m.loan) + '.' });
+    if (ex.multRange && (m.mult < ex.multRange[0] || m.mult > ex.multRange[1])) w.push({ id: 'mult', text: 'Price is ' + m.mult.toFixed(1) + '× yearly profit; typical is ' + ex.multRange[0] + ' to ' + ex.multRange[1] + '×.' });
+    if (ex.capBand && (m.cap < ex.capBand[0] || m.cap > ex.capBand[1])) w.push({ id: 'cap', text: 'Cap rate ' + m.cap.toFixed(1) + '% is outside the typical ' + ex.capBand[0] + ' to ' + ex.capBand[1] + '%.' });
+    if (ex.arvRule && m.price > m.arv * ex.arvRule / 100 - m.capex) w.push({ id: 'rule', text: 'Price is above the ' + ex.arvRule + '% rule (most to pay ' + usd(m.arv * ex.arvRule / 100 - m.capex) + ').' });
+    return w;
+  }
+  const exFmt = (k, v) => (k === 'loanId' ? (loanById(v) || { name: String(v) }).name : EXF[k].kind === 'usd' ? usd(v) : EXF[k].kind === 'pct' ? pc(v, 2) : k === 'capexMonths' ? v + ' mo' : String(v));
   /* the options the Add screen passes to newAsset for an example (multi-family: the per-unit defaults for that size first, then the example's own numbers) */
   const exampleOpts = (ex) => Object.assign({ addr: ex.name }, ex.cat === 'multi' ? Object.assign({ kind: 'multi', units: ex.units, pack: !!ex.pack }, mfDefaults(ex.units, !!ex.pack)) : {}, { addr: ex.name }, ex.f);
   const exampleAsset = (ex) => newAsset(ex.type, ex.loanId, Object.assign({ fresh: true }, exampleOpts(ex)));
@@ -1381,9 +1486,14 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     if (ex.id === 'home-exec') { const a = newAsset('house', 'conv30', Object.assign({ fresh: true }, exampleOpts(ex))); m.altPay = payment(a); m.altCf = noiOf(S, a) - payment(a); }
     return m;
   }
-  const exampleInfo = (S, ex) => { const m = exampleMetrics(S, ex), w = ex.why(m, ex); return { t: ex.tierName + ': ' + ex.name, b: w[0], e: w[1] }; };
-
-  const E = { EXAMPLES, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  /* the (i) text: the shipped example's own research basis and derivation, always worked out on the SHIPPED numbers so it stays true; when the user changed fields it starts with 'Original / Yours' for each one and shows the numbers the edited example makes */
+  function exampleInfo(S, ex) {
+    const sh = ex.shipped || ex, m0 = exampleMetrics(S, sh), w = sh.why(m0, sh), ed = ex.edited || []; let b = w[0], e = w[1];
+    if (ed.length) { const a0 = exampleAsset(sh), a1 = exampleAsset(ex), m = exampleMetrics(S, ex), lines = ed.map((k) => exLabel(k, sh.cat) + ': Original ' + exFmt(k, exVal(sh, k)) + ' / Yours ' + exFmt(k, exVal(ex, k)));
+      b = 'You changed this example. ' + lines.join('. ') + '. With your numbers: cash needed ' + usd(m.cash) + ', cash flow ' + usd(m.cf).replace('$-', '-$') + ' a month' + (m.pay > 0.5 ? ', DSCR ' + m.dscr.toFixed(2) : '') + ' (original: ' + usd(m0.cash) + ', ' + usd(m0.cf).replace('$-', '-$') + ' a month). Original: ' + w[0]; e = 'Original derivation: ' + w[1]; void a0; void a1; }
+    return { t: sh.tierName + ': ' + sh.name + (ed.length ? ' (edited)' : ''), b, e };
+  }
+  const E = { EXAMPLES, EXKEY, EXV, EXF, exFields, exLabel, exLoanOk, exCheck, exEff, exEffective, exVal, exPrune, exClean, exOverrides, exSet, exRead, exWrite, exLoad, exCommit, exExport, exImport, exClearAll, exDraftSet, exDirty, exWarnings, exFmt, exampleShipped, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -1400,6 +1510,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     statetax: { t: 'State income tax', b: 'The state tax rate on your portfolio profit and on gains when you sell. It is 0 by default because the app does not know your state. Enter your state rate if you pay one.' },
     landshare: { t: 'Land share of a purchase', b: 'Land does not wear out, so you cannot write it off. Only the building part of the price is depreciated. The county tax bill often shows the split; 20% land is a common first guess.' },
     goodwillshare: { t: 'Goodwill share of a business price', b: 'When you buy a business, the price is split between goodwill and other intangibles (written off over 15 years) and equipment (7 years). Goodwill is usually the largest part for a service business. The default is 70%.' },
+    exedit: { t: 'Editing an example', b: 'Change any number, then tap Save as my default. The example keeps your numbers on this device until you change it again or tap Reset to original. Only this example changes. Your portfolio and the other examples do not. Warnings are advice, not blocks. They show when a number breaks a rule of thumb, like negative cash flow or a loan that does not fit the units. A value that cannot be real is refused.', e: 'Raise a price to $130,000. Cash needed updates at once and the example keeps it until you reset it.' },
     auto: { t: 'Auto numbers', b: 'A dashed box marked auto is worked out from your other numbers (for example the loan amount from price and down payment). Type in it to set your own value; clear it to go back to automatic.', e: '' },
     liens: { t: 'Liens', b: 'A lien is a legal claim someone else has on the home because you owe them money. Common ones: a second mortgage, a home-equity loan or line of credit, unpaid property taxes, or a contractor who was not paid. If the home is sold, liens are paid back first, so they reduce how much of the home you really own.', e: 'A home worth $200,000 with a $140,000 mortgage and a $20,000 second loan leaves you $40,000 of real ownership. Enter 0 if nothing else is owed on the home.' },
     downpayment: { t: 'Down payment', b: 'The cash you pay up front when you buy. The loan covers the rest of the price. A bigger down payment means a smaller loan and a smaller monthly payment.', e: '20% down on a $200,000 home is $40,000.' },
@@ -1558,6 +1669,9 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
   let S, UI = { unit: 'today', tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', addKind: 'single', addUnits: 2, addPack: false, addEx: '', view: 'plan', openOn: 'planned', addOwned: false };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+  let exStoreOK = true, exMsg = '', exEdit = null; /* editable examples: the user's overrides live in their own key (rep-v4-examples), never in a portfolio; exEdit = the open editor { id, draft, base } */
+  try { exStoreOK = typeof E.exLoad === 'function' ? E.exLoad(localStorage) : true; } catch (e) { exStoreOK = false; }
+  const EXED = typeof E.exCheck === 'function' && typeof E.exEff === 'function'; /* an old cached engine without the editor still works: no Edit buttons */
   const DATA_V = 20; /* bump when a release changes the data; NEVER replace a user's portfolio in a migration (new assets go through ADDITIONS in engine.js) */
   const ADDED_ALL = () => E.ADDITIONS.map((x) => x.key);
   let switched = null;
@@ -1594,7 +1708,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
   /* no popup: an older save moves to the current plan silently; the previous portfolio is kept in Saved so nothing is lost (it is filed once SAVED is loaded, below) */
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const saveSaved = () => { try { localStorage.setItem(SKEY, JSON.stringify(SAVED)); return true; } catch (e) { return false; } };
-  const backupJson = () => JSON.stringify(Object.assign({}, S, { saved: SAVED, openOn: UI.openOn })); /* the backup is the working portfolio plus the saved list and the start-page choice */
+  const backupJson = () => JSON.stringify(Object.assign({}, S, { saved: SAVED, openOn: UI.openOn }, EXED ? { exOv: E.exExport() } : {})); /* the backup is the working portfolio plus the saved list and the start-page choice */
   const stamp = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
@@ -2179,7 +2293,33 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
   const PRESETS = [['Duplex', 2, false], ['Fourplex', 4, false], ['Section 8 pack of 5', 5, true], ['20 units', 20, false], ['50 units', 50, false]];
   let exOpen = false; /* the Add screen's 'Start from an example' list: closed every time the screen opens */
   const loanLine = (l) => (l.dp >= 100 ? 'No loan · pay the full price' : l.dp + '% down · ' + l.rate + '% · ' + (l.io ? 'interest-only, ' : '') + r(l.term / 12, 1) + ' yr' + (l.mat > 0 ? ', due in ' + r(l.mat / 12, 1) + ' yr' : ''));
+  /* ---------- the example editor: a sub-screen of the Add screen (same #add route). The draft is plain overrides in memory; nothing is stored until 'Save as my default'. ---------- */
+  const exShort = (ex) => ex.tierName + ' · ' + ex.name;
+  function exEditor() {
+    const sh = E.exampleShipped(exEdit.id), d = exEdit.draft, ex = E.exEff(sh, d), cat = sh.cat, h = E.exampleAsset(ex), m = E.exampleMetrics(S, ex), warns = E.exWarnings(S, ex, m), pr = E.exPrune(sh, d), edited = Object.keys(pr).length > 0, saved = !!E.exOverrides()[sh.id];
+    const X = (k) => { const sp = E.EXF[k], lb = E.exLabel(k, cat), P = 'x.' + k;
+      if (k === 'revenue') return field(lb, P, grp(Math.round(E.revOf(h) * 100) / 100), { pre: '$', per: 1 });
+      if (k === 'margin') return field(lb, P, r(E.marginOf(h), 2), { suf: '%' });
+      if (k === 'units') return field(lb, P, E.unitsOf(h));
+      return sp.kind === 'usd' ? field(lb, P, grp(h[k]), { pre: '$' }) : sp.kind === 'pct' ? field(lb, P, r(h[k], 2), { suf: '%' }) : field(lb, P, h[k]); };
+    const fits = cat === 'multi' ? E.mfLoans(E.unitsOf(h), !!sh.pack) : E.loansFor(sh.type).map((l) => ({ loan: l, ok: true }));
+    const loanSel = `<div class="f stack"><span class="lb">Loan option${infoBtn('loanoption')}</span><select class="loansel" data-exloan aria-label="Loan option" data-testid="ex-loan">${fits.map((x) => `<option value="${x.loan.id}" ${ex.loanId === x.loan.id ? 'selected' : ''}${x.ok || ex.loanId === x.loan.id ? '' : ' disabled'}>${esc(x.loan.name)}${x.ok ? '' : ' (not for ' + E.unitsOf(h) + ' units)'}</option>`).join('')}</select></div>`;
+    const fields = E.exFields(cat).map(X).join('') + (cat === 'business' ? field('Owner profit / month', 'x.profit', grp(h.rent), { pre: '$', calc: 1, ro: 1, info: 'ownerprofit' }) : '');
+    const note = cat === 'business' ? 'Revenue is per month; per year works too, like 1,200,000/yr. Profit = revenue × margin.' : cat === 'multi' ? 'Changing the units scales price, rent and costs, so each unit stays the same.' : 'Your numbers become this example\'s default on this device.';
+    const askBox = ask === 'exreset' ? confirmBox('Reset “' + esc(sh.name) + '” to the original numbers? Other examples stay as they are.', 'data-exreset-yes data-testid="ex-reset-confirm"', 'Yes, reset') : ask === 'exdiscard' ? confirmBox('Discard your changes to this example?', 'data-exdiscard-yes data-testid="ex-discard-confirm"', 'Yes, discard') : '';
+    return `<div class="top"><button class="ic" data-exback aria-label="Back to the examples" data-testid="ex-back">‹</button><h2>Edit example</h2></div>
+    <section class="card" data-testid="ex-editor"><div class="f head"><span class="lb"><b>${esc(exShort(sh))}</b>${edited ? ' <span class="tag" data-testid="ex-edit-tag">Edited</span>' : ''}${infoBtn('exedit')}</span></div><p class="note">${esc(note)}</p></section>
+    <div class="emptyb exuse" role="status" aria-live="polite" data-testid="ex-edit-live"><span><b>Your numbers</b><br><span data-testid="ex-edit-preview">Cash needed ${$f(m.cash)} · cash flow ${$s(m.cf)}/mo${m.pay > 0.5 ? ' · DSCR ' + r(m.dscr, 2) : ''}</span></span></div>
+    ${warns.map((w) => `<div class="warnbox" data-testid="ex-warn" data-warn="${w.id}">⚠ ${esc(w.text)}</div>`).join('')}${!exStoreOK ? '<p class="note warntxt" data-testid="ex-storage-note">This device is not keeping example edits. They last until you close the app.</p>' : ''}
+    <section class="card" style="margin-top:12px" data-testid="ex-fields">${fields}${loanSel}</section>
+    <button class="btn" style="width:100%" data-exsave data-testid="ex-save">Save as my default</button>
+    ${edited || saved ? '<button class="btn plain" data-exreset data-testid="ex-reset">Reset to original</button>' : ''}<button class="btn plain" data-excancel data-testid="ex-cancel">Cancel</button>${askBox}`;
+  }
+  const exCloseEditor = (msg) => { const id = exEdit && exEdit.id; exEdit = null; ask = null; exOpen = true; exMsg = msg || ''; render(); const fo = () => { const n = id && app.querySelector('[data-exedit="' + id + '"]'); if (n) n.focus(); }; fo(); setTimeout(fo, 40); /* a box removed by the render fires one more render; focus goes back to the Edit button after it */ };
+  const exBack = () => { if (!exEdit) return; if (E.exDirty(E.exampleShipped(exEdit.id), exEdit.draft, exEdit.base)) { ask = 'exdiscard'; render(); const n = app.querySelector('[data-testid=ex-discard-confirm]'); if (n) { n.scrollIntoView({ block: 'center' }); n.focus(); } return; } exCloseEditor(''); };
+  function exSetField(k, s) { if (!exEdit || k === 'profit') return false; const r2 = E.exDraftSet(E.exampleShipped(exEdit.id), exEdit.draft, k, String(s)); if (!r2.ok) return false; exEdit.draft = r2.draft; return true; }
   function addPage() {
+    if (EXED && exEdit && !UI.addOwned && E.exampleShipped(exEdit.id)) return exEditor();
     const tp = E.TYPES[UI.addType] ? UI.addType : 'house', multi = tp === 'house' && UI.addKind === 'multi', un = Math.min(500, Math.max(2, Math.round(+UI.addUnits) || 2)), pack = multi && !!UI.addPack;
     const fits = multi ? E.mfLoans(un, pack) : E.loansFor(tp).map((l) => ({ loan: l, ok: true })), list = fits.map((x) => x.loan);
     const sel = (fits.find((x) => x.loan.id === UI.addLoan && x.ok) || fits.find((x) => x.ok)).loan.id;
@@ -2201,10 +2341,10 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
       if (x.cat === 'commercial') return $k(m.price) + ' · rent ' + mo(m.rent) + ' · ' + r(m.cap, 1) + '% cap · ' + cash;
       return $k(m.price) + ' · sales ' + mo(m.revenue) + ' at ' + r(m.margin, 0) + '% · ' + r(m.mult, 1) + '× profit · ' + cash; };
     exs.forEach((x) => { INFO['ex-' + x.id] = E.exampleInfo(S, x); });
-    const exRows = exs.map((x) => { const m = E.exampleMetrics(S, x), on = exSel && exSel.id === x.id;
-      return `<div class="loanrow"><button class="loanopt ${on ? 'on' : ''}" data-expick="${x.id}" aria-pressed="${on}" data-testid="ex-${x.id}"><b>${esc(x.tierName)} · ${esc(x.name)}</b><span data-testid="ex-sum-${x.id}">${esc(exLine(x, m))}</span></button>${infoBtn('ex-' + x.id)}</div>`; }).join('');
-    const exUse = exSel ? (() => { const m = E.exampleMetrics(S, exSel); return `<div class="emptyb exuse" data-testid="ex-using"><span><b>Using example: ${esc(exSel.name)}</b><br><span data-testid="ex-preview">Cash needed ${$f(m.cash)} · cash flow ${$s(m.cf)}/mo</span></span><button type="button" class="chip link" data-exclear data-testid="ex-clear" aria-label="Clear the example and go back to the defaults">Clear</button></div>`; })() : '';
-    const exHtml = exs.length ? `<button type="button" class="linkbtn leftbtn exlink" data-exopen aria-expanded="${exOpen}" data-testid="ex-toggle">${exSel ? 'Change example' : 'Start from an example'} ${exOpen ? '▾' : '▸'}</button>${exOpen ? `<section class="card" data-testid="ex-list"><p class="note" style="margin:0 4px 6px">Four typical purchases, cheapest first. Tap one to fill in the numbers; it is only added when you tap Add. Typical, not a quote.</p>${exRows}</section>` : ''}${exUse}` : '';
+    const exRows = exs.map((x) => { const m = E.exampleMetrics(S, x), on = exSel && exSel.id === x.id, ed = EXED && x.edited && x.edited.length;
+      return `<div class="loanrow"><button class="loanopt ${on ? 'on' : ''}" data-expick="${x.id}" aria-pressed="${on}" data-testid="ex-${x.id}"><b>${esc(x.tierName)} · ${esc(x.name)}${ed ? ' <span class="tag" data-testid="ex-tag-' + x.id + '">Edited</span>' : ''}</b><span data-testid="ex-sum-${x.id}">${esc(exLine(x, m))}</span></button>${infoBtn('ex-' + x.id)}${EXED ? `<button type="button" class="chip link" data-exedit="${x.id}" data-testid="ex-edit-${x.id}" aria-label="Edit ${esc(x.name)}">Edit</button>` : ''}</div>`; }).join('');
+    const exUse = exSel ? (() => { const m = E.exampleMetrics(S, exSel); return `<div class="emptyb exuse" data-testid="ex-using"><span><b>Using example: ${esc(exSel.name)}${EXED && exSel.edited && exSel.edited.length ? ' · Edited' : ''}</b><br><span data-testid="ex-preview">Cash needed ${$f(m.cash)} · cash flow ${$s(m.cf)}/mo</span></span><button type="button" class="chip link" data-exclear data-testid="ex-clear" aria-label="Clear the example and go back to the defaults">Clear</button></div>`; })() : '';
+    const exHtml = exs.length ? `<button type="button" class="linkbtn leftbtn exlink" data-exopen aria-expanded="${exOpen}" data-testid="ex-toggle">${exSel ? 'Change example' : 'Start from an example'} ${exOpen ? '▾' : '▸'}</button>${exOpen ? `<section class="card" data-testid="ex-list"><p class="note" style="margin:0 4px 6px">Four typical purchases, cheapest first. Tap one to fill in the numbers; it is only added when you tap Add. Typical, not a quote.</p>${exMsg ? `<p class="note" role="status" data-testid="ex-msg" style="margin:0 4px 6px">${esc(exMsg)}</p>` : ''}${!exStoreOK && EXED ? '<p class="note warntxt" data-testid="ex-storage-note" style="margin:0 4px 6px">This device is not keeping example edits. They last until you close the app.</p>' : ''}${exRows}</section>` : ''}${exUse}` : '';
     return `<div class="top"><button class="ic" data-go="" aria-label="Cancel and go back">‹</button><h2>${UI.addOwned ? 'Add something you own' : 'Add to portfolio'}</h2></div>${UI.addOwned ? '<p class="note" style="margin:0 4px 8px" data-testid="add-owned-note">It goes on the Real page. Next you set the price, loan and how many months you have already paid.</p>' : ''}
     <section class="card"><div class="seg" role="tablist">${['house', 'commercial', 'business'].map((x) => `<button data-addtype="${x}" class="${x === tp ? 'on' : ''}">${TL[x]}</button>`).join('')}</div><p class="note">${blurb} You will set the price and income on the next screen.</p>${tp === 'house' && !multi ? '<button class="linkbtn" data-go="import/new">Have a Zillow listing? Import it</button>' : ''}${typeCard}${multiCard}</section>
     <div class="sec">Pick a loan option</div><section class="card" data-testid="loan-options">${loanHtml}</section>
@@ -2345,11 +2485,12 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       if (k in prev && prev[k] !== v && el !== document.activeElement) (el.closest('label,.kpi,tr') || el).classList.add('flash'); });
     prev = cur;
   }
-  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && infoKey) { infoKey = null; render(); } else if (e.key === 'Escape' && exOpen && routeOf() === 'add') { exOpen = false; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); } });
-  window.addEventListener('hashchange', () => { navSeen++; infoKey = null; infoFrom = null; prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && infoKey) { infoKey = null; render(); } else if (e.key === 'Escape' && exEdit && routeOf() === 'add' && !UI.addOwned) { exBack(); } else if (e.key === 'Escape' && exOpen && routeOf() === 'add') { exOpen = false; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); } });
+  window.addEventListener('hashchange', () => { if (exEdit && routeOf() !== 'add' && !E.exDirty(E.exampleShipped(exEdit.id) || { cat: '' }, exEdit.draft, exEdit.base)) exEdit = null; /* an unsaved draft stays in memory until you decide */ navSeen++; infoKey = null; infoFrom = null; prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
 
   /* ---------- editing: every field is an input; derived fields back-solve ---------- */
   function setField(p, s) {
+    if (p.charAt(0) === 'x' && p.charAt(1) === '.') return exSetField(p.slice(2), s); /* the example editor's draft */
     if (undo) setUndo(null);
     const [t, x, k] = p.split('.');
     if (k === 'addr') { H(x).addr = s; return true; }
@@ -2420,19 +2561,20 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   }
   const app = document.getElementById('app');
   /* what a number box cannot hold: a percent in a box that is not a percent box, and a negative number where the value cannot be below zero. Returns null when the text is fine. */
-  const UNITSBOX = (p) => p === 'a.add.units' || /^h\.[^.]+\.units$/.test(p);
+  const UNITSBOX = (p) => p === 'a.add.units' || p === 'x.units' || /^h\.[^.]+\.units$/.test(p);
   const NEGOK = (p) => /\.(growth|gain|raise)$/.test(p) || p === 'g.appr';
   function boxBad(el, c) {
     const t = String(el.value), pct = /%/.test(t) && el.dataset.suf !== '%'; if (pct) return { live: el.dataset.pre === '$' ? 'No % in a dollar box' : 'No % in this box', end: el.dataset.pre === '$' ? 'No % in a dollar box, kept' : 'No % in this box, kept' };
     const v = c.kind === 'plain' ? parseFloat(t.replace(/[,$%\s]/g, '')) : c.ok ? c.v : NaN;
     if (UNITSBOX(el.dataset.p) && isFinite(v) && (v !== Math.round(v) || v < 2 || v > 500)) return { live: 'Use a whole number, 2 to 500', end: 'Use 2 to 500, kept' }; /* the unit count: a whole number from 2 to 500 */
+    if (/^x\./.test(el.dataset.p) && exEdit && isFinite(v)) { const sh = E.exampleShipped(exEdit.id), q = sh && E.exCheck(sh.cat, el.dataset.p.slice(2), v); if (q && !q.ok) return { live: q.msg, end: q.msg + ', kept' }; } /* the example editor's own ranges */
     if (v < 0 && !NEGOK(el.dataset.p)) return { live: "Can't be negative", end: "Can't be negative, kept" };
     return null;
   }
   /* a box where blank is a real answer (no end date, estimate the tax): everywhere else a blank box is not a value */
   const EMPTYOK = (p) => /^j\.[^.]+\.(end|tax)$/.test(p) || /^p\.(portfolioTaxPct|salesTaxPct)$/.test(p) || /^h\.[^.]+\.(refiRate|refiTermY)$/.test(p);
   /* whole-month boxes (dates counted in months from today, months already paid, ...): rounded to a whole number and capped at 600 months (or the plan length + 10 years when that is longer), with a 'Rounded / Capped' note */
-  const MONTHSBOX = (p) => /^h\.[^.]+\.(buyIn|wait|paid|mat|payoff|capexMonths|exitMonth)$/.test(p) || /^[oc]\.[^.]+\.month$/.test(p) || /^j\.[^.]+\.(end|start)$/.test(p);
+  const MONTHSBOX = (p) => /^h\.[^.]+\.(buyIn|wait|paid|mat|payoff|capexMonths|exitMonth)$/.test(p) || p === 'x.capexMonths' || /^[oc]\.[^.]+\.month$/.test(p) || /^j\.[^.]+\.(end|start)$/.test(p);
   const monthsCap = () => Math.max(600, Math.round((S.g.planYears || 20) * 12) + 120);
   let pendT = null;
   const clearHintDom = () => { clearTimeout(hintTimer); calcHint = null; document.querySelectorAll('#app .chint').forEach((n) => n.remove()); };
@@ -2479,6 +2621,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (nxtP) { if (changed || had) setTimeout(render, 0); } else if (nxt) { if (changed) deferRender(); } else if (changed || had) render(); });
   app.addEventListener('focusout', (e) => { if (e.target.dataset && e.target.dataset.p && e.target.tagName === 'INPUT' && !e.relatedTarget) setTimeout(() => { const a = document.activeElement; if (!(a && a.dataset && (a.dataset.p || a.dataset.sel))) render(); }, 0); });
   app.addEventListener('change', (e) => {
+    if (e.target.dataset.exloan !== undefined && exEdit) { const r2 = E.exDraftSet(E.exampleShipped(exEdit.id), exEdit.draft, 'loanId', e.target.value); if (r2.ok) exEdit.draft = r2.draft; render(); return; }
     const ln = e.target.dataset.loan; if (ln) { const h = H(ln); if (e.target.value === 'custom') h.loanId = 'custom'; else E.applyLoan(h, e.target.value); save(); render(); return; }
     const mg = e.target.dataset.merge; if (mg) { H(mg).mergeInto = e.target.value; save(); render(); return; }
     if (e.target.dataset.listingFile !== undefined && e.target.files[0]) { impName = e.target.files[0].name; const rd = new FileReader(); rd.onload = () => readListing(String(rd.result)); rd.readAsText(e.target.files[0]); return; }
@@ -2521,7 +2664,15 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const apk = t.closest('[data-addpack]'); if (apk) { UI.addPack = apk.dataset.addpack === '1'; UI.addLoan = ''; UI.addEx = ''; save(); render(); return; }
     const hpk = t.closest('[data-pack]'); if (hpk) { const hh = H(routeOf().slice(2)); if (hh && E.isMulti(hh)) { hh.pack = hpk.dataset.pack === '1'; save(); render(); } return; }
     const pk = t.closest('[data-pickloan]'); if (pk) { UI.addLoan = pk.dataset.pickloan; UI.addEx = ''; render(); return; }
-    const exo = t.closest('[data-exopen]'); if (exo) { exOpen = !exOpen; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); return; }
+    if (EXED) {
+      const ee = t.closest('[data-exedit]'); if (ee) { const sx = E.exampleShipped(ee.dataset.exedit); if (sx) { const cur = Object.assign({}, E.exOverrides()[sx.id] || {}); exEdit = { id: sx.id, draft: cur, base: Object.assign({}, cur) }; ask = null; exMsg = ''; render(); window.scrollTo(0, 0); const f0 = app.querySelector('[data-testid=ex-fields] input'); if (f0) f0.focus({ preventScroll: true }); } return; }
+      if (t.closest('[data-exback],[data-excancel]')) { exBack(); return; }
+      if (t.closest('[data-exsave]')) { if (!exEdit) return; const sx = E.exampleShipped(exEdit.id), ok = E.exCommit(localStorage, sx.id, exEdit.draft); exStoreOK = ok; exCloseEditor(ok ? 'Saved: “' + sx.name + '” now starts from your numbers.' : 'Saved for now, but this device would not keep it.'); return; }
+      if (t.closest('[data-exreset]')) { ask = 'exreset'; render(); const n = app.querySelector('[data-testid=ex-reset-confirm]'); if (n) { n.scrollIntoView({ block: 'center' }); n.focus(); } return; }
+      if (t.closest('[data-exreset-yes]')) { if (!exEdit) return; const sx = E.exampleShipped(exEdit.id); exStoreOK = E.exCommit(localStorage, sx.id, {}); exCloseEditor('Reset “' + sx.name + '” to the original numbers.'); return; }
+      if (t.closest('[data-exdiscard-yes]')) { exCloseEditor(''); return; }
+    }
+    const exo = t.closest('[data-exopen]'); if (exo) { exOpen = !exOpen; exMsg = ''; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); return; }
     const exp = t.closest('[data-expick]'); if (exp) { const ex = E.exampleById(exp.dataset.expick); if (ex) { UI.addEx = ex.id; UI.addLoan = ex.loanId; if (ex.cat === 'multi') { UI.addUnits = ex.units; UI.addPack = !!ex.pack; } exOpen = false; save(); render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); } return; }
     if (t.closest('[data-exclear]')) { UI.addEx = ''; UI.addLoan = ''; save(); render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); return; }
     if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const own = !!UI.addOwned, mf = tp === 'house' && UI.addKind === 'multi', mu = Math.min(500, Math.max(2, Math.round(+UI.addUnits) || 2)), mp = mf && !!UI.addPack, ex = !own && UI.addEx ? E.exampleById(UI.addEx) : null, usex = ex && ex.type === tp && ex.cat === E.exCat(tp, mf), h = usex ? E.exampleAsset(ex) : E.newAsset(tp, lid, Object.assign({ fresh: true }, own ? { status: 'owned', paid: 12 } : {}, mf ? Object.assign({ kind: 'multi', units: mu, pack: mp }, E.mfDefaults(mu, mp)) : {})); UI.addEx = ''; exOpen = false; UI.addKind = 'single'; UI.addPack = false; UI.addOwned = false; E.register(S, h); S.houses.push(h); UI.coll[(own ? 'cat-owned-' : 'cat-') + tp] = false; selId = null; page = own ? 'real' : 'planned'; save(); goto('h/' + h.id); return; }
@@ -2541,7 +2692,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.copybackup !== undefined) { const m = document.getElementById('cbm'), ta = document.getElementById('bkout'); const fail = () => { ta.focus(); ta.select(); m.textContent = 'Select the text above and copy it by hand.'; };
       try { navigator.clipboard.writeText(ta.value).then(() => { m.textContent = 'Copied.'; }, fail); } catch (x) { fail(); } return; }
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
-    if (t.dataset.importYes !== undefined) { const bk = { saved: pendingImport.saved, openOn: pendingImport.openOn }; S = E.normalize(pendingImport); delete S.saved; delete S.openOn; if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; E.applyAdditions(S); fixOrder(S); if (Array.isArray(bk.saved)) { SAVED = cleanSaved(bk.saved); saveSaved(); } if (PAGES.indexOf(bk.openOn) >= 0) UI.openOn = bk.openOn; page = UI.openOn; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
+    if (t.dataset.importYes !== undefined) { const bk = { saved: pendingImport.saved, openOn: pendingImport.openOn, exOv: pendingImport.exOv }; S = E.normalize(pendingImport); delete S.saved; delete S.openOn; delete S.exOv; if (EXED && bk.exOv && typeof bk.exOv === 'object') { try { exStoreOK = E.exImport(bk.exOv, localStorage); } catch (e2) { exStoreOK = false; } } /* an old backup without example edits leaves the ones on this device alone */ if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; E.applyAdditions(S); fixOrder(S); if (Array.isArray(bk.saved)) { SAVED = cleanSaved(bk.saved); saveSaved(); } if (PAGES.indexOf(bk.openOn) >= 0) UI.openOn = bk.openOn; page = UI.openOn; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     { const bt = t.closest('button') || t, sc = SCN.find((x) => bt.dataset[x.k] !== undefined || bt.dataset[x.k + 'Yes'] !== undefined); if (sc) { if (bt.dataset[sc.k + 'Yes'] !== undefined) loadScenario(sc); else { ask = sc.k; render(); } return; } }
     const mvb = t.closest('[data-move]'); if (mvb) { const [id, d] = mvb.dataset.move.split(':'); moveBy(id, +d); return; }
     const dpb = t.closest('[data-dup]'); if (dpb) { const c = E.duplicate(S, dpb.dataset.dup); if (c) { ask = null; UI.coll['cat-' + (c.type || 'house')] = false; save(); if (routeOf().startsWith('h/')) { selId = null; goto('h/' + c.id); } else { selId = c.id; page = 'planned'; /* the copy is always planned */ render(); } } return; }
@@ -2600,6 +2751,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   /* ---------- touch gestures: swipe right from the left edge = back; swipe down = close the keyboard ---------- */
   function swipeBack() {
     if (infoKey) { infoKey = null; render(); return; }
+    if (exEdit && routeOf() === 'add' && !UI.addOwned) { exBack(); return; }
     if (!routeOf()) return; if (navSeen > 0 && history.length > 1) history.back(); else goto('');
   }
   let sw = null, kb = null, pgSw = null; const FIELD = 'input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select';
@@ -2621,6 +2773,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   document.addEventListener('touchcancel', () => { sw = null; kb = null; pgSw = null; }, { passive: true });
   app.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && !/^(checkbox|radio|file|range)$/.test(e.target.type)) e.target.blur(); });
 
+  window.addEventListener('storage', (e) => { if (!EXED || (e.key !== null && e.key !== E.EXKEY)) return; try { E.exLoad(localStorage); } catch (x) {} const a = document.activeElement; if (routeOf() === 'add' && !(a && a.tagName === 'INPUT')) render(); }); /* another tab changed the example edits: read them again (validated) */
   render();
   /* local-first plumbing: ask the browser to keep our data, and cache the app for offline use */
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}

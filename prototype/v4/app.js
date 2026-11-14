@@ -3,6 +3,9 @@
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
   let S, UI = { unit: 'today', tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', addKind: 'single', addUnits: 2, addPack: false, addEx: '', view: 'plan', openOn: 'planned', addOwned: false };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+  let exStoreOK = true, exMsg = '', exEdit = null; /* editable examples: the user's overrides live in their own key (rep-v4-examples), never in a portfolio; exEdit = the open editor { id, draft, base } */
+  try { exStoreOK = typeof E.exLoad === 'function' ? E.exLoad(localStorage) : true; } catch (e) { exStoreOK = false; }
+  const EXED = typeof E.exCheck === 'function' && typeof E.exEff === 'function'; /* an old cached engine without the editor still works: no Edit buttons */
   const DATA_V = 20; /* bump when a release changes the data; NEVER replace a user's portfolio in a migration (new assets go through ADDITIONS in engine.js) */
   const ADDED_ALL = () => E.ADDITIONS.map((x) => x.key);
   let switched = null;
@@ -39,7 +42,7 @@
   /* no popup: an older save moves to the current plan silently; the previous portfolio is kept in Saved so nothing is lost (it is filed once SAVED is loaded, below) */
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
   const saveSaved = () => { try { localStorage.setItem(SKEY, JSON.stringify(SAVED)); return true; } catch (e) { return false; } };
-  const backupJson = () => JSON.stringify(Object.assign({}, S, { saved: SAVED, openOn: UI.openOn })); /* the backup is the working portfolio plus the saved list and the start-page choice */
+  const backupJson = () => JSON.stringify(Object.assign({}, S, { saved: SAVED, openOn: UI.openOn }, EXED ? { exOv: E.exExport() } : {})); /* the backup is the working portfolio plus the saved list and the start-page choice */
   const stamp = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
@@ -624,7 +627,33 @@
   const PRESETS = [['Duplex', 2, false], ['Fourplex', 4, false], ['Section 8 pack of 5', 5, true], ['20 units', 20, false], ['50 units', 50, false]];
   let exOpen = false; /* the Add screen's 'Start from an example' list: closed every time the screen opens */
   const loanLine = (l) => (l.dp >= 100 ? 'No loan · pay the full price' : l.dp + '% down · ' + l.rate + '% · ' + (l.io ? 'interest-only, ' : '') + r(l.term / 12, 1) + ' yr' + (l.mat > 0 ? ', due in ' + r(l.mat / 12, 1) + ' yr' : ''));
+  /* ---------- the example editor: a sub-screen of the Add screen (same #add route). The draft is plain overrides in memory; nothing is stored until 'Save as my default'. ---------- */
+  const exShort = (ex) => ex.tierName + ' · ' + ex.name;
+  function exEditor() {
+    const sh = E.exampleShipped(exEdit.id), d = exEdit.draft, ex = E.exEff(sh, d), cat = sh.cat, h = E.exampleAsset(ex), m = E.exampleMetrics(S, ex), warns = E.exWarnings(S, ex, m), pr = E.exPrune(sh, d), edited = Object.keys(pr).length > 0, saved = !!E.exOverrides()[sh.id];
+    const X = (k) => { const sp = E.EXF[k], lb = E.exLabel(k, cat), P = 'x.' + k;
+      if (k === 'revenue') return field(lb, P, grp(Math.round(E.revOf(h) * 100) / 100), { pre: '$', per: 1 });
+      if (k === 'margin') return field(lb, P, r(E.marginOf(h), 2), { suf: '%' });
+      if (k === 'units') return field(lb, P, E.unitsOf(h));
+      return sp.kind === 'usd' ? field(lb, P, grp(h[k]), { pre: '$' }) : sp.kind === 'pct' ? field(lb, P, r(h[k], 2), { suf: '%' }) : field(lb, P, h[k]); };
+    const fits = cat === 'multi' ? E.mfLoans(E.unitsOf(h), !!sh.pack) : E.loansFor(sh.type).map((l) => ({ loan: l, ok: true }));
+    const loanSel = `<div class="f stack"><span class="lb">Loan option${infoBtn('loanoption')}</span><select class="loansel" data-exloan aria-label="Loan option" data-testid="ex-loan">${fits.map((x) => `<option value="${x.loan.id}" ${ex.loanId === x.loan.id ? 'selected' : ''}${x.ok || ex.loanId === x.loan.id ? '' : ' disabled'}>${esc(x.loan.name)}${x.ok ? '' : ' (not for ' + E.unitsOf(h) + ' units)'}</option>`).join('')}</select></div>`;
+    const fields = E.exFields(cat).map(X).join('') + (cat === 'business' ? field('Owner profit / month', 'x.profit', grp(h.rent), { pre: '$', calc: 1, ro: 1, info: 'ownerprofit' }) : '');
+    const note = cat === 'business' ? 'Revenue is per month; per year works too, like 1,200,000/yr. Profit = revenue × margin.' : cat === 'multi' ? 'Changing the units scales price, rent and costs, so each unit stays the same.' : 'Your numbers become this example\'s default on this device.';
+    const askBox = ask === 'exreset' ? confirmBox('Reset “' + esc(sh.name) + '” to the original numbers? Other examples stay as they are.', 'data-exreset-yes data-testid="ex-reset-confirm"', 'Yes, reset') : ask === 'exdiscard' ? confirmBox('Discard your changes to this example?', 'data-exdiscard-yes data-testid="ex-discard-confirm"', 'Yes, discard') : '';
+    return `<div class="top"><button class="ic" data-exback aria-label="Back to the examples" data-testid="ex-back">‹</button><h2>Edit example</h2></div>
+    <section class="card" data-testid="ex-editor"><div class="f head"><span class="lb"><b>${esc(exShort(sh))}</b>${edited ? ' <span class="tag" data-testid="ex-edit-tag">Edited</span>' : ''}${infoBtn('exedit')}</span></div><p class="note">${esc(note)}</p></section>
+    <div class="emptyb exuse" role="status" aria-live="polite" data-testid="ex-edit-live"><span><b>Your numbers</b><br><span data-testid="ex-edit-preview">Cash needed ${$f(m.cash)} · cash flow ${$s(m.cf)}/mo${m.pay > 0.5 ? ' · DSCR ' + r(m.dscr, 2) : ''}</span></span></div>
+    ${warns.map((w) => `<div class="warnbox" data-testid="ex-warn" data-warn="${w.id}">⚠ ${esc(w.text)}</div>`).join('')}${!exStoreOK ? '<p class="note warntxt" data-testid="ex-storage-note">This device is not keeping example edits. They last until you close the app.</p>' : ''}
+    <section class="card" style="margin-top:12px" data-testid="ex-fields">${fields}${loanSel}</section>
+    <button class="btn" style="width:100%" data-exsave data-testid="ex-save">Save as my default</button>
+    ${edited || saved ? '<button class="btn plain" data-exreset data-testid="ex-reset">Reset to original</button>' : ''}<button class="btn plain" data-excancel data-testid="ex-cancel">Cancel</button>${askBox}`;
+  }
+  const exCloseEditor = (msg) => { const id = exEdit && exEdit.id; exEdit = null; ask = null; exOpen = true; exMsg = msg || ''; render(); const fo = () => { const n = id && app.querySelector('[data-exedit="' + id + '"]'); if (n) n.focus(); }; fo(); setTimeout(fo, 40); /* a box removed by the render fires one more render; focus goes back to the Edit button after it */ };
+  const exBack = () => { if (!exEdit) return; if (E.exDirty(E.exampleShipped(exEdit.id), exEdit.draft, exEdit.base)) { ask = 'exdiscard'; render(); const n = app.querySelector('[data-testid=ex-discard-confirm]'); if (n) { n.scrollIntoView({ block: 'center' }); n.focus(); } return; } exCloseEditor(''); };
+  function exSetField(k, s) { if (!exEdit || k === 'profit') return false; const r2 = E.exDraftSet(E.exampleShipped(exEdit.id), exEdit.draft, k, String(s)); if (!r2.ok) return false; exEdit.draft = r2.draft; return true; }
   function addPage() {
+    if (EXED && exEdit && !UI.addOwned && E.exampleShipped(exEdit.id)) return exEditor();
     const tp = E.TYPES[UI.addType] ? UI.addType : 'house', multi = tp === 'house' && UI.addKind === 'multi', un = Math.min(500, Math.max(2, Math.round(+UI.addUnits) || 2)), pack = multi && !!UI.addPack;
     const fits = multi ? E.mfLoans(un, pack) : E.loansFor(tp).map((l) => ({ loan: l, ok: true })), list = fits.map((x) => x.loan);
     const sel = (fits.find((x) => x.loan.id === UI.addLoan && x.ok) || fits.find((x) => x.ok)).loan.id;
@@ -646,10 +675,10 @@
       if (x.cat === 'commercial') return $k(m.price) + ' · rent ' + mo(m.rent) + ' · ' + r(m.cap, 1) + '% cap · ' + cash;
       return $k(m.price) + ' · sales ' + mo(m.revenue) + ' at ' + r(m.margin, 0) + '% · ' + r(m.mult, 1) + '× profit · ' + cash; };
     exs.forEach((x) => { INFO['ex-' + x.id] = E.exampleInfo(S, x); });
-    const exRows = exs.map((x) => { const m = E.exampleMetrics(S, x), on = exSel && exSel.id === x.id;
-      return `<div class="loanrow"><button class="loanopt ${on ? 'on' : ''}" data-expick="${x.id}" aria-pressed="${on}" data-testid="ex-${x.id}"><b>${esc(x.tierName)} · ${esc(x.name)}</b><span data-testid="ex-sum-${x.id}">${esc(exLine(x, m))}</span></button>${infoBtn('ex-' + x.id)}</div>`; }).join('');
-    const exUse = exSel ? (() => { const m = E.exampleMetrics(S, exSel); return `<div class="emptyb exuse" data-testid="ex-using"><span><b>Using example: ${esc(exSel.name)}</b><br><span data-testid="ex-preview">Cash needed ${$f(m.cash)} · cash flow ${$s(m.cf)}/mo</span></span><button type="button" class="chip link" data-exclear data-testid="ex-clear" aria-label="Clear the example and go back to the defaults">Clear</button></div>`; })() : '';
-    const exHtml = exs.length ? `<button type="button" class="linkbtn leftbtn exlink" data-exopen aria-expanded="${exOpen}" data-testid="ex-toggle">${exSel ? 'Change example' : 'Start from an example'} ${exOpen ? '▾' : '▸'}</button>${exOpen ? `<section class="card" data-testid="ex-list"><p class="note" style="margin:0 4px 6px">Four typical purchases, cheapest first. Tap one to fill in the numbers; it is only added when you tap Add. Typical, not a quote.</p>${exRows}</section>` : ''}${exUse}` : '';
+    const exRows = exs.map((x) => { const m = E.exampleMetrics(S, x), on = exSel && exSel.id === x.id, ed = EXED && x.edited && x.edited.length;
+      return `<div class="loanrow"><button class="loanopt ${on ? 'on' : ''}" data-expick="${x.id}" aria-pressed="${on}" data-testid="ex-${x.id}"><b>${esc(x.tierName)} · ${esc(x.name)}${ed ? ' <span class="tag" data-testid="ex-tag-' + x.id + '">Edited</span>' : ''}</b><span data-testid="ex-sum-${x.id}">${esc(exLine(x, m))}</span></button>${infoBtn('ex-' + x.id)}${EXED ? `<button type="button" class="chip link" data-exedit="${x.id}" data-testid="ex-edit-${x.id}" aria-label="Edit ${esc(x.name)}">Edit</button>` : ''}</div>`; }).join('');
+    const exUse = exSel ? (() => { const m = E.exampleMetrics(S, exSel); return `<div class="emptyb exuse" data-testid="ex-using"><span><b>Using example: ${esc(exSel.name)}${EXED && exSel.edited && exSel.edited.length ? ' · Edited' : ''}</b><br><span data-testid="ex-preview">Cash needed ${$f(m.cash)} · cash flow ${$s(m.cf)}/mo</span></span><button type="button" class="chip link" data-exclear data-testid="ex-clear" aria-label="Clear the example and go back to the defaults">Clear</button></div>`; })() : '';
+    const exHtml = exs.length ? `<button type="button" class="linkbtn leftbtn exlink" data-exopen aria-expanded="${exOpen}" data-testid="ex-toggle">${exSel ? 'Change example' : 'Start from an example'} ${exOpen ? '▾' : '▸'}</button>${exOpen ? `<section class="card" data-testid="ex-list"><p class="note" style="margin:0 4px 6px">Four typical purchases, cheapest first. Tap one to fill in the numbers; it is only added when you tap Add. Typical, not a quote.</p>${exMsg ? `<p class="note" role="status" data-testid="ex-msg" style="margin:0 4px 6px">${esc(exMsg)}</p>` : ''}${!exStoreOK && EXED ? '<p class="note warntxt" data-testid="ex-storage-note" style="margin:0 4px 6px">This device is not keeping example edits. They last until you close the app.</p>' : ''}${exRows}</section>` : ''}${exUse}` : '';
     return `<div class="top"><button class="ic" data-go="" aria-label="Cancel and go back">‹</button><h2>${UI.addOwned ? 'Add something you own' : 'Add to portfolio'}</h2></div>${UI.addOwned ? '<p class="note" style="margin:0 4px 8px" data-testid="add-owned-note">It goes on the Real page. Next you set the price, loan and how many months you have already paid.</p>' : ''}
     <section class="card"><div class="seg" role="tablist">${['house', 'commercial', 'business'].map((x) => `<button data-addtype="${x}" class="${x === tp ? 'on' : ''}">${TL[x]}</button>`).join('')}</div><p class="note">${blurb} You will set the price and income on the next screen.</p>${tp === 'house' && !multi ? '<button class="linkbtn" data-go="import/new">Have a Zillow listing? Import it</button>' : ''}${typeCard}${multiCard}</section>
     <div class="sec">Pick a loan option</div><section class="card" data-testid="loan-options">${loanHtml}</section>
@@ -790,11 +819,12 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       if (k in prev && prev[k] !== v && el !== document.activeElement) (el.closest('label,.kpi,tr') || el).classList.add('flash'); });
     prev = cur;
   }
-  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && infoKey) { infoKey = null; render(); } else if (e.key === 'Escape' && exOpen && routeOf() === 'add') { exOpen = false; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); } });
-  window.addEventListener('hashchange', () => { navSeen++; infoKey = null; infoFrom = null; prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && infoKey) { infoKey = null; render(); } else if (e.key === 'Escape' && exEdit && routeOf() === 'add' && !UI.addOwned) { exBack(); } else if (e.key === 'Escape' && exOpen && routeOf() === 'add') { exOpen = false; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); } });
+  window.addEventListener('hashchange', () => { if (exEdit && routeOf() !== 'add' && !E.exDirty(E.exampleShipped(exEdit.id) || { cat: '' }, exEdit.draft, exEdit.base)) exEdit = null; /* an unsaved draft stays in memory until you decide */ navSeen++; infoKey = null; infoFrom = null; prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
 
   /* ---------- editing: every field is an input; derived fields back-solve ---------- */
   function setField(p, s) {
+    if (p.charAt(0) === 'x' && p.charAt(1) === '.') return exSetField(p.slice(2), s); /* the example editor's draft */
     if (undo) setUndo(null);
     const [t, x, k] = p.split('.');
     if (k === 'addr') { H(x).addr = s; return true; }
@@ -865,19 +895,20 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   }
   const app = document.getElementById('app');
   /* what a number box cannot hold: a percent in a box that is not a percent box, and a negative number where the value cannot be below zero. Returns null when the text is fine. */
-  const UNITSBOX = (p) => p === 'a.add.units' || /^h\.[^.]+\.units$/.test(p);
+  const UNITSBOX = (p) => p === 'a.add.units' || p === 'x.units' || /^h\.[^.]+\.units$/.test(p);
   const NEGOK = (p) => /\.(growth|gain|raise)$/.test(p) || p === 'g.appr';
   function boxBad(el, c) {
     const t = String(el.value), pct = /%/.test(t) && el.dataset.suf !== '%'; if (pct) return { live: el.dataset.pre === '$' ? 'No % in a dollar box' : 'No % in this box', end: el.dataset.pre === '$' ? 'No % in a dollar box, kept' : 'No % in this box, kept' };
     const v = c.kind === 'plain' ? parseFloat(t.replace(/[,$%\s]/g, '')) : c.ok ? c.v : NaN;
     if (UNITSBOX(el.dataset.p) && isFinite(v) && (v !== Math.round(v) || v < 2 || v > 500)) return { live: 'Use a whole number, 2 to 500', end: 'Use 2 to 500, kept' }; /* the unit count: a whole number from 2 to 500 */
+    if (/^x\./.test(el.dataset.p) && exEdit && isFinite(v)) { const sh = E.exampleShipped(exEdit.id), q = sh && E.exCheck(sh.cat, el.dataset.p.slice(2), v); if (q && !q.ok) return { live: q.msg, end: q.msg + ', kept' }; } /* the example editor's own ranges */
     if (v < 0 && !NEGOK(el.dataset.p)) return { live: "Can't be negative", end: "Can't be negative, kept" };
     return null;
   }
   /* a box where blank is a real answer (no end date, estimate the tax): everywhere else a blank box is not a value */
   const EMPTYOK = (p) => /^j\.[^.]+\.(end|tax)$/.test(p) || /^p\.(portfolioTaxPct|salesTaxPct)$/.test(p) || /^h\.[^.]+\.(refiRate|refiTermY)$/.test(p);
   /* whole-month boxes (dates counted in months from today, months already paid, ...): rounded to a whole number and capped at 600 months (or the plan length + 10 years when that is longer), with a 'Rounded / Capped' note */
-  const MONTHSBOX = (p) => /^h\.[^.]+\.(buyIn|wait|paid|mat|payoff|capexMonths|exitMonth)$/.test(p) || /^[oc]\.[^.]+\.month$/.test(p) || /^j\.[^.]+\.(end|start)$/.test(p);
+  const MONTHSBOX = (p) => /^h\.[^.]+\.(buyIn|wait|paid|mat|payoff|capexMonths|exitMonth)$/.test(p) || p === 'x.capexMonths' || /^[oc]\.[^.]+\.month$/.test(p) || /^j\.[^.]+\.(end|start)$/.test(p);
   const monthsCap = () => Math.max(600, Math.round((S.g.planYears || 20) * 12) + 120);
   let pendT = null;
   const clearHintDom = () => { clearTimeout(hintTimer); calcHint = null; document.querySelectorAll('#app .chint').forEach((n) => n.remove()); };
@@ -924,6 +955,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (nxtP) { if (changed || had) setTimeout(render, 0); } else if (nxt) { if (changed) deferRender(); } else if (changed || had) render(); });
   app.addEventListener('focusout', (e) => { if (e.target.dataset && e.target.dataset.p && e.target.tagName === 'INPUT' && !e.relatedTarget) setTimeout(() => { const a = document.activeElement; if (!(a && a.dataset && (a.dataset.p || a.dataset.sel))) render(); }, 0); });
   app.addEventListener('change', (e) => {
+    if (e.target.dataset.exloan !== undefined && exEdit) { const r2 = E.exDraftSet(E.exampleShipped(exEdit.id), exEdit.draft, 'loanId', e.target.value); if (r2.ok) exEdit.draft = r2.draft; render(); return; }
     const ln = e.target.dataset.loan; if (ln) { const h = H(ln); if (e.target.value === 'custom') h.loanId = 'custom'; else E.applyLoan(h, e.target.value); save(); render(); return; }
     const mg = e.target.dataset.merge; if (mg) { H(mg).mergeInto = e.target.value; save(); render(); return; }
     if (e.target.dataset.listingFile !== undefined && e.target.files[0]) { impName = e.target.files[0].name; const rd = new FileReader(); rd.onload = () => readListing(String(rd.result)); rd.readAsText(e.target.files[0]); return; }
@@ -966,7 +998,15 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const apk = t.closest('[data-addpack]'); if (apk) { UI.addPack = apk.dataset.addpack === '1'; UI.addLoan = ''; UI.addEx = ''; save(); render(); return; }
     const hpk = t.closest('[data-pack]'); if (hpk) { const hh = H(routeOf().slice(2)); if (hh && E.isMulti(hh)) { hh.pack = hpk.dataset.pack === '1'; save(); render(); } return; }
     const pk = t.closest('[data-pickloan]'); if (pk) { UI.addLoan = pk.dataset.pickloan; UI.addEx = ''; render(); return; }
-    const exo = t.closest('[data-exopen]'); if (exo) { exOpen = !exOpen; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); return; }
+    if (EXED) {
+      const ee = t.closest('[data-exedit]'); if (ee) { const sx = E.exampleShipped(ee.dataset.exedit); if (sx) { const cur = Object.assign({}, E.exOverrides()[sx.id] || {}); exEdit = { id: sx.id, draft: cur, base: Object.assign({}, cur) }; ask = null; exMsg = ''; render(); window.scrollTo(0, 0); const f0 = app.querySelector('[data-testid=ex-fields] input'); if (f0) f0.focus({ preventScroll: true }); } return; }
+      if (t.closest('[data-exback],[data-excancel]')) { exBack(); return; }
+      if (t.closest('[data-exsave]')) { if (!exEdit) return; const sx = E.exampleShipped(exEdit.id), ok = E.exCommit(localStorage, sx.id, exEdit.draft); exStoreOK = ok; exCloseEditor(ok ? 'Saved: “' + sx.name + '” now starts from your numbers.' : 'Saved for now, but this device would not keep it.'); return; }
+      if (t.closest('[data-exreset]')) { ask = 'exreset'; render(); const n = app.querySelector('[data-testid=ex-reset-confirm]'); if (n) { n.scrollIntoView({ block: 'center' }); n.focus(); } return; }
+      if (t.closest('[data-exreset-yes]')) { if (!exEdit) return; const sx = E.exampleShipped(exEdit.id); exStoreOK = E.exCommit(localStorage, sx.id, {}); exCloseEditor('Reset “' + sx.name + '” to the original numbers.'); return; }
+      if (t.closest('[data-exdiscard-yes]')) { exCloseEditor(''); return; }
+    }
+    const exo = t.closest('[data-exopen]'); if (exo) { exOpen = !exOpen; exMsg = ''; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); return; }
     const exp = t.closest('[data-expick]'); if (exp) { const ex = E.exampleById(exp.dataset.expick); if (ex) { UI.addEx = ex.id; UI.addLoan = ex.loanId; if (ex.cat === 'multi') { UI.addUnits = ex.units; UI.addPack = !!ex.pack; } exOpen = false; save(); render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); } return; }
     if (t.closest('[data-exclear]')) { UI.addEx = ''; UI.addLoan = ''; save(); render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); return; }
     if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const own = !!UI.addOwned, mf = tp === 'house' && UI.addKind === 'multi', mu = Math.min(500, Math.max(2, Math.round(+UI.addUnits) || 2)), mp = mf && !!UI.addPack, ex = !own && UI.addEx ? E.exampleById(UI.addEx) : null, usex = ex && ex.type === tp && ex.cat === E.exCat(tp, mf), h = usex ? E.exampleAsset(ex) : E.newAsset(tp, lid, Object.assign({ fresh: true }, own ? { status: 'owned', paid: 12 } : {}, mf ? Object.assign({ kind: 'multi', units: mu, pack: mp }, E.mfDefaults(mu, mp)) : {})); UI.addEx = ''; exOpen = false; UI.addKind = 'single'; UI.addPack = false; UI.addOwned = false; E.register(S, h); S.houses.push(h); UI.coll[(own ? 'cat-owned-' : 'cat-') + tp] = false; selId = null; page = own ? 'real' : 'planned'; save(); goto('h/' + h.id); return; }
@@ -986,7 +1026,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.copybackup !== undefined) { const m = document.getElementById('cbm'), ta = document.getElementById('bkout'); const fail = () => { ta.focus(); ta.select(); m.textContent = 'Select the text above and copy it by hand.'; };
       try { navigator.clipboard.writeText(ta.value).then(() => { m.textContent = 'Copied.'; }, fail); } catch (x) { fail(); } return; }
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
-    if (t.dataset.importYes !== undefined) { const bk = { saved: pendingImport.saved, openOn: pendingImport.openOn }; S = E.normalize(pendingImport); delete S.saved; delete S.openOn; if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; E.applyAdditions(S); fixOrder(S); if (Array.isArray(bk.saved)) { SAVED = cleanSaved(bk.saved); saveSaved(); } if (PAGES.indexOf(bk.openOn) >= 0) UI.openOn = bk.openOn; page = UI.openOn; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
+    if (t.dataset.importYes !== undefined) { const bk = { saved: pendingImport.saved, openOn: pendingImport.openOn, exOv: pendingImport.exOv }; S = E.normalize(pendingImport); delete S.saved; delete S.openOn; delete S.exOv; if (EXED && bk.exOv && typeof bk.exOv === 'object') { try { exStoreOK = E.exImport(bk.exOv, localStorage); } catch (e2) { exStoreOK = false; } } /* an old backup without example edits leaves the ones on this device alone */ if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; E.applyAdditions(S); fixOrder(S); if (Array.isArray(bk.saved)) { SAVED = cleanSaved(bk.saved); saveSaved(); } if (PAGES.indexOf(bk.openOn) >= 0) UI.openOn = bk.openOn; page = UI.openOn; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     { const bt = t.closest('button') || t, sc = SCN.find((x) => bt.dataset[x.k] !== undefined || bt.dataset[x.k + 'Yes'] !== undefined); if (sc) { if (bt.dataset[sc.k + 'Yes'] !== undefined) loadScenario(sc); else { ask = sc.k; render(); } return; } }
     const mvb = t.closest('[data-move]'); if (mvb) { const [id, d] = mvb.dataset.move.split(':'); moveBy(id, +d); return; }
     const dpb = t.closest('[data-dup]'); if (dpb) { const c = E.duplicate(S, dpb.dataset.dup); if (c) { ask = null; UI.coll['cat-' + (c.type || 'house')] = false; save(); if (routeOf().startsWith('h/')) { selId = null; goto('h/' + c.id); } else { selId = c.id; page = 'planned'; /* the copy is always planned */ render(); } } return; }
@@ -1045,6 +1085,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   /* ---------- touch gestures: swipe right from the left edge = back; swipe down = close the keyboard ---------- */
   function swipeBack() {
     if (infoKey) { infoKey = null; render(); return; }
+    if (exEdit && routeOf() === 'add' && !UI.addOwned) { exBack(); return; }
     if (!routeOf()) return; if (navSeen > 0 && history.length > 1) history.back(); else goto('');
   }
   let sw = null, kb = null, pgSw = null; const FIELD = 'input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select';
@@ -1066,6 +1107,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   document.addEventListener('touchcancel', () => { sw = null; kb = null; pgSw = null; }, { passive: true });
   app.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && !/^(checkbox|radio|file|range)$/.test(e.target.type)) e.target.blur(); });
 
+  window.addEventListener('storage', (e) => { if (!EXED || (e.key !== null && e.key !== E.EXKEY)) return; try { E.exLoad(localStorage); } catch (x) {} const a = document.activeElement; if (routeOf() === 'add' && !(a && a.tagName === 'INPUT')) render(); }); /* another tab changed the example edits: read them again (validated) */
   render();
   /* local-first plumbing: ask the browser to keep our data, and cache the app for offline use */
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}

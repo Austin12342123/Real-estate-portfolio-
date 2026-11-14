@@ -1,62 +1,62 @@
 {
- "run": "2026-11-14T21:07:59.230Z",
+ "run": "2026-11-14T21:53:27.643Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 11.34,
-   "max": 11.34
+   "earned": 10.52,
+   "max": 10.52
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 7.09,
-   "max": 7.09
+   "earned": 6.58,
+   "max": 6.58
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 13.82,
-   "max": 13.82
+   "earned": 12.82,
+   "max": 12.82
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 7.8,
-   "max": 7.8
+   "earned": 7.23,
+   "max": 7.23
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 6.07,
-   "max": 6.08
+   "earned": 5.64,
+   "max": 5.64
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 10.63,
-   "max": 10.63
+   "earned": 9.86,
+   "max": 9.86
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 10.28,
-   "max": 10.28
+   "earned": 9.53,
+   "max": 9.53
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 9.92,
-   "max": 9.92
+   "earned": 9.21,
+   "max": 9.21
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 14.53,
-   "max": 14.53
+   "earned": 13.48,
+   "max": 13.48
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 4.25,
-   "max": 4.25
+   "earned": 3.95,
+   "max": 3.95
   },
   "L11": {
    "name": "Purchase examples (16 typical purchases)",
-   "earned": 4.25,
-   "max": 4.25
+   "earned": 11.18,
+   "max": 11.18
   }
  },
  "checks": [
@@ -1089,6 +1089,61 @@
    "name": "Applying an example is the normal Add path: exampleAsset equals newAsset(type, loan, exampleOpts) field for field, and with the user's own assumptions (7% vacancy changed to 10%) the preview figures follow the assumptions",
    "pts": 1,
    "earned": 1,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L11",
+   "id": "L11.5",
+   "name": "Editing matrix, validation: for all 16 examples and every editable field, 0 / blank / negative / NaN / Infinity / text / huge are refused with a message exactly when outside the field's range, and the in-range values (low edge, high edge, middle) are accepted; units only as whole numbers 2-500; nothing else is editable",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L11",
+   "id": "L11.6",
+   "name": "Editing matrix, assets: every example x every field at low / middle / high x every loan option (all multi-family loans at units 2, 4, 5, 20, 50, 500) goes through the draft setter, exampleAsset, newAsset and the plan: no NaN / Infinity / undefined on the asset, normalize is idempotent, the plan runs and its totals are finite, cash needed = down + closing + cash rehab, cash flow = income - payment, the added asset equals the edited example field for field",
+   "pts": 3,
+   "earned": 3,
+   "pass": true,
+   "detail": "1128 runs; ",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L11",
+   "id": "L11.7",
+   "name": "Warnings fire exactly when the rule is broken: over thousands of random edits the set of warnings equals an independent reference of the rules (cash flow < 0; DSCR < the loan's minimum; loan not for the unit count; SBA 7(a) above $5M; price / profit outside its range; cap rate outside its band; price above the 70% rule), and none fires on the 16 shipped examples",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": " fired {\"dscr\":1518,\"cf\":1450,\"elig\":121,\"mult\":592,\"cap\":556,\"rule\":85,\"sba\":100}",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L11",
+   "id": "L11.8",
+   "name": "Overrides stay apart from everything else: the shipped table and the default plan are byte-for-byte unchanged after editing, saving, resetting and importing overrides; the effective example is shipped + overrides through one function (examplesFor / exampleById / exEffective agree), unedited fields follow the shipped value, an edit equal to the shipped value is not an override, and a shipped value changed later flows through to unedited fields while an edited field wins",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L11",
+   "id": "L11.9",
+   "name": "Loading is defensive and storage failure is survivable: garbage text, wrong types, unknown ids and fields, numbers out of range, NaN, a loan of the wrong kind and a future version are cleaned (clamped or dropped) without throwing; a storage that throws on read or write keeps the edits in memory; a second tab's edits to other examples survive a save (merge on write); old backups without overrides leave them alone",
+   "pts": 2,
+   "earned": 2,
    "pass": true,
    "detail": "",
    "source": "",

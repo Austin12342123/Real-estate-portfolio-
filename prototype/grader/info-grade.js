@@ -149,6 +149,11 @@ exports.run = async function run(X) {
         const infos = await page.evaluate(() => [...document.querySelectorAll('#app button.info')].map((b) => b.dataset.info)); infos.forEach((k) => seenKeys.add(k)); mfCards.forEach((c) => { if (c.info) seenKeys.add(c.info); });
         const miss = E.MFLOANS.map((l) => l.id).filter((id) => !mfCards.find((c) => c.id === id && c.info === LOAN[id]));
         P.t(miss.length === 0 && infos.includes('hometype') && infos.includes('unitcount') && infos.includes('mfpack'), 'Add multi-family: Home type, Number of units, Building or pack and every one of the ' + E.MFLOANS.length + ' loan cards have an (i) with their own definition', 2, 'missing: ' + miss.join(',')); }
+      for (const [tp, multi, id] of [['house', false, 'home-va'], ['house', true, 'multi-hack'], ['commercial', false, 'comm-nnn'], ['business', false, 'biz-vend']]) { /* the example editor: its (i) buttons count as shown, and every editor label that has a definition keeps it */
+        await load(page, sampleS(), '#add'); if (tp !== 'house') await clickSel(page, `[data-addtype="${tp}"]`); if (multi) await clickSel(page, '[data-kind=multi]'); await clickSel(page, '[data-testid=ex-toggle]'); await clickSel(page, `[data-testid=ex-edit-${id}]`);
+        const ks = await page.evaluate(() => [...document.querySelectorAll('#app [data-testid=ex-editor] button.info, #app [data-testid=ex-fields] button.info')].map((b) => b.dataset.info)); ks.forEach((k) => seenKeys.add(k));
+        P.t(ks.includes('exedit') && ks.includes('loanoption') && ks.includes('sellcost') && ks.includes('downpayment') && (tp !== 'business' || (ks.includes('revenue') && ks.includes('margin'))) && (!multi || ks.includes('unitcount')), 'Example editor (' + id + '): (i) beside the title, the loan option, selling costs, down payment' + (tp === 'business' ? ', revenue and margin' : '') + (multi ? ' and the number of units' : ''), 1, ks.join(','));
+      }
       /* extra states: FHA / 203(k) / bridge / cash / seller assets */
       for (const id of ['fh', 'k2', 'br', 'cs', 'sb']) await visit(page, mixedS(), '#house-' + id);
       await visit(page, mixedS(), '#'); await visit(page, sampleS(), '#import-new');

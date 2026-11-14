@@ -1,22 +1,22 @@
 # Logic and math grader (LOGIC_ONLY)
 
-Run: 2026-11-14T21:07:59.230Z
+Run: 2026-11-14T21:53:27.643Z
 
 **TOTAL 100 / 100**
 
 | Cat | Area | Earned | Max |
 |---|---|---|---|
-| L1 | Loan / amortization / payoff math | 11.34 | 11.34 |
-| L2 | Income, expense and NOI model | 7.09 | 7.09 |
-| L3 | Leverage, LTV/CLTV and credit-line rules | 13.82 | 13.82 |
-| L4 | Lender qualification (DTI / DSCR / rental haircut) | 7.8 | 7.8 |
-| L5 | Loan-product terms vs sources (every LOANS preset) | 6.07 | 6.08 |
-| L6 | Appreciation, rent growth, inflation and time basis | 10.63 | 10.63 |
-| L7 | Taxes, selling costs and depreciation | 10.28 | 10.28 |
-| L8 | Business valuation, growth and operating model | 9.92 | 9.92 |
-| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 14.53 | 14.53 |
-| L10 | Disclosure, labels, units and glossary accuracy | 4.25 | 4.25 |
-| L11 | Purchase examples (16 typical purchases) | 4.25 | 4.25 |
+| L1 | Loan / amortization / payoff math | 10.52 | 10.52 |
+| L2 | Income, expense and NOI model | 6.58 | 6.58 |
+| L3 | Leverage, LTV/CLTV and credit-line rules | 12.82 | 12.82 |
+| L4 | Lender qualification (DTI / DSCR / rental haircut) | 7.23 | 7.23 |
+| L5 | Loan-product terms vs sources (every LOANS preset) | 5.64 | 5.64 |
+| L6 | Appreciation, rent growth, inflation and time basis | 9.86 | 9.86 |
+| L7 | Taxes, selling costs and depreciation | 9.53 | 9.53 |
+| L8 | Business valuation, growth and operating model | 9.21 | 9.21 |
+| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 13.48 | 13.48 |
+| L10 | Disclosure, labels, units and glossary accuracy | 3.95 | 3.95 |
+| L11 | Purchase examples (16 typical purchases) | 11.18 | 11.18 |
 
 ## Checks
 
@@ -116,5 +116,10 @@ Run: 2026-11-14T21:07:59.230Z
 | L11.2 | Every example is internally consistent when built through the Add path (newAsset + applyLoan + mfDefaults): cash flow after the loan >= 0, DSCR >= the loan's minimum on today's rent and after any rent lift, the loan fits the unit count, cash needed = down payment + closing + cash rehab, rent total = units x rent per unit | 2 | 2 | PASS  |  |
 | L11.3 | Market sanity: commercial cap rate is inside the property band and within 0.15 of its CBRE-based target; business price / yearly profit is inside its multiple range and SBA 7(a) loans stay under $5M; the homes follow the stated rules (70% rule and rent under the HUD FMR for the budget fixer, appraisal 1.2-1.6x the rehab for the value-add, all-in <= 75% of value) | 2 | 2 | PASS  |  |
 | L11.4 | Applying an example is the normal Add path: exampleAsset equals newAsset(type, loan, exampleOpts) field for field, and with the user's own assumptions (7% vacancy changed to 10%) the preview figures follow the assumptions | 1 | 1 | PASS  |  |
+| L11.5 | Editing matrix, validation: for all 16 examples and every editable field, 0 / blank / negative / NaN / Infinity / text / huge are refused with a message exactly when outside the field's range, and the in-range values (low edge, high edge, middle) are accepted; units only as whole numbers 2-500; nothing else is editable | 2 | 2 | PASS  |  |
+| L11.6 | Editing matrix, assets: every example x every field at low / middle / high x every loan option (all multi-family loans at units 2, 4, 5, 20, 50, 500) goes through the draft setter, exampleAsset, newAsset and the plan: no NaN / Infinity / undefined on the asset, normalize is idempotent, the plan runs and its totals are finite, cash needed = down + closing + cash rehab, cash flow = income - payment, the added asset equals the edited example field for field | 3 | 3 | PASS 1128 runs;  |  |
+| L11.7 | Warnings fire exactly when the rule is broken: over thousands of random edits the set of warnings equals an independent reference of the rules (cash flow < 0; DSCR < the loan's minimum; loan not for the unit count; SBA 7(a) above $5M; price / profit outside its range; cap rate outside its band; price above the 70% rule), and none fires on the 16 shipped examples | 2 | 2 | PASS  fired {"dscr":1518,"cf":1450,"elig":121,"mult":592,"cap":556,"rule":85,"sba":100} |  |
+| L11.8 | Overrides stay apart from everything else: the shipped table and the default plan are byte-for-byte unchanged after editing, saving, resetting and importing overrides; the effective example is shipped + overrides through one function (examplesFor / exampleById / exEffective agree), unedited fields follow the shipped value, an edit equal to the shipped value is not an override, and a shipped value changed later flows through to unedited fields while an edited field wins | 2 | 2 | PASS  |  |
+| L11.9 | Loading is defensive and storage failure is survivable: garbage text, wrong types, unknown ids and fields, numbers out of range, NaN, a loan of the wrong kind and a future version are cleaned (clamped or dropped) without throwing; a storage that throws on read or write keeps the edits in memory; a second tab's edits to other examples survive a save (merge on write); old backups without overrides leave them alone | 2 | 2 | PASS  |  |
 
 Checks marked "disclosed, not source-verified" pass on disclosure or a benchmark file whose sources could not be fetched; see sources.md.

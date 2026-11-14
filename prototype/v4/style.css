@@ -449,3 +449,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 .loanopt.off b,.loanopt.off span{color:var(--mut)}
 .loanopt .why{margin-top:2px}
 .loanrow .info{flex:none}
+
+/* example editor: the Edit button inside a row (same chip, link colour and tap size) */
+.loanrow .chip.link{margin:0 0 0 2px;align-self:center;flex:none;padding:2px 8px}
+.loanopt b .tag{font-weight:400}
