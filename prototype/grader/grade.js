@@ -418,9 +418,9 @@ async function reqChecks(page) {
     return P; });
 
   /* --- edit matrix (UI vs engine on a custom state) --- */
-  const setIn = (S, p, v) => { const [t, x, k] = p.split('.'); if (t === 'g') { S.g[x] = v; return; } const h = E.H(S, x); if (k === 'termY') h.term = Math.round(v * 12); else h[k] = v; h.loanId = ['dp', 'rate', 'termY'].includes(k) ? 'custom' : h.loanId; };
+  const setIn = (S, p, v) => { const [t, x, k] = p.split('.'); if (t === 'g') { S.g[x] = v; return; } const h = E.H(S, x); if (k === 'termY') h.term = Math.round(v * 12); else if (k === 'revenue') { const rv = E.revOf(h); h.revenue = v; h.rent = Math.round(v * E.marginOf(h) / 100); } else h[k] = v; h.loanId = ['dp', 'rate', 'termY'].includes(k) ? 'custom' : h.loanId; };
   const M = [['h.a.price', 400000], ['h.a.dp', 35], ['h.a.rate', 8], ['h.a.termY', 15], ['h.a.extra', 900], ['h.a.rent', 3600], ['h.a.tax', 500], ['h.a.ins', 200], ['h.a.hoa', 150], ['h.a.liens', 40000], ['h.a.paid', 60], ['h.a.growth', 6], ['h.a.closingPct', 5],
-    ['h.b.price', 320000], ['h.b.dp', 30], ['h.c.price', 1200000], ['h.c.rent', 12000], ['h.d.price', 600000], ['h.d.rent', 14000], ['h.d.buyIn', 48], ['h.d.sellCost', 15], ['h.d.exitMonth', 150], ['h.d.growth', 12],
+    ['h.b.price', 320000], ['h.b.dp', 30], ['h.c.price', 1200000], ['h.c.rent', 12000], ['h.d.price', 600000], ['h.d.revenue', 70000], ['h.d.buyIn', 48], ['h.d.sellCost', 15], ['h.d.exitMonth', 150], ['h.d.growth', 12],
     ['h.e.capex', 40000], ['h.e.capexMonths', 12], ['h.e.arv', 260000], ['h.e.liftIncome', 15], ['h.e.exitLift', 30], ['h.e.exitMonth', 120], ['h.e.buyIn', 30],
     ['g.cap', 60], ['g.vac', 20], ['g.mgmt', 20], ['g.maint', 3], ['g.closing', 10], ['g.haircut', 20], ['g.hrate', 15], ['g.appr', 3], ['g.planYears', 10], ['g.rentCount', 50], ['g.p1', 0], ['g.dti', 5], ['g.otherDebt', 20000]];
   await check('A13', 'A', 'FHA 203(k) through the UI: add flow auto-fills rehab + terms, owner-occupied notice, financed-rehab note, Limited cap warning, switching loan option resets', 2, 'Add page > Home > FHA 203(k)', async () => {
