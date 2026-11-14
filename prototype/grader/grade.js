@@ -13,6 +13,9 @@ if (process.env.LOGIC_ONLY) { require('./logic-grade.js'); return; } /* L1-L10 l
 const V4 = path.resolve(__dirname, '../v4');
 globalThis.RepDate = { dtm: (m) => require('./dates.js').fmtM(m) }; /* the engine writes 'month N (Mon YYYY)' when a calendar is present, as in the app (today is pinned to 2026-11-12) */
 const E = require(path.join(V4, 'engine.js'));
+/* Isolation guard: the grader serves v4/ live from disk to the browser while node already holds engine.js in memory. If any file in v4/ changes during a (15 min) run, the page and the node engine can silently disagree and category G (page numbers vs engine) fails or crashes although nothing is wrong. So fingerprint v4/ at start and say so loudly at the end. */
+const v4Fingerprint = () => require('crypto').createHash('sha1').update(fs.readdirSync(V4).filter((n) => fs.statSync(path.join(V4, n)).isFile()).sort().map((n) => n + ':' + fs.readFileSync(path.join(V4, n)).toString('base64').length + ':' + require('crypto').createHash('sha1').update(fs.readFileSync(path.join(V4, n))).digest('hex')).join('|')).digest('hex');
+const V4_FP0 = v4Fingerprint();
 const HZ = require('./plannedhz.js')(E), PH = (S, pl) => HZ.plannedHz(S, pl), RH = (S, pl) => HZ.realHz(S, pl); /* expected page totals: Planned = plan minus the bought assets, Real = the bought assets only */
 const results = [];
 const cats = { A: 'Requirement / propagation', B: 'Engine correctness', C: 'UX conciseness & usability', D: 'PWA / local-first', E: 'Robustness & accessibility', R: 'Realism & market accuracy' };
@@ -1117,6 +1120,7 @@ async function robustChecks(page) {
   fs.writeFileSync(path.join(__dirname, 'report.md'), md);
   fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results, finance, sync, info, gest, ux, design }, null, 2));
   console.log('\nCategory scores:'); Object.keys(cats).forEach((c) => console.log(`  ${c}  ${f2(per[c].earned)} / ${f2(per[c].max)}  ${cats[c]}`));
+  if (v4Fingerprint() !== V4_FP0) console.log('\n*** WARNING: files in v4/ changed while the grader was running; page-vs-engine checks (esp. category G) are NOT reliable. Rerun with nothing editing or building v4/. ***');
   console.log(`\nTOTAL ${f2(total)} / ${max}`);
   if (finance) console.log(`\nF Personal finances: ${fmt2(finance.earned)}/${finance.max}`);
   if (sync) console.log(`\nG Number sync: ${fmt2(sync.earned)}/${sync.max}`);
