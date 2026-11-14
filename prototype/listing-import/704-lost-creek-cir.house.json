@@ -4,9 +4,10 @@
   "capturedOn": "2026-11-14",
   "address": "704 Lost Creek Cir, Stone Mountain, GA 30088",
   "price": { "value": 140000, "source": "listing" },
-  "rentMonthly": { "value": null, "source": "missing" },
-  "taxAnnual": { "value": null, "source": "missing" },
-  "insuranceAnnual": { "value": null, "source": "missing" },
+  "rentMonthly": { "value": 1887, "source": "estimate", "note": "Market rent for a 3-bedroom house in Stone Mountain: Trulia about $1,887, Apartments.com about $1,934, Rentometer about $1,756 (city-wide, not ZIP 30088). Not from the listing." },
+  "rentSection8Monthly": { "value": 2182, "source": "estimate", "note": "HUD FY2026 Fair Market Rent for 3 bedrooms, Atlanta-Sandy Springs-Roswell metro. DeKalb's own payment standard (90-110% of FMR, about $1,964-$2,400) was not found; confirm with the DeKalb housing authority. Informational only, the app does not read this field." },
+  "taxAnnual": { "value": 2070, "source": "estimate", "note": "$140,000 x 40% assessment x about 36.9 mills (DeKalb County 14.142 + school district 22.78, 2025), no homestead credit because it is a rental. City or special-district mills and a higher assessed value after sale could raise it." },
+  "insuranceAnnual": { "value": 2400, "source": "estimate", "note": "Stone Mountain homeowners about $2,300-$2,600/yr (1-800-INSURANCE); Georgia average about $2,250-$2,300 for $300K coverage. A landlord policy usually costs more. Get a real quote." },
   "hoaMonthly": { "value": null, "source": "missing", "note": "Listing shows $-- HOA, so none is stated" },
   "info": { "beds": 3, "baths": 2, "sqft": 1892, "yearBuilt": 1977, "propertyType": "Single family residence" }
 }
