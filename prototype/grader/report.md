@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-14T21:53:10.436Z  |  799s
+Target: `prototype/v4`  |  Run: 2026-11-14T22:08:11.920Z  |  804s
 
 ## Automated score: **85.00 / 84.99700000000001** (a separate design review adds 15)
 
@@ -57,7 +57,7 @@ Target: `prototype/v4`  |  Run: 2026-11-14T21:53:10.436Z  |  799s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.42 | 0.42 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.21 | 0.21 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.21 | 0.21 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 16.3ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 19.5ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.31 | 0.31 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.31 | 0.31 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.42 | 0.42 | 5/5 sub-checks pass |
@@ -130,28 +130,38 @@ None.
 
 None.
 
-## G. Number sync: **100.00 / 100** (separate scale; not included in the A-E + R total or in F)
+## G. Number sync: **84.80 / 100** (separate scale; not included in the A-E + R total or in F)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| G1 | Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine) | 14.00 | 14.00 | 44/44 sub-checks pass |
-| G2 | Asset page <-> Portfolio sync (share line, hero, impact, edits propagate) | 14.00 | 14.00 | 74/74 sub-checks pass |
+| G1 | Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine) | 14.00 | 13.66 | 43/44 sub-checks pass. FAIL: tooltip at the right end of the chart = KPI net worth (0/1 ok) [tooltip "$9,816,920in 240 mo (20y 0m)" vs KPI $132.8M] |
+| G2 | Asset page <-> Portfolio sync (share line, hero, impact, edits propagate) | 14.00 | 0.00 | CRASH in check: TypeError: Cannot read properties of undefined (reading 'id')     at /home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:155:76     at Array.find (<anonymous>)     at rowEng (/home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:155:53)     at chkAssetShare (/home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:280:177)     at /home/user/Real-estate-portfolio-/pr |
 | G3 | Portfolio <-> Finances sync (cash flow, funding, extra scope, verdict, edge cases) | 14.00 | 14.00 | 34/34 sub-checks pass |
 | G4 | Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences) | 18.00 | 18.00 | 34/34 sub-checks pass |
 | G5 | Add page <-> created asset (loan option cards, option switching, 203(k) defaults) | 6.00 | 6.00 | 12/12 sub-checks pass |
 | G6 | Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light) | 12.00 | 12.00 | 12/12 sub-checks pass |
 | G7 | Shared settings (g.* and p.*) propagate to every dependent display | 10.00 | 10.00 | 150/150 sub-checks pass |
-| G8 | No stale / duplicate / contradictory numbers | 12.00 | 12.00 | 10/10 sub-checks pass |
+| G8 | No stale / duplicate / contradictory numbers | 12.00 | 11.14 | 9/10 sub-checks pass. FAIL: asset hero and portfolio-share are labeled with their different bases (84/86 ok) [sample auto // sample keystone] |
 
 ### G failures
 
-None.
+- **G1 Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine)** (-0.34): 43/44 sub-checks pass. FAIL: tooltip at the right end of the chart = KPI net worth (0/1 ok) [tooltip "$9,816,920in 240 mo (20y 0m)" vs KPI $132.8M]
+  - Reproduce: Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)
+- **G2 Asset page <-> Portfolio sync (share line, hero, impact, edits propagate)** (-14.00): CRASH in check: TypeError: Cannot read properties of undefined (reading 'id')
+    at /home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:155:76
+    at Array.find (<anonymous>)
+    at rowEng (/home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:155:53)
+    at chkAssetShare (/home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:280:177)
+    at /home/user/Real-estate-portfolio-/pr
+  - Reproduce: For several assets per state: asset-share line == Portfolio row; impact "with" == KPIs; then edit asset inputs and re-check every Portfolio number
+- **G8 No stale / duplicate / contradictory numbers** (-0.86): 9/10 sub-checks pass. FAIL: asset hero and portfolio-share are labeled with their different bases (84/86 ok) [sample auto || sample keystone]
+  - Reproduce: Scan every page for repeated labels with different values, missing bases, redundant repeated numbers, subtext that restates the main value, and numbers that contradict adjacent statements
 
-## H. Help buttons and hourly jobs: **97.50 / 100** (separate scale; not included in the A-E + R total, F or G)
+## H. Help buttons and hourly jobs: **100.00 / 100** (separate scale; not included in the A-E + R total, F or G)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| H1 | Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained | 8.00 | 5.50 | 7/9 sub-checks pass. FAIL: every entry has a title (<= 40 chars), a body of 40-450 chars and an example of <= 220 chars [exedit]; plain language: no sentence over 40 words and every body reads at about grade 12 or easier (Flesch-Kincaid) [long exedit hard ] |
+| H1 | Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained | 8.00 | 8.00 | 9/9 sub-checks pass |
 | H2 | Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries | 16.00 | 16.00 | 112/112 sub-checks pass |
 | H3 | Info sheet: opens with the right content, closes by button / Escape / backdrop / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data | 16.00 | 16.00 | 22/22 sub-checks pass |
 | H4 | Definitions are accurate: numbers quoted match the engine constants and loan table, examples do their own arithmetic, stated rules behave that way in the engine | 16.00 | 16.00 | 42/42 sub-checks pass |
@@ -164,8 +174,7 @@ None.
 
 ### H failures
 
-- **H1 Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained** (-2.50): 7/9 sub-checks pass. FAIL: every entry has a title (<= 40 chars), a body of 40-450 chars and an example of <= 220 chars [exedit]; plain language: no sentence over 40 words and every body reads at about grade 12 or easier (Flesch-Kincaid) [long exedit hard ]
-  - Reproduce: node: inspect v4/info.js INFO / LABEL / LOAN
+None.
 
 ## I. Portfolio sections, gestures and funding order: **100.00 / 100** (separate scale; not included in A-E + R, F, G or H)
 
