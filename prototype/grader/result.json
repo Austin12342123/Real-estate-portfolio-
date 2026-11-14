@@ -476,7 +476,7 @@
       "rawPoints": 0.5,
       "earned": 0.104,
       "ratio": 1,
-      "detail": "median 22.1ms",
+      "detail": "median 27.7ms",
       "repro": "node timing"
     },
     {
