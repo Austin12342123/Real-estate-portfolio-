@@ -1,5 +1,5 @@
 {
- "run": "2026-11-14T03:05:02.324Z",
+ "run": "2026-11-14T03:28:11.635Z",
  "total": 100,
  "max": 100,
  "categories": {
@@ -237,8 +237,8 @@
    "name": "UNVERIFIED: default cap rates (6.5-8%) and business price multiples fall in the bands of the grader benchmark files (bench-cre.json / bench-business.json hold search-snippet data only: CBRE, BizBuySell, LoopNet and Crexi returned 403 and are not bypassed)",
    "pts": 0,
    "earned": 0,
-   "pass": true,
-   "detail": "all in band (unverified)",
+   "pass": false,
+   "detail": "lostcreek cap 9.6 (unverified)",
    "source": "S34",
    "disclosedOnly": true
   },
@@ -788,7 +788,7 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "NW (today's dollars) 25y $71.1M, 28y $132.8M (future $303.7M); step ratios 1.26,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 35; business growth 4",
+   "detail": "NW (today's dollars) 25y $71.1M, 28y $132.8M (future $303.9M); step ratios 1.26,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 36; business growth 4",
    "source": "",
    "disclosedOnly": false
   },
@@ -799,7 +799,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "today's dollars NW $132.76M, cash flow $1.506M/mo; future dollars NW $303.73M, cash flow $3.446M/mo (rows $3.446M), income before loans $5.648M, loan payments $2.202M",
+   "detail": "today's dollars NW $132.81M, cash flow $1.506M/mo; future dollars NW $303.86M, cash flow $3.446M/mo (rows $3.446M), income before loans $5.649M, loan payments $2.203M",
    "source": "",
    "disclosedOnly": false
   },
@@ -821,7 +821,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "6,13,17,21,21,24,26,33,44,51,57,77,93,102,111,127,127,128,148,148,154,176,176,187,205,206,219,234,238,250,265,268,281,295,299; verdict yes, lowest liquid cash $26820",
+   "detail": "6,13,17,21,21,24,26,33,44,51,57,77,93,102,111,127,127,128,148,148,154,176,176,187,205,206,219,234,238,250,265,268,281,295,299,299; verdict yes, lowest liquid cash $26820",
    "source": "",
    "disclosedOnly": false
   },
@@ -942,7 +942,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "owned false first pooled false no-job unfunded 35 NW on/off 303.7/48.1",
+   "detail": "owned false first pooled false no-job unfunded 36 NW on/off 303.9/48.1",
    "source": "",
    "disclosedOnly": false
   },
@@ -1019,7 +1019,7 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "default NW $303.7M, cf $3.45M, DTI 20%, last buy month 299; weak profile (job money $580/mo): NW $31.3M, verdict tight, last buy month 407",
+   "detail": "default NW $303.9M, cf $3.45M, DTI 20%, last buy month 299; weak profile (job money $580/mo): NW $31.3M, verdict tight, last buy month 407",
    "source": "",
    "disclosedOnly": false
   },
