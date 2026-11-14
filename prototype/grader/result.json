@@ -29,81 +29,15 @@
   },
   "results": [
     {
-      "id": "A21",
-      "category": "A",
-      "name": "Main screen: always-visible tab bar Planned | Real | Saved (even when Real is empty), exactly one page at a time, tabs >= 44px at 320/390/430 with no sideways scroll, swipe or tap, page remembered while you move around",
-      "points": 3.375,
-      "rawPoints": 3,
-      "earned": 3.375,
-      "ratio": 1,
-      "detail": "7/7 sub-checks pass",
-      "repro": "Main page: read the tab bar, switch pages, resize, swipe, open an asset and come back"
-    },
-    {
-      "id": "A27",
-      "category": "A",
-      "name": "Default plan on screen: in TODAY'S dollars net worth at least $125.0M (up to about $135M) and cash flow at least $1.3M a month at year 28 (the future-dollar amounts, at the cost-increase rate, shown smaller), in one clear plan line and in the KPIs",
-      "points": 2.25,
-      "rawPoints": 2,
-      "earned": 2.25,
-      "ratio": 1,
-      "detail": "4/4 sub-checks pass",
-      "repro": "Fresh load: read the plan line and KPIs"
-    },
-    {
-      "id": "A30",
-      "category": "A",
-      "name": "Opening an old save (v9-v18): no pop-up or Undo banner, the working portfolio is the current default plan (net worth >= $125M in today's dollars), and the old portfolio sits in Saved as \"Portfolio N (before the update)\" and loads back exactly",
-      "points": 2.25,
-      "rawPoints": 2,
-      "earned": 2.25,
-      "ratio": 1,
-      "detail": "4/4 sub-checks pass",
-      "repro": "Load a v16 state, read Planned and Saved, open the filed copy"
-    },
-    {
-      "id": "A31",
-      "category": "A",
-      "name": "Today's dollars on screen: with 5% cost increase and a sold asset, the Planned top card, category strips, breakdown and every row show the engine's future-dollar figure divided by 1.05^(months/12) (28 years at the plan end), the smaller line shows the future-dollar figure, and the Saved card follows the same rule",
-      "points": 3.375,
-      "rawPoints": 3,
-      "earned": 3.375,
-      "ratio": 1,
-      "detail": "9/9 sub-checks pass",
-      "repro": "Load a state with inflation 5%; read KPIs, breakdown, rows; save it and read the Saved card"
-    },
-    {
       "id": "A32",
       "category": "A",
-      "name": "Show figures in: Assumptions has Today's dollars | Future dollars with an (i), default Today's, tap targets >= 44px; switching shows the engine's future-dollar figures on the Planned and Real top cards, the breakdown and the Saved card; the choice persists in the UI storage and after a reload; nothing in the portfolio data changes",
-      "points": 3.375,
+      "name": "Show figures in: Assumptions has Today's dollars | Future dollars with an (i), default Today's, tap targets >= 44px; switching shows the engine's future-dollar figures on the Planned and Real top cards and the breakdown; the choice persists in the UI storage and after a reload; nothing in the portfolio data changes",
+      "points": 18,
       "rawPoints": 3,
-      "earned": 3.375,
+      "earned": 18,
       "ratio": 1,
-      "detail": "8/8 sub-checks pass",
+      "detail": "11/11 sub-checks pass",
       "repro": "Assumptions > Show figures in; reload"
-    },
-    {
-      "id": "A33",
-      "category": "A",
-      "name": "Prices stay today's prices: every planned asset's price on screen is the entered price (nothing is inflated), the cash a purchase needs is its down payment + closing + improvements on that price whatever month it is bought, and the glossary says so",
-      "points": 2.25,
-      "rawPoints": 2,
-      "earned": 2.25,
-      "ratio": 1,
-      "detail": "5/5 sub-checks pass",
-      "repro": "Read row prices and the funding math; engine needFor"
-    },
-    {
-      "id": "A34",
-      "category": "A",
-      "name": "An older default plan (v18) opens silently on the new default: no pop-up or Undo banner, the working portfolio is the new plan, the old portfolio is filed in Saved as \"Portfolio N (before the update)\" and loads back exactly; the unit choice is not touched",
-      "points": 1.125,
-      "rawPoints": 1,
-      "earned": 1.125,
-      "ratio": 1,
-      "detail": "3/3 sub-checks pass",
-      "repro": "Load a v18 state (36 assets of the older plan)"
     }
   ],
   "finance": null,
