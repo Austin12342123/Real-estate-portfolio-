@@ -1,8 +1,63 @@
 {
   "info": {
-    "earned": 8,
-    "max": 8,
+    "earned": 100,
+    "max": 100,
     "checks": [
+      {
+        "id": "H1",
+        "category": "H",
+        "name": "Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
+        "repro": "node: inspect v4/info.js INFO / LABEL / LOAN",
+        "seconds": 0
+      },
+      {
+        "id": "H2",
+        "category": "H",
+        "name": "Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "91/91 sub-checks pass",
+        "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
+        "seconds": 9.4
+      },
+      {
+        "id": "H3",
+        "category": "H",
+        "name": "Info sheet: opens with the right content, closes by button / Escape / backdrop / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "22/22 sub-checks pass",
+        "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
+        "seconds": 18.3
+      },
+      {
+        "id": "H4",
+        "category": "H",
+        "name": "Definitions are accurate: numbers quoted match the engine constants and loan table, examples do their own arithmetic, stated rules behave that way in the engine",
+        "points": 16,
+        "earned": 16,
+        "ratio": 1,
+        "detail": "42/42 sub-checks pass",
+        "repro": "node: parse numbers out of v4/info.js and compare with engine.js constants and engine calculations",
+        "seconds": 0.1
+      },
+      {
+        "id": "H5",
+        "category": "H",
+        "name": "Hourly jobs: add, gross = (wage + tips) x hours x weeks, automatic vs typed tax, blank tax returns to automatic, temporary end month, switching kind, clamps, persistence",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "28/28 sub-checks pass",
+        "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
+        "seconds": 4
+      },
       {
         "id": "H6",
         "category": "H",
@@ -12,7 +67,51 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 5.8
+        "seconds": 7.1
+      },
+      {
+        "id": "H7",
+        "category": "H",
+        "name": "Old saves migrate: v8 (assets only) and pre-hourly jobs (no kind / wage / tips / weeks) load, keep their numbers and show correctly",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
+        "repro": "Load crafted localStorage states; pasted old backup restore",
+        "seconds": 1.6
+      },
+      {
+        "id": "H8",
+        "category": "H",
+        "name": "Automatic tax estimate: matches an independent 2026 single-filer calculation (IRS Rev. Proc. 2025-32, Pub. 15) (federal after standard deduction + Social Security + Medicare, no state tax), is monotone and bounded",
+        "points": 6,
+        "earned": 6,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "node: E.estTaxPct against a separate implementation and properties",
+        "seconds": 0
+      },
+      {
+        "id": "H9",
+        "category": "H",
+        "name": "Disclosure defaults and new wording: collapsed sections open on tap (and stay open), renamed labels, Hold/Sell/Merge + Status, loan grouping, import preview title",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Fresh state: check aria-expanded, hidden fields, labels",
+        "seconds": 3.2
+      },
+      {
+        "id": "H10",
+        "category": "H",
+        "name": "Clean run: no console / page errors and no network requests outside localhost during all help and hourly-job flows",
+        "points": 4,
+        "earned": 4,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
+        "repro": "Collected over the whole H run",
+        "seconds": 0
       }
     ]
   }

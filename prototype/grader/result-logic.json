@@ -1,57 +1,57 @@
 {
- "run": "2026-11-12T22:10:42.691Z",
+ "run": "2026-11-14T02:42:36.236Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 12.3,
-   "max": 12.3
+   "earned": 11.85,
+   "max": 11.85
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 7.69,
-   "max": 7.69
+   "earned": 7.4,
+   "max": 7.4
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 14.99,
-   "max": 14.99
+   "earned": 14.44,
+   "max": 14.44
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 8.46,
-   "max": 8.46
+   "earned": 8.14,
+   "max": 8.14
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 6.59,
-   "max": 6.59
+   "earned": 6.34,
+   "max": 6.35
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 7.69,
-   "max": 7.69
+   "earned": 11.11,
+   "max": 11.11
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 11.15,
-   "max": 11.15
+   "earned": 10.74,
+   "max": 10.74
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 10.76,
-   "max": 10.76
+   "earned": 10.36,
+   "max": 10.36
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 15.76,
-   "max": 15.76
+   "earned": 15.18,
+   "max": 15.18
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 4.61,
-   "max": 4.61
+   "earned": 4.44,
+   "max": 4.44
   }
  },
  "checks": [
@@ -414,7 +414,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "peak DTI 16.4% at month 240 vs limit 43",
+   "detail": "peak DTI 20.3% at month 299 vs limit 43",
    "source": "",
    "disclosedOnly": false
   },
@@ -425,7 +425,7 @@
    "pts": 0.5,
    "earned": 0.5,
    "pass": true,
-   "detail": "ok; peak 7(a) outstanding $3098867 at month 146",
+   "detail": "ok; peak 7(a) outstanding $4430657 at month 148",
    "source": "S2,S3,S4,S5",
    "disclosedOnly": false
   },
@@ -629,6 +629,28 @@
   },
   {
    "cat": "L6",
+   "id": "L6.7",
+   "name": "Today's dollars: E.planR(S) is the future-dollar plan with every figure divided by (1 + cost increase)^(months/12) at ITS OWN month (series, at(), horizon, assetsAt(), exits, outside cash); month 0 is unchanged; the asset rows still add up to the totals; purchase months, loan ends, DTI and every price are untouched (planned prices are today's prices, nothing is inflated); with 0% cost increase it equals the plan exactly",
+   "pts": 3,
+   "earned": 3,
+   "pass": true,
+   "detail": "ok at 4.5%: series, at(), horizon, rows, exits all /(1.045)^(m/12)",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L6",
+   "id": "L6.8",
+   "name": "Today's dollars for Finances: E.finance(S, E.planR(S)) divides every money series by (1 + cost increase)^(t/12) at its month, the plan-end cash flow equals the Planned top card, living costs stay flat (they rise at the same rate), the verdict does not change, and the texts quote today's-dollar amounts",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "ok",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L6",
    "id": "L6.4",
    "name": "Stress-test and totals use the same time base: category strip \"lasts\" costs are grown to the plan-end month like the income they offset (engine.stress exists and scales fixed costs by the growth factor)",
    "pts": 2,
@@ -762,22 +784,22 @@
   {
    "cat": "L8",
    "id": "L8.4",
-   "name": "Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M (125-135M at the 28-year plan end, 80-140M at 25 years: the plan starts from zero owned assets and compounds) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative",
+   "name": "Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M in TODAY'S dollars (125-135M at the 28-year plan end after dividing by 1.03^28, i.e. about $286-309M in future dollars; 40-100M in today's dollars at 25 years: the plan starts from zero owned assets and compounds) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative",
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "NW 25y $80.8M, 28y $130.6M; step ratios 1.25,1.24,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 27; business growth 4",
+   "detail": "NW (today's dollars) 25y $71.1M, 28y $132.8M (future $303.7M); step ratios 1.26,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 35; business growth 4",
    "source": "",
    "disclosedOnly": false
   },
   {
    "cat": "L8",
    "id": "L8.4b",
-   "name": "Default plan targets: net worth at the 28-year plan end is $125M to $135M AND the monthly cash flow at plan end (Cash flow / mo, before tax, after loan payments) is at least $1.3M; the cash flow is the sum of the asset rows (income minus operating costs and loan payments) and equals income before loans (net operating income) minus loan payments",
+   "name": "Default plan targets, in TODAY'S dollars (future dollars divided by 1.03^28): net worth at the 28-year plan end is $125M to $135M AND the monthly cash flow at plan end (Cash flow / mo, before tax, after loan payments) is at least $1.3M (at least $286M and $2.98M in future dollars); the cash flow is the sum of the asset rows (income minus operating costs and loan payments) and equals income before loans (net operating income) minus loan payments",
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "NW $130.60M, cash flow $1.376M/mo (rows $1.376M), income before loans $1.743M, loan payments $0.367M",
+   "detail": "today's dollars NW $132.76M, cash flow $1.506M/mo; future dollars NW $303.73M, cash flow $3.446M/mo (rows $3.446M), income before loans $5.648M, loan payments $2.202M",
    "source": "",
    "disclosedOnly": false
   },
@@ -799,7 +821,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "9,18,25,29,30,38,44,53,65,84,93,104,118,127,127,146,146,163,165,189,192,212,216,232,240,255,262; verdict yes, lowest liquid cash $27434",
+   "detail": "6,13,17,21,21,24,26,33,44,51,57,77,93,102,111,127,127,128,148,148,154,176,176,187,205,206,219,234,238,250,265,268,281,295,299; verdict yes, lowest liquid cash $26820",
    "source": "",
    "disclosedOnly": false
   },
@@ -920,7 +942,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "owned false first pooled false no-job unfunded 27 NW on/off 130.6/13.0",
+   "detail": "owned false first pooled false no-job unfunded 35 NW on/off 303.7/48.1",
    "source": "",
    "disclosedOnly": false
   },
@@ -938,7 +960,7 @@
   {
    "cat": "L10",
    "id": "L10.2",
-   "name": "The Assumptions page carries a \"how the numbers are built\" note that is true of the model: nominal dollars, growth with value, 50% business credit-line cap, own rent/mortgage in DTI, worked-out taxes with depreciation (27.5/39/15/7 years), refinance at maturity, NNN repayments, 7% vacancy, 4% business growth, savings grow with income; and it no longer says the old things (same cap for all, no own housing, depreciation not modeled)",
+   "name": "The Assumptions page carries a \"how the numbers are built\" note that is true of the model: figures for future months in today's dollars by default (future dollars on request, prices of planned assets are today's prices and nothing is inflated), growth with value, 50% business credit-line cap, own rent/mortgage in DTI, worked-out taxes with depreciation (27.5/39/15/7 years), refinance at maturity, NNN repayments, 7% vacancy, 4% business growth, savings grow with income; and it no longer says the old things (same cap for all, no own housing, depreciation not modeled)",
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
@@ -986,18 +1008,18 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "maple $25000 -> $95000; cedar $30000 -> $117000",
+   "detail": "maple $25000 -> $70000; cedar $30000 -> $87000",
    "source": "",
    "disclosedOnly": false
   },
   {
    "cat": "L8",
    "id": "L8.7",
-   "name": "Default plan is robust and honest: with the default finance profile net worth >= $125M, cash flow >= $1.3M/mo, verdict Yes, debt-to-income peak <= 35%, no unfunded asset, every purchase inside the plan years; with a much tighter profile (about $580/mo of job money left after living costs) the plan is NOT silently Yes: the verdict is Tight with a reason that names the late last purchase",
+   "name": "Default plan is robust and honest: with the default finance profile net worth >= $125M and cash flow >= $1.3M/mo in today's dollars, verdict Yes, debt-to-income peak <= 35%, no unfunded asset, every purchase inside the plan years; with a much tighter profile (about $580/mo of job money left after living costs) the plan is NOT silently Yes: the verdict is Tight with a reason that names the late last purchase",
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "default NW $130.6M, cf $1.38M, DTI 16%, last buy month 262; weak profile (job money $580/mo): NW $22.8M, verdict tight, last buy month 362",
+   "detail": "default NW $303.7M, cf $3.45M, DTI 20%, last buy month 299; weak profile (job money $580/mo): NW $31.3M, verdict tight, last buy month 407",
    "source": "",
    "disclosedOnly": false
   },

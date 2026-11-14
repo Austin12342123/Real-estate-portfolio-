@@ -120,12 +120,12 @@ exports.run = async function run(X) {
     const sm = await load(sample()).then(store); P.t(sm.houses.every((h) => !h.target), 'the sample carries no old funding links either (the trust decides)', 1, '');
     const dpl = async (id) => { await tab(await tabOf(id)); return page.locator(`[data-row=${id}] [data-testid=dp-line]`).textContent().catch(() => ''); }; const mon = (t) => { const m = /by (?:month (\d+)|now)/.exec(t); return m ? (m[1] ? +m[1] : 0) : null; };
     await load(S0); await sel('h2'); await page.click('[data-testid=move-down]'); await page.waitForTimeout(60); await page.click('[data-testid=move-up]'); await page.waitForTimeout(80);
-    let t = await tgt(); let pl = E.plan(E.normalize(clone(await store())));
+    let t = await tgt(); let pl = E.planR(E.normalize(clone(await store())));
     P.t((await ids('house')).join() === 'h2,h3' && Object.values(t).every((v) => v === ''), 'order 1,2,3 after a move down and back up; still no stored links', 2, JSON.stringify(t));
     let l2 = await dpl('h2'), l3 = await dpl('h3'); P.t(mon(l2) === pl.trust.h2.ready && /pool of 1 has/.test(l2) && mon(l3) === pl.trust.h3.ready && /pool of 2 has/.test(l3) && /^Possible/.test(l2) && /^Loan due/.test(await dpl('h1')), 'the planned rows show Possible, the engine month the trust can pay and the pool (house 2: pool of 1, house 3: pool of 2); the bought row shows its loan', 3, l2 + ' | ' + l3);
     P.t(pl.purchase.h2 >= 30 && pl.purchase.h3 >= Math.max(40, pl.purchase.h2) && pl.trust.h3.n === 2, 'purchase months: each asset is bought when the pool of everything before it can pay, never before its "not before" month', 1.5, JSON.stringify(pl.purchase));
     await sel('h3'); await page.click('[data-for=h3] [data-testid=move-up]'); await page.waitForTimeout(80);
-    t = await tgt(); pl = E.plan(E.normalize(clone(await store()))); l2 = await dpl('h2'); l3 = await dpl('h3');
+    t = await tgt(); pl = E.planR(E.normalize(clone(await store()))); l2 = await dpl('h2'); l3 = await dpl('h3');
     P.t((await ids('house')).join() === 'h3,h2' && Object.values(t).every((v) => v === ''), 'order 1,3,2 after moving house 3 up; still no stored links', 2, JSON.stringify(t));
     P.t(mon(l3) === pl.trust.h3.ready && /pool of 1 has/.test(l3) && mon(l2) === pl.trust.h2.ready && /pool of 2 has/.test(l2) && pl.purchase.h3 <= pl.purchase.h2, 'house 3 is now funded by the pool of house 1 alone and house 2 by houses 1 and 3 (waits and months re-worked at once)', 3, l3 + ' | ' + l2);
     await page.evaluate(() => { location.hash = '#house-h2'; }); await page.waitForTimeout(100);
@@ -135,7 +135,7 @@ exports.run = async function run(X) {
     await load(S1); await sel('x2'); await page.click('[data-testid=move-down]'); await page.waitForTimeout(80); t = await tgt();
     P.t(Object.values(t).every((v) => v === ''), 'reordering inside a category never writes a link', 0.7, JSON.stringify(t));
     const U = mk([home('u1', { status: 'owned', target: 'u3' }), home('u2'), home('u3'), E.newAsset('commercial', 'comm25', { id: 'c1', target: 'u2' })]); E.relink(U); const ut = Object.fromEntries(U.houses.map((h) => [h.id, h.target]));
-    const pu = E.plan(U), U2 = mk([home('u1', { status: 'owned' }), home('u2'), home('u3'), E.newAsset('commercial', 'comm25', { id: 'c1' })]), pu2 = E.plan(U2);
+    const pu = E.planR(U), U2 = mk([home('u1', { status: 'owned' }), home('u2'), home('u3'), E.newAsset('commercial', 'comm25', { id: 'c1' })]), pu2 = E.planR(U2);
     P.t(Object.values(ut).every((v) => v === '') && JSON.stringify(pu.purchase) === JSON.stringify(pu2.purchase), 'Engine.relink clears old links, and old links never change the plan (same purchase months with or without them)', 1.3, JSON.stringify(ut));
     return P; });
 
@@ -161,7 +161,7 @@ exports.run = async function run(X) {
     P.t(hr.map((h) => h.t).join() === 'owned-house,owned-business' && hp.map((h) => h.t).join() === 'house,commercial,business,sold' && hd.slice(0, 5).map((h) => h.name).join() === 'Homes,Businesses,Homes,Commercial,Businesses', 'the Real page has the categories that hold something bought; the Planned page has its three categories, plus Sold when something is sold', 1.5, hd.map((h) => h.name).join());
     P.t(hd.every((h) => h.chev && h.cx > h.x + 150 && h.sy >= -2 && h.sy < 14), 'name on the left, chevron on the right, subtitle directly below the name', 1, JSON.stringify(hd.map((h) => [Math.round(h.x), Math.round(h.cx), Math.round(h.sy)])));
     P.t(hd[0].exp === 'true' && hd[1].exp === 'false' && hd[2].exp === 'true' && hd[3].exp === 'false' && hd[4].exp === 'false' && hd[5].exp === 'false', 'default: the Homes of each page open, the others collapsed', 1, hd.map((h) => h.exp).join());
-    const S = sample(), pl = E.plan(S), vis = (tp) => S.houses.filter((h) => (h.type || 'house') === tp && h.status !== 'owned' && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM));
+    const S = sample(), pl = E.planR(S), vis = (tp) => S.houses.filter((h) => (h.type || 'house') === tp && h.status !== 'owned' && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM));
     const cnt = (tp, own) => S.houses.filter((h) => (h.type || 'house') === tp && (h.status === 'owned') === !!own && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM)).length;
     const strip = (x, tp, own) => x.sub.startsWith(String(cnt(tp, own))) && /before loan/.test(x.sub) && /after loan/.test(x.sub) && /worth/.test(x.sub) && /DSCR/.test(x.sub) && /lasts/.test(x.sub);
     P.t(strip(hd[0], 'house', 1) && strip(hd[1], 'business', 1) && strip(hd[2], 'house') && strip(hd[3], 'commercial') && strip(hd[4], 'business') && (await page.locator('[data-testid=cat-count-house]').textContent()).trim() === String(cnt('house')), 'each header carries the stat strip: count, cash flow before and after loans, worth, DSCR, lasts', 2, hd.map((h) => h.sub).join(' | '));
@@ -187,8 +187,8 @@ exports.run = async function run(X) {
     const rd = async () => page.evaluate(() => { const g = (s) => { const e = document.querySelector(s); return e ? e.textContent.trim() : ''; }; const nx = document.querySelector('[data-testid=eff-next]'); return { term: g('[data-testid=eff-term]'), termSub: document.querySelector('[data-testid=eff-term]').nextElementSibling.textContent, pay: g('[data-testid=eff-payment]'), next: g('[data-testid=eff-next]'), nextSub: nx.nextElementSibling.textContent, nextLab: nx.previousElementSibling.textContent, open: nx.dataset.open, sooner: nx.dataset.sooner, val: document.querySelector('[data-testid=extra-input]').value }; });
     const mmy = (m) => require('./dates.js').mond(m), ymf = (m) => (m < 12 ? m + ' mo' : Math.floor(m / 12) + ' yr' + (m % 12 ? ' ' + (m % 12) + ' mo' : ''));
     const check1 = async (label, X) => {
-      const St = E.normalize(clone(await store())); const h = E.H(St, 'maple'); const pl = E.plan(St), v = pl.V.maple, S00 = clone(St); E.H(S00, 'maple').extra = 0; const p0 = E.plan(S00).loanEnd.maple, pX = pl.loanEnd.maple;
-      const nx = St.houses.slice(St.houses.indexOf(h) + 1).find((q) => q.status === 'planned'), S0x = clone(St); E.H(S0x, 'maple').extra = 0; const open = pl.purchase[nx.id], m0 = E.plan(S0x).purchase[nx.id], sooner = m0 - open, tr = pl.trust[nx.id];
+      const St = E.normalize(clone(await store())); const h = E.H(St, 'maple'); const pl = E.planR(St), v = pl.V.maple, S00 = clone(St); E.H(S00, 'maple').extra = 0; const p0 = E.planR(S00).loanEnd.maple, pX = pl.loanEnd.maple;
+      const nx = St.houses.slice(St.houses.indexOf(h) + 1).find((q) => q.status === 'planned'), S0x = clone(St); E.H(S0x, 'maple').extra = 0; const open = pl.purchase[nx.id], m0 = E.planR(S0x).purchase[nx.id], sooner = m0 - open, tr = pl.trust[nx.id];
       const r = await rd();
       P.t(r.term.startsWith('Paid off in ' + ymf(pX)), label + ': loan term "Paid off in ' + ymf(pX) + '" matches the plan (with the automatic extra)', 1, r.term);
       P.t(X > 0 ? new RegExp('^' + ymf(p0 - pX).replace(/ /g, ' ') + ' sooner').test(r.termSub) : /extra payments pay it off sooner/.test(r.termSub), label + ': months sooner vs no extra = ' + (p0 - pX), 1, r.termSub);
@@ -202,10 +202,10 @@ exports.run = async function run(X) {
     await setX('1500'); const { v } = await check1('extra 1500', 1500);
     async function setX(val) { await page.evaluate((val) => { const el = document.querySelector('[data-testid=extra-input]'); el.focus(); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, val); el.dispatchEvent(new Event('input', { bubbles: true })); document.activeElement.blur(); }, val); await page.waitForTimeout(80); }
     /* engine: the reinvested cash flow really leaves your cash line (Finances) in the month it moves into the trust */
-    const St = E.normalize(clone(await store())); const pl2 = E.plan(St), mo = 6, dpc = pl2.dpCash[mo]; P.t(dpc > 0, 'pooled cash flow moves into the trust each month while purchases wait (month ' + mo + ': $' + Math.round(dpc) + ')', 0.8, dpc);
+    const St = E.normalize(clone(await store())); const pl2 = E.plan(St), mo = 6, dpc = pl2.dpCash[mo]; /* the identity is an engine property: future dollars */ P.t(dpc > 0, 'pooled cash flow moves into the trust each month while purchases wait (month ' + mo + ': $' + Math.round(dpc) + ')', 0.8, dpc);
     const f = E.finance(St, pl2), Rr = f.series, dl = Rr.liquid[mo] - Rr.liquid[mo - 1], expect = Rr.net[mo] + Rr.interest[mo] + Rr.capitalIn[mo] - Rr.outsideCall[mo] - Rr.oneTime[mo] - Rr.saleTax[mo] - pl2.dpCash[mo] - pl2.jobUsed[mo];
     P.t(Math.abs(dl - expect) < 0.01 && pl2.dpCash[mo] > 0, 'Finances cash line drops by exactly the cash flow reinvested in that month (liquid change = net + interest - reinvested)', 0.8, Math.round(dl) + ' vs ' + Math.round(expect));
-    const ref = null;
+    { const fr = E.finance(St, E.planR(St)), gf = (t) => Math.pow(1 + St.p.inflation / 100, t / 12), dlr = fr.series.liquid[mo] - fr.series.liquid[mo - 1], exp2 = expect / gf(mo) + Rr.liquid[mo - 1] * (1 / gf(mo) - 1 / gf(mo - 1)); P.t(Math.abs(dlr - exp2) < 0.01, 'in today\'s dollars the same line changes by that amount divided by the month\'s cost increase, plus the erosion of the cash already held', 0.2, Math.round(dlr) + ' vs ' + Math.round(exp2)); }
     /* asset page sync */
     await page.evaluate(() => { location.hash = '#house-maple'; }); await page.waitForTimeout(100); await page.click('[data-coll=loan]').catch(() => {}); await page.waitForTimeout(40);
     const ap = await page.evaluate(() => ({ x: (document.querySelector('[data-p="h.maple.extra"]') || {}).value, pay: (document.querySelector('[data-testid=h-payment]') || {}).textContent })); P.t(ap.x === '1,500' && ap.pay === $f(v.payment), 'the asset page Extra / month and Payment now equal the panel numbers', 1.2, JSON.stringify(ap));

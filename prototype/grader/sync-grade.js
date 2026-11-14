@@ -125,7 +125,7 @@ exports.run = async function run(X) {
     }
     return g;
   }
-  const planOf = (g) => g.pl || (g.pl = E.plan(clone(g.state)));
+  const planOf = (g) => g.pl || (g.pl = E.planR(clone(g.state)));
   async function editInput(page, sel, val) { return page.evaluate(async ([sel, val]) => { const el = document.querySelector(sel); if (!el) return false; el.focus(); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(el, val); el.dispatchEvent(new Event('input', { bubbles: true })); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); await new Promise((r) => setTimeout(r, 15)); return true; }, [sel, String(val)]); }
   async function selectOpt(page, sel, val) { return page.evaluate(async ([sel, val]) => { const el = document.querySelector(sel); if (!el) return false; el.value = val; el.dispatchEvent(new Event('change', { bubbles: true })); await new Promise((r) => setTimeout(r, 15)); return true; }, [sel, String(val)]); }
   async function clickSel(page, sel) { return page.evaluate(async (sel) => { const el = document.querySelector(sel); if (!el) return false; el.click(); await new Promise((r) => setTimeout(r, 20)); return true; }, sel); }
@@ -308,7 +308,7 @@ exports.run = async function run(X) {
     T('"Cash flow now" subtext = cash flow minus extra (no subtext when there is no extra payment)', v.X > 0.5 ? eq((/([−+]\$[\d,.]+[MB]?) after extra/.exec(cf.sub) || [])[1], v.cf - v.X) : cf.sub === '', 0.5, cf.sub + ' vs ' + $f(v.cf - v.X));
   }
   function chkAssetImpact(main, hg, id, A, tag) {
-    const S = main.state, pl = planOf(main), wo = E.plan(E.without(clone(S), id)), T = (key, ok, w, info) => A.t(key, ok, w, tag + ' ' + id + ': ' + info);
+    const S = main.state, pl = planOf(main), wo = E.planR(E.without(clone(S), id)), T = (key, ok, w, info) => A.t(key, ok, w, tag + ' ' + id + ': ' + info);
     const L = [['Net worth', wo.horizon.nw, pl.horizon.nw, 'kpi-networth'], ['Cash flow / mo', wo.horizon.cf, pl.horizon.cf, 'kpi-cashflow'], ['Payments / mo', wo.horizon.monthly, pl.horizon.monthly, 'kpi-monthly'], ['Outside cash', wo.outsideTotal, pl.outsideTotal, null]];
     L.forEach(([lb, a, b, kid]) => {
       const line = hg.impact.find((x) => x.lb === lb), differs = Math.abs(a - b) > 0.5;
@@ -462,7 +462,7 @@ exports.run = async function run(X) {
     g1('extra', h.extra, 0.51, 'extra field = stored extra (always the user\'s own number: the trust decides the timing)');
     add('there is no "Months until LOC" field and no Funds picker (the trust funds each asset)', !('wait' in {}) && !g.kv.some((x) => x.p === 'h.' + id + '.wait'), 'wait field present');
     if (h.status === 'planned') {
-      const plE = E.plan(E.normalize(JSON.parse(JSON.stringify(S)))), m = plE.purchase[h.id], need = I.down(h) + h.price * I.cl(S, h) / 100 + (h.finCapex ? 0 : Math.max(0, h.capex || 0)), tm = g.t['trust-months'];
+      const plE = E.planR(E.normalize(JSON.parse(JSON.stringify(S)))), m = plE.purchase[h.id], need = I.down(h) + h.price * I.cl(S, h) / 100 + (h.finCapex ? 0 : Math.max(0, h.capex || 0)), tm = g.t['trust-months'];
       g1('need', need, 0.51, '"Cash needed" = down payment + closing costs + improvements paid in cash');
       { const trx = plE.trust[h.id], rd = isFinite(m) ? (isFinite(trx.ready) ? trx.ready : m) : Infinity; add('"Trust can pay at" = the month the pool can pay (one clock: months from today; the purchase month if nothing holds it)', isFinite(rd) ? tm === require('./dates.js').mond(rd) : tm === 'never', tm + ' vs ' + rd); }
       const tr = plE.trust[h.id]; if (isFinite(m) && tr.pooled) add('trust split: cash held + line drawn = cash needed', /\$([\d,]+) of cash the trust already holds .* and \$([\d,]+) drawn/.test(g.t['loc-split'] || '') && Math.abs(fnum((/\$([\d,]+) of cash/.exec(g.t['loc-split']) || [])[1]) + fnum((/and \$([\d,]+) drawn/.exec(g.t['loc-split']) || [])[1]) - need) <= 1.01, (g.t['loc-split'] || 'missing') + ' vs need ' + R(need));
@@ -631,7 +631,7 @@ exports.run = async function run(X) {
         await nav(page, '#assumptions'); await editInput(page, `[data-p="${p}"]`, v); const S = await stateOf(page); const key = p.slice(2);
         A.t('setting stored (' + p + ')', S.g[key] === v, 0.2, p + ' ' + S.g[key]);
         const { mg, fg, hg } = await full(S, 'after ' + p + '=' + v, ['a']);
-        const pl = E.plan(clone(S)), ag = await grab(page, '#house-a'), bg = await grab(page, '#house-b'), cg = await grab(page, '#house-c');
+        const pl = E.planR(clone(S)), ag = await grab(page, '#house-a'), bg = await grab(page, '#house-b'), cg = await grab(page, '#house-c');
         if (key === 'cap') { const n = ag.notes.find((x) => /When its line of credit opens/.test(x)) || ''; A.t('cap edit shows on the asset page note (cap N%)', new RegExp('cap ' + v + '%').test(n) || !/When its line/.test(n), 1, n.slice(-60)); const lr = mg.rows.find((r) => r.id === 'b'); A.t('cap edit moves the funding date on the Portfolio row of the next asset (b) = engine', !!lr && (isFinite(pl.purchase.b) ? (() => { const tb = pl.trust.b, rd = isFinite(tb.ready) ? tb.ready : pl.purchase.b; return /^Possible|^Not possible/.test(lr.loc) && lr.loc.includes(rd <= 0 ? 'by now' : 'by month ' + rd) || /own cash/.test(lr.loc); })() : /^Not possible/.test(lr.loc)), 1, lr && lr.loc + ' vs ' + pl.purchase.b); }
         if (key === 'dti') { const hw = mg.warns.find((w) => /Debt-to-income peaks/.test(w.t)); A.t('DTI limit shows in the Portfolio warning and the Finances reason', (pl.worst.dti > v ? !!hw && new RegExp('limit ' + v + '%').test(hw.t) : !hw) && (pl.worst.dti > v ? new RegExp('limit ' + v + '%').test(fg.text) /* passing reasons are shown as a short note without the limit */ : /lenders should approve/.test(fg.t['reasons-ok'] || '')), 1, (hw && hw.t) + ' | ' + (/limit \d+%/.exec(fg.text) || [])[0]); const ch = ag.chips.find((c) => /Debt-to-income/.test(c.t)); const af = E.afford(clone(S), S.houses.find((h) => h.id === 'a'), pl); A.t('DTI limit shows in the asset-page chip title', af.cls === 'ok' || af.cls === 'na' ? !ch : !!ch && new RegExp(v + '% limit').test(ch.title), 1, (ch && ch.title) + ' vs ' + af.why); }
         if (key === 'closing') { A.t('closing default shows on every asset with no own closing %', fnum(fld(ag, 'h.a.closingPct')) === v && fnum(fld(bg, 'h.b.closingPct')) === v && fnum(fld(cg, 'h.c.closingPct')) === v, 1, fld(ag, 'h.a.closingPct') + ',' + fld(bg, 'h.b.closingPct')); A.t('closing default changes "Cash needed" on the planned asset', close(fnum(fld(bg, 'h.b.need')), 240000 * 0.2 + 240000 * v / 100), 1, fld(bg, 'h.b.need') + ' vs ' + (48000 + 2400 * v)); }
@@ -665,7 +665,7 @@ exports.run = async function run(X) {
           const noi = hg.notes.find((n) => /^Net operating income/.test(n)), cfv = kpiOf(hg, 'h-cf').v;
           if (noi) A.t('the same cash flow is not shown twice on one asset page', !(noi.match(money$) || []).some((x) => x === cfv.replace(/^\+?/, '+') || x === cfv), 1.5, d.tag + ' ' + id + ': hero "Cash flow now" ' + cfv + ' and again in "' + noi + '"');
           /* now vs plan-end basis: share line is labeled "In your portfolio total" and hero is labeled "now" */
-          A.t('asset hero and portfolio-share are labeled with their different bases', /now|while held/i.test(kpiOf(hg, 'h-cf').label) && /portfolio total|portfolio row \(at (plan end|year \d+)\)/i.test(hg.t['asset-share'] || ''), 1, d.tag + ' ' + id);
+          A.t('asset hero and portfolio-share are labeled with their different bases', /now|while held/i.test(kpiOf(hg, 'h-cf').label) && /portfolio total|portfolio row \(at (plan end|year \d+)(, in (today's|future) dollars)?\)/i.test(hg.t['asset-share'] || ''), 1, d.tag + ' ' + id);
         }
         /* contradictions on Portfolio rows */
         main.rows.forEach((r) => { const h = S.houses.find((x) => x.id === r.id), v = pl.V[r.id]; const losing = /home loses money/.test(r.hi.join(' ')), shown = /^−/.test(r.cf);

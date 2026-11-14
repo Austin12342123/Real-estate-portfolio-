@@ -25,7 +25,7 @@ exports.run = async function run(X) {
     console.log(`  [${rec.earned.toFixed(2)}/${points}] ${id} ${name}  (${rec.seconds}s)${ratio < 1 ? '  <-- ' + String(rec.detail).slice(0, 400) : ''}`);
   }
   const clone = (o) => JSON.parse(JSON.stringify(o));
-  const PHZ = (st) => require('./plannedhz.js')(E).plannedHz(st, E.plan(clone(st))); /* the Planned page shows the planned assets only */
+  const PHZ = (st) => require('./plannedhz.js')(E).plannedHz(st, E.planR(clone(st))); /* the Planned page shows the planned assets only */
   const BADRE = /(^|[^A-Za-z])(NaN|-?Infinity|undefined|\[object)([^A-Za-z]|$)/;
   const $f = (n) => { const a = Math.abs(isFinite(n) ? n : 0), sg = n < -0.5 ? '−' : ''; return a >= 1e9 ? sg + '$' + (a / 1e9).toFixed(2) + 'B' : a >= 1e7 ? sg + '$' + (a / 1e6).toFixed(1) + 'M' : sg + '$' + Math.round(a).toLocaleString('en-US'); };
   const numsIn = (s) => (String(s).match(/\d[\d,]*(?:\.\d+)?/g) || []).map((x) => +x.replace(/,/g, ''));
@@ -391,17 +391,17 @@ exports.run = async function run(X) {
       await load(page, sampleS(), '#house-maple'); await openAll(page);
       for (const f of ['capex', 'capexMonths', 'arv', 'liftIncome', 'liens']) { await setVal(page, `[data-p="h.maple.${f}"]`, '40000'); }
       for (const f of ['capex', 'capexMonths', 'arv', 'liftIncome', 'liens']) { await setVal(page, `[data-p="h.maple.${f}"]`, ''); }
-      let SA = await stateOf(page), h = SA.houses.find((x) => x.id === 'maple'), pl = E.plan(clone(SA)), shown = await page.evaluate(() => ({ nw: (document.querySelector('[data-testid=kpi-networth]') || {}).textContent }));
+      let SA = await stateOf(page), h = SA.houses.find((x) => x.id === 'maple'), pl = E.planR(clone(SA)), shown = await page.evaluate(() => ({ nw: (document.querySelector('[data-testid=kpi-networth]') || {}).textContent }));
       P.t(['capex', 'capexMonths', 'arv', 'liftIncome', 'liens'].every((f) => typeof h[f] === 'number' && isFinite(h[f])) && !(await scanBad(page)) && isFinite(pl.horizon.nw), 'improvement budget / months / appraisal / income lift / liens left blank leave finite values and a valid asset page', 0.8, JSON.stringify(['capex', 'capexMonths', 'arv', 'liftIncome', 'liens'].map((f) => h[f])) + ' ' + (await scanBad(page)));
       await nav(page, '#'); const k = await page.evaluate(() => (document.querySelector('[data-testid=kpi-networth]') || {}).textContent); const hh = (await stateOf(page));
       P.t(Math.abs(money(k) - PHZ(hh).nw) <= 0.003 * Math.abs(PHZ(hh).nw) + 1000 && !(await scanBad(page)), 'Portfolio net worth still equals the engine after those fields were blanked', 0.6, k + ' vs ' + Math.round(PHZ(hh).nw));
       await load(page, sampleS(), '#house-ridge'); await openAll(page);
       for (const f of ['exitMonth', 'sellCost']) await setVal(page, `[data-p="h.ridge.${f}"]`, '');
-      SA = await stateOf(page); h = SA.houses.find((x) => x.id === 'ridge'); pl = E.plan(clone(SA));
+      SA = await stateOf(page); h = SA.houses.find((x) => x.id === 'ridge'); pl = E.planR(clone(SA));
       P.t(isFinite(h.exitMonth) && isFinite(h.sellCost) && !(await scanBad(page)) && isFinite(pl.horizon.nw), 'sale month and selling cost left blank keep finite values and a valid plan', 0.5, h.exitMonth + '/' + h.sellCost);
       await nav(page, '#assumptions'); await openAll(page);
       for (const f of ['p1', 'p2', 'otherDebt', 'haircut', 'rentCount']) { await setVal(page, `[data-p="g.${f}"]`, ''); }
-      const SG = await stateOf(page); P.t(['p1', 'p2', 'otherDebt', 'haircut', 'rentCount'].every((f) => typeof SG.g[f] === 'number' && isFinite(SG.g[f])) && !(await scanBad(page)) && isFinite(E.plan(clone(SG)).horizon.nw), 'co-signer incomes, other debts, appraisal cut and rent counted left blank stay finite and the plan still computes', 0.6, JSON.stringify(['p1', 'p2', 'otherDebt', 'haircut', 'rentCount'].map((f) => SG.g[f])));
+      const SG = await stateOf(page); P.t(['p1', 'p2', 'otherDebt', 'haircut', 'rentCount'].every((f) => typeof SG.g[f] === 'number' && isFinite(SG.g[f])) && !(await scanBad(page)) && isFinite(E.planR(clone(SG)).horizon.nw), 'co-signer incomes, other debts, appraisal cut and rent counted left blank stay finite and the plan still computes', 0.6, JSON.stringify(['p1', 'p2', 'otherDebt', 'haircut', 'rentCount'].map((f) => SG.g[f])));
       return P; });
 
   /* ================================================================ H7 old saves */

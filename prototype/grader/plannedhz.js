@@ -6,14 +6,14 @@ module.exports = function (E) {
   const sum = (a, k) => a.reduce((s, x) => s + (x[k] || 0), 0);
   /* planned-only horizon (all fields the Planned KPIs show) */
   function plannedHz(S, pl) {
-    pl = pl || E.plan(JSON.parse(JSON.stringify(S))); const th = pl.horizon, { own } = split(S, pl);
+    pl = pl || E.planR(JSON.parse(JSON.stringify(S))); const th = pl.horizon, { own } = split(S, pl);
     if (!own.length) return Object.assign({}, th);
     const o = Object.assign({}, th); o.nw = th.nw - sum(own, 'equity'); o.monthly = th.monthly - sum(own, 'payment'); o.cf = th.cf - sum(own, 'cf'); o.cfx = th.cfx - sum(own, 'cf'); o.noi = th.noi - sum(own, 'income'); o.value = th.value - sum(own, 'value'); o.debt = th.debt - sum(own, 'debt');
     o.extra = Math.max(0, th.extra - sum(own, 'extra')); o.count = Math.max(0, (th.count || 0) - own.length); const dsv = o.noi - o.cf; o.ds = dsv; o.dscr = dsv > 0.5 ? o.noi / dsv : 0; o.cltv = o.value > 0 ? (o.debt / o.value) * 100 : 0; return o;
   }
   /* bought-only horizon: just the owned assets' shares */
   function realHz(S, pl) {
-    pl = pl || E.plan(JSON.parse(JSON.stringify(S))); const { own } = split(S, pl), o = { nw: sum(own, 'equity'), monthly: sum(own, 'payment'), cf: sum(own, 'cf'), noi: sum(own, 'income'), value: sum(own, 'value'), debt: sum(own, 'debt'), extra: sum(own, 'extra'), count: own.length };
+    pl = pl || E.planR(JSON.parse(JSON.stringify(S))); const { own } = split(S, pl), o = { nw: sum(own, 'equity'), monthly: sum(own, 'payment'), cf: sum(own, 'cf'), noi: sum(own, 'income'), value: sum(own, 'value'), debt: sum(own, 'debt'), extra: sum(own, 'extra'), count: own.length };
     o.ds = o.noi - o.cf; o.dscr = o.ds > 0.5 ? o.noi / o.ds : 0; o.cltv = o.value > 0 ? (o.debt / o.value) * 100 : 0; return o;
   }
   /* extra payments being paid now by the planned assets (bought assets' extra belongs to the Real page) */

@@ -242,7 +242,7 @@ exports.run = async function run(X) {
     return { chip: t('[data-testid=verdict-chip]'), head: t('[data-testid=verdict-headline]'), rows: [...document.querySelectorAll('[data-testid=monthly-picture] tr')].map((tr) => [...tr.children].map((c) => c.textContent.trim())), low: t('[data-testid=lowest-cash]'), fixes: [...document.querySelectorAll('[data-testid=fixes] li')].map((x) => x.textContent.trim()), body: document.getElementById('app').innerText }; });
   const numTol = (a, b) => Math.abs(a - b) <= 1.01 + Math.abs(b) * 0.006;
   function matchUI(P, d, S, label, w) {
-    const f = E.finance(S), k = f.kpis; const want = [k.takeHome, k.portfolioAfterTax, -k.managerCost0, -k.extra, -k.living, -k.debts, k.net0];
+    const f = E.finance(S, E.planR(S)), k = f.kpis; const want = [k.takeHome, k.portfolioAfterTax, -k.managerCost0, -k.extra, -k.living, -k.debts, k.net0];
     P.t(d.chip === VL[f.status] && d.head === f.headline, label + ': verdict chip + headline equal the engine (' + VL[f.status] + ')', w, `${d.chip} / ${d.head} vs ${VL[f.status]} / ${f.headline}`);
     const got = d.rows.map((r) => money(r[1])); P.t(d.rows.length === 7 && want.every((x, i) => numTol(got[i], x)), label + ': monthly picture rows equal the engine', w, got.map(Math.round).join(',') + ' vs ' + want.map(Math.round).join(','));
     const lowM = /month (\d+)/.exec(d.low || ''); P.t(d.low && numTol(money(d.low), k.minLiquid) && lowM && +lowM[1] === k.minLiquidMonth, label + ': lowest cash + month equal the engine', w, d.low + ' vs ' + Math.round(k.minLiquid) + ' m' + k.minLiquidMonth);
@@ -257,7 +257,7 @@ exports.run = async function run(X) {
     const P = new Parts(); const w = 1; await reset(page); const S = sampleS();
     /* link + chip */
     P.t((await page.locator(SEL('finances-link')).count()) === 1 && (await page.locator(SEL('finances-link')).first().isVisible()), 'main page has a visible Finances button (data-testid=finances-link)', 0.8);
-    let chip = await chipMain(page), want = VL[E.finance(S).status];
+    let chip = await chipMain(page), want = VL[E.finance(S, E.planR(S)).status];
     P.t(chip === want && (await page.locator(SEL('afford-line')).count()) === 1, `afford chip on main equals the engine status (${want})`, 1, chip);
     await page.click(SEL('afford-chip')); await page.waitForTimeout(100); P.t((await page.evaluate(() => location.hash)) === '#finances' && (await page.locator(SEL('verdict-card')).count()) === 1, 'tapping the afford chip opens #finances with the verdict card', 0.8);
     await goMain(page); await page.click(SEL('finances-link')); await page.waitForTimeout(100); P.t((await page.evaluate(() => location.hash)) === '#finances' && (await page.locator(SEL('monthly-picture')).count()) === 1 && (await page.locator(SEL('cash-card')).count()) === 1, 'Finances button opens the page with monthly picture and cash card', 0.6);
@@ -287,7 +287,7 @@ exports.run = async function run(X) {
     matchUI(P, await rd(page), Sx, 'after removing the added job', 0.3);
     /* cash + expenses fields */
     const Sy = Sx; const fields = [['p.cash', '12000', (s, p) => { p.cash = 12000; }], ['p.living', '5200', (s, p) => { p.living = 5200; }], ['p.cashApy', '4.5', (s, p) => { p.cashApy = 4.5; }], ['p.inflation', '5', (s, p) => { p.inflation = 5; }], ['p.emergencyMonths', '9', (s, p) => { p.emergencyMonths = 9; }], ['g.otherDebt', '900', (s, p, g) => { g.otherDebt = 900; }], ['p.portfolioTaxPct', '33', (s, p) => { p.portfolioTaxPct = 33; }], ['p.salesTaxPct', '30', (s, p) => { p.salesTaxPct = 30; }], ['p.operating', '2', (s, p) => { p.operating = 2; }], ['p.bizHours', '15', (s, p) => { p.bizHours = 15; }], ['p.gmMonthly', '6500', (s, p) => { p.gmMonthly = 6500; }]];
-    const Pf = new Parts(); for (const [sel, v, fn] of fields) { await fin(`[data-p="${sel}"]`, v); applyS(Sy, fn); const dd = await rd(page); const f = E.finance(Sy), k = f.kpis; const got = dd.rows.map((r) => money(r[1]));
+    const Pf = new Parts(); for (const [sel, v, fn] of fields) { await fin(`[data-p="${sel}"]`, v); applyS(Sy, fn); const dd = await rd(page); const f = E.finance(Sy, E.planR(Sy)), k = f.kpis; const got = dd.rows.map((r) => money(r[1]));
       Pf.t(dd.chip === VL[f.status] && numTol(got[6], k.net0) && numTol(got[4], -k.living) && numTol(got[2], -k.managerCost0) && numTol(money(dd.low), k.minLiquid), sel + '=' + v, 1, `${dd.chip}/${VL[f.status]} net ${got[6]}/${Math.round(k.net0)} low ${dd.low}/${Math.round(k.minLiquid)}`); }
     P.t(Pf.ratio === 1, 'editing each of the 11 cash / expense / tax / manager fields updates verdict, left-over and lowest cash like the engine', 2.2, Pf.detail);
     /* planned + capital */
@@ -311,7 +311,7 @@ exports.run = async function run(X) {
     await page.mouse.move(bb.x + bb.width * 0.5, bb.y + bb.height * 0.5); await page.waitForTimeout(80);
     const tip = await page.evaluate(() => { const t = document.getElementById('nwtip'), s = document.querySelector('[data-testid=cash-chart]'); return { hidden: t ? t.hidden : null, txt: t ? t.textContent : '', big: t && t.querySelector('b') ? t.querySelector('b').textContent : '', nw: s.dataset.nw.split(',').map(Number), line: (s.querySelector('#nwx') || {}).getAttribute && s.querySelector('#nwx').getAttribute('visibility') }; });
     const tm = /in (\d+) mo/.exec(tip.txt) || (/\((\d+)y (\d+)m\)/.test(tip.txt) ? [0, 0] : null); let tt = null; const m2 = /\((\d+)y (\d+)m\)/.exec(tip.txt), m1 = /in (\d+) mo/.exec(tip.txt); if (m2) tt = +m2[1] * 12 + +m2[2]; else if (m1) tt = +m1[1]; else if (/today/.test(tip.txt)) tt = 0;
-    const fT = E.finance(Sy).series.total;
+    const fT = E.finance(Sy, E.planR(Sy)).series.total;
     P.t(tip.hidden === false && tt !== null && tip.line === 'visible' && numTol(money(tip.big), fT[tt]) && numTol(tip.nw[tt], fT[tt]), 'hovering the cash chart shows the tooltip with the cash balance of that month (equal to the engine)', 1.2, tip.txt + ' t=' + tt + ' engine ' + Math.round(fT[tt] || 0));
     await page.mouse.move(5, 5); await page.waitForTimeout(60);
     /* persistence */
@@ -324,7 +324,7 @@ exports.run = async function run(X) {
     await fin('[data-p="g.otherDebt"]', '700'); await goHash(page, '#assumptions'); P.t((await page.inputValue('[data-p="g.otherDebt"]')).replace(/,/g, '') === '700', 'and the other direction (Finances -> Assumptions)', 0.5);
     /* main afford line updates after finance edits */
     await goHash(page, '#finances'); await fin('[data-p="p.cash"]', '0'); await fin('[data-p="p.living"]', '30000'); const S3 = applyS(clone(Sy), (s, p, g) => { p.cash = 0; p.living = 30000; g.otherDebt = 700; }); const c3 = await chipMain(page);
-    P.t(c3 === VL[E.finance(S3).status] && c3 !== chip, `main afford chip follows finance edits (was ${chip}, now ${c3}, engine ${VL[E.finance(S3).status]})`, 1);
+    P.t(c3 === VL[E.finance(S3, E.planR(S3)).status] && c3 !== chip, `main afford chip follows finance edits (was ${chip}, now ${c3}, engine ${VL[E.finance(S3, E.planR(S3)).status]})`, 1);
     /* backup contains p and restores it */
     await reset(page); await goHash(page, '#finances'); await fin('[data-p="p.cash"]', '77777'); await fin('[data-p="j.job1.gross"]', '111111'); await goHash(page, '#assumptions'); await page.click('[data-testid=export]'); await page.waitForTimeout(60);
     const txt = await page.inputValue('[data-testid=backup-text]').catch(() => ''); let j = null; try { j = JSON.parse(txt); } catch (e) {}

@@ -1,8 +1,8 @@
 # UX grader (UX_ONLY)
 
-Run: 2026-11-12T21:46:58.655Z
+Run: 2026-11-14T02:45:21.509Z
 
-## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **100.00 / 100** (separate scale)
+## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **98.65 / 100** (separate scale)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -30,11 +30,12 @@ Run: 2026-11-12T21:46:58.655Z
 | J22 | Planned page: headline says what Checks says (savings $0 -> "once you add $X from your own pocket"); Open Finances shows with Details closed; sold asset page has no "Can the plan buy it?" or trust-timing text; no "1 years" | 2.31 | 2.31 | 4/4 sub-checks pass |
 | J23 | Slow typing never commits a prefix: price 5, pause 450 ms, then /0 leaves the price alone; the "= result" hint shows while typing; the value lands on Enter / blur and the totals follow | 4.62 | 4.62 | 5/5 sub-checks pass |
 | J24 | Tap targets: every row "edit ›" is >= 44px tall at 390 and 430 (and its hit area really is: elementFromPoint), the Assumptions "How the numbers are built" summary is >= 44px, no sideways scroll at 320/390/430 | 3.08 | 3.08 | 4/4 sub-checks pass |
-| J25 | Breakdown table header at 320 and 390: "Equity" and its (i) sit on one line, "Cash flow/mo" does not wrap, the header cells are right-aligned over their numbers and nothing overflows | 3.08 | 3.08 | 6/6 sub-checks pass |
+| J25 | Breakdown table header at 320 and 390: "Equity" and its (i) sit on one line, "Cash flow/mo" does not wrap, the header cells are right-aligned over their numbers and nothing overflows | 3.08 | 1.73 | 4/6 sub-checks pass. FAIL: 320px: "Equity" and its (i) are on one line, the icon inside its cell [{"eqLines":2,"cfLines":2,"valLines":1,"iconInside":true,"iconMid":true,"alignV":true,"alignE":true,"alignC":true,"over":false}]; 320px: "Cash flow/mo" and "Value" stay on one line, no header cell overflows [{"eqLines":2,"cfLines":2,"valLines":1,"iconInside":true,"iconMid":true,"alignV":true,"alignE":true,"alignC":true,"over":false}] |
 | J26 | Months boxes round to whole months and cap at 600: 1.5 -> 2 with a "Rounded" note, 100000 -> 600 with a "Capped" note (asset page and Finances), and the date under the box matches | 3.85 | 3.85 | 5/5 sub-checks pass |
 | J27 | % handling is consistent: 5% in a dollar box stays as typed with a hint until you leave, then goes back with "No % in a dollar box, kept"; 4% in a percent box stays 4% while typing and becomes 4 on leaving; at 320 the (i) and the ▸ arrow stay glued to their last word | 3.08 | 3.08 | 6/6 sub-checks pass |
 | J28 | Remove-all: a Remove button sits next to Finances and Settings on the Planned page only; it asks first, files the portfolio in Saved, removes every planned asset (bought ones stay), Undo restores; the Saved page has the same action; nothing overflows at 320 | 2.31 | 2.31 | 7/7 sub-checks pass |
 
 ### J failures
 
-None.
+- **J25 Breakdown table header at 320 and 390: "Equity" and its (i) sit on one line, "Cash flow/mo" does not wrap, the header cells are right-aligned over their numbers and nothing overflows** (-1.35): 4/6 sub-checks pass. FAIL: 320px: "Equity" and its (i) are on one line, the icon inside its cell [{"eqLines":2,"cfLines":2,"valLines":1,"iconInside":true,"iconMid":true,"alignV":true,"alignE":true,"alignC":true,"over":false}]; 320px: "Cash flow/mo" and "Value" stay on one line, no header cell overflows [{"eqLines":2,"cfLines":2,"valLines":1,"iconInside":true,"iconMid":true,"alignV":true,"alignE":true,"alignC":true,"over":false}]
+  - Reproduce: default Planned page; breakdown header cells

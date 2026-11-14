@@ -204,6 +204,7 @@
   /* Tax on selling one asset (pl.exits[id]): gain = sale price less selling costs less (price + closing + improvements - depreciation taken). Held under a year: ordinary rates. Otherwise the depreciation part of a building's gain is unrecaptured section 1250 gain (rate up to 25%),
      the rest is long-term gain at 0/15/20% stacked on your other income, plus 3.8% NIIT on rental-property gains above $200,000 total income. A business's depreciation and amortization is ordinary income (section 1245). Override: your flat rate on the gain. */
   function saleTax(S, pl, h) {
+    if (pl.raw) { const o = saleTax(S, pl.raw, h); return o && scaleKeys(o, ['gain', 'dep', 'tax', 'ltcg', 'rec1250', 'ordinary', 'niit', 'state'], dfac(S, pl.raw.exits[h.id].month)); } /* a plan in today's dollars: work it out in future dollars, show it in today's */
     const ex = pl.exits[h.id]; if (!ex) return null; const p = taxP(S), t = Math.min(pl.T, ex.month), s = pl.series, biz = (h.type || 'house') === 'business';
     const gain = ex.net - (ex.cost - ex.dep), out = { gain, dep: ex.dep, tax: 0, ltcg: 0, rec1250: 0, ordinary: 0, niit: 0, state: 0, short: ex.age < 12, rate: 0 };
     if (!(gain > 0)) return out;
@@ -425,6 +426,33 @@
   }
 
 
+  /* ---------- TODAY'S DOLLARS ----------
+     The engine always works in future (nominal) dollars: rents, values and living costs grow, loan payments are fixed, and a planned asset's price is TODAY'S price (nothing is inflated).
+     For display, every figure that belongs to a future month is divided by (1 + cost-increase rate)^(months / 12), the same rate living costs rise at (Finances, "Cost increase"). Figures for month 0 are unchanged.
+     realPlan() returns the plan with every dollar figure of a future month converted that way (totals and rows are converted with the same factor, so a total is still the sum of its rows). The plan itself stays in pl.raw. */
+  const dfac = (S, m) => Math.pow(1 + (((S && S.p && S.p.inflation) || 0) / 100), Math.max(0, +m || 0) / 12);
+  const PL_K = ['nw', 'monthly', 'extra', 'noi', 'ds', 'cf', 'cfx', 'debt', 'value', 'rent', 'dsti', 'outside', 'cash', 'intr', 'dep', 'txRE', 'txBiz'];
+  const AS_K = ['equity', 'value', 'debt', 'payment', 'cf', 'income', 'extra'], PO_K = ['room', 'drawn', 'head', 'cf', 'tax', 'gm', 'sweep', 'cash'], EX_K = ['proceeds', 'price', 'net', 'dep', 'cost', 'tax', 'cashIn', 'profit'], JB_K = ['surplus', 'used', 'line', 'cash', 'loans', 'liquid'];
+  const scaleKeys = (o, ks, f) => { const c = Object.assign({}, o); ks.forEach((k) => { if (typeof c[k] === 'number') c[k] = c[k] / f; }); return c; };
+  function realPlan(S, pl) {
+    if (!pl) pl = plan(S); if (pl.raw) return pl;
+    const T = pl.T, f = (m) => dfac(S, m), r = Object.assign({}, pl, { raw: pl, real: true });
+    r.series = Object.assign({}, pl.series); PL_K.forEach((k) => { r.series[k] = pl.series[k].map((v, t) => v / f(t)); });
+    r.at = (t) => { const o = scaleKeys(pl.at(t), PL_K, f(Math.max(0, Math.min(T, Math.round(t))))); return o; };
+    r.today = r.at(0); r.final = r.at(Math.min(T, pl.lastEvent)); r.horizon = r.at(Math.min(T, pl.planM));
+    r.assetsAt = (t) => { const k = f(Math.max(0, Math.min(T, Math.round(t)))); return pl.assetsAt(t).map((x) => scaleKeys(x, AS_K, k)); };
+    r.snap = r.assetsAt(Math.min(T, pl.planM));
+    r.poolAt = (t) => scaleKeys(pl.poolAt(t), PO_K, f(Math.max(0, Math.min(T, Math.round(t)))));
+    r.exits = {}; Object.keys(pl.exits).forEach((id) => { r.exits[id] = scaleKeys(pl.exits[id], EX_K, f(pl.exits[id].month)); });
+    r.outsideTotal = pl.outsideTotal / f(T);
+    r.balAt = (id, t) => pl.balAt(id, t) / f(t); r.autoAt = (id, t) => pl.autoAt(id, t) / f(t); r.jobAt = (id, t) => pl.jobAt(id, t) / f(t);
+    r.jobs = Object.assign({}, pl.jobs); JB_K.forEach((k) => { if (pl.jobs[k]) r.jobs[k] = pl.jobs[k].map((v, t) => v / f(t)); });
+    return r;
+  }
+  const planR = (S) => realPlan(S, plan(S));
+  /* the same plan in future dollars or today's dollars: u = 'today' (default) | 'future' */
+  const planIn = (S, u) => (u === 'future' ? plan(S) : planR(S));
+
   /* "Lasts" stress test for one category (rows = plan-end snapshot rows of that category): if about 45% of the assets (the biggest earners) stop earning, rent/profit is gone but the
      fixed costs (tax, insurance, HOA) and the loan payments are still due. Everything is at plan-end values: the fixed costs grow with the asset exactly as its income does (income / today's NOI). */
   function stress(S, pl, rows, cash) {
@@ -441,6 +469,7 @@
   const mAt = (m) => (m <= 0 ? 'today' : 'month ' + m + (root.RepDate && root.RepDate.dtm ? ' (' + root.RepDate.dtm(m) + ')' : '')), inM = (m) => (m <= 0 ? 'today' : 'in ' + mAt(m)), aroundM = (m) => (m <= 0 ? 'today' : 'around ' + mAt(m));
   function finance(S, pl) {
     const p = S.p; if (!p) return null; pl = pl || plan(S);
+    const real = !!pl.raw; if (real) pl = pl.raw; /* a plan in today's dollars: work it all out in future dollars, then show every figure in today's (see the end of this function) */
     const g = S.g, s = pl.series, T = pl.T, infl = (p.inflation || 0) / 100, apy = (p.cashApy || 0) / 1200;
     const N = (n) => new Array(n + 1).fill(0);
     const R = { dep: N(T), taxable: N(T), gm: N(T), hours: N(T), nBiz: N(T), income: N(T), portfolio: N(T), portTax: N(T), extra: N(T), living: N(T), debts: N(T), oneTime: N(T), capitalIn: N(T), jobSplit: N(T), jobSurplus: N(T), outsideCall: N(T), saleTax: N(T), interest: N(T), net: N(T), liquid: N(T), total: N(T), reserve: N(T), burn: N(T), runway: N(T) };
@@ -464,11 +493,12 @@
       R.runway[t] = R.burn[t] > 0.5 ? Math.max(0, R.total[t]) / R.burn[t] : Infinity;
     }
     let minT = Infinity, minM = 0, gapM = -Infinity, gapAt = 0, minRun = Infinity, minRunM = 0, firstShort = -1;
-    for (let t = 0; t <= T; t++) { if (R.total[t] < minT) { minT = R.total[t]; minM = t; } const gp = R.reserve[t] - R.total[t]; if (gp > gapM) { gapM = gp; gapAt = t; }
+    const dv = (v, t) => (real ? v / dfac(S, t) : v); /* in today's dollars the lowest cash is the lowest of the series as shown (each month in its own dollars) */
+    for (let t = 0; t <= T; t++) { const tt = dv(R.total[t], t); if (tt < minT) { minT = tt; minM = t; } const gp = dv(R.reserve[t] - R.total[t], t); if (gp > gapM) { gapM = gp; gapAt = t; }
       if (R.runway[t] < minRun) { minRun = R.runway[t]; minRunM = t; } if (firstShort < 0 && R.total[t] < 0) firstShort = t; }
     const worstNet = Math.min.apply(null, R.net), callsAll = [];
     for (let t = 0; t <= T; t++) if (R.outsideCall[t] > 0.5) callsAll.push({ month: t, amount: R.outsideCall[t], assets: S.houses.filter((h) => pl.purchase[h.id] === t || (h.capex > 0 && h.status === 'owned' && t === 0)).map((h) => h.addr) });
-    const pe = Math.min(T, pl.planM), reasons = [], fixes = [], money = (n) => '$' + Math.round(Math.abs(n)).toLocaleString('en-US');
+    const pe = Math.min(T, pl.planM), reasons = [], fixes = [], money = (n, t) => '$' + Math.round(Math.abs(n) / (real && t > 0 ? dfac(S, t) : 1)).toLocaleString('en-US'); /* t = the month the amount belongs to (today's dollars divide by that month's factor) */
     let status = 'yes';
     const short = Math.max(0, -minT);
     if (short > 0.5) { status = 'no'; const c = callsAll.filter((x) => x.month <= firstShort).slice(-1)[0];
@@ -477,9 +507,9 @@
     if (R.net[0] < -0.5) { if (status === 'yes') status = 'tight'; reasons.push({ sev: 'warn', text: 'You spend ' + money(-R.net[0]) + ' a month more than you bring in right now.' }); reasons[reasons.length - 1].short = 'You spend more than you earn each month.'; fixes.push('Close the ' + money(-R.net[0]) + '/mo gap: raise income, cut living costs, or trim extra payments (' + money(R.extra[0]) + '/mo now).'); }
     else reasons.push({ sev: 'ok', short: 'saving ' + money(R.net[0]) + ' a month right now', text: 'You save about ' + money(R.net[0]) + ' a month after living costs, debts and extra payments.' });
     let peakH = 0, peakHM = 0; for (let t = 0; t <= T; t++) if (R.hours[t] > peakH) { peakH = R.hours[t]; peakHM = t; }
-    const peakBiz = Math.max.apply(null, R.nBiz), gmMax = Math.max.apply(null, R.gm);
+    const peakBiz = Math.max.apply(null, R.nBiz), gmMax = Math.max.apply(null, R.gm), gmMaxM = Math.max(0, R.gm.indexOf(gmMax));
     if (peakH > 70) { if (status === 'yes') status = 'tight'; reasons.push({ sev: 'warn', short: 'The hours do not fit in a week ' + aroundM(peakHM) + '.', text: 'At the busiest point, ' + mAt(peakHM) + ', you would work about ' + Math.round(peakH) + ' hours a week between your job and running ' + Math.min(p.operating, peakBiz) + ' business(es) yourself.' }); fixes.push('Hire a general manager for a business, drop a job, or sell a business sooner. Each manager costs about ' + money(p.gmMonthly) + '/mo.'); }
-    else if (peakBiz > 0) reasons.push({ sev: 'ok', short: 'about ' + Math.round(peakH) + ' hours a week', text: 'About ' + Math.round(peakH) + ' hours a week at the busiest point' + (gmMax > 0 ? ', with ' + money(gmMax) + '/mo of manager pay for businesses you do not run' : '') + '.' });
+    else if (peakBiz > 0) reasons.push({ sev: 'ok', short: 'about ' + Math.round(peakH) + ' hours a week', text: 'About ' + Math.round(peakH) + ' hours a week at the busiest point' + (gmMax > 0 ? ', with ' + money(gmMax, gmMaxM) + '/mo of manager pay for businesses you do not run' : '') + '.' });
     const reserveGap = Math.max(0, gapM);
     if (short <= 0.5 && reserveGap > 0.5) { if (status === 'yes') status = 'tight'; reasons.push({ sev: 'warn', short: 'Your cash dips below your emergency reserve ' + inM(gapAt) + '.', text: 'Your cash falls ' + money(reserveGap) + ' below a ' + p.emergencyMonths + '-month emergency reserve, ' + mAt(gapAt) + '.' }); fixes.push('Hold about ' + money(reserveGap) + ' more cash to keep ' + p.emergencyMonths + ' months of expenses at all times.'); }
     else if (short <= 0.5) reasons.push({ sev: 'ok', short: 'reserve covered', text: 'Your cash never drops below a ' + p.emergencyMonths + '-month emergency reserve.' });
@@ -490,9 +520,24 @@
     const firstWarn = reasons.find((x) => x.sev === 'warn');
     const headline = status === 'yes' ? 'Yes. You can carry this plan.' : status === 'tight' ? 'Tight. ' + (firstWarn ? firstWarn.short || firstWarn.text : 'It works, but with thin margins.') : 'Not yet. You run short of cash ' + inM(firstShort) + '.';
     const totalOutside = s.outside[T], capitalTotal = p.capital.reduce((a, x) => a + x.amount, 0);
-    return { series: R, T, status, headline, saleInfo, reasons, fixes, calls: callsAll,
+    const out = { series: R, T, status, headline, saleInfo, reasons, fixes, calls: callsAll,
       kpis: { planEnd: { month: pe, cfBefore: R.portfolio[pe], tax: R.portTax[pe], cfAfter: R.portfolio[pe] - R.portTax[pe], net: R.net[pe] }, peakHours: peakH, peakHoursMonth: peakHM, managerCost0: R.gm[0], managerCostMax: gmMax, peakBusinesses: peakBiz, takeHome: R.income[0], portfolioAfterTax: R.portfolio[0] - R.portTax[0], extra: R.extra[0], living: R.living[0], debts: R.debts[0], net0: R.net[0], worstNet, cash0: p.cash, reserveMonths0: R.living[0] + R.debts[0] > 0 ? p.cash / (R.living[0] + R.debts[0]) : Infinity,
-        jobSurplus0: R.jobSurplus[0], jobSplit0: R.jobSplit[0], jobSurplusMax: Math.max.apply(null, R.jobSurplus), minLiquid: minT, minLiquidMonth: minM, shortAmount: short, firstShortMonth: firstShort, reserveTarget0: R.reserve[0], reserveGap, runway0: R.runway[0], minRunway: minRun, totalOutside, capitalTotal, savingsUsed: Math.min(p.cash, totalOutside), gap: Math.max(0, totalOutside - p.cash - capitalTotal), dtiPeak: pl.worst.dti } };
+        jobSurplus0: R.jobSurplus[0], jobSplit0: R.jobSplit[0], jobSurplusMax: Math.max.apply(null, R.jobSurplus), minLiquid: minT, minLiquidMonth: minM, shortAmount: short, firstShortMonth: firstShort, reserveTarget0: R.reserve[0], reserveGap, runway0: R.runway[0], minRunway: minRun, totalOutside, capitalTotal, savingsUsed: Math.min(p.cash, totalOutside), gap: Math.max(0, totalOutside - p.cash - capitalTotal), dtiPeak: pl.worst.dti, reserveGapMonth: gapAt } };
+    return real ? finToday(S, out, pl) : out;
+  }
+  /* a finance result in today's dollars: every money series is divided by the factor of its own month; an amount that belongs to one month (lowest cash, cash needed, ...) by that month's factor */
+  const FN_K = ['dep', 'taxable', 'gm', 'income', 'portfolio', 'portTax', 'extra', 'living', 'debts', 'oneTime', 'capitalIn', 'jobSplit', 'jobSurplus', 'outsideCall', 'saleTax', 'interest', 'net', 'liquid', 'total', 'reserve', 'burn'];
+  function finToday(S, f, pl) {
+    const T = f.T, d = (m) => dfac(S, Math.min(T, m)), k = f.kpis, pe = k.planEnd.month, p = S.p;
+    FN_K.forEach((n) => { f.series[n] = f.series[n].map((v, t) => v / d(t)); });
+    f.calls = f.calls.map((c) => Object.assign({}, c, { amount: c.amount / d(c.month) }));
+    Object.keys(f.saleInfo).forEach((id) => { f.saleInfo[id] = scaleKeys(f.saleInfo[id], ['gain', 'dep', 'tax', 'ltcg', 'rec1250', 'ordinary', 'niit', 'state'], d(pl.exits[id].month)); });
+    const R = f.series, cap = p.capital.reduce((a, x) => a + x.amount / d(x.month), 0), tot = k.totalOutside / d(T);
+    Object.assign(k, { planEnd: { month: pe, cfBefore: R.portfolio[pe], tax: R.portTax[pe], cfAfter: R.portfolio[pe] - R.portTax[pe], net: R.net[pe] },
+      managerCost0: R.gm[0], managerCostMax: Math.max.apply(null, R.gm), takeHome: R.income[0], portfolioAfterTax: R.portfolio[0] - R.portTax[0], extra: R.extra[0], living: R.living[0], debts: R.debts[0], net0: R.net[0], worstNet: Math.min.apply(null, R.net),
+      jobSurplus0: R.jobSurplus[0], jobSplit0: R.jobSplit[0], jobSurplusMax: Math.max.apply(null, R.jobSurplus), reserveTarget0: R.reserve[0],
+      totalOutside: tot, capitalTotal: cap, savingsUsed: Math.min(p.cash, tot), gap: Math.max(0, tot - p.cash - cap) });
+    return f;
   }
 
   /* Can the lenders carry this purchase? Debt-to-income (including your own rent or mortgage) in the month the trust buys the asset. Assets owned today have nothing to afford. */
@@ -621,35 +666,43 @@
     A('commercial', 'bridge', {id: 'river', addr: 'Riverside Flex Industrial', price: 14640000, rent: 148047, tax: 5307, ins: 4118, hoa: 2288, growth: 5, buyIn: 96, capex: 1200000, capexMonths: 12, liftValue: 18, liftIncome: 12, exit: 'sell', exitMonth: 160}),
     A('commercial', 'comm25', {id: 'west', addr: 'Westfield Office Park', price: 10065000, rent: 102480, tax: 3843, ins: 3020, hoa: 2196, growth: 5, buyIn: 120}),
     A('house', 'cashh', {id: 'stradella', addr: '900 Stradella Rd residence', price: 38731700, rent: 150000, tax: 35500, ins: 11000, growth: 3.5, buyIn: 200})] })); };
-  /* Default portfolio: NOTHING IS OWNED YET (every asset is planned; the Real page starts empty). Smooth growth (each purchase about 25% larger than the one before) to about $130.6M of net worth and $1.4M a month of cash flow (before tax) after 28 years (built by grader/logic/gen-plan.js: CFMIN=90 RENO=25000,30000,15000 DSCRX=0.3 BASE=61500 STEP=1.25 OUT=1 node gen-plan.js 27). The first asset has no trust to borrow from, so it is paid from your savings above the cash cushion plus the job money saved since; every later asset is paid by the trust (the borrowing room and reinvested cash flow of everything bought before it) plus your job money. The first two homes (and the fourth) get a renovation paid from that cash (not financed): the new appraisal adds 1.4x the rehab cost to the price and rent lifts 10%. Homes cash flow positive. Commercial and business loans carry a lender DSCR at least 0.3 above the minimum (a thick cushion: debt-to-income peaks near 16%). Businesses are priced at 3.6x or more of yearly owner profit; SBA 7(a) never above $5M outstanding. The trust decides every purchase month (each row's buyIn is 0 = as soon as the money is there). Commercial rows carry realistic gross tax, insurance and CAM that tenants repay under NNN leases (85%). Growth is 4%/yr for everything. No partner or investor money. It needs about $2,000 a month of job money left over after living costs; with much less, the early purchases come later and the plan ends well short (see the Checks block). */
+  /* Default portfolio: NOTHING IS OWNED YET (every asset is planned; the Real page starts empty). Smooth growth (each purchase about 25% larger than the one before). TARGETS ARE IN TODAY'S DOLLARS: $125M of net worth and $1.3M a month of cash flow (before tax) at the end of the 28 years, i.e. about $286M and $2.98M a month in future dollars at 3% a year of cost increase. This plan reaches about $303.7M and $3.45M a month in future dollars ($132.8M and $1.51M in today's dollars) with 35 assets, the last bought in month 299. Prices here are TODAY'S prices (nothing is inflated). Built by grader/logic/gen-plan.js: SBAMAX=2.6e6 BIZMOD=3 CFMIN=60 RENO=25000,30000,15000,10000 TX=0.0017 INSF=35 HY=0.0108 CAP0=7.0 DSCRX=0.25 MULTS=2.9,3.4,3.9,4.9,5.5 BASE=35000 STEP=1.25 OUT=1 node gen-plan.js 35. The first asset has no trust to borrow from, so it is paid from your savings above the cash cushion plus the job money saved since; every later asset is paid by the trust (the borrowing room and reinvested cash flow of everything bought before it) plus your job money. The first four homes get a renovation paid from that cash (not financed): the new appraisal adds 1.4x the rehab cost to the price and rent lifts 10%. Homes cash flow positive. Commercial and business loans carry a lender DSCR at least 0.25 above the minimum (debt-to-income peaks near 20%). Businesses are priced at 2.9x to 5.5x of yearly owner profit; the SBA 7(a) loans never pass $5M outstanding at once. The trust decides every purchase month (each row's buyIn is 0 = as soon as the money is there). Commercial rows carry realistic gross tax, insurance and CAM that tenants repay under NNN leases (85%), at cap rates of 7 to 8%. Growth is 4%/yr for everything. No partner or investor money. It needs about $2,000 a month of job money left over after living costs; with much less, the early purchases come later and the plan ends well short (see the Checks block). */
   const seedPlan = () => { const A = newAsset; const p = samplePersonal(); p.capital = []; return orderByBuy(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450, planYears: 28 }), p, houses: [
-    A('house', 'conv30', {id: "maple", addr: "1412 Maple Ridge Dr", price: 60000, rent: 700, tax: 72, ins: 50, growth: 4, buyIn: 0, capex: 25000, capexMonths: 3, arv: 95000, liftIncome: 10}),
-    A('house', 'conv30', {id: "cedar", addr: "2207 Cedar Hollow Ln", price: 75000, rent: 850, tax: 90, ins: 58, growth: 4, buyIn: 0, capex: 30000, capexMonths: 3, arv: 117000, liftIncome: 10}),
-    A('house', 'dscr', {id: "birch", addr: "908 Birchwood Ct", price: 95000, rent: 1060, tax: 114, ins: 68, growth: 4, buyIn: 0, capex: 30000, capexMonths: 4, arv: 149000, liftIncome: 8, exit: "sell", exitMonth: 65}),
-    A('house', 'conv30', {id: "willow", addr: "3350 Willow Bend Rd", price: 120000, rent: 1340, tax: 144, ins: 80, growth: 4, buyIn: 0, capex: 15000, capexMonths: 3, arv: 141000, liftIncome: 10}),
-    A('house', 'conv30', {id: "linden", addr: "2914 Linden Way", price: 150000, rent: 1680, tax: 180, ins: 95, growth: 4, buyIn: 0}),
-    A('house', 'dscr', {id: "ridge", addr: "5521 Ridgeview Ct", price: 190000, rent: 2130, tax: 228, ins: 115, growth: 4, buyIn: 0}),
-    A('house', 'conv30', {id: "sycamore", addr: "7702 Sycamore Dr", price: 235000, rent: 2630, tax: 282, ins: 138, growth: 4, buyIn: 0}),
-    A('house', 'conv30', {id: "elm", addr: "418 Elm Street", price: 295000, rent: 3300, tax: 354, ins: 168, growth: 4, buyIn: 0}),
-    A('house', 'dscr', {id: "maplex", addr: "1412 Maple Ridge Dr #2", price: 365000, rent: 4090, tax: 438, ins: 203, growth: 4, buyIn: 0}),
-    A('commercial', 'comm25', {id: "northgater", addr: "Northgate Retail Strip", price: 460000, growth: 4, dp: 50, rent: 3750, tax: 288, ins: 115, hoa: 115, nnn: 85, buyIn: 0}),
-    A('commercial', 'comm25', {id: "harborstse", addr: "Harbor St Self-Storage", price: 575000, growth: 4, dp: 45, rent: 4970, tax: 359, ins: 144, hoa: 144, nnn: 85, buyIn: 0}),
-    A('commercial', 'comm25', {id: "lakeviewme", addr: "Lakeview Medical Office", price: 715000, growth: 4, dp: 45, rent: 6520, tax: 447, ins: 179, hoa: 179, nnn: 85, buyIn: 0}),
-    A('commercial', 'comm25', {id: "westfieldo", addr: "Westfield Office Park", price: 895000, growth: 4, dp: 50, rent: 7290, tax: 559, ins: 224, hoa: 224, nnn: 85, buyIn: 0}),
-    A('commercial', 'comm25', {id: "eastgatesh", addr: "Eastgate Shopping Plaza", price: 1120000, growth: 4, dp: 45, rent: 9670, tax: 700, ins: 280, hoa: 280, nnn: 85, buyIn: 0}),
-    A('business', 'sba7a', {id: "cornerston", addr: "Cornerstone Plumbing Co", price: 1400000, rent: 32410, growth: 4, buyIn: 0, dp: 10}),
-    A('commercial', 'comm25', {id: "redwoodlog", addr: "Redwood Logistics Center", price: 1750000, growth: 4, dp: 50, rent: 14260, tax: 1094, ins: 438, hoa: 438, nnn: 85, buyIn: 0}),
-    A('business', 'sba7a', {id: "summitfrei", addr: "Summit Freight & Logistics", price: 2185000, rent: 45520, growth: 4, buyIn: 0, dp: 10}),
-    A('commercial', 'comm25', {id: "bayviewmed", addr: "Bayview Medical Plaza", price: 2730000, growth: 4, dp: 45, rent: 24910, tax: 1706, ins: 683, hoa: 683, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "keystonehv", addr: "Keystone HVAC Services", price: 3415000, rent: 71150, growth: 4, buyIn: 0, dp: 25}),
-    A('commercial', 'comm25', {id: "summitbusi", addr: "Summit Business Park", price: 4265000, growth: 4, dp: 45, rent: 36840, tax: 2666, ins: 1066, hoa: 1066, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "apexproper", addr: "Apex Property Services", price: 5335000, rent: 96650, growth: 4, buyIn: 0, dp: 30}),
-    A('commercial', 'comm25', {id: "crossroads", addr: "Crossroads Retail Center", price: 6670000, growth: 4, dp: 50, rent: 54360, tax: 4169, ins: 1668, hoa: 1668, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "meridianst", addr: "Meridian Staffing Group", price: 8335000, rent: 138920, growth: 4, buyIn: 0, dp: 35}),
-    A('commercial', 'comm25', {id: "harborfron", addr: "Harborfront Industrial", price: 10420000, growth: 4, dp: 45, rent: 95080, tax: 6513, ins: 2605, hoa: 2605, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "ironwoodma", addr: "Ironwood Manufacturing", price: 13025000, rent: 193820, growth: 4, buyIn: 0, dp: 45}),
-    A('commercial', 'comm25', {id: "gatewayoff", addr: "Gateway Office Tower", price: 16280000, growth: 4, dp: 45, rent: 140620, tax: 10175, ins: 4070, hoa: 4070, nnn: 85, buyIn: 0}),
-    A('business', 'bankbiz', {id: "graniteind", addr: "Granite Industrial Supply", price: 20350000, rent: 302830, growth: 4, buyIn: 0, dp: 45}) ] })); };
+    A('house', 'conv30', {id: "maple", addr: "1412 Maple Ridge Dr", price: 35000, rent: 470, tax: 60, ins: 53, growth: 4, buyIn: 0, capex: 25000, capexMonths: 3, arv: 70000, liftIncome: 10}),
+    A('house', 'conv30', {id: "cedar", addr: "2207 Cedar Hollow Ln", price: 45000, rent: 570, tax: 77, ins: 58, growth: 4, buyIn: 0, capex: 30000, capexMonths: 3, arv: 87000, liftIncome: 10}),
+    A('house', 'dscr', {id: "birch", addr: "908 Birchwood Ct", price: 55000, rent: 660, tax: 94, ins: 63, growth: 4, buyIn: 0, capex: 30000, capexMonths: 4, arv: 109000, liftIncome: 8, exit: "sell", exitMonth: 57}),
+    A('house', 'conv30', {id: "willow", addr: "3350 Willow Bend Rd", price: 70000, rent: 820, tax: 119, ins: 70, growth: 4, buyIn: 0, capex: 15000, capexMonths: 3, arv: 91000, liftIncome: 10}),
+    A('house', 'conv30', {id: "linden", addr: "2914 Linden Way", price: 85000, rent: 970, tax: 145, ins: 78, growth: 4, buyIn: 0, capex: 10000, capexMonths: 3, arv: 99000, liftIncome: 10}),
+    A('house', 'dscr', {id: "ridge", addr: "5521 Ridgeview Ct", price: 105000, rent: 1220, tax: 179, ins: 88, growth: 4, buyIn: 0}),
+    A('house', 'conv30', {id: "sycamore", addr: "7702 Sycamore Dr", price: 135000, rent: 1480, tax: 230, ins: 103, growth: 4, buyIn: 0}),
+    A('house', 'conv30', {id: "elm", addr: "418 Elm Street", price: 165000, rent: 1780, tax: 281, ins: 118, growth: 4, buyIn: 0}),
+    A('house', 'dscr', {id: "maplex", addr: "1412 Maple Ridge Dr #2", price: 210000, rent: 2400, tax: 357, ins: 140, growth: 4, buyIn: 0}),
+    A('house', 'conv30', {id: "cedarx", addr: "2207 Cedar Hollow Ln #2", price: 260000, rent: 2810, tax: 442, ins: 165, growth: 4, buyIn: 0}),
+    A('house', 'conv30', {id: "birchx", addr: "908 Birchwood Ct #2", price: 325000, rent: 3510, tax: 553, ins: 198, growth: 4, buyIn: 0}),
+    A('commercial', 'comm25', {id: "northgater", addr: "Northgate Retail Strip", price: 405000, growth: 4, dp: 40, rent: 3700, tax: 253, ins: 101, hoa: 101, nnn: 85, buyIn: 0}),
+    A('commercial', 'comm25', {id: "harborstse", addr: "Harbor St Self-Storage", price: 510000, growth: 4, dp: 50, rent: 4160, tax: 319, ins: 128, hoa: 128, nnn: 85, buyIn: 0}),
+    A('commercial', 'comm25', {id: "lakeviewme", addr: "Lakeview Medical Office", price: 635000, growth: 4, dp: 45, rent: 5480, tax: 397, ins: 159, hoa: 159, nnn: 85, buyIn: 0}),
+    A('commercial', 'comm25', {id: "westfieldo", addr: "Westfield Office Park", price: 795000, growth: 4, dp: 40, rent: 7250, tax: 497, ins: 199, hoa: 199, nnn: 85, buyIn: 0}),
+    A('commercial', 'comm25', {id: "eastgatesh", addr: "Eastgate Shopping Plaza", price: 995000, growth: 4, dp: 50, rent: 8110, tax: 622, ins: 249, hoa: 249, nnn: 85, buyIn: 0}),
+    A('business', 'sba7a', {id: "cornerston", addr: "Cornerstone Plumbing Co", price: 1245000, rent: 35780, growth: 4, buyIn: 0, dp: 10}),
+    A('business', 'sba7a', {id: "summitfrei", addr: "Summit Freight & Logistics", price: 1555000, rent: 44680, growth: 4, buyIn: 0, dp: 10}),
+    A('commercial', 'comm25', {id: "redwoodlog", addr: "Redwood Logistics Center", price: 1945000, growth: 4, dp: 50, rent: 15850, tax: 1216, ins: 486, hoa: 486, nnn: 85, buyIn: 0}),
+    A('business', 'sba7a', {id: "keystonehv", addr: "Keystone HVAC Services", price: 2430000, rent: 59560, growth: 4, buyIn: 0, dp: 10}),
+    A('business', 'bankbiz', {id: "apexproper", addr: "Apex Property Services", price: 3035000, rent: 74390, growth: 4, buyIn: 0, dp: 25}),
+    A('commercial', 'comm25', {id: "bayviewmed", addr: "Bayview Medical Plaza", price: 3795000, growth: 4, dp: 50, rent: 30930, tax: 2372, ins: 949, hoa: 949, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "meridianst", addr: "Meridian Staffing Group", price: 4745000, rent: 101390, growth: 4, buyIn: 0, dp: 25}),
+    A('business', 'bankbiz', {id: "ironwoodma", addr: "Ironwood Manufacturing", price: 5930000, rent: 126710, growth: 4, buyIn: 0, dp: 25}),
+    A('commercial', 'comm25', {id: "summitbusi", addr: "Summit Business Park", price: 7410000, growth: 4, dp: 50, rent: 60390, tax: 4631, ins: 1853, hoa: 1853, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "graniteind", addr: "Granite Industrial Supply", price: 9265000, rent: 157570, growth: 4, buyIn: 0, dp: 30}),
+    A('business', 'bankbiz', {id: "bayviewden", addr: "Bayview Dental Group", price: 11580000, rent: 175450, growth: 4, buyIn: 0, dp: 40}),
+    A('commercial', 'comm25', {id: "crossroads", addr: "Crossroads Retail Center", price: 14475000, growth: 4, dp: 50, rent: 117980, tax: 9047, ins: 3619, hoa: 3619, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "pioneerhea", addr: "Pioneer Healthcare Staffing", price: 18095000, rent: 274170, growth: 4, buyIn: 0, dp: 40}),
+    A('business', 'bankbiz', {id: "atlasdistr", addr: "Atlas Distribution Group", price: 22620000, rent: 342730, growth: 4, buyIn: 0, dp: 40}),
+    A('commercial', 'comm25', {id: "harborfron", addr: "Harborfront Industrial", price: 28275000, growth: 4, dp: 50, rent: 230450, tax: 17672, ins: 7069, hoa: 7069, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "beaconengi", addr: "Beacon Engineering Services", price: 35340000, rent: 535450, growth: 4, buyIn: 0, dp: 40}),
+    A('business', 'bankbiz', {id: "northstarp", addr: "Northstar Packaging", price: 44175000, rent: 669320, growth: 4, buyIn: 0, dp: 40}),
+    A('commercial', 'comm25', {id: "gatewayoff", addr: "Gateway Office Tower", price: 55220000, growth: 4, dp: 50, rent: 450070, tax: 34513, ins: 13805, hoa: 13805, nnn: 85, buyIn: 0}),
+    A('business', 'bankbiz', {id: "harvestfoo", addr: "Harvest Foods Wholesale", price: 69025000, rent: 1045830, growth: 4, buyIn: 0, dp: 40}) ] })); };
   /* LEGACY small sample (the Load realistic sample button; the app's default is seedPlan above; listed in the order the assets are bought). Every loan, price, cap rate, multiple and growth rate is checked against
      the grader's benchmark file (prototype/grader). Homes cash flow positive. Recycles sale cash; needs about $1.3M of outside cash. */
   const seed = () => { const A = newAsset; return netCosts(normalize({ g: Object.assign({}, GDEF, { otherDebt: 450 }), p: Object.assign(samplePersonal(), { cash: 100000 }), houses: [
@@ -692,6 +745,6 @@
     const cur = slots.map((i) => S.houses[i].id); if (cur.join() === ids.join()) return false;
     const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); return true;
   }
-  const E = { depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);
