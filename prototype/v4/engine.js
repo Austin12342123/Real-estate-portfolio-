@@ -22,15 +22,59 @@
     { id: 'bankbiz', types: ['business'], name: 'Bank term loan', dp: 25, rate: 9.0, term: 84, io: false, closing: 2, note: 'Shorter term, bigger payment.' },
     { id: 'sellerb', types: ['business'], name: 'Seller note', dp: 20, rate: 7.0, term: 60, io: false, closing: 1.5, note: 'The seller finances part of the price. This preset has the seller carry 80%, which is aggressive; sellers usually carry 10% to 50%.' },
     { id: 'cashb', types: ['business'], name: 'Cash purchase', dp: 100, rate: 0, term: 360, io: false, closing: 1.5, note: 'No loan.' }];
-  const loansFor = (type) => LOANS.filter((l) => l.types.indexOf(type) >= 0);
+  /* Multi-family loan options (2+ units). Same fields as LOANS (dp, rate, term in months, io, closing, mat = balloon month, upfrontMip / annualMip, ownerOcc) and read by applyLoan, loan() and loanPath() the same way.
+     They live in their own list so the single-family, commercial and business lists stay exactly as they were. Rates and terms are TYPICAL (mid-2026 lender pages), not a quote.
+     fit = size groups it suits: 'small' (2-4 units, residential loans), 'big' (5+ units, commercial / agency loans), 'pack' (a pack of houses bought together). minU / maxU = unit limits, only = the one-line reason shown when it does not fit.
+     group = how the Add screen lists it. info = true for a structure the model cannot show faithfully: modelledAs names the closest modelled equivalent (said in its (i) text too). dscr = the DSCR a lender usually wants. */
+  const MFLOANS = [
+    { id: 'mfFha', types: ['multi'], group: 'live', name: 'FHA 203(b), 2-4 units (you live there)', dp: 3.5, rate: 6.9, term: 360, io: false, closing: 4, upfrontMip: 1.75, annualMip: 0.55, ownerOcc: true, fit: ['small'], only: 'Only for 2-4 units you live in', dscr: 1, note: 'House hack: live in one unit, rent the rest. Adds mortgage insurance.' },
+    { id: 'mfVa', types: ['multi'], group: 'live', name: 'VA loan, 2-4 units (you live there)', dp: 0, rate: 6.5, term: 360, io: false, closing: 3, upfrontMip: 2.15, annualMip: 0, ownerOcc: true, fit: ['small'], only: 'Only for 2-4 units you live in', dscr: 1, note: 'For eligible veterans. No down payment. The VA funding fee is financed.' },
+    { id: 'mfConvOO', types: ['multi'], group: 'live', name: 'Conventional 2-4 units (you live there)', dp: 10, rate: 6.9, term: 360, io: false, closing: 3, ownerOcc: true, fit: ['small'], only: 'Only for 2-4 units you live in', dscr: 1, note: 'Low down payment if you live in one unit: about 5% for 2 units, 10-25% for 3-4.' },
+    { id: 'mfK203', types: ['multi'], group: 'live', name: 'FHA 203(k) rehab, 2-4 units (you live there)', dp: 3.5, rate: 7.15, term: 360, io: false, closing: 5, upfrontMip: 1.75, annualMip: 0.55, ownerOcc: true, finRehab: true, rehabDefaults: { capex: 40000, capexMonths: 6, liftIncome: 8 }, fit: ['small'], only: 'Only for 2-4 units you live in', dscr: 1, note: 'Buy and renovate with one loan. You must live in one unit.' },
+    { id: 'mfConvInv', types: ['multi'], group: 'invest', name: 'Conventional 2-4 units (investor)', dp: 20, rate: 7.5, term: 360, io: false, closing: 3, fit: ['small'], only: 'Only for 2-4 units', dscr: 1, note: 'Standard investor mortgage on a duplex to fourplex: 15-25% down.' },
+    { id: 'mfBlanket', types: ['multi'], group: 'invest', name: 'Blanket loan, pack of houses', dp: 25, rate: 7.9, term: 360, io: false, closing: 4, fit: ['pack'], only: 'Only for a pack of houses', dscr: 1.15, note: 'One loan over all the houses. Ask for release clauses to sell one house.' },
+    { id: 'mfDscr', types: ['multi'], group: 'invest', name: 'DSCR investor loan, 1-4 units or a pack', dp: 25, rate: 7.75, term: 360, io: false, closing: 4, fit: ['small', 'pack'], only: 'For 2-4 units or a pack of houses', dscr: 1.1, note: 'Qualifies on the rent, not your income. Many lenders accept Section 8.' },
+    { id: 'mfSbl', types: ['multi'], group: 'invest', name: 'Agency small-balance loan (5-50 units)', dp: 25, rate: 6.75, term: 360, mat: 120, io: false, closing: 2.5, fit: ['big'], minU: 5, maxU: 50, only: 'For buildings of 5 to 50 units', dscr: 1.25, note: '10-year term, 30-year schedule, usually no personal guarantee.' },
+    { id: 'mfAgency', types: ['multi'], group: 'invest', name: 'Agency loan, Fannie Mae / Freddie Mac (5+ units)', dp: 25, rate: 6.4, term: 360, mat: 120, io: false, closing: 2.5, fit: ['big'], minU: 5, only: 'Only for 5+ unit buildings', dscr: 1.25, note: 'Best rates for stable buildings. 10-year term, 30-year schedule.' },
+    { id: 'mfHud', types: ['multi'], group: 'invest', name: 'HUD / FHA 223(f), 35-year (20+ units)', dp: 15, rate: 6.0, term: 420, io: false, closing: 4.5, annualMip: 0.25, fit: ['big'], minU: 20, only: 'Needs about 20+ units ($2M+ loan)', dscr: 1.18, note: 'Longest term, highest loan share, fixed rate. Slow and paperwork heavy.' },
+    { id: 'mfBank5', types: ['multi'], group: 'invest', name: 'Bank loan, 5-year balloon, 25-year schedule', dp: 25, rate: 7.0, term: 300, mat: 60, io: false, closing: 2, fit: ['small', 'big', 'pack'], only: 'Only for 2+ units', dscr: 1.25, note: 'Fast and flexible. The balance is due in year 5 and refinanced.' },
+    { id: 'mfBank10', types: ['multi'], group: 'invest', name: 'Bank loan, 10-year fixed, 25-year schedule', dp: 25, rate: 7.25, term: 300, mat: 120, io: false, closing: 2, fit: ['small', 'big', 'pack'], only: 'Only for 2+ units', dscr: 1.25, note: 'Bank or credit-union portfolio loan. Often a full personal guarantee.' },
+    { id: 'mfCmbs', types: ['multi'], group: 'invest', name: 'CMBS conduit loan (20+ units)', dp: 30, rate: 6.75, term: 360, mat: 120, io: false, closing: 4, fit: ['big'], minU: 20, only: 'Needs about 20+ units ($2M+ loan)', dscr: 1.25, note: 'Non-recourse, 10-year term. Costly to pay off early.' },
+    { id: 'mfSba504', types: ['multi'], group: 'invest', name: 'SBA 504, mixed-use (you run a business there)', dp: 10, rate: 6.75, term: 300, io: false, closing: 3.5, fit: ['small', 'big'], only: 'Not for a pack of houses', dscr: 1.15, note: 'Only if your business uses 51%+ of the building. Not for pure rentals.' },
+    { id: 'mfBridge', types: ['multi'], group: 'invest', name: 'Bridge loan, interest-only (value-add)', dp: 25, rate: 9.75, term: 24, io: true, closing: 4, fit: ['small', 'big', 'pack'], only: 'Only for 2+ units', dscr: 1, note: 'Renovate and fill the building, then refinance into an agency or HUD loan.' },
+    { id: 'mfSeller', types: ['multi'], group: 'creative', name: 'Seller note with balloon', dp: 20, rate: 6.0, term: 300, mat: 60, io: false, closing: 2, fit: ['small', 'big', 'pack'], only: 'Only for 2+ units', dscr: 1, note: 'The seller carries the loan: 10-30% down, due in 3-10 years.' },
+    { id: 'mfSellerIO', types: ['multi'], group: 'creative', name: 'Seller financing, interest-only', dp: 25, rate: 5.5, term: 60, io: true, closing: 1.5, fit: ['small', 'big', 'pack'], only: 'Only for 2+ units', dscr: 1, note: 'Seller carries the loan and you pay interest only for about 5 years.' },
+    { id: 'mfAssume', types: ['multi'], group: 'creative', name: 'Assumable loan (take over the seller\'s loan)', dp: 35, rate: 4.5, term: 300, io: false, closing: 1.5, fit: ['small', 'big', 'pack'], only: 'Only for 2+ units', dscr: 1.2, note: 'Keep the seller\'s older, lower rate. You pay the gap in cash.' },
+    { id: 'mfLease', types: ['multi'], group: 'creative', name: 'Master lease with option to buy', info: true, modelledAs: 'a 5-year interest-only seller loan with a 3% option fee', dp: 3, rate: 6.5, term: 60, io: true, closing: 1, fit: ['small', 'big', 'pack'], only: 'Only for 2+ units', dscr: 1, note: 'Info only. Modelled as a 5-year interest-only seller loan: option fee down, rent as payment.' },
+    { id: 'mfSubTo', types: ['multi'], group: 'creative', name: 'Subject-to (seller\'s loan stays in place)', info: true, modelledAs: 'taking over the seller\'s loan, with the gap paid in cash', dp: 15, rate: 4.0, term: 300, io: false, closing: 1.5, fit: ['small', 'big', 'pack'], only: 'Only for 2+ units', dscr: 1, note: 'Info only. Modelled as taking over the seller\'s loan. The lender can call it due.' },
+    { id: 'mfJv', types: ['multi'], group: 'creative', name: 'Equity partner / joint venture', info: true, modelledAs: 'a 75% bank loan with the partner funding the down payment', dp: 25, rate: 7.25, term: 300, mat: 120, io: false, closing: 2.5, fit: ['big', 'pack'], minU: 5, only: 'Best for 5+ units or a pack', dscr: 1.25, note: 'Info only. Modelled as a 75% bank loan. Record partner money under Finances.' },
+    { id: 'mfCash', types: ['multi'], group: 'invest', name: 'Cash purchase', dp: 100, rate: 0, term: 360, io: false, closing: 2, fit: ['small', 'big', 'pack'], only: 'Only for 2+ units', dscr: 0, note: 'No loan.' }];
+  MFLOANS.forEach((l) => { l.multi = true; });
+  const loanById = (id) => LOANS.find((l) => l.id === id) || MFLOANS.find((l) => l.id === id);
+  const loansFor = (type, h) => (type === 'house' && h && h.kind === 'multi' ? MFLOANS : LOANS.filter((l) => l.types.indexOf(type) >= 0));
+  /* size group of a multi-family purchase: 2-4 units = residential loans, 5+ = commercial / agency loans, a pack of houses = portfolio (blanket) loans */
+  const mfCat = (units, pack) => (pack ? 'pack' : units <= 4 ? 'small' : 'big');
+  const mfFit = (l, units, pack) => { const c = mfCat(units, pack); if (l.fit.indexOf(c) < 0 || (l.minU && units < l.minU && !(pack && l.fit.indexOf('pack') >= 0)) || (l.maxU && units > l.maxU && !pack)) return { ok: false, why: l.only }; return { ok: true, why: '' }; };
+  const mfLoans = (units, pack) => MFLOANS.map((l) => Object.assign({ loan: l }, mfFit(l, units, pack)));
+  const mfFirst = (units, pack) => (mfLoans(units, pack).find((x) => x.ok) || { loan: MFLOANS[0] }).loan.id;
+  /* typical starting numbers by size (the research brief, typical not a quote): price, rent, tax and insurance per unit, management %, repairs %, reserve per unit per year, other owner-paid costs per month (utilities, payroll).
+     Packs: single houses bought together (10% management, older houses so 1.2% repairs). 5-19 units: 8%. 20-49: 6% plus a part-time maintenance tech. 50+: 5% plus an on-site manager. All editable. */
+  function mfDefaults(units, pack) {
+    units = Math.max(2, Math.min(500, Math.round(+units || 2))); const c = mfCat(units, pack), r5 = (x) => Math.round(x / 5) * 5, u = units;
+    const t = pack ? { p: 120000, rent: 1400, tx: 1.1, ins: 105, mg: 10, mt: 1.2, oth: 0 } : c === 'small' ? { p: 150000, rent: 1700, tx: 1.1, ins: 80, mg: 8, mt: null, oth: 0 } : u < 20 ? { p: 110000, rent: 1250, tx: 1.2, ins: 75, mg: 8, mt: null, oth: 35 } : u < 50 ? { p: 100000, rent: 1100, tx: 1.2, ins: 65, mg: 6, mt: null, oth: 60 } : { p: 100000, rent: 1150, tx: 1.2, ins: 60, mg: 5, mt: null, oth: 95 };
+    const price = Math.round(t.p * u / 1000) * 1000;
+    return { price, rent: r5(t.rent * u), tax: Math.round(price * t.tx / 100 / 12), ins: r5(t.ins * u), hoa: 0, mgmtPct: t.mg, maintPct: t.mt, mfRes: 300, mfOther: r5(t.oth * u),
+      addr: pack ? 'New pack of ' + u + ' houses' : u === 2 ? 'New duplex' : u === 3 ? 'New triplex' : u === 4 ? 'New fourplex' : 'New ' + u + '-unit building' };
+  }
   let uid = 0;
   const DEFAULTS = {
     house: { addr: 'New home', price: 300000, rent: 2200, tax: 300, ins: 110, hoa: 0, nnn: 0, growth: 4, sellCost: 6 },
     commercial: { addr: 'New commercial property', price: 1500000, rent: 12500, tax: 940, ins: 375, hoa: 375, nnn: 85, growth: 4, sellCost: 5 },
     business: { addr: 'New business', price: 1000000, rent: 18000, revenue: 90000, margin: 20, tax: 0, ins: 0, hoa: 0, nnn: 0, growth: 4, sellCost: 8 } };
   function applyLoan(h, id) {
-    const lo = LOANS.find((l) => l.id === id);
+    const lo = loanById(id);
     if (!lo) { h.loanId = 'custom'; return h; }
+    if (lo.multi) h.mat = lo.mat || 0; /* a multi-family loan sets its own balloon month (0 = none; an interest-only loan is due at its term anyway) */
     h.dp = lo.dp; h.rate = lo.rate; h.term = lo.term; h.io = !!lo.io; h.closingPct = lo.closing; h.loanId = lo.id;
     h.finCapex = !!lo.finRehab; h.mipUp = lo.upfrontMip || 0; h.mipAnn = lo.annualMip || 0; h.ownerOcc = !!lo.ownerOcc;
     if (lo.finRehab && lo.rehabDefaults && !(+h.capex > 0)) { Object.assign(h, lo.rehabDefaults); if (!(+h.arv > 0)) { h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; h.arvAuto = true; } } /* auto-fill a typical rehab and a new appraisal 15% above total cost, only if none is set */
@@ -40,8 +84,9 @@
     type = TYPES[type] ? type : 'house';
     const h = Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), type, status: 'planned', extra: 0, driver: 'extra', wait: 24, liens: 0, paid: 0, buyIn: 0,
       target: '', growth: null, io: false, closingPct: null, loanId: '', dp: 20, rate: 6.75, term: 360, mat: 0, refiRate: null, refiTerm: null,
-      capex: 0, capexMonths: 6, arv: 0, arvAuto: false, gain: null, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false }, DEFAULTS[type]);
-    applyLoan(h, loanId || loansFor(type)[0].id);
+      capex: 0, capexMonths: 6, arv: 0, arvAuto: false, gain: null, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false,
+      kind: 'single', units: 1, pack: false, mfRes: 300, mfOther: 0, mgmtPct: null, maintPct: null }, DEFAULTS[type]); /* kind 'multi' = a building or pack of houses with units >= 2 (still type 'house'); mfRes = replacement reserve per unit per year, mfOther = other owner-paid costs per month, mgmtPct / maintPct = this asset's own management / repairs % (null = the Assumptions rate) */
+    applyLoan(h, loanId || (o && o.kind === 'multi' ? mfFirst(+o.units || 2, !!o.pack) : loansFor(type)[0].id));
     Object.assign(h, o || {});
     if (type === 'business' && o && o.rent !== undefined) { if (o.revenue === undefined) h.revenue = null; if (o.margin === undefined) h.margin = null; } /* a business made from its owner profit (the seeded ones) has no revenue of its own: the page shows rent / margin */
     if (h.finCapex && !(o && +o.arv > 0)) { h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; h.arvAuto = true; } /* default appraisal from the FINAL price + rehab; it follows price/rehab until you type your own appraisal or gain */
@@ -79,7 +124,21 @@
   const need = (S, h) => { const t = H(S, h.target); return t ? downAmt(t) + (t.price * clPct(S, t)) / 100 : 0; };
   /* operating income per month (rent or owner profit minus operating costs), before any loan payment */
   const reimbOf = (h) => ((h.type || 'house') === 'business' ? 0 : (Math.min(100, Math.max(0, +h.nnn || 0)) / 100) * ((+h.tax || 0) + (+h.ins || 0) + (+h.hoa || 0))); /* costs the tenants pay back (NNN leases) */
-  const noiOf = (S, h) => { const g = S.g; if ((h.type || 'house') === 'business') return h.rent; const egi = (h.rent + reimbOf(h)) * (1 - g.vac / 100); return egi - (h.tax + h.ins + h.hoa + (g.maint / 100) * h.price / 12 + (g.mgmt / 100) * egi); };
+  /* multi-family costs: units, the replacement reserve (per unit per year) and other owner-paid costs (utilities, payroll) per month, and this asset's own management / repairs % when set */
+  const isMulti = (h) => (h.type || 'house') === 'house' && h.kind === 'multi';
+  const unitsOf = (h) => (isMulti(h) ? Math.max(2, Math.round(+h.units || 2)) : 1);
+  const mfReserve = (h) => (isMulti(h) ? (unitsOf(h) * Math.max(0, +h.mfRes || 0)) / 12 : 0);
+  const mfOther = (h) => (isMulti(h) ? Math.max(0, +h.mfOther || 0) : 0);
+  const mgmtOf = (S, h) => (isMulti(h) && h.mgmtPct != null && h.mgmtPct !== '' && isFinite(+h.mgmtPct) ? +h.mgmtPct : S.g.mgmt);
+  const maintOf = (S, h) => (isMulti(h) && h.maintPct != null && h.maintPct !== '' && isFinite(+h.maintPct) ? +h.maintPct : S.g.maint);
+  const noiOf = (S, h) => { const g = S.g; if ((h.type || 'house') === 'business') return h.rent; const egi = (h.rent + reimbOf(h)) * (1 - g.vac / 100); return egi - (h.tax + h.ins + h.hoa + (maintOf(S, h) / 100) * h.price / 12 + (mgmtOf(S, h) / 100) * egi + mfReserve(h) + mfOther(h)); };
+  /* the multi-family money picture per month: every line, per unit, and the operating-expense ratio (costs before the loan / income after vacancy) */
+  function mfInfo(S, h) {
+    const g = S.g, n = unitsOf(h), egi = (h.rent + reimbOf(h)) * (1 - g.vac / 100), gross = h.rent + reimbOf(h);
+    const L = { vac: gross - egi, tax: h.tax, ins: h.ins, hoa: h.hoa, maint: (maintOf(S, h) / 100) * h.price / 12, mgmt: (mgmtOf(S, h) / 100) * egi, res: mfReserve(h), other: mfOther(h) };
+    const opex = L.tax + L.ins + L.hoa + L.maint + L.mgmt + L.res + L.other, noi = noiOf(S, h), per = {}; Object.keys(L).forEach((k) => { per[k] = L[k] / n; });
+    return { units: n, lines: L, perUnit: per, rentUnit: h.rent / n, egi, opex, noi, oer: egi > 0 ? (opex / egi) * 100 : NaN, cat: mfCat(n, !!h.pack) };
+  }
   const capOf = (S, h) => ((h.type || 'house') === 'business' ? (isFinite(+S.g.capBiz) ? +S.g.capBiz : GDEF.capBiz) : S.g.cap); /* a credit line against a business is not backed by real estate: separate, lower cap */
   /* The home's own monthly cash flow (income minus costs, loan payment and mortgage insurance, before any extra payment) is saved toward the next down payment while it waits. Only a positive cash flow adds money. */
   const cfSaved = (S, h) => Math.max(0, noiOf(S, h) - payment(h) - mipMonthly(h));
@@ -569,6 +628,9 @@
       delete h.liftValue; if (!(h.arv > 0)) h.arv = 0;
       h.arvAuto = !!h.arvAuto && +h.arv > 0;
       h.gain = h.gain !== null && h.gain !== '' && h.gain !== undefined && isFinite(+h.gain) ? +h.gain : null; /* if set, the appraisal follows price + rehab + gain */
+      h.kind = h.type === 'house' && h.kind === 'multi' ? 'multi' : 'single'; h.units = h.kind === 'multi' ? Math.min(500, Math.max(2, Math.round(+h.units || 2))) : 1; h.pack = h.kind === 'multi' && !!h.pack;
+      h.mfRes = isFinite(+h.mfRes) && h.mfRes !== null && h.mfRes !== '' ? Math.max(0, +h.mfRes) : 300; h.mfOther = isFinite(+h.mfOther) && h.mfOther !== null && h.mfOther !== '' ? Math.max(0, +h.mfOther) : 0;
+      ['mgmtPct', 'maintPct'].forEach((k) => { h[k] = h[k] === null || h[k] === '' || h[k] === undefined || !isFinite(+h[k]) ? null : Math.max(0, +h[k]); });
       ['mipUp', 'mipAnn'].forEach((k) => { h[k] = isFinite(+h[k]) ? Math.max(0, +h[k]) : 0; }); h.finCapex = !!h.finCapex; h.ownerOcc = !!h.ownerOcc;
       if (h.term < 12 && !h.io) h.term = 360; h.io = !!h.io;
       if (h.growth != null && !isFinite(+h.growth)) h.growth = null;
@@ -769,6 +831,6 @@
     const cur = slots.map((i) => S.houses[i].id); if (cur.join() === ids.join()) return false;
     const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); return true;
   }
-  const E = { ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

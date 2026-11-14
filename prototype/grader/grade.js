@@ -18,7 +18,7 @@ const results = [];
 const cats = { A: 'Requirement / propagation', B: 'Engine correctness', C: 'UX conciseness & usability', D: 'PWA / local-first', E: 'Robustness & accessibility', R: 'Realism & market accuracy' };
 const CATMAX = { A: 18, B: 12, C: 10, D: 8, E: 7, R: 30 };
 const KEY = 'rep-v4', DATA_V = +((/const DATA_V = (\d+)/.exec(fs.readFileSync(path.resolve(__dirname, '../v4/app.js'), 'utf8')) || [0, 0])[1]);
-const FIN_ONLY = process.env.FINANCE_ONLY === '1', SYNC_ONLY = process.env.SYNC_ONLY === '1', INFO_ONLY = process.env.INFO_ONLY === '1', MAIN_ONLY = process.env.MAIN_ONLY === '1', GEST_ONLY = process.env.GEST_ONLY === '1', UX_ONLY = process.env.UX_ONLY === '1';
+const FIN_ONLY = process.env.FINANCE_ONLY === '1', SYNC_ONLY = process.env.SYNC_ONLY === '1', INFO_ONLY = process.env.INFO_ONLY === '1', MAIN_ONLY = process.env.MAIN_ONLY === '1', GEST_ONLY = process.env.GEST_ONLY === '1', UX_ONLY = process.env.UX_ONLY === '1', DES_ONLY = process.env.DESIGN_ONLY === '1';
 const NSEED = E.seedPlan().houses.length; /* the app's default portfolio (the self-funded plan), derived from the app, never hard-coded */
 const SEEDN = E.seed().houses.length; /* the older small sample (Load realistic sample) */
 
@@ -376,6 +376,57 @@ async function engineChecks() {
     const fin = [pl.horizon.nw, pl.horizon.cf, pl.horizon.monthly, pl.horizon.debt, pl.horizon.dscr, pl.horizon.cltv].every(isFinite); P.t(fin && pl.horizon.nw > 0 && pl.horizon.month === 240, 'horizon (20y) KPIs finite, month 240', 0.3, pl.horizon.nw);
     const homes = S.houses.filter((h) => h.type === 'house'), bad = homes.filter((h) => E.view(S, h).cf < 0).map((h) => h.id); P.t(!bad.length, 'every sample home cash flows >= 0', 0.4, bad.join(','));
     P.t(pl.horizon.cltv <= S.g.cap + 0.5, 'portfolio debt/value within cap', 0.2, pl.horizon.cltv); return P; });
+  /* ---- multi-family (B40-B46): every expected number is computed here from the formulas, never from the engine ---- */
+  const am = (L, r, n) => (r ? (L * r / 1200) / (1 - Math.pow(1 + r / 1200, -n)) : L / n), balAfter = (L, r, n, k) => { const i = r / 1200, P = am(L, r, n); return L * Math.pow(1 + i, k) - P * (Math.pow(1 + i, k) - 1) / i; };
+  const MF = (units, o) => E.newAsset('house', undefined, Object.assign({ id: 'mf', status: 'planned', kind: 'multi', units, target: '' }, E.mfDefaults(units, false), o || {}));
+  const GS = { closing: 0, appr: 0, cap: 85, haircut: 0, autoPay: false, vac: 7, mgmt: 8, maint: 1 };
+  await check('B40', 'B', 'Multi-family NOI: rent x units, vacancy, tax, insurance, repairs, management, per-unit reserve and other owner costs are all subtracted (hand-computed)', 3, 'node: Engine.noiOf on a 20-unit asset', () => {
+    const P = new Parts(), h = MF(20, { price: 2000000, rent: 22000, tax: 2000, ins: 1300, hoa: 0, mgmtPct: 6, maintPct: 1, mfRes: 300, mfOther: 1200 }), S = mk(GS, [h]);
+    const egi = 22000 * 0.93, want = egi - (2000 + 1300 + 0 + 0.01 * 2000000 / 12 + 0.06 * egi + 20 * 300 / 12 + 1200);
+    P.t(near(E.noiOf(S, h), want, 0.01), 'NOI = ' + want.toFixed(2), 1.5, E.noiOf(S, h));
+    const mi = E.mfInfo(S, h); P.t(mi.units === 20 && near(mi.rentUnit, 1100, 1e-9) && near(mi.lines.res, 500, 1e-9) && near(mi.opex, egi - want, 0.01) && near(mi.oer, (egi - want) / egi * 100, 0.001), 'mfInfo: 20 units, rent per unit 1,100, reserve 500/mo, expense ratio ' + (((egi - want) / egi) * 100).toFixed(1) + '%', 1, JSON.stringify([mi.units, mi.rentUnit, mi.oer]));
+    const g2 = Object.assign(mk(GS, [Object.assign({}, h, { mgmtPct: null, maintPct: null })])), h2 = g2.houses[0]; P.t(near(E.noiOf(g2, h2), egi - (2000 + 1300 + 0.01 * 2000000 / 12 + 0.08 * egi + 500 + 1200), 0.01), 'no own management % = the Assumptions 8%', 0.5); return P; });
+  await check('B41', 'B', 'Loan payment and DSCR for the 20-unit and 50-unit examples on the agency loans (hand-computed)', 3, 'node: Engine.view on mfDefaults(20) / mfDefaults(50)', () => {
+    const P = new Parts();
+    for (const [n, id] of [[20, 'mfSbl'], [50, 'mfSbl'], [50, 'mfHud']]) { const lo = E.loanById(id), h = MF(n, { loanId: id }); E.applyLoan(h, id); const S = mk(GS, [h]), v = E.view(S, h), L = h.price * (1 - lo.dp / 100), want = am(L, lo.rate, lo.term);
+      P.t(near(v.P, want, 0.01) && near(v.L, L, 0.01), n + ' units on ' + id + ': loan ' + Math.round(L) + ', payment ' + want.toFixed(2), 1, v.P);
+      const mip = lo.annualMip ? L * lo.annualMip / 100 / 12 : 0; P.t(near(v.mip, mip, 0.01) && near(v.cf, v.noi - want - mip, 0.01) && near(v.noi / v.P, E.noiOf(S, h) / want, 1e-6) && v.noi / (want + mip) > 1.1, n + ' units on ' + id + ': DSCR ' + (v.noi / want).toFixed(2) + ' covers the loan on the default numbers', 0.5, v.noi / want); }
+    return P; });
+  await check('B42', 'B', 'Pack of 5 on a blanket loan; FHA 3.5% duplex with upfront and annual mortgage insurance (hand-computed)', 3, 'node: newAsset with mfBlanket / mfFha', () => {
+    const P = new Parts(), pk = E.newAsset('house', 'mfBlanket', Object.assign({ id: 'pk', kind: 'multi', units: 5, pack: true, target: '' }, E.mfDefaults(5, true))), S = mk(GS, [pk]), v = E.view(S, pk), L = pk.price * 0.75;
+    P.t(pk.price === 600000 && pk.dp === 25 && pk.pack === true && near(v.P, am(L, 7.9, 360), 0.01), 'pack of 5 houses at $120,000 each: 75% blanket loan ' + L + ' at 7.9%, payment ' + am(L, 7.9, 360).toFixed(2), 1.5, v.P);
+    const du = E.newAsset('house', 'mfFha', Object.assign({ id: 'du', kind: 'multi', units: 2, target: '' }, E.mfDefaults(2, false))), S2 = mk(GS, [du]), v2 = E.view(S2, du), base = du.price * 0.965, L2 = base * 1.0175;
+    P.t(du.dp === 3.5 && du.ownerOcc === true && near(v2.L, L2, 0.01) && near(v2.P, am(L2, 6.9, 360), 0.01) && near(v2.mip, base * 0.0055 / 12, 0.01), 'FHA duplex: loan ' + L2.toFixed(2) + ' (financed 1.75% upfront), payment ' + am(L2, 6.9, 360).toFixed(2) + ', annual MIP on ' + base.toFixed(0), 1.5, JSON.stringify([v2.L, v2.P, v2.mip])); return P; });
+  await check('B43', 'B', 'Balloon and refinance: bank 5-year balloon on a 25-year schedule and the interest-only bridge refinance at the Assumptions rate (hand-computed)', 3, 'node: Engine.loanPath for mfBank5 and mfBridge', () => {
+    const P = new Parts(), b = E.newAsset('house', 'mfBank5', Object.assign({ id: 'b5', kind: 'multi', units: 8, target: '' }, E.mfDefaults(8, false))), S = mk(Object.assign({}, GS, { refiRate: 7.5, refiTerm: 300 }), [b]), v = E.view(S, b), L = b.price * 0.75;
+    const B60 = balAfter(L, 7, 300, 60); P.t(b.mat === 60 && E.matOf(b) === 60 && v.refi && v.refi.month === 60 && near(v.refi.balance, B60, 0.05) && near(v.refi.payment, am(B60, 7.5, 300), 0.05), 'bank 5/25: balloon in month 60 of ' + B60.toFixed(2) + ', then ' + am(B60, 7.5, 300).toFixed(2) + '/mo at 7.5%', 1.5, JSON.stringify(v.refi));
+    const br = E.newAsset('house', 'mfBridge', Object.assign({ id: 'br', kind: 'multi', units: 20, target: '' }, E.mfDefaults(20, false))), S2 = mk(Object.assign({}, GS, { refiRate: 7.5, refiTerm: 300 }), [br]), v2 = E.view(S2, br), L2 = br.price * 0.75;
+    P.t(br.io && E.matOf(br) === 24 && near(v2.P, L2 * 9.75 / 1200, 0.01) && v2.refi && near(v2.refi.balance, L2, 0.05) && near(v2.refi.payment, am(L2, 7.5, 300), 0.05), 'bridge: interest only ' + (L2 * 9.75 / 1200).toFixed(2) + '/mo, due in month 24, refinanced at 7.5%', 1.5, JSON.stringify(v2.refi));
+    const sw = E.newAsset('house', 'mfBank5', { id: 'sw', kind: 'multi', units: 8 }); E.applyLoan(sw, 'mfBridge'); E.applyLoan(sw, 'mfBank10'); P.t(sw.mat === 120, 'changing the loan option resets the balloon month', 0.5, sw.mat); return P; });
+  await check('B44', 'B', 'Units scale linearly; single-family results are unchanged by the new fields; the default plan is untouched', 3, 'node: noiOf at 10 / 20 / 40 units with the same per-unit numbers', () => {
+    const P = new Parts(), mkU = (n) => { const d = E.mfDefaults(n, false); return mk(GS, [MF(n, Object.assign({}, d, { price: 100000 * n, rent: 1100 * n, tax: 100 * n, ins: 60 * n, mfOther: 50 * n, mgmtPct: 6, maintPct: null, mfRes: 300 }))]); };
+    const n10 = E.noiOf(mkU(10), mkU(10).houses[0]), n20 = E.noiOf(mkU(20), mkU(20).houses[0]), n40 = E.noiOf(mkU(40), mkU(40).houses[0]);
+    P.t(near(n20, 2 * n10, 0.001) && near(n40, 4 * n10, 0.001) && n10 > 0, 'NOI 10 / 20 / 40 units = ' + [n10, n20, n40].map(Math.round).join(' / ') + ' (linear)', 1.5);
+    const sf = SRC({ price: 250000, rent: 2100, tax: 210, ins: 95, hoa: 40 }), S = mk(GS, [sf]), egi = 2100 * 0.93;
+    P.t(near(E.noiOf(S, sf), egi - (210 + 95 + 40 + 0.01 * 250000 / 12 + 0.08 * egi), 1e-6) && sf.kind === 'single' && sf.units === 1 && sf.pack === false && E.unitsOf(sf) === 1 && E.mfReserve(sf) === 0, 'single family: NOI is the old formula (reserve and other costs ignored), kind single / 1 unit', 1);
+    const sp = E.seedPlan(), pl = E.planR(sp); P.t(sp.houses.length === 36 && sp.houses.every((h) => h.kind === 'single' && h.units === 1) && !sp.houses.some((h) => h.status === 'owned') && pl.horizon.nw >= 125e6 && pl.horizon.cf >= 1.3e6, 'default plan: 36 single-family-or-other assets, nothing owned, real NW ' + (pl.horizon.nw / 1e6).toFixed(1) + 'M, cf ' + (pl.horizon.cf / 1e6).toFixed(2) + 'M', 1, JSON.stringify([pl.horizon.nw, pl.horizon.cf])); return P; });
+  await check('B45', 'B', 'Normalize keeps kind / units / pack and the new cost fields; old data loads as single family; bad values are clamped; no migration (ADDITIONS untouched)', 2, 'node: Engine.normalize', () => {
+    const P = new Parts(), S = E.seedPlan(), old = JSON.parse(JSON.stringify(S)); old.houses.forEach((h) => { delete h.kind; delete h.units; delete h.pack; delete h.mfRes; delete h.mfOther; delete h.mgmtPct; delete h.maintPct; });
+    const N = E.normalize(JSON.parse(JSON.stringify(old))); P.t(N.houses.length === 36 && N.houses.every((h, i) => h.kind === 'single' && h.units === 1 && h.pack === false && h.rent === S.houses[i].rent && h.price === S.houses[i].price && h.loanId === S.houses[i].loanId), 'an old portfolio without the fields loads as single family, every price / rent / loan unchanged', 1);
+    const m = JSON.parse(JSON.stringify(S)); const a = MF(50, { pack: false, mfRes: 275, mfOther: 4750, mgmtPct: 5 }); m.houses.push(a); const M = E.normalize(JSON.parse(JSON.stringify(m))).houses.find((h) => h.id === 'mf'); P.t(M.kind === 'multi' && M.units === 50 && M.pack === false && M.mfRes === 275 && M.mfOther === 4750 && M.mgmtPct === 5 && M.type === 'house', 'a multi-family asset round-trips through normalize', 0.5);
+    const z = JSON.parse(JSON.stringify(S)); z.houses.push(MF(5, { units: 9999, pack: 1, mfRes: -4 })); z.houses.push(MF(5, { id: 'mf2', units: 1, mfRes: 'x' })); z.houses.push(Object.assign(E.newAsset('commercial'), { id: 'cm', kind: 'multi', units: 12 }));
+    const Z = E.normalize(z); const q = (id) => Z.houses.find((h) => h.id === id); P.t(q('mf').units === 500 && q('mf').pack === true && q('mf').mfRes === 0 && q('mf2').units === 2 && q('mf2').mfRes === 300 && q('cm').kind === 'single' && q('cm').units === 1, 'units clamp to 2-500, a bad reserve falls back, only homes can be multi-family', 0.5);
+    P.t(E.ADDITIONS.length === 1 && E.ADDITIONS[0].key === 'lost-creek-704', 'ADDITIONS is untouched', 0.2); return P; });
+  await check('B46', 'B', 'Multi-family loan list: every option is complete, rates / closing in range, size eligibility with a reason, first fitting option preselected, info-only options name their model', 3, 'node: Engine.MFLOANS, mfLoans, mfFirst', () => {
+    const P = new Parts(), ML = E.MFLOANS, need = ['mfFha', 'mfVa', 'mfConvOO', 'mfConvInv', 'mfK203', 'mfSbl', 'mfAgency', 'mfHud', 'mfBank5', 'mfBank10', 'mfCmbs', 'mfSba504', 'mfBridge', 'mfDscr', 'mfBlanket', 'mfSeller', 'mfSellerIO', 'mfAssume', 'mfLease', 'mfSubTo', 'mfJv', 'mfCash'];
+    P.t(need.every((id) => ML.some((l) => l.id === id)) && ML.length === need.length, 'all ' + need.length + ' options from the research brief are listed', 1, ML.map((l) => l.id).join(','));
+    P.t(ML.every((l) => l.dp >= 0 && l.dp <= 100 && l.rate >= 0 && l.rate <= 14 && l.term >= 12 && l.closing >= 1 && l.closing <= 5 && l.fit.length && l.only && l.note && (l.dp >= 100 || l.rate > 0)), 'every option has down %, rate, term, closing 1-5%, a fit and a one-line reason', 0.5);
+    const ok = (u, pk) => E.mfLoans(u, pk).filter((x) => x.ok).map((x) => x.loan.id), bad = (u, pk) => E.mfLoans(u, pk).filter((x) => !x.ok);
+    P.t(ok(2, false).includes('mfFha') && ok(2, false).includes('mfVa') && !ok(2, false).includes('mfAgency') && !ok(2, false).includes('mfBlanket') && E.mfFirst(2, false) === 'mfFha', 'duplex: FHA / VA fit, agency and blanket do not; FHA is preselected', 0.7);
+    P.t(ok(5, true).includes('mfBlanket') && ok(5, true).includes('mfDscr') && !ok(5, true).includes('mfAgency') && !ok(5, true).includes('mfFha') && E.mfFirst(5, true) === 'mfBlanket', 'pack of 5: blanket / DSCR fit, agency and FHA do not; blanket is preselected', 0.7);
+    P.t(ok(20, false).includes('mfSbl') && ok(20, false).includes('mfHud') && ok(20, false).includes('mfCmbs') && !ok(20, false).includes('mfFha') && ok(8, false).includes('mfAgency') && !ok(8, false).includes('mfHud') && ok(51, false).includes('mfAgency') && !ok(51, false).includes('mfSbl') && E.mfFirst(50, false) === 'mfSbl', '8 / 20 / 50 / 51 units: HUD and CMBS need 20+, small-balance stops at 50', 0.7);
+    P.t([2, 5, 20, 50, 500].every((u) => bad(u, false).every((x) => x.why && x.why.length < 60) && ok(u, false).length >= 5), 'every grey option has a short reason; every size keeps at least 5 options', 0.5);
+    const io = ML.filter((l) => l.info); P.t(io.length === 3 && io.every((l) => l.modelledAs && /Info only/.test(l.note)), 'three info-only structures (master lease, subject-to, equity partner) each name what they are modelled as', 0.5, io.map((l) => l.id).join(',')); return P; });
 }
 
 /* ================================================================ A: REQUIREMENTS / PROPAGATION */
@@ -954,9 +1005,9 @@ async function robustChecks(page) {
   const t0 = Date.now(); const { srv, port } = await startServer(); BASE = 'http://127.0.0.1:' + port;
   console.log('Serving', V4, 'on', BASE);
   browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
-  let finance = null, sync = null, info = null, gest = null, ux = null;
+  let finance = null, sync = null, info = null, gest = null, ux = null, design = null;
   try {
-    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !GEST_ONLY && !UX_ONLY) {
+    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !GEST_ONLY && !UX_ONLY && !DES_ONLY) {
     await engineChecks();
     const ctx = await mkCtx(); const page = await mkPage(ctx, 'main');
     await reqChecks(page); await uxChecks(page); await robustChecks(page);
@@ -969,34 +1020,40 @@ async function robustChecks(page) {
     catch (e) { results.push({ id: 'R00', category: 'R', name: 'Realism module failed to run', points: 30, rawPoints: 30, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.message || e), repro: 'node -e "require(\'./realism.js\')"' }); console.log('  [0.00/30] R00 realism module error: ' + (e && e.message)); }
     }
     /* Category F: personal finances, scored separately on its own 90-point scale (does not touch the A-E + R total) */
-    if (!SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY && !UX_ONLY) {
+    if (!SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY && !UX_ONLY && !DES_ONLY) {
     console.log('F. Personal finances');
     try { finance = await require('./finance-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS }); }
     catch (e) { finance = { earned: 0, max: 90, checks: [{ id: 'F00', category: 'F', name: 'Finance module failed to run', points: 90, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./finance-grade.js\')"' }] }; console.log('  [0.00/90] F00 finance module error: ' + (e && e.message)); }
     }
     /* Category G: number sync, scored separately on its own 100-point scale (does not touch the A-E + R total or F) */
-    if (!FIN_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY && !UX_ONLY) {
+    if (!FIN_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY && !UX_ONLY && !DES_ONLY) {
     console.log('G. Number sync');
     try { sync = await require('./sync-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS, base: () => BASE }); }
     catch (e) { sync = { earned: 0, max: 100, checks: [{ id: 'G00', category: 'G', name: 'Sync module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./sync-grade.js\')"' }] }; console.log('  [0.00/100] G00 sync module error: ' + (e && e.message)); }
     }
     /* Category H: plain-language help and hourly jobs, scored on its own 100-point scale (does not touch A-E + R, F or G) */
-    if (!FIN_ONLY && !SYNC_ONLY && !MAIN_ONLY && !GEST_ONLY && !UX_ONLY) {
+    if (!FIN_ONLY && !SYNC_ONLY && !MAIN_ONLY && !GEST_ONLY && !UX_ONLY && !DES_ONLY) {
     console.log('H. Help (i) buttons and hourly jobs');
     try { info = await require('./info-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, reset, loadState, goHash, goMain, setVal, store, collect, expandAll, EXPAND_JS, base: () => BASE }); }
     catch (e) { info = { earned: 0, max: 100, checks: [{ id: 'H00', category: 'H', name: 'Info module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./info-grade.js\')"' }] }; console.log('  [0.00/100] H00 info module error: ' + (e && e.message || e)); }
     }
     /* Category I: Portfolio sections, reorder, auto-funding, duplicate, extra panel, loan line, swipe back, keyboard dismiss (own 100-point scale) */
-    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !UX_ONLY) {
+    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !UX_ONLY && !DES_ONLY) {
     console.log('I. Portfolio sections, gestures and funding order');
     try { gest = await require('./gesture-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, collect, base: () => BASE }); }
     catch (e) { gest = { earned: 0, max: 100, checks: [{ id: 'I00', category: 'I', name: 'Gesture module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./gesture-grade.js\')"' }] }; console.log('  I module failed: ' + (e && e.message)); }
     }
     /* Category J: calendar dates, math in number boxes, Checks block, sold cash profit, migration, stretch house, tap targets (own 100-point scale) */
-    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY) {
+    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY && !DES_ONLY) {
     console.log('J. Dates, number-box math, Checks, sold profit, migration');
     try { ux = await require('./ux-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, collect, base: () => BASE }); }
     catch (e) { ux = { earned: 0, max: 100, checks: [{ id: 'J00', category: 'J', name: 'UX module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./ux-grade.js\')"' }] }; console.log('  J module failed: ' + (e && e.message)); }
+    }
+    /* Category K: design consistency and flow of the multi-family screens (own 100-point scale) */
+    if (!FIN_ONLY && !SYNC_ONLY && !INFO_ONLY && !MAIN_ONLY && !GEST_ONLY && !UX_ONLY) {
+    console.log('K. Design consistency and flow');
+    try { design = await require('./design-grade.js').run({ E, Parts, mkS, DATA_V, KEY, money, near, nearRel, BAD, mkCtx, mkPage, collect, base: () => BASE }); }
+    catch (e) { design = { earned: 0, max: 100, checks: [{ id: 'K00', category: 'K', name: 'Design module failed to run', points: 100, earned: 0, ratio: 0, detail: 'ERROR: ' + (e && e.stack || e), repro: 'node -e "require(\'./design-grade.js\')"' }] }; console.log('  K module failed: ' + (e && e.message)); }
     }
   } finally { await browser.close(); srv.close(); }
 
@@ -1016,6 +1073,10 @@ async function robustChecks(page) {
   const uxMd = () => { if (!ux) return ''; let m = `\n## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **${fmt2(ux.earned)} / ${ux.max}** (separate scale)\n\n| ID | Check | Pts | Earned | Detail |\n|---|---|---|---|---|\n`;
     ux.checks.forEach((r) => (m += `| ${r.id} | ${r.name} | ${fmt2(r.points)} | ${fmt2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 1500)} |\n`));
     const ff = ux.checks.filter((r) => r.earned < r.points - 0.001); m += `\n### J failures\n\n`; if (!ff.length) m += 'None.\n'; ff.forEach((r) => (m += `- **${r.id} ${r.name}** (-${fmt2(r.points - r.earned)}): ${String(r.detail).slice(0, 1500)}\n  - Reproduce: ${r.repro}\n`)); return m; };
+  const desMd = () => { if (!design) return ''; let m = `\n## K. Design consistency and flow: **${fmt2(design.earned)} / ${design.max}** (separate scale; the multi-family screens against the existing design language)\n\n| ID | Check | Pts | Earned | Detail |\n|---|---|---|---|---|\n`;
+    design.checks.forEach((r) => (m += `| ${r.id} | ${r.name} | ${fmt2(r.points)} | ${fmt2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 1500)} |\n`));
+    const ff = design.checks.filter((r) => r.earned < r.points - 0.001); m += `\n### K failures\n\n`; if (!ff.length) m += 'None.\n'; ff.forEach((r) => (m += `- **${r.id} ${r.name}** (-${fmt2(r.points - r.earned)}): ${String(r.detail).slice(0, 1500)}\n  - Reproduce: ${r.repro}\n`)); return m; };
+  if (DES_ONLY) { fs.writeFileSync(path.join(__dirname, 'report-design.md'), `# Design consistency grader (DESIGN_ONLY)\n\nRun: ${new Date().toISOString()}\n` + desMd()); fs.writeFileSync(path.join(__dirname, 'result-design.json'), JSON.stringify({ design }, null, 2)); console.log(`\nK Design consistency and flow: ${fmt2(design.earned)}/${design.max}`); return; }
   if (UX_ONLY) { fs.writeFileSync(path.join(__dirname, 'report-ux.md'), `# UX grader (UX_ONLY)\n\nRun: ${new Date().toISOString()}\n` + uxMd()); console.log(`\nJ UX: ${fmt2(ux.earned)}/${ux.max}`); return; }
   if (GEST_ONLY) {
     fs.writeFileSync(path.join(__dirname, 'report-gesture.md'), `# Portfolio gestures grader (GEST_ONLY)\n\nRun: ${new Date().toISOString()}  |  ${((Date.now() - t0) / 1000).toFixed(0)}s\n` + gestMd());
@@ -1052,15 +1113,16 @@ async function robustChecks(page) {
   results.forEach((r) => (md += `| ${r.id} | ${r.name} | ${f2(r.points)} | ${f2(r.earned)} | ${String(r.detail).replace(/\|/g, '/').replace(/\n/g, ' ').slice(0, 400)} |\n`));
   const fails = results.filter((r) => r.earned < r.points - 0.001).sort((a, b) => (b.points - b.earned) - (a.points - a.earned));
   md += `\n## Top failures\n\n`; if (!fails.length) md += 'None.\n'; fails.slice(0, 15).forEach((r, i) => (md += `${i + 1}. **${r.id} ${r.name}** (-${f2(r.points - r.earned)})\n   - Detail: ${String(r.detail).slice(0, 500)}\n   - Reproduce: ${r.repro}\n`));
-  md += finMd() + syncMd() + infoMd() + gestMd() + uxMd();
+  md += finMd() + syncMd() + infoMd() + gestMd() + uxMd() + desMd();
   fs.writeFileSync(path.join(__dirname, 'report.md'), md);
-  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results, finance, sync, info, gest, ux }, null, 2));
+  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results, finance, sync, info, gest, ux, design }, null, 2));
   console.log('\nCategory scores:'); Object.keys(cats).forEach((c) => console.log(`  ${c}  ${f2(per[c].earned)} / ${f2(per[c].max)}  ${cats[c]}`));
   console.log(`\nTOTAL ${f2(total)} / ${max}`);
   if (finance) console.log(`\nF Personal finances: ${fmt2(finance.earned)}/${finance.max}`);
   if (sync) console.log(`\nG Number sync: ${fmt2(sync.earned)}/${sync.max}`);
   if (info) console.log(`\nH Help and hourly jobs: ${fmt2(info.earned)}/${info.max}`);
   if (gest) console.log(`\nI Portfolio sections and gestures: ${fmt2(gest.earned)}/${gest.max}`);
+  if (design) console.log(`\nK Design consistency and flow: ${fmt2(design.earned)}/${design.max}`);
   if (ux) console.log(`\nJ Dates, math boxes, Checks, sold profit: ${fmt2(ux.earned)}/${ux.max}`);
   try { delete require.cache[require.resolve('./logic-grade.js')]; const L = require('./logic-grade.js'); console.log(`\nL Logic and math: ${fmt2(L.total)}/${L.max} (details: grader/logic/report.md)`); } catch (e) { console.log('\nL Logic grader failed: ' + e.message); }
 })().catch((e) => { console.error('GRADER CRASH', e); process.exit(2); });

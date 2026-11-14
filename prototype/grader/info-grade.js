@@ -121,6 +121,9 @@ exports.run = async function run(X) {
     [/^Liquid cash/, ['liquid']], [/^Cash interest/, ['cashapy']], [/^Cash cushion/, ['emergency']], [/^Living costs/, ['living']], [/^Cost increases/, ['inflation']], [/^Other debts/, ['otherdebts']], [/^Tax on portfolio income/, ['portfoliotax']],
     [/^Tax on gains/, ['salestax']], [/^Businesses you run yourself/, ['operating']], [/^Hours \/ week each takes/, ['bizhours']], [/^Manager pay/, ['gmpay']]]);
   expectOn('Finances: hourly job', sampleS, '#finances', async (pg) => { await clickSel(pg, '[data-addjob=hourly]'); }, [[/^Hourly wage/, ['wage']], [/^Tips per hour/, ['tips']], [/^Weeks worked/, ['weeks']], [/^Ends in/, ['jobend']], [/^Tax rate/, ['taxrate']]]);
+  const mfS = () => { const S = sampleS(); S.houses.push(E.newAsset('house', 'mfSbl', Object.assign({ id: 'mfx', addr: 'Twenty Units', status: 'planned', fresh: false, kind: 'multi', units: 20 }, E.mfDefaults(20, false))), E.newAsset('house', 'mfBlanket', Object.assign({ id: 'mfy', addr: 'Pack Five', status: 'planned', fresh: false, kind: 'multi', units: 5, pack: true }, E.mfDefaults(5, true)))); return S; };
+  expectOn('Asset page: multi-family building', mfS, '#house-mfx', null, [[/^Number of units/, ['unitcount']], [/^Rent per unit/, ['rentunit']], [/^Total rent/, ['rentunit']], [/^Replacement reserve/, ['mfreserve']], [/^Other owner-paid costs/, ['mfother']], [/^Management/, ['mgmt']], [/^Repairs/, ['repairs']], [/^Building or pack/, ['mfpack']], [/^Before you buy/, ['mfchecklist']], [/^What lenders look at/, ['mflenders']], [/^Ongoing costs and reserves/, ['mfcosts']], [/^Staff and management/, ['mfstaff']], [/^Creative financing risks/, ['mfcreative']], [/^Down payment$/, ['downpayment']]]);
+  expectOn('Asset page: pack of houses', mfS, '#house-mfy', null, [[/^Section 8 packs/, ['mfsec8']], [/^Number of units/, ['unitcount']]]);
   const addCards = ['house', 'commercial', 'business'].map((tp) => [tp, E.loansFor(tp).map((l) => l.id)]); /* every loan the engine offers for that type */
   await hcheck('H2', 'Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries', 16,
     'Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels', async () => {
@@ -141,6 +144,11 @@ exports.run = async function run(X) {
         const missing = ids.filter((id) => !cards.find((c) => c.id === id && c.info === LOAN[id]));
         P.t(missing.length === 0, 'Add ' + tp + ': every loan card (' + ids.join(', ') + ') has an (i) beside it with its own definition', 2, 'missing/wrong: ' + missing.join(','));
       }
+      { await load(page, sampleS(), '#add'); await clickSel(page, '[data-kind=multi]');
+        const mfCards = await page.evaluate(() => [...document.querySelectorAll('.loanrow')].map((r) => ({ id: (r.querySelector('[data-pickloan]') || { dataset: {} }).dataset.pickloan, info: (r.querySelector('button.info') || { dataset: {} }).dataset.info })));
+        const infos = await page.evaluate(() => [...document.querySelectorAll('#app button.info')].map((b) => b.dataset.info)); infos.forEach((k) => seenKeys.add(k)); mfCards.forEach((c) => { if (c.info) seenKeys.add(c.info); });
+        const miss = E.MFLOANS.map((l) => l.id).filter((id) => !mfCards.find((c) => c.id === id && c.info === LOAN[id]));
+        P.t(miss.length === 0 && infos.includes('hometype') && infos.includes('unitcount') && infos.includes('mfpack'), 'Add multi-family: Home type, Number of units, Building or pack and every one of the ' + E.MFLOANS.length + ' loan cards have an (i) with their own definition', 2, 'missing: ' + miss.join(',')); }
       /* extra states: FHA / 203(k) / bridge / cash / seller assets */
       for (const id of ['fh', 'k2', 'br', 'cs', 'sb']) await visit(page, mixedS(), '#house-' + id);
       await visit(page, mixedS(), '#'); await visit(page, sampleS(), '#import-new');

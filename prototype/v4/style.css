@@ -435,3 +435,14 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 .bkr.tot{font-weight:700;border-bottom:2px solid var(--line)}.bkr.fin b{color:var(--ok)}
 /* the revenue box takes long typed text ("1,200,000/yr"): while you type in it, the $ and /mo labels step aside so the text fits */
 .iw:focus-within input[data-per] ~ em, .iw:has(input[data-per]:focus) > em { display: none; }
+
+/* multi-family: units, presets, greyed loan options (same tokens, tap sizes and spacing as the rest of the app) */
+.f.head{border-top:0;min-height:36px}
+.lgrp{margin:10px 4px 2px}
+.chips{display:flex;flex-wrap:wrap}
+.chip.on{color:var(--acc);font-weight:600;box-shadow:0 0 0 2px var(--acc) inset}
+.mfpick{margin-top:4px}
+.loanopt.off{border-style:dashed;cursor:default}
+.loanopt.off b,.loanopt.off span{color:var(--mut)}
+.loanopt .why{margin-top:2px}
+.loanrow .info{flex:none}

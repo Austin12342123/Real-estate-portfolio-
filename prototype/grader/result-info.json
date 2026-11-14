@@ -21,9 +21,9 @@
         "points": 16,
         "earned": 16,
         "ratio": 1,
-        "detail": "91/91 sub-checks pass",
+        "detail": "108/108 sub-checks pass",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 9.4
+        "seconds": 8.2
       },
       {
         "id": "H3",
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 18.3
+        "seconds": 18.4
       },
       {
         "id": "H4",
@@ -45,7 +45,7 @@
         "ratio": 1,
         "detail": "42/42 sub-checks pass",
         "repro": "node: parse numbers out of v4/info.js and compare with engine.js constants and engine calculations",
-        "seconds": 0.1
+        "seconds": 0
       },
       {
         "id": "H5",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 4
+        "seconds": 3.2
       },
       {
         "id": "H6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 7.1
+        "seconds": 5.8
       },
       {
         "id": "H7",
@@ -78,7 +78,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Load crafted localStorage states; pasted old backup restore",
-        "seconds": 1.6
+        "seconds": 1.3
       },
       {
         "id": "H8",
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 3.2
+        "seconds": 2.8
       },
       {
         "id": "H10",
