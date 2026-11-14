@@ -431,6 +431,11 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 .txtbtn.dng{color:var(--bad,#c0392b)}
 .btn.danger-o{background:none;border:1px solid var(--bad,#c0392b);color:var(--bad,#c0392b)}
 @media(max-width:359px){.hb .txtbtn{padding:0 6px}.hb .ic{padding:0 6px}}
+.bk{margin:10px 0 2px;padding-top:8px;border-top:1px solid var(--line)}
+.bk h4{margin:0 0 6px;font-size:15px}.bk h4 small{font-weight:500;color:var(--mut);font-size:13px;margin-left:4px}
+.bkr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:5px 0;font-size:15px;border-bottom:1px solid var(--line)}
+.bkr span{min-width:0}.bkr small{color:var(--mut);font-size:13px}.bkr b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bkr.tot{font-weight:700;border-bottom:2px solid var(--line)}.bkr.fin b{color:var(--ok)}
 
 </style>
 <main id="app" aria-live="polite"></main>
@@ -1611,11 +1616,26 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
       const cell = (lab, val, tid, cls) => `<span class="sc"><b class="${cls || ''}" data-testid="${tid}-${key}">${val}</b><small>${lab}</small></span>`;
       return `<span class="cnt" data-testid="cat-count-${key}">${n2}</span>${cell('before loan', cfk(income), 'cat-before', '')}${cell('after loan', cfk(cf), 'cat-after', cf < 0 ? 'bad' : '')}${cell('worth', $k(worth), 'cat-worth', '')}${cell('DSCR', dscr === null ? '—' : r(dscr, 2), 'cat-dscr', dscr !== null && dscr < 1 ? 'bad' : '')}${cell(lastLab, last, 'cat-lasts', lastLv)}`;
     };
+  /* income and expenses per month for a list of assets, in today's terms (month 0): every line is summed from the assets' own numbers and the last line equals the sum of the "now" cash flows on the rows */
+  const costBreakdown = (list, tid) => {
+    const g = S.g, T = { rent: 0, reimb: 0, vac: 0, tax: 0, ins: 0, hoa: 0, maint: 0, mgmt: 0, pay: 0, mip: 0, noi: 0, cf: 0 }; let biz = 0;
+    list.forEach((h) => { const v = pl.V[h.id]; if (!v) return;
+      if ((h.type || 'house') === 'business') { biz += h.rent; T.rent += h.rent; T.noi += v.noi; T.pay += v.P; T.mip += v.mip; T.cf += v.cf; return; }
+      const inc = h.rent + v.reimb; T.rent += h.rent; T.reimb += v.reimb; T.vac += inc - v.egi; T.tax += h.tax; T.ins += h.ins; T.hoa += h.hoa; T.maint += (g.maint / 100) * h.price / 12; T.mgmt += (g.mgmt / 100) * v.egi; T.noi += v.noi; T.pay += v.P; T.mip += v.mip; T.cf += v.cf; });
+    const L = (label, val, cls, tip) => `<div class="bkr ${cls || ''}"><span>${label}</span><b>${val}</b></div>`, m = (x) => '−' + $f(Math.abs(x)), inc = T.rent + T.reimb;
+    const rows = [L((biz && !T.tax && !T.maint ? 'Owner profit' : 'Rent') + ' per month', $f(T.rent)), T.reimb > 0.5 ? L('Costs tenants pay back (NNN)', $f(T.reimb)) : '',
+      L('Total income <small>(cash flow without any expense)</small>', $f(inc), 'tot'),
+      T.vac > 0.5 ? L('Vacancy (' + r(g.vac, 1) + '% of income)', m(T.vac)) : '', T.tax > 0.5 ? L('Property tax', m(T.tax)) : '', T.ins > 0.5 ? L('Insurance', m(T.ins)) : '', T.hoa > 0.5 ? L('HOA', m(T.hoa)) : '',
+      T.maint > 0.5 ? L('Maintenance (' + r(g.maint, 1) + '% of price a year)', m(T.maint)) : '', T.mgmt > 0.5 ? L('Property management (' + r(g.mgmt, 1) + '%)', m(T.mgmt)) : '',
+      L('Cash flow before the loan payment', $s(T.noi), 'tot'),
+      T.pay > 0.5 ? L('Loan payment (principal and interest)', m(T.pay)) : L('Loan payment', 'none'), T.mip > 0.5 ? L('Mortgage insurance', m(T.mip)) : '',
+      L('Cash flow after all expenses', $s(T.cf), 'tot fin')].join('');
+    return `<div class="bk" data-testid="cat-breakdown"><h4>Monthly income and expenses <small>today</small></h4>${rows}</div>`; };
     const secOf = (id, title, list, tp, pre) => {
       CDEF[id] = id === 'cat-house' || id === 'cat-owned-house' || empty ? false : true; const open = !(UI.coll[id] === undefined ? CDEF[id] : UI.coll[id]), tid = (pre || '') + (tp || 'sold'), lt = E.latestOf(list);
       const nn = tp ? NOUN[tp] : ['sold', 'sold'], sub = list.length ? statStrip(tp, list, tid) : 'None yet';
       return `<section class="card cat${open ? ' open' : ''}${tp ? '' : ' soldcat'}" data-testid="cat-${tid}"><div class="cathw"><div class="cath" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}" data-testid="cat-header-${tid}"><span class="catt"><b>${title}</b></span><span class="chev" aria-hidden="true">›</span></div><div class="cats" data-testid="cat-sub-${tid}" aria-label="Latest added, for information only">${sub}</div></div>
-        ${open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp && !pre ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length && tp ? '<p class="note" data-testid="cat-stat-note">Top numbers are per month at plan end, in ${UNIT()}. Lasts = how long your cash and the cash the trust holds (as projected at plan end) cover the shortfall if about 45% of these assets (the biggest earners) stop paying rent while loans, taxes and insurance keep coming. If the rest still cover everything, it assumes every asset fails (“lasts, all fail”). Amber under 3 months, red under 1.</p>' : ''}${!tp && list.length ? '<p class="note" data-testid="sold-note">Numbers follow purchase order. Sold assets keep theirs, so a number can be missing from the other lists. Cash profit is after selling costs, the loan, tax and the cash you put in.</p>' : ''}${list.length > 1 && tp && !pre ? '<p class="note hold">Hold and drag ⋮⋮ to reorder. An asset is never bought before the ones above it, and they fund it.</p>' : ''}</div>` : ''}</section>`; };
+        ${open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp && !pre ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length && tp ? costBreakdown(list, tid) : ''}${!tp && list.length ? '<p class="note" data-testid="sold-note">Numbers follow purchase order. Sold assets keep theirs, so a number can be missing from the other lists. Cash profit is after selling costs, the loan, tax and the cash you put in.</p>' : ''}${list.length > 1 && tp && !pre ? '<p class="note hold">Hold and drag ⋮⋮ to reorder. An asset is never bought before the ones above it, and they fund it.</p>' : ''}</div>` : ''}</section>`; };
     const CATS = [['house', 'Homes'], ['commercial', 'Commercial'], ['business', 'Businesses']];
     const soldAll = S.houses.filter(isSold), soldOwned = soldAll.filter((h) => h.status === 'owned'), soldPlanned = soldAll.filter((h) => h.status !== 'owned');
     const typeList = (tp, own) => S.houses.filter((h) => (h.type || 'house') === tp && (h.status === 'owned') === own && !isSold(h));

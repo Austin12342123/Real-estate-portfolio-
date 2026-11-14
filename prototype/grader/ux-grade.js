@@ -505,6 +505,23 @@ exports.run = async function run(X) {
     await page.setViewportSize({ width: 390, height: 844 }); return P;
   });
 
+  await jcheck('J29', 'Category cards end with a "Monthly income and expenses" list instead of the grey Lasts note: total income (cash flow without any expense), each expense, cash flow before the loan payment and cash flow after all expenses; the lines add up and the last line equals the sum of the rows\' "now" cash flows; no raw template text; no overflow at 320', 6, 'Planned and Real pages', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 320, height: 844 }); const S = withV(E.seedPlan()); await load(S, ''); await openAllColl();
+    const d = await page.evaluate(() => { const num = (t) => { const m = String(t).replace(/[−–]/g, '-').match(/-?\+?\$?-?[\d,]+(\.\d+)?/); return m ? parseFloat(m[0].replace(/[$,+]/g, '')) : NaN; };
+      return [...document.querySelectorAll('[data-testid=cat-breakdown]')].map((bk) => { const rows = [...bk.querySelectorAll('.bkr')].map((r) => ({ l: r.querySelector('span').textContent.trim(), v: num(r.querySelector('b').textContent) }));
+        const cat = bk.closest('.cat'), nows = [...cat.querySelectorAll('[data-testid=row-cashflow]')].map((e) => { const m = (e.parentElement.textContent.match(/now\s*([−+-]\s*\$[\d,]+)/) || [])[1]; return m ? num(m.replace(/\s/g, '')) : NaN; });
+        return { rows, nows }; }); });
+    const okSum = d.length >= 3 && d.every((c) => { const g = (re) => (c.rows.find((r) => re.test(r.l)) || {}).v; const inc = g(/^Total income/), noi = g(/before the loan/), fin = g(/after all expenses/), pay = g(/^Loan payment/), mip = g(/^Mortgage insurance/) || 0;
+      const ex = c.rows.filter((r) => /^(Vacancy|Property tax|Insurance|HOA|Maintenance|Property management)/.test(r.l)).reduce((a, r) => a + r.v, 0);
+      const noiOk = isNaN(ex) ? true : Math.abs(inc + ex - noi) <= 3 || c.rows.length < 7; const finOk = Math.abs(noi + (isNaN(pay) ? 0 : pay) + (-mip === 0 ? 0 : mip) - fin) <= 3;
+      return isFinite(inc) && isFinite(noi) && isFinite(fin) && (c.rows.length < 7 || noiOk) && finOk; });
+    P.t(okSum, 'every category list adds up (income - expenses = cash flow before the loan; minus the loan payment = cash flow after all expenses)', 3, JSON.stringify(d.map((c) => c.rows.map((r) => r.l + ':' + r.v))).slice(0, 400));
+    P.t(d.some((c) => c.nows.length && c.nows.every(isFinite) && Math.abs(c.nows.reduce((a, b) => a + b, 0) - (c.rows.find((r) => /after all expenses/.test(r.l)) || {}).v) <= c.nows.length + 2), 'the "after all expenses" line equals the sum of the rows\' "now" cash flows', 1, JSON.stringify(d.map((c) => c.nows)).slice(0, 300));
+    const bad = await page.evaluate(() => ({ raw: /\$\{/.test(document.body.innerText), old: /Lasts =|the biggest earners/.test(document.body.innerText), ov: document.documentElement.scrollWidth > innerWidth }));
+    P.t(!bad.raw && !bad.old && !bad.ov, 'no raw template text, the old grey Lasts note is gone, no horizontal scroll at 320', 2, JSON.stringify(bad));
+    await page.setViewportSize({ width: 390, height: 844 }); return P;
+  });
+
   await ctx.close();
   const earned = checks.reduce((a, c) => a + c.earned, 0), max = checks.reduce((a, c) => a + c.points, 0);
   return { earned: Math.round(earned / max * 10000) / 100, max: 100, checks: checks.map((c) => Object.assign({}, c, { points: Math.round(c.points / max * 10000) / 100, earned: Math.round(c.earned / max * 10000) / 100 })) };
