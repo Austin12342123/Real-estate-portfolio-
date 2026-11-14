@@ -433,3 +433,5 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 .bkr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:5px 0;font-size:15px;border-bottom:1px solid var(--line)}
 .bkr span{min-width:0}.bkr small{color:var(--mut);font-size:13px}.bkr b{font-variant-numeric:tabular-nums;white-space:nowrap}
 .bkr.tot{font-weight:700;border-bottom:2px solid var(--line)}.bkr.fin b{color:var(--ok)}
+/* the revenue box takes long typed text ("1,200,000/yr"): while you type in it, the $ and /mo labels step aside so the text fits */
+.iw:focus-within input[data-per] ~ em, .iw:has(input[data-per]:focus) > em { display: none; }

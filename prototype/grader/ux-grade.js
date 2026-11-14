@@ -534,6 +534,59 @@ exports.run = async function run(X) {
     await page.setViewportSize({ width: 390, height: 844 }); return P;
   });
 
+  /* ---------- J31-J34 business revenue box (Total revenue per month or per year, Profit margin, auto Owner profit) ---------- */
+  const bizS = () => { const S = withV(E.seedPlan()); S.houses.push(E.newAsset('business', 'sba7a', { id: 'nbz', addr: 'Revenue Test Biz', status: 'planned', buyIn: 0 })); return S; };
+  const rv = async () => (await store()).houses.find((h) => h.id === 'nbz');
+  await jcheck('J31', 'Business Total revenue box: an amount plus per month / per year in any common form ("1,200,000/yr", "$1.2M per year", "100k/month", "90000 mo", "15000*12/yr", "1.2m/y") lands as the MONTHLY revenue; a bare trailing m is million, "/m" is a month; "8000/week" is rejected politely; "100/yr/mo" says Check the math and keeps the number', 8, 'new business asset page, Total revenue box', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 390, height: 844 }); await load(bizS(), '#house-nbz'); await openAllColl();
+    const sel = '[data-p="h.nbz.revenue"]', box = page.locator(sel).first();
+    const table = [['1,200,000/yr', 100000], ['$1.2M per year', 100000], ['100k/month', 100000], ['90000 mo', 90000], ['15000*12/yr', 15000], ['1.2m/y', 100000], ['1.2m', 1200000], ['1.2m/m', 1200000], ['72000 a year', 6000], ['6000 monthly', 6000], ['1.2M annually', 100000], ['120000 yearly', 10000], ['120000 p.a.', 10000], ['12000 PA', 1000], ['5k Per Month', 5000], ['60000 yr', 5000], ['90000*3', 270000], ['85000', 85000]];
+    for (const [txt, want] of table) { await typeIn(sel, txt); await blur(); const h = await rv(); P.t(h.revenue === want && h.rent === Math.round(want * 0.2) && (await box.inputValue()) === want.toLocaleString('en-US'), `"${txt}" -> ${want}/mo (box shows it, owner profit = 20%)`, 0.6, JSON.stringify({ rev: h.revenue, rent: h.rent, box: await box.inputValue() })); }
+    await typeIn(sel, '90000'); await blur(); const before = await rv();
+    for (const txt of ['100/yr/mo', '100/mo/yr', '8000/week', '5 days', 'abc', '100/']) { await typeIn(sel, txt); const hint = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => ''); await blur(); const h = await rv(); const hn = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => ''); P.t(h.revenue === before.revenue && h.rent === before.rent && (/Check the math|Use per month or per year/.test(hint)) && /Kept \$90,000/.test(hn), `"${txt}" changes nothing (hint "${hint}", on leave "${hn}")`, 0.5, JSON.stringify({ rev: h.revenue })); }
+    await typeIn(sel, '8000/week'); P.t(/Use per month or per year/.test(await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => '')), '"8000/week" hint says Use per month or per year', 0.5); await blur();
+    await typeIn(sel, '1,200,000/yr'); const t1 = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => ''); P.t(/\$1,200,000 a year/.test(t1) && /\$100,000 a month/.test(t1), 'hint while typing shows both: ' + t1, 1, t1); P.t((await rv()).revenue !== 100000, 'math with a period is not applied while still in the box', 0.5);
+    await page.keyboard.press('Enter'); await page.waitForTimeout(120); P.t((await rv()).revenue === 100000, 'Enter lands it', 0.5);
+    await typeIn(sel, '70000'); await page.waitForTimeout(1100); P.t((await rv()).revenue === 70000, 'a plain number lands after the short pause', 0.5); await blur();
+    return P; });
+
+  await jcheck('J32', 'Business asset page: Total revenue + Profit margin are the inputs, Owner profit (per month and per year) is auto and read-only = revenue x margin; it drives the engine (rent), the row and the Monthly income and expenses lines; a margin edit changes owner profit; there is no editable Monthly owner profit box', 7, 'new business asset page', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 390, height: 844 }); await load(bizS(), '#house-nbz'); await openAllColl();
+    const h0 = await rv(); P.t(h0.revenue === 90000 && h0.margin === 20 && h0.rent === 18000 && h0.price === 1000000, 'new business defaults: revenue 90,000/mo, margin 20%, owner profit 18,000, price 1,000,000', 1.5, JSON.stringify(h0));
+    const lab = await page.evaluate(() => [...document.querySelectorAll('label.f')].map((l) => ({ t: l.querySelector('.lb').textContent.replace(/\s+/g, ' ').trim(), ro: !!(l.querySelector('input') || {}).readOnly, auto: !!l.querySelector('i.auto'), v: (l.querySelector('input') || {}).value })));
+    const f = (re) => lab.find((x) => re.test(x.t)) || {};
+    P.t(/^Total revenue/.test(f(/^Total revenue/).t || '') && f(/^Total revenue/).ro === false && f(/^Total revenue/).v === '90,000', 'Total revenue box shows 90,000 and is editable', 1, JSON.stringify(f(/^Total revenue/)));
+    P.t(f(/^Profit margin/).ro === false && f(/^Profit margin/).v === '20', 'Profit margin box shows 20 and is editable', 0.5, JSON.stringify(f(/^Profit margin/)));
+    P.t(f(/^Owner profit \/ month/).ro === true && f(/^Owner profit \/ month/).auto && f(/^Owner profit \/ month/).v === '18,000' && f(/^Owner profit \/ year/).ro === true && f(/^Owner profit \/ year/).v === '216,000', 'Owner profit is read-only, labelled auto: 18,000 a month and 216,000 a year', 1.5, JSON.stringify(lab.filter((x) => /Owner/.test(x.t))));
+    P.t(!lab.some((x) => /^Monthly owner profit/.test(x.t)) && (await page.locator('[data-p="h.nbz.rent"]').count()) === 0, 'no editable Monthly owner profit box any more', 1);
+    await typeIn('[data-p="h.nbz.revenue"]', '1,200,000/yr'); await blur(); let h = await rv(); P.t(h.rent === 20000 && (await page.locator('[data-testid=rent-noi]').first().textContent()).replace(/[^0-9]/g, '') === '20000', 'revenue 100,000/mo x 20% -> engine rent 20,000 and the loan lines show it', 1, JSON.stringify({ rent: h.rent }));
+    await typeIn('[data-p="h.nbz.margin"]', '15'); await blur(); h = await rv(); P.t(h.margin === 15 && h.revenue === 100000 && h.rent === 15000 && (await page.locator('[data-p="h.nbz.profit"]').inputValue()) === '15,000', 'margin 15% -> owner profit 15,000 (revenue kept 100,000)', 1, JSON.stringify(h.rent));
+    const bk = await page.evaluate(() => { const c = [...document.querySelectorAll('[data-testid=cat-breakdown]')]; return c.map((x) => x.innerText.replace(/\s+/g, ' ')); }); 
+    await page.evaluate(() => { location.hash = ''; }); await page.waitForTimeout(150); await openAllColl();
+    const bk2 = await page.evaluate(() => [...document.querySelectorAll('[data-testid=cat-breakdown]')].map((x) => x.innerText.replace(/\s+/g, ' ')));
+    P.t(bk2.some((t) => /Revenue per month/.test(t) && /Profit margin \(\d/.test(t) && /of revenue/.test(t)), 'breakdown for businesses lists Revenue and Profit margin (x% of revenue)', 1, bk2.map((t) => t.slice(0, 200)).join(' | '));
+    return P; });
+
+  await jcheck('J33', 'Seeded businesses keep their owner profit and show revenue = profit / 20%; default plan numbers are unchanged; an old portfolio / backup without revenue or margin loads unchanged (revenue and margin stay empty, nothing rewritten)', 6, 'asset page of a seeded business, engine plan, import of an old backup', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 390, height: 844 }); const S0 = E.seedPlan(); const bz = S0.houses.find((x) => x.type === 'business');
+    P.t(S0.houses.length === 36 && S0.houses.filter((x) => x.type === 'business').every((x) => x.revenue === null && x.margin === null), 'seeded plan: 36 assets, every business has revenue / margin null', 1);
+    await load(withV(S0), '#house-' + bz.id); await openAllColl();
+    const vals = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('label.f')].map((l) => [l.querySelector('.lb').textContent.replace(/\s+/g, ' ').trim(), (l.querySelector('input') || {}).value])));
+    const k = (re) => Object.keys(vals).find((x) => re.test(x));
+    P.t(vals[k(/^Total revenue/)] === Math.round(bz.rent / 0.2).toLocaleString('en-US') && vals[k(/^Profit margin/)] === '20' && vals[k(/^Owner profit \/ month/)] === bz.rent.toLocaleString('en-US'), 'seeded business shows revenue = rent / 0.20, margin 20, same owner profit', 2, JSON.stringify(vals).slice(0, 300));
+    const st = await store(); const hb = st.houses.find((x) => x.id === bz.id); P.t(hb.rent === bz.rent && hb.revenue === null && hb.margin === null, 'merely opening it changes nothing in the stored data', 1, JSON.stringify([hb.rent, hb.revenue, hb.margin]));
+    const old = clone(S0); old.houses.forEach((x) => { delete x.revenue; delete x.margin; }); const N = E.normalize(clone(old)); const nb = N.houses.find((x) => x.id === bz.id);
+    P.t(nb.rent === bz.rent && nb.revenue === null && nb.margin === null && E.revOf(nb) === bz.rent / 0.2 && N.houses.length === 36, 'an old portfolio without revenue / margin normalizes unchanged', 1.5);
+    const bad = clone(S0); bad.houses.find((x) => x.id === bz.id).revenue = 'abc'; bad.houses.find((x) => x.id === bz.id).margin = Infinity; const NB = E.normalize(bad).houses.find((x) => x.id === bz.id); P.t(NB.revenue === null && NB.margin === null && NB.rent === bz.rent, 'junk revenue / margin become null', 0.5);
+    return P; });
+
+  await jcheck('J34', 'New business asset page at 320 and 390: no horizontal scroll, every box and button at least 44px tall, nothing overflows its row', 4, 'new business asset page at 320 and 390', async () => {
+    const P = new Parts();
+    for (const w of [320, 390]) { await page.setViewportSize({ width: w, height: 844 }); await load(bizS(), '#house-nbz'); await openAllColl(); await typeIn('[data-p="h.nbz.revenue"]', '1,200,000/yr');
+      const m = await page.evaluate(() => { const small = [...document.querySelectorAll('#app input:not([readonly]), #app button, #app select')].filter((e) => e.offsetParent && e.getBoundingClientRect().height < 44 - 0.5 && !e.closest('.seg,.sw,nav')).map((e) => e.getAttribute('aria-label') || e.textContent.slice(0, 20)); return { ov: document.documentElement.scrollWidth > innerWidth, small: small.slice(0, 5), n: small.length }; });
+      P.t(!m.ov, w + 'px: no horizontal scroll', 1); P.t(m.n === 0, w + 'px: tap targets >= 44px', 1, JSON.stringify(m)); await blur(); }
+    await page.setViewportSize({ width: 390, height: 844 }); return P; });
+
   await ctx.close();
   const earned = checks.reduce((a, c) => a + c.earned, 0), max = checks.reduce((a, c) => a + c.points, 0);
   return { earned: Math.round(earned / max * 10000) / 100, max: 100, checks: checks.map((c) => Object.assign({}, c, { points: Math.round(c.points / max * 10000) / 100, earned: Math.round(c.earned / max * 10000) / 100 })) };

@@ -1,6 +1,6 @@
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
-   extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
+   extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
    Percentages are plain numbers (85 = 85%). Money is dollars. Time is months. */
 (function (root) {
   const GDEF = { cap: 85, capBiz: 50, haircut: 0, closing: 3, vac: 7, refiRate: 7.5, refiTerm: 300, mgmt: 8, maint: 1, appr: 0, hrate: 8.5, dti: 43,
@@ -27,7 +27,7 @@
   const DEFAULTS = {
     house: { addr: 'New home', price: 300000, rent: 2200, tax: 300, ins: 110, hoa: 0, nnn: 0, growth: 4, sellCost: 6 },
     commercial: { addr: 'New commercial property', price: 1500000, rent: 12500, tax: 940, ins: 375, hoa: 375, nnn: 85, growth: 4, sellCost: 5 },
-    business: { addr: 'New business', price: 1000000, rent: 18000, tax: 0, ins: 0, hoa: 0, nnn: 0, growth: 4, sellCost: 8 } };
+    business: { addr: 'New business', price: 1000000, rent: 18000, revenue: 90000, margin: 20, tax: 0, ins: 0, hoa: 0, nnn: 0, growth: 4, sellCost: 8 } };
   function applyLoan(h, id) {
     const lo = LOANS.find((l) => l.id === id);
     if (!lo) { h.loanId = 'custom'; return h; }
@@ -43,9 +43,13 @@
       capex: 0, capexMonths: 6, arv: 0, arvAuto: false, gain: null, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false }, DEFAULTS[type]);
     applyLoan(h, loanId || loansFor(type)[0].id);
     Object.assign(h, o || {});
+    if (type === 'business' && o && o.rent !== undefined) { if (o.revenue === undefined) h.revenue = null; if (o.margin === undefined) h.margin = null; } /* a business made from its owner profit (the seeded ones) has no revenue of its own: the page shows rent / margin */
     if (h.finCapex && !(o && +o.arv > 0)) { h.arv = Math.round(((h.price + h.capex) * 1.15) / 1000) * 1000; h.arvAuto = true; } /* default appraisal from the FINAL price + rehab; it follows price/rehab until you type your own appraisal or gain */
     return h;
   }
+  /* a business's owner profit per month (h.rent) = revenue per month x margin. revOf / marginOf give the revenue and margin the page shows: stored ones, else the margin default (20%) and the revenue it implies */
+  const marginOf = (h) => (isFinite(+h.margin) && h.margin !== null && h.margin !== '' ? +h.margin : 20);
+  const revOf = (h) => { if (isFinite(+h.revenue) && h.revenue !== null && h.revenue !== '') return +h.revenue; const m = marginOf(h); return m > 0 ? (+h.rent || 0) / (m / 100) : 0; };
   const newHouse = (o) => newAsset((o && o.type) || 'house', o && o.loanId, o);
 
   const H = (S, id) => S.houses.find((h) => h.id === id);
@@ -556,9 +560,10 @@
     ['cap', 'capBiz', 'vac', 'refiRate', 'refiTerm'].forEach((k) => { if (!isFinite(+S.g[k])) S.g[k] = GDEF[k]; });
     if (S.p) S.p = normalizePersonal(S.p);
     if (Array.isArray(S.added)) S.added = S.added.filter((k, i, a) => typeof k === 'string' && a.indexOf(k) === i); else delete S.added; /* keys of ADDITIONS already applied to this portfolio */
-    S.houses = (S.houses || []).filter((h) => h && h.id).map((h) => { const type = TYPES[h.type] ? h.type : 'house'; return Object.assign(newAsset(type, undefined, { id: h.id }), h, { type }); });
+    S.houses = (S.houses || []).filter((h) => h && h.id).map((h) => { const type = TYPES[h.type] ? h.type : 'house'; const b = Object.assign(newAsset(type, undefined, { id: h.id }), h, { type }); if (type === 'business') { if (!('revenue' in h)) b.revenue = null; if (!('margin' in h)) b.margin = null; } return b; }); /* an old business without revenue / margin keeps them empty (its revenue is shown as owner profit / margin; nothing is rewritten) */
     S.houses.forEach((h) => {
       ['price', 'dp', 'rate', 'term', 'extra', 'rent', 'tax', 'ins', 'hoa', 'liens', 'paid', 'buyIn', 'wait', 'capex', 'capexMonths', 'arv', 'liftIncome', 'exitMonth', 'exitLift', 'sellCost', 'mat', 'nnn'].forEach((k) => { if (!isFinite(+h[k])) h[k] = newAsset(h.type, undefined)[k]; else h[k] = +h[k]; });
+      ['revenue', 'margin'].forEach((k) => { h[k] = h[k] === null || h[k] === '' || h[k] === undefined || !isFinite(+h[k]) ? null : Math.max(0, +h[k]); }); if (h.margin !== null) h.margin = Math.min(100, h.margin); if (h.type !== 'business') { h.revenue = null; h.margin = null; }
       if (+h.liftValue > 0 && !(+h.arv > 0)) { /* old data stored a % lift: convert it to a dollar appraisal at completion */
         const gv = h.growth == null || !isFinite(+h.growth) ? S.g.appr : +h.growth; h.arv = Math.round(h.price * Math.pow(1 + gv / 100, (h.capexMonths || 0) / 12) * (1 + h.liftValue / 100)); }
       delete h.liftValue; if (!(h.arv > 0)) h.arv = 0;
@@ -764,6 +769,6 @@
     const cur = slots.map((i) => S.houses[i].id); if (cur.join() === ids.join()) return false;
     const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); return true;
   }
-  const E = { ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

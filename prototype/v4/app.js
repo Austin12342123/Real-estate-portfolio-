@@ -108,7 +108,27 @@
   const hintHtml = (c) => `<small class="chint${c.bad ? ' bad' : ''}" role="status" aria-live="polite" data-testid="calc-hint">${esc(c.text)}</small>`;
   const placeHint = () => { document.querySelectorAll('#app .chint').forEach((n) => n.remove()); if (!calcHint) return; const el = document.querySelector(`#app input[data-p="${calcHint.p}"]`), iw = el && el.closest('.iw'); if (iw) iw.insertAdjacentHTML('beforeend', hintHtml(calcHint)); };
   const showNote = (p, text) => { clearTimeout(hintTimer); calcHint = { p, text }; placeHint(); hintTimer = setTimeout(() => { calcHint = null; document.querySelectorAll('#app .chint').forEach((n) => n.remove()); }, 2800); };
-  window.RepCalc = calcEval;
+  /* a revenue box: an amount (plain, math, or with k / m) and an optional period, per month or per year ('1,200,000/yr', '$1.2M per year', '100k/month', '90000 mo', '15000*12/yr'). Always answers in dollars PER MONTH. A bare trailing m is a million ('1.2m'); '/m' or 'per m' is a month. No period = per month. */
+  const PER_M = '(?:\\/\\s*(?:months?|mo|m)|per\\s*(?:months?|mo|m)|a\\s*month|monthly|months?|mo)', PER_Y = '(?:\\/\\s*(?:years?|yr|y)|per\\s*(?:years?|yr|y)|a\\s*year|annually|annual|yearly|years?|yr|p\\.a\\.|pa|y)';
+  const RE_PM = new RegExp('\\s*' + PER_M + '\\s*$', 'i'), RE_PY = new RegExp('\\s*' + PER_Y + '\\s*$', 'i'), RE_OTHER = /(?:\/\s*|per\s*|a\s*|every\s*)?(?:weeks?|wk|w|days?|d|quarters?|qtr|q|hours?|hr|h)\s*$/i;
+  function perEval(raw) {
+    const s0 = String(raw == null ? '' : raw).trim(); if (s0 === '') return { kind: 'plain' };
+    let per = null, body = s0, m;
+    if ((m = RE_PM.exec(s0)) && m.index > 0) { per = 'm'; body = s0.slice(0, m.index); } else if ((m = RE_PY.exec(s0)) && m.index > 0) { per = 'y'; body = s0.slice(0, m.index); }
+    else if (RE_OTHER.test(s0) && /[\d)]\s*(?:\/|per|a|every)?\s*[a-z]+\s*$/i.test(s0)) return { kind: 'expr', ok: false, msg: 'Use per month or per year' };
+    let hasKM = false, bad = false;
+    const expr = body.replace(/,/g, '').replace(/(\d+\.?\d*|\.\d+)\s*([kKmM])(?![a-zA-Z])/g, (_, n, u) => { hasKM = true; return '(' + n + '*' + (/[kK]/.test(u) ? '1000' : '1000000') + ')'; });
+    if (!per && !hasKM) return calcEval(raw);
+    if (/[a-zA-Z]/.test(expr) && !/^[\d.+\-*/()xX×÷\s$]+$/.test(expr)) bad = true;
+    if (/%/.test(expr)) return { kind: 'expr', ok: false };
+    if (bad || /^\s*$/.test(expr)) return { kind: 'expr', ok: false };
+    let c = calcEval(expr); if (c.kind === 'plain') { const v = parseFloat(expr.replace(/[$\s]/g, '')); c = isFinite(v) ? { kind: 'expr', ok: true, v } : { kind: 'expr', ok: false }; }
+    if (!c.ok || !isFinite(c.v)) return { kind: 'expr', ok: false };
+    const mo = per === 'y' ? c.v / 12 : c.v, f = (x) => '$' + Math.round(x).toLocaleString('en-US');
+    const v = Math.round(mo * 100) / 100; return { kind: 'expr', ok: true, v, hint: per === 'y' ? '= ' + f(c.v) + ' a year · ' + f(v) + ' a month' : '= ' + f(v) + ' a month' };
+  }
+  const evalBox = (el) => (el.dataset && el.dataset.per !== undefined ? perEval(el.value) : calcEval(el.value));
+  window.RepCalc = calcEval; window.RepPer = perEval;
   const GL = (window.Info && window.Info) || { INFO: {}, LABEL: {}, LOAN: {} }, INFO = GL.INFO;
   const infoBtn = (k) => (INFO[k] ? `<button type="button" class="info" data-info="${k}" aria-label="What does ${(INFO[k].t || '').replace(/"/g, '')} mean?"><span aria-hidden="true">i</span></button>` : '');
   let infoKey = null, infoFrom = null; /* infoFrom = which (i) opened the sheet, so focus can go back to it */
@@ -117,7 +137,7 @@
 
   /* ---------- reusable bits ---------- */
   const lblOf = (label, info) => { const ib = infoBtn(info), m = /^([\s\S]*\S)\s+(\S+)$/.exec(label); return m ? m[1] + ' <span class="nw">' + m[2] + ib + '</span>' : '<span class="nw">' + label + ib + '</span>'; }; /* the last word and its (i) never split across lines */
-  const field = (label, p, val, o = {}) => `<label class="f ${o.calc ? 'calc' : ''}"><span class="lb">${lblOf(label, o.info || GL.LABEL[label])}${o.calc ? ' <i class="auto" title="calculated from your other numbers — tap to override">auto</i>' : ''}${o.date ? `<small class="dh" data-testid="date-hint" data-dh="${p}" data-m="${isFinite(+val) && String(val) !== '' ? Math.round(+val) : ''}">${isFinite(+val) && String(val) !== '' ? (+val <= 0 ? 'today (' + dt(0) + ')' : 'on ' + dt(+val)) : 'no date yet'}</small>` : ''}</span><span class="iw">${o.pre ? `<em>${o.pre}</em>` : ''}<input inputmode="${o.ro ? 'decimal' : 'text'}" ${o.ro ? '' : `data-num="1" data-pre="${esc(o.pre || '')}" data-suf="${esc(o.suf || '')}" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false"`} data-p="${p}" data-k="${p}" aria-label="${esc(label)}" ${o.ro ? 'readonly tabindex="-1"' : ''} ${o.ph ? 'placeholder="' + esc(o.ph) + '"' : ''} value="${val}">${o.suf ? `<em>${o.suf}</em>` : ''}</span></label>`;
+  const field = (label, p, val, o = {}) => `<label class="f ${o.calc ? 'calc' : ''}"><span class="lb">${lblOf(label, o.info || GL.LABEL[label])}${o.calc ? ' <i class="auto" title="calculated from your other numbers — tap to override">auto</i>' : ''}${o.date ? `<small class="dh" data-testid="date-hint" data-dh="${p}" data-m="${isFinite(+val) && String(val) !== '' ? Math.round(+val) : ''}">${isFinite(+val) && String(val) !== '' ? (+val <= 0 ? 'today (' + dt(0) + ')' : 'on ' + dt(+val)) : 'no date yet'}</small>` : ''}</span><span class="iw">${o.pre ? `<em>${o.pre}</em>` : ''}<input inputmode="${o.ro ? 'decimal' : 'text'}" ${o.ro ? '' : `data-num="1" data-pre="${esc(o.pre || '')}" data-suf="${esc(o.suf || '')}" ${o.per ? 'data-per="1"' : ''} enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false"`} data-p="${p}" data-k="${p}" aria-label="${esc(label)}" ${o.ro ? 'readonly tabindex="-1"' : ''} ${o.ph ? 'placeholder="' + esc(o.ph) + '"' : ''} value="${val}">${o.suf ? `<em>${o.suf}</em>` : ''}</span></label>`;
   const kpiLbl = (label, ib) => { const m = /^([\s\S]*\S)\s+(\S+)$/.exec(label); return m ? m[1] + ' <span class="nw">' + m[2] + ib + '</span>' : '<span class="nw">' + label + ib + '</span>'; }; /* the last word and its (i) never split across lines */
   const kpi = (id, label, val, sub, cls, sm, alt) => `<div class="kpi ${sm ? 'sm' : ''}"><small>${kpiLbl(label, infoBtn(GL.LABEL[label]))}</small><b class="${cls || ''}" data-testid="${id}" data-k="${id}">${val}</b>${sub ? `<span class="sub">${sub}</span>` : ''}${alt ? `<span class="alt" data-testid="alt-${id}">${alt}</span>` : ''}</div>`;
   const altLbl = () => (isToday() ? 'future dollars' : "today's dollars");
@@ -280,13 +300,14 @@
     };
   /* income and expenses per month for a list of assets, in today's terms (month 0): every line is summed from the assets' own numbers and the last line equals the sum of the "now" cash flows on the rows */
   const costBreakdown = (list, tid) => {
-    const g = S.g, T = { rent: 0, reimb: 0, vac: 0, tax: 0, ins: 0, hoa: 0, maint: 0, mgmt: 0, pay: 0, mip: 0, noi: 0, cf: 0 }; let biz = 0;
+    const g = S.g, T = { rent: 0, reimb: 0, vac: 0, tax: 0, ins: 0, hoa: 0, maint: 0, mgmt: 0, pay: 0, mip: 0, noi: 0, cf: 0 }; let biz = 0, nb = 0, rev = 0;
     list.forEach((h) => { const v = pl.V[h.id]; if (!v) return;
-      if ((h.type || 'house') === 'business') { biz += h.rent; T.rent += h.rent; T.noi += v.noi; T.pay += v.P; T.mip += v.mip; T.cf += v.cf; return; }
+      if ((h.type || 'house') === 'business') { biz += h.rent; rev += E.revOf(h); T.rent += h.rent; T.noi += v.noi; T.pay += v.P; T.mip += v.mip; T.cf += v.cf; return; }
       const inc = h.rent + v.reimb; T.rent += h.rent; T.reimb += v.reimb; T.vac += inc - v.egi; T.tax += h.tax; T.ins += h.ins; T.hoa += h.hoa; T.maint += (g.maint / 100) * h.price / 12; T.mgmt += (g.mgmt / 100) * v.egi; T.noi += v.noi; T.pay += v.P; T.mip += v.mip; T.cf += v.cf; });
     const L = (label, val, cls, tip) => `<div class="bkr ${cls || ''}"><span>${label}</span><b>${val}</b></div>`, m = (x) => '−' + $f(Math.abs(x)), inc = T.rent + T.reimb;
-    const rows = [L((biz && !T.tax && !T.maint ? 'Owner profit' : 'Rent') + ' per month', $f(T.rent)), T.reimb > 0.5 ? L('Costs tenants pay back (NNN)', $f(T.reimb)) : '',
-      L('Total income <small>(cash flow without any expense)</small>', $f(inc), 'tot'),
+    const allBiz = biz > 0 && list.every((h) => (h.type || 'house') === 'business'); /* a list of businesses: Revenue, then the costs it takes to keep only the margin, so the lines add up to owner profit */
+    const rows = [allBiz ? L('Revenue per month', $f(rev)) + L('Profit margin (' + r(rev > 0 ? (T.rent / rev) * 100 : 0, 1) + '% of revenue)', m(Math.max(0, rev - T.rent))) : L((biz && !T.tax && !T.maint ? 'Owner profit' : 'Rent') + ' per month', $f(T.rent)), T.reimb > 0.5 ? L('Costs tenants pay back (NNN)', $f(T.reimb)) : '',
+      L(allBiz ? 'Owner profit <small>(cash flow without any expense)</small>' : 'Total income <small>(cash flow without any expense)</small>', $f(inc), 'tot'),
       T.vac > 0.5 ? L('Vacancy (' + r(g.vac, 1) + '% of income)', m(T.vac)) : '', T.tax > 0.5 ? L('Property tax', m(T.tax)) : '', T.ins > 0.5 ? L('Insurance', m(T.ins)) : '', T.hoa > 0.5 ? L('HOA', m(T.hoa)) : '',
       T.maint > 0.5 ? L('Maintenance (' + r(g.maint, 1) + '% of price a year)', m(T.maint)) : '', T.mgmt > 0.5 ? L('Property management (' + r(g.mgmt, 1) + '%)', m(T.mgmt)) : '',
       L('Cash flow before the loan payment', $s(T.noi), 'tot'),
@@ -410,7 +431,7 @@
     const pl = PLAN(S), v = pl.V[h.id], g = S.g, a = E.afford(S, h, pl), t = null, P = `h.${h.id}.`, type = h.type || 'house';
     const wo = PLAN(E.without(S, h.id)), p0 = pl.purchase[h.id];
     const nx = nextPlanned(h), nxOpen = nx ? pl.purchase[nx.id] : Infinity, nxSooner = nx && isFinite(nxOpen) ? nxOpen - monthWith(h, v.X + 100, nx.id) : 0, tr = pl.trust[h.id], debt = v.debtNow;
-    const LB = { house: { rent: 'Monthly rent', sec: 'Rent & expenses', growth: 'Appreciation / yr', price: 'Price' }, commercial: { rent: 'Monthly rent (all tenants)', sec: 'Rent & operating costs', growth: 'Value growth / yr', price: 'Purchase price' }, business: { rent: 'Monthly owner profit', sec: 'Profit', growth: 'Business growth / yr', price: 'Purchase price' } }[type];
+    const LB = { house: { rent: 'Monthly rent', sec: 'Rent & expenses', growth: 'Appreciation / yr', price: 'Price' }, commercial: { rent: 'Monthly rent (all tenants)', sec: 'Rent & operating costs', growth: 'Value growth / yr', price: 'Purchase price' }, business: { rent: 'Owner profit / month', sec: 'Profit', growth: 'Business growth / yr', price: 'Purchase price' } }[type];
     const invested = v.invested, coc = invested > 0 ? ((v.cf * 12) / invested) * 100 : NaN, dscrH = v.P > 0 ? v.noi / v.P : NaN;
     const lo = E.LOANS.find((l) => l.id === h.loanId);
     const loanSel = `<div class="f stack"><span class="lb">Loan option${infoBtn('loanoption')}</span><select class="loansel" data-loan="${h.id}" aria-label="Loan option">${E.loansFor(type).map((l) => `<option value="${l.id}" ${h.loanId === l.id ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}<option value="custom" ${lo ? '' : 'selected'}>Custom terms</option></select></div>`;
@@ -434,7 +455,7 @@
     const age0 = h.status === 'owned' ? Math.max(0, h.paid || 0) : 0, depM = (E.depCum(S, h, age0 + 13) - E.depCum(S, h, age0 + 1)) / 12, pp = S.p || E.samplePersonal();
     const depNote = type === 'business' ? `Tax write-off about ${$f(depM)}/mo: ${r(pp.bizIntPct, 0)}% of the price is goodwill amortized over 15 years, the rest equipment over 7 years. Edit the split in Finances under Taxes.` : `Tax depreciation about ${$f(depM)}/mo: ${type === 'house' ? '27.5' : '39'}-year straight line on ${r(100 - pp.landPct, 0)}% of price, closing costs and improvements (land is not depreciated). Edit the land share in Finances under Taxes.`;
     const income = type === 'business'
-      ? `${field(LB.rent, P + 'rent', grp(h.rent), { pre: '$' })}<p class="note">What the business pays you each month before this loan. Price ÷ yearly profit is ${r(v.multiple, 1)}×. Tip: you can type math here, like 4000*3.${infoBtn('calc')}</p>`
+      ? `${field('Total revenue', P + 'revenue', grp(Math.round(E.revOf(h) * 100) / 100), { pre: '$', suf: '/mo', per: 1 })}${field('Profit margin', P + 'margin', r(E.marginOf(h), 2), { suf: '%' })}${field(LB.rent, P + 'profit', grp(h.rent), { pre: '$', calc: 1, ro: 1, info: 'ownerprofit' })}${field('Owner profit / year', P + 'profityr', grp(h.rent * 12), { pre: '$', calc: 1, ro: 1, info: 'ownerprofit' })}<p class="note" data-testid="rev-note">Revenue is what the business takes in each month. You keep the margin of it as owner profit, before this loan. Price ÷ yearly profit is ${r(v.multiple, 1)}×. Type revenue per month or per year, like 1,200,000/yr or 100k/mo.${infoBtn('calc')}</p>`
       : `${field(LB.rent, P + 'rent', grp(h.rent), { pre: '$' })}${field('Property tax / mo', P + 'tax', grp(h.tax), { pre: '$' })}${field('Insurance / mo', P + 'ins', grp(h.ins), { pre: '$' })}${field(type === 'commercial' ? 'CAM & operating / mo' : 'HOA / mo', P + 'hoa', grp(h.hoa), { pre: '$' })}${type === 'commercial' ? field('Tenants pay costs (NNN)', P + 'nnn', r(h.nnn, 0), { suf: '%' }) + `<p class="note" data-testid="nnn-note">Tenants repay ${r(h.nnn, 0)}% of tax, insurance and CAM (${$f(v.reimb)}/mo) on top of rent. Homes use 0%.</p>` : ''}
       <button class="chip link" data-go="settings">Vacancy ${g.vac}%</button><button class="chip link" data-go="settings">Mgmt ${g.mgmt}%</button><button class="chip link" data-go="settings">Repairs ${g.maint}%/yr</button>
       <p class="note">Net operating income ${$f(v.noi)}/mo: rent${v.reimb > 0 ? ' plus tenant repayments' : ''} minus operating costs, before the loan.${infoBtn('noi')}</p>
@@ -750,7 +771,9 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     else if (k === 'arv') { h.arv = Math.max(0, n); h.gain = null; h.arvAuto = false; }
     else if (k === 'gain') { h.gain = n; h.arvAuto = false; h.arv = Math.max(0, Math.round(h.price + (h.capex || 0) + n)); }
     else if (k === 'rate') { h.rate = Math.min(30, Math.max(0, n)); }
-    else if (k === 'loan' || k === 'need' || k === 'caprate' || k === 'mult' || k === 'proceeds') return false;
+    else if (k === 'revenue') { h.revenue = Math.max(0, n); h.rent = Math.round(h.revenue * E.marginOf(h) / 100); }
+    else if (k === 'margin') { const rv = E.revOf(h); h.margin = Math.min(100, Math.max(0, n)); h.revenue = rv; h.rent = Math.round(rv * h.margin / 100); }
+    else if (k === 'loan' || k === 'profit' || k === 'profityr' || k === 'need' || k === 'caprate' || k === 'mult' || k === 'proceeds') return false;
     else if (k === 'growth') h.growth = Math.min(100, Math.max(-50, n));
     else if (k === 'closingPct') h.closingPct = Math.min(20, Math.max(0, n));
     else h[k] = Math.max(0, n);
@@ -801,15 +824,15 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   const fmtBox = (el, v, was) => { const t = (Math.round(v * 1e4) / 1e4).toLocaleString('en-US', { maximumFractionDigits: 4, useGrouping: el.dataset.suf !== '%' && (el.dataset.pre === '$' || /,/.test(was || '')) }); return t; };
   const boxNum = (el, c) => (c.kind === 'plain' ? parseFloat(String(el.value).replace(/[,$%\s]/g, '')) : c.ok ? c.v : NaN);
   /* commit what is in the box right now, only if it is a complete valid entry for this box (never a prefix of something that turns out invalid) */
-  const liveCommit = (el, quiet) => { const p = el.dataset.p, c = calcEval(el.value); if (boxBad(el, c)) return false; let ok = false;
+  const liveCommit = (el, quiet) => { const p = el.dataset.p, c = evalBox(el); if (boxBad(el, c)) return false; let ok = false;
     if (c.kind === 'plain') ok = setField(p, el.value); else if (c.ok) ok = setField(p, String(c.v));
     if (ok) { save(); if (!quiet) render(); } return ok; };
   app.addEventListener('input', (e) => { const d = e.target.dataset; if (d.savedName !== undefined) { saveName = e.target.value; return; } if (d.renamedName !== undefined) { renameName = e.target.value; return; } const p = d.p; if (!p) return;
     if (d.num !== undefined) { /* a number box: the answer to complete math shows as a hint ('= 1,950'); half-typed or invalid math (650*, 5/0, 5%) changes nothing at all. The value itself lands only on blur / Enter. */
-      const c = calcEval(e.target.value), bd = boxBad(e.target, c); clearTimeout(hintTimer); clearTimeout(pendT);
+      const c = evalBox(e.target), bd = boxBad(e.target, c); clearTimeout(hintTimer); clearTimeout(pendT);
       if (bd) { calcHint = { p, text: bd.live, bad: true }; placeHint(); return; }
-      if (c.kind !== 'plain' && !c.ok) { calcHint = { p, text: 'Check the math', bad: true }; placeHint(); return; }
-      calcHint = c.kind === 'plain' ? null : { p, text: '= ' + c.v.toLocaleString('en-US', { maximumFractionDigits: 4 }) };
+      if (c.kind !== 'plain' && !c.ok) { calcHint = { p, text: c.msg || 'Check the math', bad: true }; placeHint(); return; }
+      calcHint = c.kind === 'plain' ? null : { p, text: c.hint || '= ' + c.v.toLocaleString('en-US', { maximumFractionDigits: 4 }) };
       const dh = e.target.closest('label') && e.target.closest('label').querySelector('.dh'); if (dh) { const tv = boxNum(e.target, c); if (isFinite(tv) && String(e.target.value).trim() !== '') { const mv = Math.min(Math.round(tv), monthsCap()); dh.textContent = mv <= 0 ? 'today (' + dt(0) + ')' : 'on ' + dt(mv); } } /* the date under a months box follows what you type (display only) */
       if (c.kind === 'plain' && !dh && String(e.target.value).trim() !== '' && isFinite(boxNum(e.target, c))) { const el = e.target; pendT = setTimeout(() => { if (document.activeElement === el && el.dataset.p === p && setField(p, el.value)) { save(); render(); } }, 700); } /* a plain number you stop typing for a moment lands by itself so the calculated boxes beside it (down payment $, loan amount, ratios) always match what the box shows; math (650*3, 5/0) and % never land until you leave the box */
       placeHint(); return; } /* nothing is committed while you type: the value lands when you leave the box or press Enter, so a half-typed prefix ('5' of '5/0') can never become the live number */
@@ -824,7 +847,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   let clickRender = false; /* a state change made as you leave a box for a button is drawn after that tap's click, so the tap is never swallowed */
   const deferRender = () => { if (clickRender) return; clickRender = true; const go = () => { if (!clickRender) return; clickRender = false; document.removeEventListener('click', go); setTimeout(render, 0); }; document.addEventListener('click', go); setTimeout(go, 1500); };
   app.addEventListener('focusout', (e) => { const el = e.target; if (!(el.dataset && el.dataset.num !== undefined && el.tagName === 'INPUT') || inRender) return; clearTimeout(pendT);
-    const p = el.dataset.p, nxt = e.relatedTarget, nxtP = !!(nxt && nxt.dataset && nxt.dataset.p), c = calcEval(el.value), bd = boxBad(el, c), blank = String(el.value).trim() === '', n = boxNum(el, c);
+    const p = el.dataset.p, nxt = e.relatedTarget, nxtP = !!(nxt && nxt.dataset && nxt.dataset.p), c = evalBox(el), bd = boxBad(el, c), blank = String(el.value).trim() === '', n = boxNum(el, c);
     const fix = (blank && !EMPTYOK(p)) || (c.kind === 'expr' && !c.ok) || (c.kind === 'plain' && !blank && isNaN(n)) ? 'Kept' : bd ? bd.end : null;
     if (fix) { /* back to what the box held when you started (always the stored value it showed then, never a blank or half-typed text): the value, the data and every total */
       const orig = editGood && editGood.p === p ? editGood.text : '';
