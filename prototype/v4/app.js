@@ -939,7 +939,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const t = e.touches[0]; sw = null; kb = null; if (!t || e.touches.length !== 1) return;
     if (t.clientX <= 24 && !drag && !(e.target.closest && e.target.closest('input,select,textarea,[type=range],.sheet'))) sw = { x: t.clientX, y: t.clientY };
     if (!(e.target.closest && e.target.closest(FIELD))) kb = { y: t.clientY };
-    pgSw = !routeOf() && t.clientX > 24 && !drag && !infoKey && !(e.target.closest && e.target.closest('input,select,textarea,[type=range],.sheet,svg.nw,.row,.panel')) ? { x: t.clientX, y: t.clientY } : null;
+    pgSw = !routeOf() && t.clientX > 24 && !drag && !infoKey && !(e.target.closest && (e.target.closest('input,select,textarea,[type=range],.sheet,svg.nw,.panel') || (e.target.closest('.row') && !e.target.closest('.totrow')))) ? { x: t.clientX, y: t.clientY } : null; /* the total row is not draggable, so a sideways swipe on it still changes the page */
   }, { passive: true });
   document.addEventListener('touchmove', (e) => {
     const t = e.touches[0]; if (!t) return;
