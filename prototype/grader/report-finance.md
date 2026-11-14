@@ -1,6 +1,6 @@
 # Finance grader (FINANCE_ONLY)
 
-Run: 2026-11-14T04:17:27.387Z  |  37s
+Run: 2026-11-14T20:48:28.212Z  |  44s
 
 ## F. Personal finances: **90.00 / 90** (separate scale; a design review adds 10 later; not included in the A-E + R total)
 

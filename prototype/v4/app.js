@@ -1,7 +1,7 @@
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
-  let S, UI = { unit: 'today', tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', addKind: 'single', addUnits: 2, addPack: false, view: 'plan', openOn: 'planned', addOwned: false };
+  let S, UI = { unit: 'today', tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', addKind: 'single', addUnits: 2, addPack: false, addEx: '', view: 'plan', openOn: 'planned', addOwned: false };
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
   const DATA_V = 20; /* bump when a release changes the data; NEVER replace a user's portfolio in a migration (new assets go through ADDITIONS in engine.js) */
   const ADDED_ALL = () => E.ADDITIONS.map((x) => x.key);
@@ -622,6 +622,7 @@
   /* ---------- add page: pick a type, then a loan option that auto-fills the terms ---------- */
   const mfName = (n, pack) => (pack ? 'pack of ' + n + ' houses' : n === 2 ? 'duplex' : n === 4 ? 'fourplex' : n + '-unit building');
   const PRESETS = [['Duplex', 2, false], ['Fourplex', 4, false], ['Section 8 pack of 5', 5, true], ['20 units', 20, false], ['50 units', 50, false]];
+  let exOpen = false; /* the Add screen's 'Start from an example' list: closed every time the screen opens */
   const loanLine = (l) => (l.dp >= 100 ? 'No loan · pay the full price' : l.dp + '% down · ' + l.rate + '% · ' + (l.io ? 'interest-only, ' : '') + r(l.term / 12, 1) + ' yr' + (l.mat > 0 ? ', due in ' + r(l.mat / 12, 1) + ' yr' : ''));
   function addPage() {
     const tp = E.TYPES[UI.addType] ? UI.addType : 'house', multi = tp === 'house' && UI.addKind === 'multi', un = Math.min(500, Math.max(2, Math.round(+UI.addUnits) || 2)), pack = multi && !!UI.addPack;
@@ -637,9 +638,22 @@
     const typeCard = tp === 'house' ? `<div class="f head"><span class="lb">Home type${infoBtn('hometype')}</span></div><div class="seg" role="tablist" data-testid="home-type"><button data-kind="single" class="${multi ? '' : 'on'}" aria-pressed="${!multi}" data-testid="kind-single">Single family</button><button data-kind="multi" class="${multi ? 'on' : ''}" aria-pressed="${multi}" data-testid="kind-multi">Multi-family</button></div>` : '';
     const multiCard = multi ? `<div class="mfpick" data-testid="multi-fields">${field('Number of units', 'a.add.units', un)}<div class="chips" data-testid="unit-presets">${PRESETS.map((q) => `<button class="chip${q[1] === un && q[2] === pack ? ' on' : ''}" data-preset="${q[1]}${q[2] ? 'p' : ''}" aria-pressed="${q[1] === un && q[2] === pack}">${q[0]}</button>`).join('')}</div>
       <div class="f head"><span class="lb">Building or pack${infoBtn('mfpack')}</span></div><div class="seg" role="tablist" data-testid="pack-seg"><button data-addpack="0" class="${pack ? '' : 'on'}" aria-pressed="${!pack}">Building</button><button data-addpack="1" class="${pack ? 'on' : ''}" aria-pressed="${pack}">Pack of houses</button></div></div>` : '';
+    /* 'Start from an example': four typical purchases for this category, one per cost and quality tier. Picking one only fills in what the Add button will create; it adds nothing by itself. */
+    const exs = UI.addOwned ? [] : E.examplesFor(tp, multi), exSel = exs.find((x) => x.id === UI.addEx) || null;
+    const exLine = (x, m) => { const mo = (n) => $f(n) + '/mo', cash = $k(m.cash) + ' cash';
+      if (x.cat === 'house') return $k(m.price) + (m.capex ? ' + ' + $k(m.capex) + ' rehab' : '') + (m.arv ? ' · worth ' + $k(m.arv) : '') + ' · rent ' + mo(m.rent) + ' · ' + cash;
+      if (x.cat === 'multi') return m.units + (x.pack ? ' houses' : ' units') + ' · ' + $k(m.price) + (m.capex ? ' + ' + $k(m.capex) + ' work' : '') + (m.arv ? ' · worth ' + $k(m.arv) : '') + ' · rent ' + mo(m.rent) + ' · ' + cash;
+      if (x.cat === 'commercial') return $k(m.price) + ' · rent ' + mo(m.rent) + ' · ' + r(m.cap, 1) + '% cap · ' + cash;
+      return $k(m.price) + ' · sales ' + mo(m.revenue) + ' at ' + r(m.margin, 0) + '% · ' + r(m.mult, 1) + '× profit · ' + cash; };
+    exs.forEach((x) => { INFO['ex-' + x.id] = E.exampleInfo(S, x); });
+    const exRows = exs.map((x) => { const m = E.exampleMetrics(S, x), on = exSel && exSel.id === x.id;
+      return `<div class="loanrow"><button class="loanopt ${on ? 'on' : ''}" data-expick="${x.id}" aria-pressed="${on}" data-testid="ex-${x.id}"><b>${esc(x.tierName)} · ${esc(x.name)}</b><span data-testid="ex-sum-${x.id}">${esc(exLine(x, m))}</span></button>${infoBtn('ex-' + x.id)}</div>`; }).join('');
+    const exUse = exSel ? (() => { const m = E.exampleMetrics(S, exSel); return `<div class="emptyb exuse" data-testid="ex-using"><span><b>Using example: ${esc(exSel.name)}</b><br><span data-testid="ex-preview">Cash needed ${$f(m.cash)} · cash flow ${$s(m.cf)}/mo</span></span><button type="button" class="chip link" data-exclear data-testid="ex-clear" aria-label="Clear the example and go back to the defaults">Clear</button></div>`; })() : '';
+    const exHtml = exs.length ? `<button type="button" class="linkbtn leftbtn exlink" data-exopen aria-expanded="${exOpen}" data-testid="ex-toggle">${exSel ? 'Change example' : 'Start from an example'} ${exOpen ? '▾' : '▸'}</button>${exOpen ? `<section class="card" data-testid="ex-list"><p class="note" style="margin:0 4px 6px">Four typical purchases, cheapest first. Tap one to fill in the numbers; it is only added when you tap Add. Typical, not a quote.</p>${exRows}</section>` : ''}${exUse}` : '';
     return `<div class="top"><button class="ic" data-go="" aria-label="Cancel and go back">‹</button><h2>${UI.addOwned ? 'Add something you own' : 'Add to portfolio'}</h2></div>${UI.addOwned ? '<p class="note" style="margin:0 4px 8px" data-testid="add-owned-note">It goes on the Real page. Next you set the price, loan and how many months you have already paid.</p>' : ''}
     <section class="card"><div class="seg" role="tablist">${['house', 'commercial', 'business'].map((x) => `<button data-addtype="${x}" class="${x === tp ? 'on' : ''}">${TL[x]}</button>`).join('')}</div><p class="note">${blurb} You will set the price and income on the next screen.</p>${tp === 'house' && !multi ? '<button class="linkbtn" data-go="import/new">Have a Zillow listing? Import it</button>' : ''}${typeCard}${multiCard}</section>
     <div class="sec">Pick a loan option</div><section class="card" data-testid="loan-options">${loanHtml}</section>
+    ${exHtml}
     <button class="btn" style="width:100%" data-confirm-add="${tp}|${sel}" data-testid="confirm-add">Add ${multi ? esc(mfName(un, pack)) : TL[tp].toLowerCase()}</button>`;
   }
 
@@ -776,7 +790,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       if (k in prev && prev[k] !== v && el !== document.activeElement) (el.closest('label,.kpi,tr') || el).classList.add('flash'); });
     prev = cur;
   }
-  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && infoKey) { infoKey = null; render(); } });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && infoKey) { infoKey = null; render(); } else if (e.key === 'Escape' && exOpen && routeOf() === 'add') { exOpen = false; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); } });
   window.addEventListener('hashchange', () => { navSeen++; infoKey = null; infoFrom = null; prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
 
   /* ---------- editing: every field is an input; derived fields back-solve ---------- */
@@ -933,7 +947,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.sdelYes) { const i = SAVED.findIndex((q) => q.id === t.dataset.sdelYes); if (i >= 0) { const gone = SAVED.splice(i, 1)[0]; if (saveSaved()) savedMsg = 'Deleted “' + gone.name + '”.'; else { SAVED.splice(i, 0, gone); savedMsg = 'Could not delete: storage is unavailable.'; } } ask = null; render(); return; }
     if (t.dataset.load) { ask = 'load:' + t.dataset.load; savedMsg = ''; render(); return; }
     if (t.dataset.loadYes) { loadSaved(t.dataset.loadYes); return; }
-    if (t.dataset.addOwned !== undefined) { UI.addOwned = true; UI.addType = 'house'; UI.addLoan = ''; UI.addKind = 'single'; UI.addUnits = 2; UI.addPack = false; goto('add'); return; }
+    if (t.dataset.addOwned !== undefined) { UI.addOwned = true; UI.addType = 'house'; UI.addLoan = ''; UI.addKind = 'single'; UI.addUnits = 2; UI.addPack = false; UI.addEx = ''; exOpen = false; goto('add'); return; }
     const vw = t.closest('[data-view]'); if (vw) { UI.view = vw.dataset.view; prev = {}; save(); render(); return; }
     const ex = t.closest('[data-exit]'); if (ex) { const hh = H(routeOf().slice(2)); if (hh) { hh.exit = ex.dataset.exit; save(); render(); } return; }
     if (t.dataset.tab) { if (t.dataset.tab === 'hide') UI.open = false; else { UI.open = true; UI.tab = t.dataset.tab; } save(); render(); return; }
@@ -945,14 +959,17 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.addcap !== undefined) { S.p.capital.push({ id: 'cap' + Date.now().toString(36), name: 'Partner or investor', amount: 100000, month: 12 }); save(); render(); return; }
     if (t.dataset.dp) { ask = 'dp:' + t.dataset.dp; render(); return; }
     if (t.dataset.dpYes) { const [kind, id] = t.dataset.dpYes.split(':'), key = { job: 'jobs', pl: 'planned', cap: 'capital' }[kind]; if (key) S.p[key] = S.p[key].filter((q) => q.id !== id); ask = null; save(); render(); return; }
-    if (t.dataset.add !== undefined) { if (E.TYPES[t.dataset.add]) { UI.addType = t.dataset.add; UI.addLoan = ''; } UI.addKind = 'single'; UI.addUnits = 2; UI.addPack = false; UI.addOwned = false; goto('add'); return; }
-    const at = t.closest('[data-addtype]'); if (at) { UI.addType = at.dataset.addtype; UI.addLoan = ''; render(); return; }
-    const ak = t.closest('[data-kind]'); if (ak) { UI.addKind = ak.dataset.kind === 'multi' ? 'multi' : 'single'; UI.addLoan = ''; save(); render(); return; }
-    const apr = t.closest('[data-preset]'); if (apr) { const pk = /p$/.test(apr.dataset.preset); UI.addUnits = parseInt(apr.dataset.preset, 10); UI.addPack = pk; UI.addLoan = ''; save(); render(); return; }
-    const apk = t.closest('[data-addpack]'); if (apk) { UI.addPack = apk.dataset.addpack === '1'; UI.addLoan = ''; save(); render(); return; }
+    if (t.dataset.add !== undefined) { if (E.TYPES[t.dataset.add]) { UI.addType = t.dataset.add; UI.addLoan = ''; } UI.addKind = 'single'; UI.addUnits = 2; UI.addPack = false; UI.addOwned = false; UI.addEx = ''; exOpen = false; goto('add'); return; }
+    const at = t.closest('[data-addtype]'); if (at) { UI.addType = at.dataset.addtype; UI.addLoan = ''; UI.addEx = ''; exOpen = false; render(); return; }
+    const ak = t.closest('[data-kind]'); if (ak) { UI.addKind = ak.dataset.kind === 'multi' ? 'multi' : 'single'; UI.addLoan = ''; UI.addEx = ''; exOpen = false; save(); render(); return; }
+    const apr = t.closest('[data-preset]'); if (apr) { const pk = /p$/.test(apr.dataset.preset); UI.addUnits = parseInt(apr.dataset.preset, 10); UI.addPack = pk; UI.addLoan = ''; UI.addEx = ''; save(); render(); return; }
+    const apk = t.closest('[data-addpack]'); if (apk) { UI.addPack = apk.dataset.addpack === '1'; UI.addLoan = ''; UI.addEx = ''; save(); render(); return; }
     const hpk = t.closest('[data-pack]'); if (hpk) { const hh = H(routeOf().slice(2)); if (hh && E.isMulti(hh)) { hh.pack = hpk.dataset.pack === '1'; save(); render(); } return; }
-    const pk = t.closest('[data-pickloan]'); if (pk) { UI.addLoan = pk.dataset.pickloan; render(); return; }
-    if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const own = !!UI.addOwned, mf = tp === 'house' && UI.addKind === 'multi', mu = Math.min(500, Math.max(2, Math.round(+UI.addUnits) || 2)), mp = mf && !!UI.addPack, h = E.newAsset(tp, lid, Object.assign({ fresh: true }, own ? { status: 'owned', paid: 12 } : {}, mf ? Object.assign({ kind: 'multi', units: mu, pack: mp }, E.mfDefaults(mu, mp)) : {})); UI.addKind = 'single'; UI.addPack = false; UI.addOwned = false; E.register(S, h); S.houses.push(h); UI.coll[(own ? 'cat-owned-' : 'cat-') + tp] = false; selId = null; page = own ? 'real' : 'planned'; save(); goto('h/' + h.id); return; }
+    const pk = t.closest('[data-pickloan]'); if (pk) { UI.addLoan = pk.dataset.pickloan; UI.addEx = ''; render(); return; }
+    const exo = t.closest('[data-exopen]'); if (exo) { exOpen = !exOpen; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); return; }
+    const exp = t.closest('[data-expick]'); if (exp) { const ex = E.exampleById(exp.dataset.expick); if (ex) { UI.addEx = ex.id; UI.addLoan = ex.loanId; if (ex.cat === 'multi') { UI.addUnits = ex.units; UI.addPack = !!ex.pack; } exOpen = false; save(); render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); } return; }
+    if (t.closest('[data-exclear]')) { UI.addEx = ''; UI.addLoan = ''; save(); render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); return; }
+    if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const own = !!UI.addOwned, mf = tp === 'house' && UI.addKind === 'multi', mu = Math.min(500, Math.max(2, Math.round(+UI.addUnits) || 2)), mp = mf && !!UI.addPack, ex = !own && UI.addEx ? E.exampleById(UI.addEx) : null, usex = ex && ex.type === tp && ex.cat === E.exCat(tp, mf), h = usex ? E.exampleAsset(ex) : E.newAsset(tp, lid, Object.assign({ fresh: true }, own ? { status: 'owned', paid: 12 } : {}, mf ? Object.assign({ kind: 'multi', units: mu, pack: mp }, E.mfDefaults(mu, mp)) : {})); UI.addEx = ''; exOpen = false; UI.addKind = 'single'; UI.addPack = false; UI.addOwned = false; E.register(S, h); S.houses.push(h); UI.coll[(own ? 'cat-owned-' : 'cat-') + tp] = false; selId = null; page = own ? 'real' : 'planned'; save(); goto('h/' + h.id); return; }
     if (t.dataset.del) { ask = 'del:' + t.dataset.del; render(); return; }
     if (t.dataset.clearAsk !== undefined) { ask = 'clearplan'; render(); return; }
     if (t.dataset.clearYes !== undefined) { clearPlanned(); return; }

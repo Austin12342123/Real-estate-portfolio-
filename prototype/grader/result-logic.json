@@ -1,57 +1,62 @@
 {
- "run": "2026-11-14T20:15:25.542Z",
+ "run": "2026-11-14T20:38:16.508Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 11.85,
-   "max": 11.85
+   "earned": 11.34,
+   "max": 11.34
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 7.4,
-   "max": 7.4
+   "earned": 7.09,
+   "max": 7.09
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 14.44,
-   "max": 14.44
+   "earned": 13.82,
+   "max": 13.82
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 8.14,
-   "max": 8.14
+   "earned": 7.8,
+   "max": 7.8
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 6.34,
-   "max": 6.35
+   "earned": 6.07,
+   "max": 6.08
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 11.11,
-   "max": 11.11
+   "earned": 10.63,
+   "max": 10.63
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 10.74,
-   "max": 10.74
+   "earned": 10.28,
+   "max": 10.28
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 10.36,
-   "max": 10.36
+   "earned": 9.92,
+   "max": 9.92
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 15.18,
-   "max": 15.18
+   "earned": 14.53,
+   "max": 14.53
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 4.44,
-   "max": 4.44
+   "earned": 4.25,
+   "max": 4.25
+  },
+  "L11": {
+   "name": "Purchase examples (16 typical purchases)",
+   "earned": 4.25,
+   "max": 4.25
   }
  },
  "checks": [
@@ -1042,6 +1047,50 @@
    "earned": 2,
    "pass": true,
    "detail": "bought in month 170 (plan 240), verdict yes, NW end $542M, cash flow after $1859253 vs carry $287500/mo",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L11",
+   "id": "L11.1",
+   "name": "Examples table: 4 examples in each of Home single-family, Multi-family, Commercial, Business, tiers 1-4 once each (cost ascending), unique ids, none uses the user's illustrative 80,000 / 20,000 / 140,000, every (i) text says typical, not a quote and shows arithmetic",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L11",
+   "id": "L11.2",
+   "name": "Every example is internally consistent when built through the Add path (newAsset + applyLoan + mfDefaults): cash flow after the loan >= 0, DSCR >= the loan's minimum on today's rent and after any rent lift, the loan fits the unit count, cash needed = down payment + closing + cash rehab, rent total = units x rent per unit",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L11",
+   "id": "L11.3",
+   "name": "Market sanity: commercial cap rate is inside the property band and within 0.15 of its CBRE-based target; business price / yearly profit is inside its multiple range and SBA 7(a) loans stay under $5M; the homes follow the stated rules (70% rule and rent under the HUD FMR for the budget fixer, appraisal 1.2-1.6x the rehab for the value-add, all-in <= 75% of value)",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L11",
+   "id": "L11.4",
+   "name": "Applying an example is the normal Add path: exampleAsset equals newAsset(type, loan, exampleOpts) field for field, and with the user's own assumptions (7% vacancy changed to 10%) the preview figures follow the assumptions",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "",
    "source": "",
    "disclosedOnly": false
   }

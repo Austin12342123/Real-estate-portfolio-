@@ -13,7 +13,7 @@ const R = require('./logic/ref.js');
 
 const CATS = { L1: ['Loan / amortization / payoff math', 14], L2: ['Income, expense and NOI model', 14], L3: ['Leverage, LTV/CLTV and credit-line rules', 12], L4: ['Lender qualification (DTI / DSCR / rental haircut)', 10],
   L5: ['Loan-product terms vs sources (every LOANS preset)', 12], L6: ['Appreciation, rent growth, inflation and time basis', 10], L7: ['Taxes, selling costs and depreciation', 8], L8: ['Business valuation, growth and operating model', 8],
-  L9: ['Plan integrity (ordering, trust funding, cash recycling, stress test)', 7], L10: ['Disclosure, labels, units and glossary accuracy', 5] };
+  L9: ['Plan integrity (ordering, trust funding, cash recycling, stress test)', 7], L10: ['Disclosure, labels, units and glossary accuracy', 5], L11: ['Purchase examples (16 typical purchases)', 6] };
 const checks = [], unverified = [];
 const near = (a, b, tol) => Math.abs(a - b) <= (tol === undefined ? 0.01 : tol);
 const nearRel = (a, b, t) => Math.abs(a - b) <= Math.max(0.01, Math.abs(b) * (t || 1e-9));
@@ -573,6 +573,37 @@ chk('L9', 'L9.8', 'Stretch scenario affords 607 Siena Way (Bel Air, Los Angeles 
   const ok = h.price === 135000000 && h.status === 'planned' && /Los Angeles CA 90077/.test(h.addr) && isFinite(m) && m <= pl.planM && f.status !== 'no' && after && after.cf >= carry && pl.horizon.nw >= 300e6 && st.p.capital.every((c) => c.amount === 0 || true) && pl.unfunded.length === 0;
   return { pass: !!ok, detail: 'bought in month ' + m + ' (plan ' + pl.planM + '), verdict ' + f.status + ', NW end $' + (pl.horizon.nw / 1e6).toFixed(0) + 'M, cash flow after $' + (after && Math.round(after.cf)) + ' vs carry $' + Math.round(carry) + '/mo' };
 });
+
+
+/* ---------------- L11: the 16 purchase examples ---------------- */
+{ const S0 = E.seedPlan(), EX = E.EXAMPLES, cats = ['house', 'multi', 'commercial', 'business'], M = (x) => E.exampleMetrics(S0, x);
+chk('L11', 'L11.1', 'Examples table: 4 examples in each of Home single-family, Multi-family, Commercial, Business, tiers 1-4 once each (cost ascending), unique ids, none uses the user\'s illustrative 80,000 / 20,000 / 140,000, every (i) text says typical, not a quote and shows arithmetic', 1, () => {
+  const bad = []; cats.forEach((c) => { const l = E.examplesFor(c === 'multi' ? 'house' : c, c === 'multi'); if (l.length !== 4 || l.map((x) => x.tier).join() !== '1,2,3,4') bad.push(c + ' tiers'); const pr = l.map((x) => x.f.price); if (pr.some((v, i) => i && c !== 'house' && v <= pr[i - 1])) bad.push(c + ' price not ascending ' + pr.join('/')); });
+  if (EX.length !== 16 || new Set(EX.map((x) => x.id)).size !== 16) bad.push('count ' + EX.length);
+  EX.forEach((x) => { const m = M(x); [x.f.price, x.f.capex, x.f.arv, m.cash].forEach((v) => { if ([80000, 20000, 140000].indexOf(v) >= 0) bad.push(x.id + ' uses ' + v); }); const i = E.exampleInfo(S0, x); if (!/typical, not a quote/i.test(i.b) || !/\$/.test(i.e) || !/(x|=)/.test(i.e) || /NaN|undefined|Infinity/.test(i.b + i.e)) bad.push(x.id + ' info'); });
+  return { pass: !bad.length, detail: bad.join('; ') }; });
+chk('L11', 'L11.2', 'Every example is internally consistent when built through the Add path (newAsset + applyLoan + mfDefaults): cash flow after the loan >= 0, DSCR >= the loan\'s minimum on today\'s rent and after any rent lift, the loan fits the unit count, cash needed = down payment + closing + cash rehab, rent total = units x rent per unit', 2, () => {
+  const bad = []; EX.forEach((x) => { const m = M(x), h = m.h, lo = E.loanById(x.loanId);
+    if (!(m.cf > 0)) bad.push(x.id + ' cf ' + m.cf.toFixed(0)); if (m.dscr + 1e-9 < m.minDscr || m.dscrAfter + 1e-9 < m.minDscr) bad.push(x.id + ' dscr ' + m.dscr.toFixed(2) + '/' + m.dscrAfter.toFixed(2) + ' < ' + m.minDscr);
+    if (h.loanId !== x.loanId || !lo || lo.types.indexOf(x.type) < 0 && !lo.multi) bad.push(x.id + ' loan'); if (x.cat === 'multi') { if (!E.mfFit(lo, x.units, !!x.pack).ok || h.kind !== 'multi' || h.units !== x.units || !!h.pack !== !!x.pack) bad.push(x.id + ' multi fit'); } else if (h.kind !== 'single') bad.push(x.id + ' kind');
+    const cash = E.downAmt(h) + h.price * (h.closingPct == null ? S0.g.closing : h.closingPct) / 100 + (h.finCapex ? 0 : h.capex); if (Math.abs(cash - m.cash) > 1) bad.push(x.id + ' cash ' + cash + ' vs ' + m.cash);
+    if (x.type === 'business' && Math.abs(h.revenue * h.margin / 100 - h.rent) > 1) bad.push(x.id + ' revenue x margin'); if (x.cat === 'multi' && !(h.rent > 0 && h.rent / h.units >= 800 && h.rent / h.units <= 2500)) bad.push(x.id + ' rent per unit');
+    if (h.status !== 'planned' || h.id === undefined) bad.push(x.id + ' status'); const Sx = E.normalize(JSON.parse(JSON.stringify(S0))); Sx.houses.push(h); E.register && E.register(Sx, h); const pl = E.plan(Sx); if (!pl || !isFinite(pl.horizon.nw)) bad.push(x.id + ' plan'); });
+  return { pass: !bad.length, detail: bad.join('; ') }; });
+chk('L11', 'L11.3', 'Market sanity: commercial cap rate is inside the property band and within 0.15 of its CBRE-based target; business price / yearly profit is inside its multiple range and SBA 7(a) loans stay under $5M; the homes follow the stated rules (70% rule and rent under the HUD FMR for the budget fixer, appraisal 1.2-1.6x the rehab for the value-add, all-in <= 75% of value)', 2, () => {
+  const bad = []; EX.forEach((x) => { const m = M(x);
+    if (x.type === 'commercial' && (m.cap < x.capBand[0] || m.cap > x.capBand[1] || Math.abs(m.cap - x.capTarget) > 0.15)) bad.push(x.id + ' cap ' + m.cap.toFixed(2));
+    if (x.type === 'business') { if (m.mult < x.multRange[0] || m.mult > x.multRange[1]) bad.push(x.id + ' mult ' + m.mult.toFixed(2)); if (x.loanId === 'sba7a' && m.loan > 5e6) bad.push(x.id + ' SBA cap'); if (m.price / (m.revenue * 12) > 1.6) bad.push(x.id + ' price/revenue'); }
+    if (x.type === 'commercial' && (m.h.dp < 25 || m.h.dp > 50)) bad.push(x.id + ' dp'); });
+  const s8 = EX.find((x) => x.id === 'home-s8'), a = M(s8); if (a.price > a.arv * 0.7 - a.capex + 1 || a.capex !== Math.round(s8.scope * 1.15) || a.rent >= s8.fmr || (a.price + a.capex) / a.arv > 0.75) bad.push('home-s8 rules');
+  const va = EX.find((x) => x.id === 'home-va'), b = M(va), k = (b.arv - b.price) / b.capex; if (k < 1.2 || k > 1.6 || b.capex !== Math.round(va.scope * 1.15)) bad.push('home-va lift ' + k.toFixed(2));
+  const v20 = M(EX.find((x) => x.id === 'multi-20va')), nv = v20.noiAfter * 12 / 0.07; if (Math.abs(v20.arv - nv) / nv > 0.03 || v20.capex !== Math.round(20 * 6000 * 1.15)) bad.push('multi-20va value');
+  return { pass: !bad.length, detail: bad.join('; ') }; });
+chk('L11', 'L11.4', 'Applying an example is the normal Add path: exampleAsset equals newAsset(type, loan, exampleOpts) field for field, and with the user\'s own assumptions (7% vacancy changed to 10%) the preview figures follow the assumptions', 1, () => {
+  const bad = []; EX.forEach((x) => { const h = E.exampleAsset(x), g = E.newAsset(x.type, x.loanId, Object.assign({ fresh: true }, E.exampleOpts(x))); const a = Object.assign({}, h, { id: 0 }), c = Object.assign({}, g, { id: 0 }); if (JSON.stringify(a) !== JSON.stringify(c)) bad.push(x.id + ' differs'); });
+  const S2 = JSON.parse(JSON.stringify(S0)); S2.g.vac = 15; const x = EX[1]; if (!(E.exampleMetrics(S2, x).noi < E.exampleMetrics(S0, x).noi)) bad.push('assumptions ignored');
+  return { pass: !bad.length, detail: bad.join('; ') }; });
+}
 
 /* ---------------- score ---------------- */
 const score = {}; let total = 0;

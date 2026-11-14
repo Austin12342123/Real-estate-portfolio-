@@ -1,21 +1,22 @@
 # Logic and math grader (LOGIC_ONLY)
 
-Run: 2026-11-14T20:15:25.542Z
+Run: 2026-11-14T20:38:16.508Z
 
 **TOTAL 100 / 100**
 
 | Cat | Area | Earned | Max |
 |---|---|---|---|
-| L1 | Loan / amortization / payoff math | 11.85 | 11.85 |
-| L2 | Income, expense and NOI model | 7.4 | 7.4 |
-| L3 | Leverage, LTV/CLTV and credit-line rules | 14.44 | 14.44 |
-| L4 | Lender qualification (DTI / DSCR / rental haircut) | 8.14 | 8.14 |
-| L5 | Loan-product terms vs sources (every LOANS preset) | 6.34 | 6.35 |
-| L6 | Appreciation, rent growth, inflation and time basis | 11.11 | 11.11 |
-| L7 | Taxes, selling costs and depreciation | 10.74 | 10.74 |
-| L8 | Business valuation, growth and operating model | 10.36 | 10.36 |
-| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 15.18 | 15.18 |
-| L10 | Disclosure, labels, units and glossary accuracy | 4.44 | 4.44 |
+| L1 | Loan / amortization / payoff math | 11.34 | 11.34 |
+| L2 | Income, expense and NOI model | 7.09 | 7.09 |
+| L3 | Leverage, LTV/CLTV and credit-line rules | 13.82 | 13.82 |
+| L4 | Lender qualification (DTI / DSCR / rental haircut) | 7.8 | 7.8 |
+| L5 | Loan-product terms vs sources (every LOANS preset) | 6.07 | 6.08 |
+| L6 | Appreciation, rent growth, inflation and time basis | 10.63 | 10.63 |
+| L7 | Taxes, selling costs and depreciation | 10.28 | 10.28 |
+| L8 | Business valuation, growth and operating model | 9.92 | 9.92 |
+| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 14.53 | 14.53 |
+| L10 | Disclosure, labels, units and glossary accuracy | 4.25 | 4.25 |
+| L11 | Purchase examples (16 typical purchases) | 4.25 | 4.25 |
 
 ## Checks
 
@@ -111,5 +112,9 @@ Run: 2026-11-14T20:15:25.542Z
 | L8.7 | Default plan is robust and honest: with the default finance profile net worth >= $125M and cash flow >= $1.3M/mo in today's dollars, verdict Yes, debt-to-income peak <= 35%, no unfunded asset, every purchase inside the plan years; with a much tighter profile (about $580/mo of job money left after living costs) the plan is NOT silently Yes: the verdict is Tight with a reason that names the late last purchase | 2 | 2 | PASS default NW $303.9M, cf $3.45M, DTI 20%, last buy month 299; weak profile (job money $580/mo): NW $31.3M, verdict tight, last buy month 407 |  |
 | L8.8 | Sold asset cash profit (pl.exits[id].profit) = sale price - selling costs - loan and liens paid off - tax on the sale - (down payment + closing costs + cash improvements), checked against independent reference math on 40 random sales (gain, loss, flat-rate tax, improvements) | 2 | 2 | PASS 0 / 40 disagree  |  |
 | L9.8 | Stretch scenario affords 607 Siena Way (Bel Air, Los Angeles CA 90077): it is a planned $135,000,000 asset bought inside the plan years, the finance verdict is not "no", the cash flow after the purchase still covers the house's carry (property tax + insurance + upkeep), no partner capital, and net worth stays large | 2 | 2 | PASS bought in month 170 (plan 240), verdict yes, NW end $542M, cash flow after $1859253 vs carry $287500/mo |  |
+| L11.1 | Examples table: 4 examples in each of Home single-family, Multi-family, Commercial, Business, tiers 1-4 once each (cost ascending), unique ids, none uses the user's illustrative 80,000 / 20,000 / 140,000, every (i) text says typical, not a quote and shows arithmetic | 1 | 1 | PASS  |  |
+| L11.2 | Every example is internally consistent when built through the Add path (newAsset + applyLoan + mfDefaults): cash flow after the loan >= 0, DSCR >= the loan's minimum on today's rent and after any rent lift, the loan fits the unit count, cash needed = down payment + closing + cash rehab, rent total = units x rent per unit | 2 | 2 | PASS  |  |
+| L11.3 | Market sanity: commercial cap rate is inside the property band and within 0.15 of its CBRE-based target; business price / yearly profit is inside its multiple range and SBA 7(a) loans stay under $5M; the homes follow the stated rules (70% rule and rent under the HUD FMR for the budget fixer, appraisal 1.2-1.6x the rehab for the value-add, all-in <= 75% of value) | 2 | 2 | PASS  |  |
+| L11.4 | Applying an example is the normal Add path: exampleAsset equals newAsset(type, loan, exampleOpts) field for field, and with the user's own assumptions (7% vacancy changed to 10%) the preview figures follow the assumptions | 1 | 1 | PASS  |  |
 
 Checks marked "disclosed, not source-verified" pass on disclosure or a benchmark file whose sources could not be fetched; see sources.md.
