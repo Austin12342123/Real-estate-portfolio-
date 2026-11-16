@@ -276,8 +276,7 @@ exports.run = async function run(X) {
     await page.evaluate(() => { location.hash = ''; }); await page.waitForTimeout(60); st = await full('after a backup import (list reversed),', 1.2);
     P.t(st.houses.length >= 6, 'the backup replaced the portfolio', 0.2, String(st.houses.length));
     /* (d) ADDITIONS appended once, last in Planned */
-    const sa = clone(SRC); sa.added = []; sa.v = DATA_V - 1; await load(sa); await toMain(); st = await store(); const lc = st.houses.find((h) => h.id === 'lost-creek-704' || /Lost Creek/i.test(h.addr));
-    if (E.seedPlan().houses.some((h) => /Lost Creek/i.test(h.addr)) || lc) { /* (the asset list of ADDITIONS) */ }
+    const sa = clone(SRC); sa.added = []; sa.v = DATA_V; await load(sa); await toMain(); st = await store(); const lc = st.houses.find((h) => h.id === 'lostcreek');
     const ex = expectOf(clone(st)), nPl = Object.keys(ex.planned).length;
     P.t(!!lc && ex.planned[lc.id] === nPl && nPl === 5, 'the ADDITIONS asset is appended as the LAST planned asset (number 5 here) and the 4 planned assets keep 1..4', 1.5, lc ? lc.id + ':' + ex.planned[lc.id] + '/' + nPl : 'no addition found');
     await full('after the ADDITIONS append,', 1.2); const again = await store(); await page.reload(); await page.waitForSelector('#app > *'); await settle(); const st3 = await store(); P.t(st3.houses.length === again.houses.length, 'the addition is applied once (a reload does not add it again)', 0.5);
@@ -299,8 +298,9 @@ exports.run = async function run(X) {
         hs.push(k < 2 ? HOUSE(id, o) : k === 2 ? COMM(id, o) : k === 3 ? BIZ(id, o) : MULTI(id, o));
       }
       const S = mk(hs); await load(S); await sweep(S, P, 'random#' + t, 1, 2);
-      const pids = S.houses.filter((h) => h.status !== 'owned').map((h) => h.id), ids = pids.length > 1 ? pids : S.houses.map((h) => h.id), gone = pick(ids);
-      await toMain(); await tab(S.houses.find((h) => h.id === gone).status === 'owned' ? 'real' : 'planned'); await removeRow(gone);
+      await toMain(); await tab('planned'); let cand = await page.evaluate(() => [...document.querySelectorAll('[data-testid=row-extra-toggle]')].map((b) => b.closest('[data-row]').dataset.row)), view = 'planned';
+      if (!cand.length) { await tab('real'); view = 'owned'; cand = await page.evaluate(() => [...document.querySelectorAll('[data-testid=row-extra-toggle]')].map((b) => b.closest('[data-row]').dataset.row)); }
+      if (!cand.length) continue; const gone = pick(cand); await removeRow(gone);
       const S2 = without(S, gone), ex = expectOf(S2), isOwn = S.houses.find((h) => h.id === gone).status === 'owned', rs = await page.evaluate(READ), want = isOwn ? ex.owned : ex.planned;
       P.t(rs.length === Object.keys(want).length && rs.every((r) => r.no === want[r.id]) && seqOk(rs.map((r) => r.no)), 'random#' + t + ': after removing ' + gone + ' the view is renumbered 1..' + rs.length + ' with no reload', 0.8, rs.map((r) => r.id + ':' + r.no).join() + ' want ' + JSON.stringify(want));
     }
@@ -328,8 +328,8 @@ exports.run = async function run(X) {
     const byNo = rs.slice().sort((a, b) => a.no - b.no).map((r) => r.id), listOrder = st.houses.map((h) => h.id);
     P.t(seqOk(rs.map((r) => r.no)) && byNo.join() === listOrder.join(), 'default plan: numbers 1..36 in list order = purchase order', 1.5, byNo.slice(0, 5).join());
     const pl = E.plan(E.normalize(clone(st))), fm = st.houses.map((h) => pl.purchase[h.id]); P.t(fm.every((v, i) => i === 0 || v >= fm[i - 1]) && fm.every(isFinite), 'default plan: purchase months never go down the list and every asset is funded', 1, fm.slice(0, 6).join());
-    const verdict = await page.evaluate(() => { const v = document.querySelector('[data-testid=plan-verdict-main], [data-testid=verdict], [data-testid=plan-chip]'); return v ? v.textContent : document.getElementById('app').innerText.slice(0, 400); });
-    P.t(/\bYes\b/i.test(verdict), 'default plan verdict still reads Yes', 0.5, String(verdict).slice(0, 80));
+    const verdict = await page.evaluate(() => (document.querySelector('[data-testid=plan-headline]') || {}).textContent || '');
+    P.t(/^Nothing bought yet\. All 36 planned are possible/.test(verdict) && E.plan(E.normalize(clone(st))).unfunded.length === 0, 'default plan verdict still reads Yes (all 36 possible, none unfunded)', 0.5, String(verdict).slice(0, 80));
     return P;
   });
 

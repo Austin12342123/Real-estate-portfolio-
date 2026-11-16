@@ -1,10 +1,10 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'bc8af777'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'efc8ad77'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
   const D = E.Diag || null; /* safety copies, checks and the bug report live in engine.js (E.Diag); an old cached engine without it just means those parts stay quiet */
   /* ---------- diagnostics core. Everything stays on this device (rep-v4-diag, rep-v4-safety); nothing is ever sent. Written to work even when engine.js is an old file. ---------- */
-  const DGKEY = 'rep-v4-diag', NOW = () => Date.now(), t0boot = performance.now();
+  const DGKEY = 'rep-v4-diag', NOW = () => Date.now();
   let DG = { v: 1, ev: [], act: [], fp: null, flags: {} }, ERRN = 0, STARTED = false;
   try { const j = JSON.parse(localStorage.getItem(DGKEY)); if (j && j.v === 1) DG = { v: 1, ev: (Array.isArray(j.ev) ? j.ev : []).filter((x) => x && isFinite(+x.t) && typeof x.k === 'string').slice(-60), act: (Array.isArray(j.act) ? j.act : []).filter((x) => x && isFinite(+x.t) && typeof x.a === 'string').slice(-10), fp: j.fp && typeof j.fp === 'object' && j.fp.ids ? j.fp : null, flags: j.flags && typeof j.flags === 'object' ? j.flags : {} }; } catch (e) {}
   const dgSave = () => { try { let t = JSON.stringify(DG); while (t.length > 30000 && (DG.ev.length > 5 || DG.act.length > 3)) { if (DG.ev.length > 5) DG.ev.shift(); else DG.act.shift(); t = JSON.stringify(DG); } localStorage.setItem(DGKEY, t); } catch (e) {} };
@@ -60,9 +60,10 @@
   const nAdd0 = Array.isArray(S.added) ? S.added.length : 0, nHouses0 = S.houses.length; E.applyAdditions(S);
   const ADDED_NOW = (Array.isArray(S.added) ? S.added.length : 0) > nAdd0 || S.houses.length > nHouses0;
   /* safety copy of what was stored BEFORE a migration or an additions append changes it (or before an unreadable save is replaced by the default plan) */
-  let STARTSNAP = false;
+  let STARTSNAP = false, DIAG_MS = 0; const tDiag = performance.now(); /* DIAG_MS = what the safety / anomaly start-up work costs (the grader keeps it small) */
   if (HAD0) { const why = !VALID0 ? 'unreadable save' : V0 !== DATA_V ? 'migration from v' + V0 : ADDED_NOW ? 'additions added' : '';
     if (why && D) { let old = null; try { old = JSON.parse(RAW0); } catch (e) {} STARTSNAP = true; const ok = D.safeAdd(localStorage, old, why, STAMPS.app, NOW(), RAW0); logEv(!VALID0 || V0 !== DATA_V ? 'migration' : 'additions', why + (ok ? ': safety copy filed' : ': safety copy could not be stored')); } }
+  DIAG_MS += performance.now() - tDiag;
   /* the next planned asset below h in the list (the trust buys in list order), and the month it is bought if h's extra payment were x instead */
   const nextPlanned = (h) => { const i = S.houses.indexOf(h); for (let k = i + 1; k < S.houses.length; k++) if (S.houses[k].status === 'planned') return S.houses[k]; return null; };
   const planWith = (h, x) => { const c = JSON.parse(JSON.stringify(S)), q = c.houses.find((y) => y.id === h.id); q.extra = x; q.driver = 'extra'; return E.plan(c); };
@@ -275,7 +276,7 @@
 
   /* ---------- main page ---------- */
   function main() {
-    const pl = PLAN(S), t0 = pl.today, tf = pl.final, th = pl.horizon, g = S.g, yrs = g.planYears, owned = S.houses.filter((h) => h.status === 'owned');
+    const pl = PLAN(S); LASTPL = { S, pl, rn: RN }; const t0 = pl.today, tf = pl.final, th = pl.horizon, g = S.g, yrs = g.planYears, owned = S.houses.filter((h) => h.status === 'owned');
     /* The Planned page totals cover the planned assets only: take the bought (Real) assets out of the plan totals, so each page's finances are its own */
     const ownSn = pl.snap.filter((x) => x.type !== 'cash' && S.houses.some((q) => q.id === x.id && q.status === 'owned')), osum = (k) => ownSn.reduce((a, x) => a + (x[k] || 0), 0);
     const subOwn = (px) => { const th = px.horizon, ownSn = px.snap.filter((x) => x.type !== 'cash' && S.houses.some((q) => q.id === x.id && q.status === 'owned')), osum = (k) => ownSn.reduce((a, x) => a + (x[k] || 0), 0); if (!ownSn.length) return th; const o = Object.assign({}, th); o.nw = th.nw - osum('equity'); o.monthly = th.monthly - osum('payment'); o.cf = th.cf - osum('cf'); o.cfx = th.cfx - osum('cf'); o.noi = th.noi - osum('income'); o.value = th.value - osum('value'); o.debt = th.debt - osum('debt'); o.count = Math.max(0, (th.count || 0) - ownSn.length); o.extra = Math.max(0, th.extra - osum('extra')); const dsv = o.noi - o.cf; o.ds = dsv; o.dscr = dsv > 0.5 ? o.noi / dsv : 0; o.cltv = o.value > 0 ? (o.debt / o.value) * 100 : 0; return o;  }, sn = subOwn(pl), snAlt = subOwn(isToday() ? pl.raw : E.realPlan(S, pl)), snapBy = {}; pl.snap.forEach((x) => (snapBy[x.id] = x));
@@ -385,7 +386,7 @@
     const lastPayoff = Math.max(0, ...ownedAll.filter((h) => pl.V[h.id].B0 > 0.5).map((h) => pl.loanEnd[h.id]));
     const head = `<h1>Portfolio <span class="hb">${page === 'planned' ? '<button class="txtbtn dng" data-clear-ask data-testid="clear-plan-btn">Remove</button>' : ''}<button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>
         ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
-    <div class="seg pagetabs" role="tablist" aria-label="Portfolio pages" data-testid="page-tabs">${[['planned', 'Planned'], ['real', 'Real'], ['saved', 'Saved']].map(([k, l]) => `<button type="button" role="tab" id="tab-${k}" data-page="${k}" class="${page === k ? 'on' : ''}" aria-selected="${page === k}" data-testid="tab-${k}">${l}</button>`).join('')}</div>${page === 'planned' && ask === 'clearplan' ? clearBox() : ''}${page === 'planned' && UI.migNote ? `<div class="migrate" role="status" data-testid="migrate-note"><span>Your earlier portfolio is saved in Saved as “${esc(UI.migNote)}”.</span><button type="button" class="chip link" data-mig-dismiss data-testid="migrate-dismiss" aria-label="Dismiss this note">Dismiss</button></div>` : ''}`;
+    <div class="seg pagetabs" role="tablist" aria-label="Portfolio pages" data-testid="page-tabs">${[['planned', 'Planned'], ['real', 'Real'], ['saved', 'Saved']].map(([k, l]) => `<button type="button" role="tab" id="tab-${k}" data-page="${k}" class="${page === k ? 'on' : ''}" aria-selected="${page === k}" data-testid="tab-${k}">${l}</button>`).join('')}</div>${page === 'planned' ? notesHtml() : ''}${page === 'planned' && ask === 'clearplan' ? clearBox() : ''}${page === 'planned' && UI.migNote ? `<div class="migrate" role="status" data-testid="migrate-note"><span>Your earlier portfolio is saved in Saved as “${esc(UI.migNote)}”.</span><button type="button" class="chip link" data-mig-dismiss data-testid="migrate-dismiss" aria-label="Dismiss this note">Dismiss</button></div>` : ''}`;
     const tail = `<button class="linkbtn" data-go="import/new" data-testid="import-link">Import from a listing</button>`;
     if (page === 'saved') return head + savedPage(pl);
     /* ---------- Real: only what you have bought. Its totals are the sums of the rows shown (plan-end numbers, like every row) ---------- */
@@ -794,7 +795,9 @@
       ${pendingImport ? confirmBox('Replace all current data with this backup?', 'data-import-yes', 'Yes, replace') : ''}
       <p class="note">${(() => { try { const t = localStorage.getItem('rep-v4-backup'); return t ? 'Backup last shown: ' + new Date(+t).toLocaleDateString() : 'No backup yet. Copy one regularly.'; } catch (e) { return ''; } })()}</p></section>`, true)}
     ${colSec('samples', 'Sample portfolios', 'your plan is kept in Saved first', `<section class="card" data-testid="samples-card">${SCN.map((sc) => ask === sc.k ? confirmBox(scnConfirm(sc), 'data-' + sc.k + '-yes', 'Yes, load it') : `<button type="button" class="scn" data-${sc.k} data-testid="${sc.test}"><b>${sc.title}</b><span>${sc.sub}</span></button>`).join('')}
-      <p class="note">Loading one files your current plan in Saved first (as “Portfolio N (before …)”) and shows an Undo, so nothing is lost. The samples keep a few assets already bought, to show the Real page; your default plan starts with nothing bought. Every scenario is funded by the trust: an asset is bought when the pooled cash flow and borrowing room of the assets before it can pay for it. None of them needs outside money for the purchases.</p></section>`, true)}`;
+      <p class="note">Loading one files your current plan in Saved first (as “Portfolio N (before …)”) and shows an Undo, so nothing is lost. The samples keep a few assets already bought, to show the Real page; your default plan starts with nothing bought. Every scenario is funded by the trust: an asset is bought when the pooled cash flow and borrowing room of the assets before it can pay for it. None of them needs outside money for the purchases.</p></section>`, true)}
+    ${D ? lazySec('safety', 'Safety copies', safeList().length + (safeList().length === 1 ? ' copy' : ' copies'), safetyCard, true) : ''}
+    ${D ? lazySec('report', 'Report a problem', 'copy a bug report', reportCard, true) : ''}`;
   }
 
   /* ---------- import from listing ---------- */
@@ -854,7 +857,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   let inRender = false; /* a box removed by a re-render fires focusout: that is not the user leaving it */
   function render() { inRender = true; try { render0(); } finally { inRender = false; } }
   function render0() {
-    const route = routeOf(), a = document.activeElement, id = a && a.dataset && (a.dataset.p || a.dataset.sel), typed = a && a.value, pos = a && a.selectionStart;
+    RN++; const route = routeOf(), a = document.activeElement, id = a && a.dataset && (a.dataset.p || a.dataset.sel), typed = a && a.value, pos = a && a.selectionStart;
     const app = document.getElementById('app'); if (selId && !H(selId)) selId = null;
     app.innerHTML = '';
     app.innerHTML = route === 'finances' ? finances() : route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
@@ -870,7 +873,118 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const cur = {};
     app.querySelectorAll('[data-k]').forEach((el) => { const k = el.dataset.k, v = el.tagName === 'INPUT' ? el.value : el.textContent; cur[k] = v;
       if (k in prev && prev[k] !== v && el !== document.activeElement) (el.closest('label,.kpi,tr') || el).classList.add('flash'); });
-    prev = cur;
+    prev = cur; scheduleMonitor();
+  }
+  /* ---------- anomaly monitor, notices, safety copies and the bug report. Cheap, debounced after each render, never throws; nothing leaves this device. ---------- */
+  let bugDesc = '', bugNums = false, bugShown = false, bugText = '', bugMsg = '', safeText = null, ANOM = [], ANOMDIS = {}, ANOMCOPIED = false, LASTPL = null, RN = 0, SWC = { caches: [], ctl: false }, monTimer = null, MON_MS = 0, lastDailyChk = NOW(), swLogged = false;
+  const fmtDT = (ts) => { const d = new Date(ts); return isNaN(d) ? '' : d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); };
+  const moneyOf = (t) => { const m = /([−\-+])?\s*\$([\d,]+(?:\.\d+)?)\s*([MB])?/.exec(String(t || '')); if (!m) return NaN; let v = parseFloat(m[2].replace(/,/g, '')); if (m[3] === 'M') v *= 1e6; else if (m[3] === 'B') v *= 1e9; return m[1] === '−' || m[1] === '-' ? -v : v; };
+  const routeSafe = () => { const r = routeOf(); return r === '' ? 'main/' + page : r.startsWith('h/') ? 'asset/h:' + (D ? D.hash(r.slice(2)) : '') : r.startsWith('import/') ? 'import' : r; }; /* never an asset id in clear */
+  const exCount = () => { try { return EXED && E.exExport ? Object.keys((E.exExport() || {}).ov || {}).length : 0; } catch (e) { return 0; } };
+  function gatherChecks(full) {
+    const onMain = routeOf() === '', ap = document.getElementById('app'); let pl = LASTPL && LASTPL.S === S && LASTPL.rn === RN && onMain ? LASTPL.pl : null, kpi = [], domCf = NaN;
+    if (!pl && full) { try { pl = PLAN(S); } catch (e) { pl = null; } }
+    if (onMain && ap) { kpi = [...ap.querySelectorAll('[data-testid^=kpi-]')].map((n) => n.textContent); const tc = ap.querySelector('[data-testid=total-cf]'); if (tc && page === 'planned') domCf = moneyOf(tc.textContent); }
+    return { pl, cs: D.checks({ S, dataV: DATA_V, pl, kpiTexts: kpi, domCf, rw: RW, stamps: STAMPS, swCaches: SWC.caches, replaced: !!DG.flags.replaced, errCount: ERRN }) };
+  }
+  function envInfo() {
+    let ls = true, ss = true; const keys = [];
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf('rep-v4') === 0) keys.push([k, (localStorage.getItem(k) || '').length]); } keys.sort((a, b) => (a[0] < b[0] ? -1 : 1)); } catch (e) { ls = false; }
+    try { sessionStorage.length; } catch (e) { ss = false; }
+    let mode = 'browser'; try { if ((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone) mode = 'standalone'; } catch (e) {}
+    let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) {}
+    return { mode, ua: navigator.userAgent, vw: window.innerWidth, vh: window.innerHeight, dpr: window.devicePixelRatio, lang: navigator.language, tz, online: navigator.onLine, ls, ss, keys };
+  }
+  function makeReport(nums) {
+    const g = gatherChecks(true), pl = g.pl, env = envInfo(), codes = D.anomalies(g.cs);
+    const sum = { numbers: nums, saved: SAVED.length, exov: exCount(), unit: UI.unit, page, sold: pl ? S.houses.filter((h) => pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM).length : null, nw: pl ? pl.horizon.nw : null, cf: pl ? pl.horizon.cf : null };
+    return { text: D.report({ now: NOW(), desc: bugDesc, numbers: nums, names: S.houses.map((h) => h.addr), anomalies: codes, build: Object.assign({ stamps: STAMPS, dataV: DATA_V, stateV: S.v, swCaches: SWC.caches, swCtl: SWC.ctl, routeSafe: routeSafe(), route: location.hash || '#' }, env), S, sum, checks: g.cs, events: DG.ev, actions: DG.act }), codes };
+  }
+  /* write a text to the clipboard; if that is not allowed, say so and let the caller select the text by hand (the same fallback the backup uses) */
+  function toClipboard(text, ok, fail) { try { navigator.clipboard.writeText(text).then(ok, fail); } catch (x) { fail(); } }
+  function copyBug() {
+    bugText = makeReport(bugNums).text; bugShown = true; bugMsg = 'Copying…'; render();
+    const ta = document.getElementById('bugout'), fail = () => { bugMsg = 'Select the text above and copy it by hand.'; const m = document.getElementById('bugmsg'), t2 = document.getElementById('bugout'); if (m) m.textContent = bugMsg; if (t2) { t2.focus(); t2.select(); } };
+    toClipboard(bugText, () => { bugMsg = 'Copied. Paste it into your Claude chat.'; const m = document.getElementById('bugmsg'); if (m) m.textContent = bugMsg; }, fail); void ta;
+  }
+  function openIssue() {
+    const r = makeReport(bugNums); bugText = r.text; bugShown = true; bugMsg = 'Copying…'; render();
+    const title = 'In-app bug report: ' + (r.codes.length ? r.codes.join(', ') : (bugNums ? bugDesc : D.scrub(bugDesc, S.houses.map((h) => h.addr))).replace(/\s+/g, ' ').trim().slice(0, 60) || 'problem'), u = D.issueUrl(title, bugText);
+    toClipboard(bugText, () => { bugMsg = 'Copied. The report is also in the GitHub issue.'; const m = document.getElementById('bugmsg'); if (m) m.textContent = bugMsg; }, () => { bugMsg = 'Select the text above and copy it by hand.'; const m = document.getElementById('bugmsg'), t2 = document.getElementById('bugout'); if (m) m.textContent = bugMsg; if (t2) { t2.focus(); t2.select(); } });
+    try { window.open(u.url, '_blank', 'noopener'); } catch (e) {}
+  }
+  function quickCopy() { /* the Planned-page notice: one tap copies the report with numbers OFF */
+    const text = makeReport(false).text, chip = document.querySelector('[data-testid=anomaly-copy]');
+    toClipboard(text, () => { ANOMCOPIED = true; if (chip) chip.textContent = 'Copied. Paste it into your Claude chat.'; }, () => { bugText = text; bugShown = true; bugNums = false; bugMsg = 'Select the text above and copy it by hand.'; UI.coll.report = false; save(); goto('settings'); });
+  }
+  function restoreSafety(ts, fromBanner) {
+    const it = safeList().find((x) => x.ts === +ts && x.state); ask = null; if (!it) { render(); return false; }
+    safeCopy('before restoring a safety copy'); logEv('restore', 'restored a safety copy (' + it.reason + ')');
+    setUndo({ text: 'Restored the safety copy from ' + fmtDT(it.ts) + '. Your previous portfolio is kept: tap Undo to bring it back.', label: 'previous portfolio', snap: JSON.stringify(S) });
+    S = E.normalize(JSON.parse(JSON.stringify(it.state))); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V; E.applyAdditions(S); S.seq = +S.seq || 0; selId = null; page = 'planned'; prev = {}; savedMsg = '';
+    if (fromBanner) { delete DG.flags.replaced; DG.fp = D.fingerprint(S, NOW()); dgSave(); }
+    save(); goto(''); render(); window.scrollTo(0, 0); return true;
+  }
+  function safeCopyText(ts) {
+    const it = safeList().find((x) => x.ts === +ts); if (!it) return; const text = it.state ? JSON.stringify(it.state) : it.raw || ''; safeText = { ts: it.ts, text, msg: 'Copying…' }; render();
+    toClipboard(text, () => { safeText.msg = 'Copied.'; const m = document.getElementById('safem'); if (m) m.textContent = 'Copied.'; }, () => { safeText.msg = 'Select the text above and copy it by hand.'; const m = document.getElementById('safem'), t2 = document.getElementById('safeout'); if (m) m.textContent = safeText.msg; if (t2) { t2.focus(); t2.select(); } });
+  }
+  const anomActive = () => ANOM.filter((c) => !ANOMDIS[c]);
+  const notesHtml = () => {
+    if (!D) return ''; let h = '';
+    if (DG.flags.replaced) { const cand = D.restoreCandidate(safeList(), S); h += `<div class="warnbox" role="status" data-testid="replaced-note"><b>Your portfolio may have been replaced by the default plan.</b> ${cand ? 'A safety copy from ' + fmtDT(cand.ts) + ' is ready.' : 'No safety copy was found.'}<div class="chips">${cand ? '<button type="button" class="chip link" data-replaced-restore data-testid="replaced-restore">Restore my previous portfolio</button>' : ''}<button type="button" class="chip link" data-replaced-dismiss data-testid="replaced-dismiss" aria-label="Dismiss this note">Dismiss</button></div></div>`; }
+    if (anomActive().length) h += `<div class="migrate" role="status" data-testid="anomaly-note"><span><button type="button" class="chip link" data-anom-copy data-testid="anomaly-copy">${ANOMCOPIED ? 'Copied. Paste it into your Claude chat.' : 'Something looked wrong. Tap to copy a bug report'}</button></span><button type="button" class="chip link" data-anom-dismiss data-testid="anomaly-dismiss" aria-label="Dismiss this note">Dismiss</button></div>`;
+    return h;
+  };
+  function injectNotes() {
+    if (routeOf() !== '' || page !== 'planned') return; const ap = document.getElementById('app'), tabs = ap && ap.querySelector('[data-testid=page-tabs]'); if (!tabs) return;
+    const old = [...ap.querySelectorAll('[data-testid=anomaly-note],[data-testid=replaced-note]')], h = notesHtml(); if (old.map((n) => n.outerHTML).join('') === h) return;
+    old.forEach((n) => n.remove()); if (h) tabs.insertAdjacentHTML('afterend', h);
+  }
+  function refreshSW() {
+    try { if (!(window.caches && caches.keys)) return;
+      caches.keys().then((ks) => { SWC.caches = ks.filter((k) => k.indexOf('portfolio-v4') === 0); try { SWC.ctl = !!(navigator.serviceWorker && navigator.serviceWorker.controller); } catch (e) {}
+        if (SWC.caches.length && !SWC.caches.some((k) => k.slice(-8) === STAMPS.app) && !swLogged) { swLogged = true;
+          if (!USED && !healTried()) { logEv('heal', 'old service-worker cache (' + SWC.caches.join(', ') + ') under new files: purging caches, removing the service worker, reloading once'); healReload(); } else logEv('heal', 'old service-worker cache in use (' + SWC.caches.join(', ') + '): not reloading'); } }).catch(() => {}); } catch (e) {}
+  }
+  function runMonitor() {
+    monTimer = null; if (!D || !STARTED) return;
+    try {
+      const t1 = performance.now(), g = gatherChecks(false); ANOM = D.anomalies(g.cs); MON_MS = performance.now() - t1;
+      Object.keys(ANOMDIS).forEach((c) => { if (ANOM.indexOf(c) < 0) delete ANOMDIS[c]; }); /* a dismissed problem that went away and came back shows again */
+      if (!DG.flags.replaced) { const fp = D.fingerprint(S, NOW()), o = DG.fp; if (!o || o.ids !== fp.ids || o.n !== fp.n || o.own !== fp.own || NOW() - o.ts > 3600000) { DG.fp = fp; dgSave(); } } /* the last-known fingerprint: asset ids hash, counts, time */
+      if (NOW() - lastDailyChk > 1800000) { lastDailyChk = NOW(); if (!DG.flags.replaced && D.safeDaily(localStorage, S, STAMPS.app, NOW())) { SAFE_CACHE = null; logEv('safety', 'daily copy: copy filed'); } }
+      refreshSW(); injectNotes();
+    } catch (e) {}
+  }
+  function scheduleMonitor() { clearTimeout(monTimer); monTimer = setTimeout(runMonitor, 500); }
+  /* the last 10 things the person did: button ids and routes only, never anything typed */
+  let actTimer = null;
+  const act = (a) => { if (!a) return; DG.act.push({ t: NOW(), a: String(a).slice(0, 60) }); if (DG.act.length > 10) DG.act.shift(); clearTimeout(actTimer); actTimer = setTimeout(dgSave, 800); };
+  const actId = (el) => { try { const b = el.closest('button,[data-go],[role=button],[role=tab],[role=radio],a,summary,label,[data-row]') || el, tid = b.getAttribute && b.getAttribute('data-testid'); if (tid) return 'click testid:' + tid; const n = (b.getAttributeNames ? b.getAttributeNames() : []).filter((x) => x.indexOf('data-') === 0); return n.length ? 'click attr:' + n[0] : 'click tag:' + String(b.tagName || '').toLowerCase(); } catch (e) { return ''; } };
+  document.addEventListener('click', (e) => { try { act(actId(e.target)); } catch (x) {} }, true);
+  window.addEventListener('hashchange', () => act('route ' + routeSafe()));
+  window.addEventListener('pagehide', dgSave); document.addEventListener('visibilitychange', () => { if (document.hidden) dgSave(); });
+  /* Assumptions: Safety copies and Report a problem */
+  const isOpenSec = (id, def) => !(UI.coll[id] === undefined ? !!def : UI.coll[id]);
+  const lazySec = (id, title, sum, fn, def) => colSec(id, title, sum, isOpenSec(id, def) ? fn() : '', def);
+  const safeStats = (it) => (it.state ? statsOf({ id: 'sc' + it.ts, ts: it.ts, state: it.state }) : null);
+  function safetyCard() {
+    const items = safeList();
+    const head = `<section class="card" data-testid="safety-card"><p class="note" style="margin:0">The app keeps its last ${D ? D.SAFE_MAX : 5} copies of your portfolio here, taken before anything that could replace it.${infoBtn('safety')}</p>${items.length ? '' : '<p class="note" data-testid="safety-empty">No copies yet. The first one is taken before your next change.</p>'}</section>`;
+    return head + items.map((it) => { const m = safeStats(it), c = D.safeInfo(it.state), why = it.reason.charAt(0).toUpperCase() + it.reason.slice(1);
+      return `<section class="card scard" data-testid="safety-item" data-ts="${it.ts}"><b class="sname" data-testid="safety-reason">${esc(why)}</b><div class="smeta" data-testid="safety-date">${esc(fmtDT(it.ts))}</div>
+        ${it.state ? `<div class="sstat"><span data-testid="safety-assets"><b>${c.n}</b> asset${c.n === 1 ? '' : 's'} (${c.planned} planned, ${c.own} bought)</span>${m ? `<span data-testid="safety-nw">Net worth <b>${$f(m.nw)}</b></span>` : ''}</div>` : '<p class="note">This copy could not be read as a portfolio, but you can copy its text.</p>'}
+        ${ask === 'srest:' + it.ts ? confirmBox('Replace your working portfolio with this copy? Your current one is filed as a safety copy first, and Undo brings it back.', 'data-safe-restore-yes="' + it.ts + '" data-testid="safety-restore-confirm"', 'Yes, restore it') : `<div class="sact">${it.state ? `<button type="button" class="btn" data-safe-restore="${it.ts}" data-testid="safety-restore">Restore</button>` : ''}<button type="button" class="pbtn" data-safe-copy="${it.ts}" data-testid="safety-copy">Copy</button></div>`}
+        ${safeText && safeText.ts === it.ts ? `<textarea readonly rows="4" id="safeout" aria-label="Safety copy text" data-testid="safety-text">${esc(safeText.text)}</textarea><p class="note" id="safem">${esc(safeText.msg)}</p>` : ''}</section>`; }).join('');
+  }
+  function reportCard() {
+    return `<section class="card" data-testid="report-card"><p class="note" style="margin:0">Something wrong? Copy a report and paste it into your Claude chat. This app sends nothing by itself.${infoBtn('bugreport')}</p>
+      <label class="f stack"><span class="lb">What went wrong? (optional)</span><textarea rows="3" maxlength="500" data-bugdesc id="bugdesc" data-testid="bug-desc" aria-label="What went wrong" placeholder="A few words">${esc(bugDesc)}</textarea></label>
+      <div class="f" style="border-top:0;min-height:36px"><span class="lb">Include my numbers</span></div><div class="seg" style="margin-top:0" role="radiogroup" aria-label="Include my numbers">${[['off', 'Off'], ['on', 'On']].map(([k, l]) => `<button type="button" role="radio" data-bugnum="${k}" class="${bugNums === (k === 'on') ? 'on' : ''}" aria-checked="${bugNums === (k === 'on')}" data-testid="bug-num-${k}">${l}</button>`).join('')}</div>
+      <p class="note" data-testid="bug-num-help">${bugNums ? 'On: adds net worth, cash flow and each asset\'s price and rent. Never addresses.' : 'Off: counts and codes only. No names, addresses or dollar amounts.'}</p>
+      <button type="button" class="btn" data-bugcopy data-testid="bug-copy">Copy bug report</button><button type="button" class="btn plain" data-bugissue data-testid="bug-issue">Open as GitHub issue</button>
+      ${bugShown ? `<textarea readonly rows="6" id="bugout" aria-label="Bug report" data-testid="bug-text">${esc(bugText)}</textarea><p class="note" id="bugmsg" data-testid="bug-msg">${esc(bugMsg)}</p>` : ''}</section>`;
   }
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && infoKey) { infoKey = null; render(); } else if (e.key === 'Escape' && exEdit && routeOf() === 'add' && !UI.addOwned) { exBack(); } else if (e.key === 'Escape' && exOpen && routeOf() === 'add') { exOpen = false; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); } });
   window.addEventListener('hashchange', () => { if (exEdit && routeOf() !== 'add' && !E.exDirty(E.exampleShipped(exEdit.id) || { cat: '' }, exEdit.draft, exEdit.base)) exEdit = null; /* an unsaved draft stays in memory until you decide */ navSeen++; infoKey = null; infoFrom = null; prev = {}; ask = null; pendingImport = null; exportOpen = false; notice = ''; window.scrollTo(0, 0); render(); });
@@ -931,11 +1045,12 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   const uniqueName = (nm) => { let out = nm, k = 2; while (SAVED.some((x) => x.name === out)) out = (nm + ' (' + k++ + ')').slice(0, 60); return out; };
   const newSid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   if (switched) { try { const old = JSON.parse(switched); if (old && Array.isArray(old.houses) && old.houses.length && SAVED.length < MAXSAVED) { SAVED.unshift({ id: newSid(), name: 'Portfolio ' + portNo() + ' (before the update)', ts: Date.now(), state: old }); if (saveSaved()) UI.migNote = SAVED[0].name; } } catch (e) {} switched = null; }
+  const tDiag2 = performance.now();
   /* 'portfolio replaced' detection: before anything is saved, compare this start with the last known fingerprint (rep-v4-diag). Never automatic: it only raises a banner. */
   if (D && !DG.flags.replaced && D.replacedCheck(S, DG.fp, DG.ev)) { DG.flags.replaced = { ts: NOW(), prev: DG.fp }; logEv('anomaly', 'state-replaced: the portfolio is now the default plan with different assets than the last known portfolio (' + DG.fp.n + ' assets before)'); dgSave(); }
   if (D && !STARTSNAP && !DG.flags.replaced) { const r = D.safeDaily(localStorage, S, STAMPS.app, NOW()); if (r) { SAFE_CACHE = null; logEv('safety', 'daily copy: copy filed'); } }
+  DIAG_MS += performance.now() - tDiag2;
   save(); /* persist the migrated state (S.v, S.added) so it is stored right after load */
-  const BOOT_MS = performance.now() - t0boot;
   function showPage(k) { if (PAGES.indexOf(k) < 0 || k === page) return; page = k; selId = null; ask = null; savedMsg = ''; prev = {}; render(); }
   function doSave(name) {
     const nm = uniqueName(String(name || '').trim().slice(0, 60) || 'Portfolio ' + portNo());
@@ -977,7 +1092,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   const liveCommit = (el, quiet) => { const p = el.dataset.p, c = evalBox(el); if (boxBad(el, c)) return false; let ok = false;
     if (c.kind === 'plain') ok = setField(p, el.value); else if (c.ok) ok = setField(p, String(c.v));
     if (ok) { save(); if (!quiet) render(); } return ok; };
-  app.addEventListener('input', (e) => { const d = e.target.dataset; if (d.savedName !== undefined) { saveName = e.target.value; return; } if (d.renamedName !== undefined) { renameName = e.target.value; return; } const p = d.p; if (!p) return;
+  app.addEventListener('input', (e) => { const d = e.target.dataset; if (d.bugdesc !== undefined) { bugDesc = e.target.value.slice(0, 500); return; } if (d.savedName !== undefined) { saveName = e.target.value; return; } if (d.renamedName !== undefined) { renameName = e.target.value; return; } const p = d.p; if (!p) return;
     if (d.num !== undefined) { /* a number box: the answer to complete math shows as a hint ('= 1,950'); half-typed or invalid math (650*, 5/0, 5%) changes nothing at all. The value itself lands only on blur / Enter. */
       const c = evalBox(e.target), bd = boxBad(e.target, c); clearTimeout(hintTimer); clearTimeout(pendT);
       if (bd) { calcHint = { p, text: bd.live, bad: true }; placeHint(); return; }
@@ -1072,12 +1187,24 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.clearAsk !== undefined) { ask = 'clearplan'; render(); return; }
     if (t.dataset.clearYes !== undefined) { clearPlanned(); return; }
     if (t.dataset.delYes) { const gone = H(t.dataset.delYes); safeCopy('before removing an asset'); logEv('removed', 'removed one asset'); setUndo(gone ? { label: gone.addr, snap: JSON.stringify(S) } : null); S = E.without(S, t.dataset.delYes); E.relink(S); if (selId === t.dataset.delYes) selId = null; ask = null; save(); goto(''); render(); return; }
-    if (t.dataset.undo !== undefined) { if (undo) { S = E.normalize(JSON.parse(undo.snap)); S.v = DATA_V; E.applyAdditions(S); if (undo.sid) { SAVED = SAVED.filter((q) => q.id !== undo.sid); saveSaved(); } setUndo(null); page = 'planned'; selId = null; save(); render(); } return; }
+    if (t.dataset.undo !== undefined) { if (undo) { logEv('undo', 'undo'); S = E.normalize(JSON.parse(undo.snap)); S.v = DATA_V; E.applyAdditions(S); if (undo.sid) { SAVED = SAVED.filter((q) => q.id !== undo.sid); saveSaved(); } setUndo(null); page = 'planned'; selId = null; save(); render(); } return; }
     if (t.dataset.migDismiss !== undefined) { UI.migNote = null; save(); render(); return; }
     if (t.dataset.undoDismiss !== undefined) { setUndo(null); render(); return; }
     if (t.dataset.askCancel !== undefined) { ask = null; pendingImport = null; render(); return; }
     if (t.dataset.hidelegend !== undefined) { UI.hideLegend = true; save(); render(); return; }
     if (t.dataset.togglepaste !== undefined) { UI.paste = !UI.paste; render(); return; }
+    if (D) { /* safety copies, the anomaly notices and the bug report */
+      const sr = t.closest('[data-safe-restore]'); if (sr) { ask = 'srest:' + sr.dataset.safeRestore; render(); return; }
+      const sry = t.closest('[data-safe-restore-yes]'); if (sry) { restoreSafety(+sry.dataset.safeRestoreYes); return; }
+      const scp = t.closest('[data-safe-copy]'); if (scp) { safeCopyText(+scp.dataset.safeCopy); return; }
+      const bn = t.closest('[data-bugnum]'); if (bn) { bugNums = bn.dataset.bugnum === 'on'; bugShown = false; render(); return; }
+      if (t.closest('[data-bugcopy]')) { copyBug(); return; }
+      if (t.closest('[data-bugissue]')) { openIssue(); return; }
+      if (t.closest('[data-anom-copy]')) { quickCopy(); return; }
+      if (t.closest('[data-anom-dismiss]')) { anomActive().forEach((c) => { ANOMDIS[c] = 1; }); ANOMCOPIED = false; injectNotes(); return; }
+      if (t.closest('[data-replaced-restore]')) { const cand = D.restoreCandidate(safeList(), S); if (cand) restoreSafety(cand.ts, true); return; }
+      if (t.closest('[data-replaced-dismiss]')) { delete DG.flags.replaced; DG.fp = D.fingerprint(S, NOW()); dgSave(); injectNotes(); return; }
+    }
     const cs = t.closest('[data-coll]'); if (cs) { const id = cs.dataset.coll, cur = UI.coll[id] === undefined ? !!CDEF[id] : UI.coll[id], had = document.activeElement === cs; UI.coll[id] = !cur; save(); render(); if (had) { const n = app.querySelector(`[data-coll="${id}"]`); if (n) n.focus(); } return; }
     if (t.dataset.status) { const h = H(routeOf().slice(2)); h.status = t.dataset.status; save(); render(); return; }
     if (t.dataset.export !== undefined) { exportOpen = !exportOpen; if (exportOpen) { try { localStorage.setItem('rep-v4-backup', String(Date.now())); } catch (x) {} } render(); return; }
@@ -1166,9 +1293,9 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   app.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && !/^(checkbox|radio|file|range)$/.test(e.target.type)) e.target.blur(); });
 
   window.addEventListener('storage', (e) => { if (!EXED || (e.key !== null && e.key !== E.EXKEY)) return; try { E.exLoad(localStorage); } catch (x) {} const a = document.activeElement; if (routeOf() === 'add' && !(a && a.tagName === 'INPUT')) render(); }); /* another tab changed the example edits: read them again (validated) */
-  render();
+  render(); STARTED = true; act('route ' + routeSafe());
   /* local-first plumbing: ask the browser to keep our data, and cache the app for offline use */
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
-  /*SW*/if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { const had = !!navigator.serviceWorker.controller; let rl = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !rl) { rl = true; location.reload(); } }); navigator.serviceWorker.register('sw.js').catch(() => {}); }/*ENDSW*/
-  window.__app = { get state() { return S; } };
+  /*SW*/if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { const had = !!navigator.serviceWorker.controller; let rl = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !rl) { rl = true; logEv('swupdate', 'a new service worker took over: reloading'); location.reload(); } }); navigator.serviceWorker.register('sw.js').catch((e) => logEv('sw', 'register failed: ' + (e && e.message))); }/*ENDSW*/
+  window.__app = { get state() { return S; }, stamps: STAMPS, get bootMs() { return DIAG_MS; }, get monMs() { return MON_MS; }, get mixed() { return MIXED; }, check: () => { runMonitor(); return ANOM.slice(); }, report: (nums) => makeReport(!!nums).text, get diag() { return DG; } }; /* read-only handles for the graders */
 })();

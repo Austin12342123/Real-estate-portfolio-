@@ -13,9 +13,10 @@ if (process.env.LOGIC_ONLY) { require('./logic-grade.js'); return; } /* L1-L10 l
 const V4 = path.resolve(__dirname, '../v4');
 globalThis.RepDate = { dtm: (m) => require('./dates.js').fmtM(m) }; /* the engine writes 'month N (Mon YYYY)' when a calendar is present, as in the app (today is pinned to 2026-11-12) */
 const E = require(path.join(V4, 'engine.js'));
-/* Isolation guard: the grader serves v4/ live from disk to the browser while node already holds engine.js in memory. If any file in v4/ changes during a (15 min) run, the page and the node engine can silently disagree and category G (page numbers vs engine) fails or crashes although nothing is wrong. So fingerprint v4/ at start and say so loudly at the end. */
-const v4Fingerprint = () => require('crypto').createHash('sha1').update(fs.readdirSync(V4).filter((n) => fs.statSync(path.join(V4, n)).isFile()).sort().map((n) => n + ':' + fs.readFileSync(path.join(V4, n)).toString('base64').length + ':' + require('crypto').createHash('sha1').update(fs.readFileSync(path.join(V4, n))).digest('hex')).join('|')).digest('hex');
-const V4_FP0 = v4Fingerprint();
+/* Build-stamp guard (replaces the old 'files changed during the run' warning). The grader serves v4/ live from disk while node holds engine.js in memory, and the app checks that its four files carry the same build stamp.
+   So: at the start every stamp must match the file contents (v4/stamp.py wrote them); if not, abort with a clear message. Nothing is re-stamped here. The same check runs again at the end: an edit during the run is an error, not a warning. */
+const STAMP0 = require('./stamp-check.js').check(V4);
+if (!STAMP0.ok) { console.error('\nGRADER ABORTED: the build stamps in v4/ are stale or missing (' + STAMP0.stale.join(', ') + '). Someone edited a file in v4/ without re-stamping it.\nFix: cd prototype/v4 && python3 stamp.py   (build-artifact.py does it too), then run the grader again. Nothing was re-stamped and nothing was graded.\n'); process.exit(3); }
 const HZ = require('./plannedhz.js')(E), PH = (S, pl) => HZ.plannedHz(S, pl), RH = (S, pl) => HZ.realHz(S, pl); /* expected page totals: Planned = plan minus the bought assets, Real = the bought assets only */
 const results = [];
 const cats = { A: 'Requirement / propagation', B: 'Engine correctness', C: 'UX conciseness & usability', D: 'PWA / local-first', E: 'Robustness & accessibility', R: 'Realism & market accuracy' };
@@ -540,13 +541,13 @@ async function reqChecks(page) {
     await page.click('[data-undo]'); await page.waitForTimeout(80); const u = await snap(page);
     P.t(u.rows.length === b.rows.length && !!u.row('a') && u.nw === b.nw && u.mon === b.mon, 'Undo restores the asset and the totals', 0.6, `${u.rows.length} rows nw ${u.nw} vs ${b.nw}`);
     return P; });
-  await check('A06', 'A', 'Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its buy number; no row says owned or planned; the first asset in the list has no wait line and every later one has', 1.5, 'Main ledger on the default plan and on a small state', async () => {
+  await check('A06', 'A', 'Main rows follow list order = buy order (sorted once on first load, owned first); each row carries its number in its own view (Planned 1..n, Real 1..m); no row says owned or planned; the first asset in the list has no wait line and every later one has', 1.5, 'Main ledger on the default plan and on a small state', async () => {
     const P = new Parts(); await reset(page); const s = await snap(page); const st = await store(page), plS = E.planR(E.normalize(clone(st)));
     const cats = ['house', 'commercial', 'business'], byCat = (rows) => cats.map((c) => rows.filter((r) => { const h = st.houses.find((x) => x.id === r.id); return h && h.type === c && !r.sold; }));
     P.t(byCat(s.rows).every((q) => q.every((r, i) => i === 0 || q[i - 1].buy <= r.buy)), 'rows in each category are nondecreasing by purchase month', 0.4, s.rows.map((r) => r.buy).join(','));
     const q = st.houses.map((h) => plS.purchase[h.id]); P.t(st.orderV === 2 && q.every((v, i) => i === 0 || (isFinite(q[i - 1]) ? q[i - 1] <= v || !isFinite(v) : !isFinite(v))), 'saved list is in buy order and flagged (orderV = 2)', 0.2, q.join(','));
-    const ordr = st.houses.map((h, i) => [h.id, i]).sort((a, b) => (isFinite(plS.purchase[a[0]]) ? plS.purchase[a[0]] : 1e9) - (isFinite(plS.purchase[b[0]]) ? plS.purchase[b[0]] : 1e9) || a[1] - b[1]).map((x) => x[0]), noOf = {}; ordr.forEach((id, k) => { noOf[id] = k + 1; });
-    P.t(s.rows.every((r) => +r.no === noOf[r.id]) && s.rows.length === st.houses.length, 'every row shows its buy number (badge before the name) = its place in buy order', 0.3, s.rows.map((r) => r.no).join(','));
+    const noOf = {}; st.houses.filter((h) => h.status !== 'owned').forEach((h, k) => { noOf[h.id] = k + 1; }); st.houses.map((h, k) => [h, k]).filter(([h]) => h.status === 'owned').sort((a, b) => (+b[0].paid || 0) - (+a[0].paid || 0) || a[1] - b[1]).forEach(([h], k) => { noOf[h.id] = k + 1; }); /* numbering policy: contiguous from 1 inside the view (Planned = planned assets in list order, Real = bought oldest first) */
+    P.t(s.rows.every((r) => +r.no === noOf[r.id]) && s.rows.length === st.houses.length, 'every row shows its number (badge before the name) = its place in the order of its own view (planned assets 1..n in buy order, bought assets 1..m oldest first)', 0.3, s.rows.map((r) => r.no).join(','));
     P.t(s.rows.every((r) => !/\b(owned|planned)\b/i.test(r.text)) && (await page.locator('[data-row] [data-sel], [data-row] .tag').count()) === 0, 'no row says owned or planned, and rows have no Funds picker', 0.3);
     const rowsNS = s.rows.filter((r) => !r.sold), isOwn = (id) => st.houses.find((x) => x.id === id).status === 'owned';
     P.t(rowsNS.length > 10 && rowsNS.every((r) => (isOwn(r.id) ? /^Loan due \$[\d,]+ · Credit line \$[\d,]+ · (Paid off in|No loan)/.test(r.dp) : /^(Possible|Not possible)/.test(r.dp)) && !/ mo after|bought \d+ mo|before #|after #/.test(r.dp) && !/\d+ mo ago|since bought|months paid/i.test(r.text)), 'bought rows show loan due / credit line / payoff time, planned rows show Possible or Not possible + the math; no row compares itself with another asset or prints time since bought', 0.5, rowsNS.slice(0, 4).map((r) => r.dp.slice(0, 50)).join(' | '));
@@ -1130,7 +1131,7 @@ async function robustChecks(page) {
   fs.writeFileSync(path.join(__dirname, 'report.md'), md);
   fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify({ total: +f2(total), max, categories: per, results, finance, sync, info, gest, ux, design, numb }, null, 2));
   console.log('\nCategory scores:'); Object.keys(cats).forEach((c) => console.log(`  ${c}  ${f2(per[c].earned)} / ${f2(per[c].max)}  ${cats[c]}`));
-  if (v4Fingerprint() !== V4_FP0) console.log('\n*** WARNING: files in v4/ changed while the grader was running; page-vs-engine checks (esp. category G) are NOT reliable. Rerun with nothing editing or building v4/. ***');
+  { const st1 = require('./stamp-check.js').check(V4); if (!st1.ok || st1.want !== STAMP0.want) { console.error('\n*** GRADER ERROR: v4/ changed while the grader was running (stamp ' + STAMP0.want + ' at start, ' + st1.want + (st1.ok ? '' : ', stale: ' + st1.stale.join(', ')) + ' now). Page-vs-engine checks (category G) are NOT reliable. Run again with nothing editing v4/.\n'); process.exitCode = 4; } }
   console.log(`\nTOTAL ${f2(total)} / ${max}`);
   if (finance) console.log(`\nF Personal finances: ${fmt2(finance.earned)}/${finance.max}`);
   if (sync) console.log(`\nG Number sync: ${fmt2(sync.earned)}/${sync.max}`);
