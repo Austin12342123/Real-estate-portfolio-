@@ -137,7 +137,7 @@ Evidence: three agents on the same files; requests queued.
 Chosen: one writer per area + worktrees for independent requests; orchestrator posts a 3-line queue/ETA to the user; do not launch two agents that must queue behind one another. Metric: time-to-first-shipped per user request. Type: R.
 
 ## P28 Tool errors unclassified (NEW; 122 error-flagged results)
-Chosen: audit-auto records tool_errors per agent with a flag >=8; classification of error type is a follow-up (needs transcript parse) listed in metrics-format "planned fields". Rule: 2 identical tool errors -> change approach (decision table 2.1). Type: R + T(metric).
+Chosen: audit-auto records tool_errors per agent with a flag >=8; classification of error type is a follow-up (needs transcript parse) listed in metrics-format "planned fields". Rule: 2 identical tool errors -> change approach (PLAYBOOK table D1). Type: R + T(metric).
 
 ## P30 Claims with no evidence ids (NEW; Q6)
 Evidence: no hand-back cited a run id (only a74ba5 cited /tmp/full3.log + stamp 9db24adc); no claim proven false at report level but product-level false.
