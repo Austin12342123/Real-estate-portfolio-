@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'9db24adc'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'c4e8a7fb'});/*ENDSTAMP*/
 /* Plain-language definitions shown by the "i" buttons. t = title, b = what it means, e = a short example (optional).
    Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
 (function (root) {
@@ -141,7 +141,7 @@
     mfSubTo: { t: "Subject-to deal (info)", b: "Info only. You buy the building and the seller loan stays in place. The app cannot show this, so it models taking over the seller loan and paying the gap in cash. The lender can call the whole loan due when the title changes, and the seller stays on the loan. Typical, not a quote. Get a real estate lawyer first." },
     mfJv: { t: "Equity partner or joint venture (info)", b: "Info only. Partners put in the down payment and you run the building for fees and a share of profit. The app cannot split profit, so it models a 75% bank loan. Add the partner money under Finances, Outside capital. Typical, not a quote. Partners expect a preferred return near 6% to 8%. Raising money from partners follows securities law." },
     safety: { t: 'Safety copies', b: 'The app keeps your last five portfolios here, on this device only. It files one before anything that could replace your portfolio: opening a sample or a saved portfolio, removing planned assets, removing an asset, restoring a backup, or an update that changes your data. It also files one a day. Tap Restore to go back to a copy. Your current portfolio is filed first, and Undo brings it back. Safety copies are not part of a backup.' },
-    bugreport: { t: 'Report a problem', b: 'Copy the report and paste it into your Claude chat, so the problem can be reproduced and fixed. The app sends nothing by itself. The report lists the app version, the simple checks that failed, recent events and errors, and your last ten taps (button names only, never what you typed). With Include my numbers off it has only counts and codes: no names, addresses or dollar amounts. Turn it on to add net worth, cash flow and each asset\'s price and rent. Addresses are never included.' },
+    bugreport: { t: 'Report a problem', b: 'Copy the report and paste it into your Claude chat so the problem can be reproduced and fixed. The app sends nothing by itself. It lists the app version, the checks that failed, recent events and errors, and your last ten taps (button names only, never what you typed). With Include my numbers off it has only counts and codes. Turn it on to add net worth, cash flow and each asset\'s price and rent. Addresses are never included.' },
   };
   const LABEL = {
     'Other liens': 'liens', 'Down payment': 'downpayment', 'Down payment $': 'downamt', 'Loan amount': 'loanamount', 'Interest rate': 'rate', 'Term (years)': 'term', 'Closing costs': 'closing', 'Extra / month': 'extra',

@@ -240,7 +240,7 @@ exports.run = async function run(X) {
     const oc = g.warns.find((w) => w.id === 'outside-cash');
     T('outside-cash warning amount = engine outside total (shown iff > 0)', pl.outsideTotal > 0 ? !!oc && eq((/(\$[\d,.]+[MB]?)/.exec(oc.t) || [])[1], pl.outsideTotal) : !oc, 1, (oc ? oc.t : 'absent') + ' vs ' + $f(pl.outsideTotal));
     /* ordering */
-    const rank = (h) => (isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9), want = [...S.houses].sort((a, b) => rank(a) - rank(b) || S.houses.indexOf(a) - S.houses.indexOf(b)).map((h) => h.id);
+    const rank = (h) => (h.status === 'owned' ? -(+h.paid || 0) : isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9), /* bought rows are shown oldest first (= their Real number); planned rows in list order */ want = [...S.houses].sort((a, b) => rank(a) - rank(b) || S.houses.indexOf(a) - S.houses.indexOf(b)).map((h) => h.id);
     { /* the app sorts the saved list into buy order once; the page then shows list order inside Homes / Commercial / Businesses, with sold assets in their own Sold section */
       const soldIn = (h) => !!(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM), byId2 = Object.fromEntries(S.houses.map((h) => [h.id, h])), cat = (id) => byId2[id].type || 'house';
       const own = (id) => byId2[id].status === 'owned', secs = [true, false].flatMap((o) => ['house', 'commercial', 'business'].flatMap((c) => want.filter((id) => cat(id) === c && !soldIn(byId2[id]) && own(id) === o)));
@@ -574,7 +574,7 @@ exports.run = async function run(X) {
     });
 
   /* ================================================================ G6 */
-  const digestFn = () => { const a = document.getElementById('app'); return (a.innerText + ' || ' + [...a.querySelectorAll('input,select,textarea')].map((i) => i.value).join('|')).replace(/Backup last shown: [^\n]*|No backup yet[^\n]*/g, '').replace(/\s+/g, ' '); };
+  const digestFn = () => { const a = document.getElementById('app'); const txt = a.innerText.replace(/Backup last shown: [^\n]*|No backup yet[^\n]*/g, ''); const safe = [...a.querySelectorAll('[data-testid=safety-item]')].map((e) => e.innerText); /* the safety copies list (filed before a restore) legitimately grows: it is not a portfolio number */ let t2 = txt; safe.forEach((x) => { t2 = t2.split(x).join(''); }); return (t2 + ' || ' + [...a.querySelectorAll('input,select,textarea')].filter((i) => !i.closest('[data-testid=safety-item]')).map((i) => i.value).join('|')).replace(/\s+/g, ' '); };
   async function digests(page, S, extra) { const out = {}; const ids = S.houses.map((h) => h.id); for (const h of ['#'].concat(ids.map((i) => '#house-' + i), ['#finances', '#assumptions', '#add'])) { await nav(page, h); out[h] = await page.evaluate(digestFn); } return out; }
   const diffD = (a, b) => Object.keys(a).filter((k) => a[k] !== b[k]);
   await gcheck('G6', 'Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light)', 12,

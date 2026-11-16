@@ -1,7 +1,7 @@
 <title>Real Estate Portfolio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/*STAMP*/html{--build:"9db24adc"}/*ENDSTAMP*/
+/*STAMP*/html{--build:"c4e8a7fb"}/*ENDSTAMP*/
 :root{--bg:#f2f2f7;--card:#fff;--ink:#111;--mut:#6b6b72;--line:#e5e5ea;--acc:#0a5fd6;--ok:#167a41;--warn:#965600;--bad:#c4271f;--flash:#fff0a0;--bar:#dfe6f5;--field:#f2f2f7}
 :root[data-theme=dark]{color-scheme:dark;--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mut:#a0a0a8;--line:#2c2c2e;--acc:#5aa2ff;--ok:#32d27a;--warn:#ffb340;--bad:#ff7a72;--flash:#5a4a00;--bar:#2a3550;--field:#2c2c2e}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mut:#a0a0a8;--line:#2c2c2e;--acc:#5aa2ff;--ok:#32d27a;--warn:#ffb340;--bad:#ff7a72;--flash:#5a4a00;--bar:#2a3550;--field:#2c2c2e}}
@@ -461,7 +461,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 </style>
 <main id="app" aria-live="polite"></main>
 <script>
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'9db24adc'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'c4e8a7fb'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -1640,7 +1640,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 
 </script>
 <script>
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'9db24adc'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'c4e8a7fb'});/*ENDSTAMP*/
 /* Plain-language definitions shown by the "i" buttons. t = title, b = what it means, e = a short example (optional).
    Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
 (function (root) {
@@ -1783,7 +1783,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     mfSubTo: { t: "Subject-to deal (info)", b: "Info only. You buy the building and the seller loan stays in place. The app cannot show this, so it models taking over the seller loan and paying the gap in cash. The lender can call the whole loan due when the title changes, and the seller stays on the loan. Typical, not a quote. Get a real estate lawyer first." },
     mfJv: { t: "Equity partner or joint venture (info)", b: "Info only. Partners put in the down payment and you run the building for fees and a share of profit. The app cannot split profit, so it models a 75% bank loan. Add the partner money under Finances, Outside capital. Typical, not a quote. Partners expect a preferred return near 6% to 8%. Raising money from partners follows securities law." },
     safety: { t: 'Safety copies', b: 'The app keeps your last five portfolios here, on this device only. It files one before anything that could replace your portfolio: opening a sample or a saved portfolio, removing planned assets, removing an asset, restoring a backup, or an update that changes your data. It also files one a day. Tap Restore to go back to a copy. Your current portfolio is filed first, and Undo brings it back. Safety copies are not part of a backup.' },
-    bugreport: { t: 'Report a problem', b: 'Copy the report and paste it into your Claude chat, so the problem can be reproduced and fixed. The app sends nothing by itself. The report lists the app version, the simple checks that failed, recent events and errors, and your last ten taps (button names only, never what you typed). With Include my numbers off it has only counts and codes: no names, addresses or dollar amounts. Turn it on to add net worth, cash flow and each asset\'s price and rent. Addresses are never included.' },
+    bugreport: { t: 'Report a problem', b: 'Copy the report and paste it into your Claude chat so the problem can be reproduced and fixed. The app sends nothing by itself. It lists the app version, the checks that failed, recent events and errors, and your last ten taps (button names only, never what you typed). With Include my numbers off it has only counts and codes. Turn it on to add net worth, cash flow and each asset\'s price and rent. Addresses are never included.' },
   };
   const LABEL = {
     'Other liens': 'liens', 'Down payment': 'downpayment', 'Down payment $': 'downamt', 'Loan amount': 'loanamount', 'Interest rate': 'rate', 'Term (years)': 'term', 'Closing costs': 'closing', 'Extra / month': 'extra',
@@ -1808,7 +1808,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 
 </script>
 <script>
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'9db24adc'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'c4e8a7fb'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
@@ -2375,7 +2375,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
       <div class="f"><span class="lb">Selling costs (${r(h.sellCost, 1)}%)</span><b>−${$f(sC)}</b></div><div class="f"><span class="lb">Loan and liens paid off</span><b>−${$f(sL)}</b></div><div class="f"><span class="lb">Net proceeds before tax</span><b>${$f(sN)}</b></div><div class="f"><span class="lb">Tax on the sale</span><b>−${$f(sT)}</b></div><div class="f"><span class="lb">Cash you put in${infoBtn('cashin')}</span><b>−${$f(sI)}</b></div>
       <div class="f totl"><span class="lb">Cash profit after tax${infoBtn('cashprofit')}</span><b class="sold-profit${exS.profit < 0 ? ' neg' : ''}" data-testid="sale-cash-profit">${$s(sF)}</b></div><p class="note">Cash profit = net proceeds before tax (price − selling costs − the loan and liens paid off), minus the tax on the sale, minus the cash you put in (down payment, closing costs and improvements paid in cash).</p></section>`; })() : '';
     const NUMB = E.numbering(S, pl);
-    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Name or address" title="${esc(h.addr)}"></h2><span class="tag" style="margin:0" data-testid="asset-buy-no" data-no="${NUMB.num[h.id]}" data-view="${NUMB.view[h.id]}" aria-label="${NUMB.view[h.id] === 'owned' ? 'Bought' : 'Planned'} asset number ${NUMB.num[h.id]}">#${NUMB.num[h.id]} ${NUMB.view[h.id] === 'owned' ? 'bought' : 'planned'} · ${TL[type]}${multi ? ' · ' + (h.pack ? 'pack of ' + mf.units : mf.units + ' units') : ''}</span></div>${String(h.addr).length > 19 ? `<p class="fulladdr" data-testid="full-addr">${esc(h.addr)}</p>` : ''}
+    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Name or address" title="${esc(h.addr)}"></h2><span class="tag" style="margin:0" data-testid="asset-buy-no" data-no="${NUMB.num[h.id]}" data-nview="${NUMB.view[h.id]}" aria-label="${NUMB.view[h.id] === 'owned' ? 'Bought' : 'Planned'} asset number ${NUMB.num[h.id]}">#${NUMB.num[h.id]} ${NUMB.view[h.id] === 'owned' ? 'bought' : 'planned'} · ${TL[type]}${multi ? ' · ' + (h.pack ? 'pack of ' + mf.units : mf.units + ' units') : ''}</span></div>${String(h.addr).length > 19 ? `<p class="fulladdr" data-testid="full-addr">${esc(h.addr)}</p>` : ''}
     ${homeLoses}
     ${h.fresh && type === 'house' && !multi ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
     <section class="card"><div class="kg">${kpi('h-payment', exS ? 'Payment while held' : 'Payment now', $f(v.payment), (() => { const parts = []; if (v.P > 0) parts.push((h.io ? 'interest ' : 'P&amp;I ') + $f(v.P)); if (v.X > 0.5) parts.push('extra ' + $f(v.X)); if (v.escrow > 0) parts.push('costs ' + $f(v.escrow)); if (v.mip > 0) parts.push('insurance ' + $f(v.mip)); return parts.length > 1 ? parts.join(' + ') : ''; })())}${kpi('h-cf', exS ? 'Cash flow while held' : 'Cash flow now', $s(v.cf), v.X > 0.5 ? `${$s(v.cf - v.X)} after extra` : '', v.cf < 0 ? 'bad' : '')}

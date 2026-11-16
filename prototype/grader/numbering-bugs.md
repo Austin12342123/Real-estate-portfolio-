@@ -25,7 +25,7 @@ So the defect was a global numbering consumed by a per-view page. Not a stale re
 - Planned view = every asset whose status is not owned (sold-in-plan assets keep their place in the plan sequence and show in the Sold card), counted in list order. The trust buys in list order and never buys an asset before one above it, so list order IS purchase order; an unfunded asset keeps its list place.
 - Real view = every owned asset (sold-after-buying ones keep their place), oldest first (most months paid = 1), ties by list order. Real rows are displayed in that order.
 - Nothing is stored on the asset. Numbers are recomputed from the list on every render, so removing an asset shifts every later number down by one at once, everywhere.
-- The asset page header reads `#N planned` or `#N bought` (aria-label `Planned asset number N` / `Bought asset number N`, plus `data-no` and `data-view`), because the same N exists in both views.
+- The asset page header reads `#N planned` or `#N bought` (aria-label `Planned asset number N` / `Bought asset number N`, plus `data-no` and `data-nview`), because the same N exists in both views.
 - Cards (Homes / Commercial / Businesses / Sold) show a subset of the view's numbers, so a card can show 2 and 5. The Sold note says so.
 
 ## Ideation: every way a number could be wrong or stale

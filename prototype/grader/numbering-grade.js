@@ -63,7 +63,7 @@ exports.run = async function run(X) {
     P.t(ids.every((id) => got[id] && got[id].no === want[id]), label + ': every row shows the expected number (purchase order)', w, ids.map((id) => id + ':' + (got[id] && got[id].no) + '/' + want[id]).join(' '));
     P.t(rs.every((r) => r.aria === 'Buy number ' + r.no), label + ': every aria-label says "Buy number N" with the same N as the badge', w, rs.filter((r) => r.aria !== 'Buy number ' + r.no).map((r) => r.id + ':' + r.aria).join());
   };
-  const header = async (id) => { await page.evaluate((i) => { location.hash = '#house-' + i; }, id); await page.waitForSelector('[data-testid=asset-buy-no]'); await page.waitForTimeout(40); return page.evaluate(() => { const t = document.querySelector('[data-testid=asset-buy-no]'); return { txt: t.textContent.trim(), no: +t.dataset.no, view: t.dataset.view, aria: t.getAttribute('aria-label'), page: document.getElementById('app').innerText }; }); };
+  const header = async (id) => { await page.evaluate((i) => { location.hash = '#house-' + i; }, id); await page.waitForSelector('[data-testid=asset-buy-no]'); await page.waitForTimeout(40); return page.evaluate(() => { const t = document.querySelector('[data-testid=asset-buy-no]'); return { txt: t.textContent.trim(), no: +t.dataset.no, view: t.dataset.nview, aria: t.getAttribute('aria-label'), page: document.getElementById('app').innerText }; }); };
   const checkHeader = async (S, id, P, w) => {
     const ex = expectOf(S), h = S.houses.find((x) => x.id === id), own = h.status === 'owned', n = (own ? ex.owned : ex.planned)[id], hd = await header(id);
     P.t(hd.no === n && hd.view === (own ? 'owned' : 'planned') && new RegExp('^#' + n + ' ' + (own ? 'bought' : 'planned') + '\\b').test(hd.txt), 'asset page header of ' + id + ' says "#' + n + ' ' + (own ? 'bought' : 'planned') + '"', w, hd.txt);
@@ -249,7 +249,7 @@ exports.run = async function run(X) {
     P.t(hd.no === 4 && /^#4 planned/.test(hd.txt), 'a second new planned asset (added from the example list) is #4 planned', 1.5, hd.txt);
     /* a bought asset: Real m+1, Planned unchanged */
     await toMain(); await tab('real'); await page.click('[data-testid=add-owned]'); await page.waitForTimeout(40); await page.click('[data-testid=confirm-add]').catch(() => {}); await page.waitForSelector('[data-testid=asset-buy-no]').catch(() => {});
-    hd = await page.evaluate(() => { const t = document.querySelector('[data-testid=asset-buy-no]'); return t ? { no: +t.dataset.no, view: t.dataset.view, txt: t.textContent.trim() } : null; });
+    hd = await page.evaluate(() => { const t = document.querySelector('[data-testid=asset-buy-no]'); return t ? { no: +t.dataset.no, view: t.dataset.nview, txt: t.textContent.trim() } : null; });
     P.t(hd && hd.view === 'owned' && /^#\d+ bought/.test(hd.txt), 'a bought asset added from the Real page is numbered in the Real view', 1, JSON.stringify(hd));
     const st = await store(), ex = expectOf(clone(st)); await toMain(); isRowsOk(await rows('planned'), ex.planned, P, 'after adds, Planned', 1); isRowsOk(await rows('owned'), ex.owned, P, 'after adds, Real', 1);
     return P;
