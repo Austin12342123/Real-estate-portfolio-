@@ -1,9 +1,9 @@
 {
-  "total": 84.41,
+  "total": 83.45,
   "max": 84.99700000000001,
   "categories": {
     "A": {
-      "earned": 17.880000000000003,
+      "earned": 16.92,
       "max": 18.000000000000004
     },
     "B": {
@@ -331,9 +331,9 @@
       "name": "A release never overwrites or resurrects the user's own portfolio (v19 -> v20 keeps it, S.added bookkeeping): empty stays empty, own assets kept with no second Lost Creek, missing S.added adds nothing, a new ADDITIONS entry lands once as the LAST planned asset and never returns after removal, Undo / Saved / backup keep S.added, v<=18 still switch with the \"before the update\" entry, new default plan targets hold",
       "points": 0.96,
       "rawPoints": 4,
-      "earned": 0.96,
-      "ratio": 1,
-      "detail": "19/19 sub-checks pass",
+      "earned": 0,
+      "ratio": 0,
+      "detail": "CRASH in check: page.click: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-row=\"testhouse1\"] [data-testid=row-extra-toggle]')\u001b[22m\n",
       "repro": "Load v19 states (empty, partial, with Lost Creek), v20 without S.added, a state lacking a test addition key; reload, remove, Undo, Saved open, backup"
     },
     {
@@ -476,7 +476,7 @@
       "rawPoints": 0.5,
       "earned": 0.104,
       "ratio": 1,
-      "detail": "median 16.1ms",
+      "detail": "median 15.0ms",
       "repro": "node timing"
     },
     {
@@ -817,7 +817,7 @@
       "rawPoints": 1,
       "earned": 0.762,
       "ratio": 1,
-      "detail": "1231 requests, 0 external ",
+      "detail": "1186 requests, 0 external ",
       "repro": "Log all requests from all contexts"
     },
     {
@@ -1076,7 +1076,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "node: simulate from the definitions, compare E.finance on 80 random states; hand-calculated cases; NaN scan",
-        "seconds": 0.9
+        "seconds": 0.7
       },
       {
         "id": "F2",
@@ -1087,7 +1087,7 @@
         "ratio": 1,
         "detail": "17/17 sub-checks pass",
         "repro": "node: constructed states for yes / tight (5 causes) / no; fix amounts; apply the fix; monotonicity; stretch",
-        "seconds": 3
+        "seconds": 2.9
       },
       {
         "id": "F3",
@@ -1098,7 +1098,7 @@
         "ratio": 1,
         "detail": "89/89 sub-checks pass",
         "repro": "Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states",
-        "seconds": 14.5
+        "seconds": 13.1
       },
       {
         "id": "F4",
@@ -1120,7 +1120,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Playwright: edge inputs, names, tap targets, font size, overflow 320/390/430, chip contrast light+dark, typing, render storm, console errors",
-        "seconds": 24.2
+        "seconds": 23.1
       }
     ]
   },
@@ -1137,7 +1137,7 @@
         "ratio": 1,
         "detail": "44/44 sub-checks pass",
         "repro": "Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)",
-        "seconds": 0.6
+        "seconds": 0.5
       },
       {
         "id": "G2",
@@ -1148,7 +1148,7 @@
         "ratio": 0.9920886075949367,
         "detail": "73/74 sub-checks pass. FAIL: rows are in list (= buy) order inside their category sections (Bought first, then Planned), sold assets last (37/38 ok) [sample after maple.paid=60: maple,cedar,auto,birch,willow,linden,harbor,lake,keystone,freight,ridge,north,syc,elm vs cedar,maple,auto,birch,willow,linden,harbor,lake,keystone,freight,ridge,north,syc,elm]",
         "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
-        "seconds": 18
+        "seconds": 15.7
       },
       {
         "id": "G3",
@@ -1159,7 +1159,7 @@
         "ratio": 1,
         "detail": "34/34 sub-checks pass",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 8
+        "seconds": 6.6
       },
       {
         "id": "G4",
@@ -1170,7 +1170,7 @@
         "ratio": 1,
         "detail": "34/34 sub-checks pass",
         "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit",
-        "seconds": 82.8
+        "seconds": 71
       },
       {
         "id": "G5",
@@ -1181,7 +1181,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
-        "seconds": 6.3
+        "seconds": 5.7
       },
       {
         "id": "G6",
@@ -1192,7 +1192,7 @@
         "ratio": 0.7133757961783439,
         "detail": "10/12 sub-checks pass. FAIL: backup restore brings every number back exactly (0/1 ok) [changed after restore: #assumptions]; second tab shows identical numbers (0/1 ok) [tab 2 changed: #assumptions]",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 19.9
+        "seconds": 16.6
       },
       {
         "id": "G7",
@@ -1203,7 +1203,7 @@
         "ratio": 1,
         "detail": "150/150 sub-checks pass",
         "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
-        "seconds": 11.3
+        "seconds": 10.7
       },
       {
         "id": "G8",
@@ -1242,7 +1242,7 @@
         "ratio": 1,
         "detail": "112/112 sub-checks pass",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 10.9
+        "seconds": 9.1
       },
       {
         "id": "H3",
@@ -1253,7 +1253,7 @@
         "ratio": 1,
         "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 17.3
+        "seconds": 17.1
       },
       {
         "id": "H4",
@@ -1275,7 +1275,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 3.1
+        "seconds": 3.2
       },
       {
         "id": "H6",
@@ -1286,7 +1286,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 5.4
+        "seconds": 5.6
       },
       {
         "id": "H7",
@@ -1297,7 +1297,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Load crafted localStorage states; pasted old backup restore",
-        "seconds": 1.3
+        "seconds": 1.2
       },
       {
         "id": "H8",
@@ -1347,7 +1347,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
-        "seconds": 5.6
+        "seconds": 5.5
       },
       {
         "id": "I2",
@@ -1369,7 +1369,7 @@
         "ratio": 1,
         "detail": "8/8 sub-checks pass",
         "repro": "Select row, press Move",
-        "seconds": 2.9
+        "seconds": 2.8
       },
       {
         "id": "I4",
@@ -1380,7 +1380,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Reorder with Move buttons; read wait lines + saved state + plan",
-        "seconds": 3.5
+        "seconds": 3.6
       },
       {
         "id": "I5",
@@ -1391,7 +1391,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Panel > Duplicate; asset page > Duplicate",
-        "seconds": 2.1
+        "seconds": 2.3
       },
       {
         "id": "I6",
@@ -1413,7 +1413,7 @@
         "ratio": 1,
         "detail": "25/25 sub-checks pass",
         "repro": "Panel on maple, type extra, compare with engine + asset page",
-        "seconds": 2.2
+        "seconds": 2.1
       },
       {
         "id": "I8",
@@ -1424,7 +1424,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Asset page > Rent & expenses",
-        "seconds": 1.4
+        "seconds": 1.5
       },
       {
         "id": "I9",
@@ -1435,7 +1435,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Focus the extra field, swipe",
-        "seconds": 3
+        "seconds": 2.9
       },
       {
         "id": "I10",
@@ -1451,7 +1451,7 @@
     ]
   },
   "ux": {
-    "earned": 42.71,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
@@ -1463,7 +1463,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "node: compare window.RepDate with grader/dates.js for months 0-480; open an asset page and edit Not before / Sell in; read the note",
-        "seconds": 3.9
+        "seconds": 4.1
       },
       {
         "id": "J2",
@@ -1474,7 +1474,7 @@
         "ratio": 1,
         "detail": "37/37 sub-checks pass",
         "repro": "type expressions into the rent field on an asset page; read state, hint, row and engine",
-        "seconds": 15.8
+        "seconds": 16.6
       },
       {
         "id": "J3",
@@ -1485,7 +1485,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "load the default plan and tighter states at 320/390/430; inspect [data-testid=checks]",
-        "seconds": 6.9
+        "seconds": 6.8
       },
       {
         "id": "J4",
@@ -1529,7 +1529,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "measure [data-info], [data-coll] links and tabs",
-        "seconds": 3.6
+        "seconds": 3.5
       },
       {
         "id": "J8",
@@ -1540,7 +1540,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Assumptions > Sample portfolios > each button, then Undo",
-        "seconds": 1.4
+        "seconds": 1.5
       },
       {
         "id": "J9",
@@ -1551,7 +1551,7 @@
         "ratio": 1,
         "detail": "5/5 sub-checks pass",
         "repro": "asset page rent field at 320px",
-        "seconds": 2
+        "seconds": 2.1
       },
       {
         "id": "J10",
@@ -1562,7 +1562,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "default plan and a tight DTI limit",
-        "seconds": 1.1
+        "seconds": 1.2
       },
       {
         "id": "J11",
@@ -1573,7 +1573,7 @@
         "ratio": 1,
         "detail": "8/8 sub-checks pass",
         "repro": "asset page of the sold house at 6 / 5.5 / 6.25 / 7.1 % selling costs",
-        "seconds": 4.3
+        "seconds": 4.1
       },
       {
         "id": "J12",
@@ -1584,7 +1584,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "cash 0 / living 9000 at 320px; cash 10000 / living 3000",
-        "seconds": 1.3
+        "seconds": 1.2
       },
       {
         "id": "J13",
@@ -1606,7 +1606,7 @@
         "ratio": 1,
         "detail": "8/8 sub-checks pass",
         "repro": "type 5/0, 650*, -5, 10% into the rent box one key at a time",
-        "seconds": 5
+        "seconds": 5.1
       },
       {
         "id": "J15",
@@ -1617,7 +1617,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "timeline with a pool of 1; a one-asset plan",
-        "seconds": 1.3
+        "seconds": 1.6
       },
       {
         "id": "J16",
@@ -1628,7 +1628,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "load a v17 save",
-        "seconds": 1.3
+        "seconds": 1.6
       },
       {
         "id": "J17",
@@ -1639,7 +1639,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "remove a planned asset, then wait",
-        "seconds": 12.5
+        "seconds": 12.6
       },
       {
         "id": "J18",
@@ -1650,7 +1650,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "save three, delete the first, save again",
-        "seconds": 2.4
+        "seconds": 2.3
       },
       {
         "id": "J19",
@@ -1661,7 +1661,7 @@
         "ratio": 1,
         "detail": "3/3 sub-checks pass",
         "repro": "default Planned page at 320px, all lists open",
-        "seconds": 0.9
+        "seconds": 0.7
       },
       {
         "id": "J20",
@@ -1672,7 +1672,7 @@
         "ratio": 1,
         "detail": "7/7 sub-checks pass",
         "repro": "#finances: Living costs, Cash interest, typed key by key",
-        "seconds": 6.4
+        "seconds": 6.5
       },
       {
         "id": "J21",
@@ -1683,7 +1683,7 @@
         "ratio": 1,
         "detail": "3/3 sub-checks pass",
         "repro": "load stretch, breakdown + row at 320",
-        "seconds": 1.6
+        "seconds": 1.5
       },
       {
         "id": "J22",
@@ -1694,369 +1694,767 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "savings 0; #house-birch",
-        "seconds": 2.6
+        "seconds": 2.4
       },
       {
         "id": "J23",
         "category": "J",
         "name": "Slow typing never commits a prefix: price 5, pause 450 ms, then /0 leaves the price alone; the \"= result\" hint shows while typing; the value lands on Enter / blur and the totals follow",
         "points": 2.46,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: elementHandle.click: Target page, context or browser has been closed\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - performing click action\u001b[22m\n\n    at openAllColl (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:35:156)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:412:147\n    at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:411:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 2.46,
+        "ratio": 1,
+        "detail": "5/5 sub-checks pass",
         "repro": "asset page price box, keyboard.type with pauses",
-        "seconds": 0.6
+        "seconds": 3.1
       },
       {
         "id": "J24",
         "category": "J",
         "name": "Tap targets: every row \"edit ›\" is >= 44px tall at 390 and 430 (and its hit area really is: elementFromPoint), the Assumptions \"How the numbers are built\" summary is >= 44px, no sideways scroll at 320/390/430",
         "points": 1.64,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:433:18\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:430:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.64,
+        "ratio": 1,
+        "detail": "4/4 sub-checks pass",
         "repro": "default Planned page with lists open; assumptions page",
-        "seconds": 0
+        "seconds": 3.3
       },
       {
         "id": "J25",
         "category": "J",
         "name": "Breakdown table header at 320 and 390: \"Equity\" and its (i) sit on one line, \"Cash flow/mo\" does not wrap, the header cells are right-aligned over their numbers and nothing overflows",
         "points": 1.64,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:448:18\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:445:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.64,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
         "repro": "default Planned page; breakdown header cells",
-        "seconds": 0
+        "seconds": 0.9
       },
       {
         "id": "J26",
         "category": "J",
         "name": "Months boxes round to whole months and cap at 600: 1.5 -> 2 with a \"Rounded\" note, 100000 -> 600 with a \"Capped\" note (asset page and Finances), and the date under the box matches",
         "points": 2.05,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:462:39\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:461:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 2.05,
+        "ratio": 1,
+        "detail": "5/5 sub-checks pass",
         "repro": "Not before (months), job Ends in (months)",
-        "seconds": 0
+        "seconds": 7
       },
       {
         "id": "J27",
         "category": "J",
         "name": "% handling is consistent: 5% in a dollar box stays as typed with a hint until you leave, then goes back with \"No % in a dollar box, kept\"; 4% in a percent box stays 4% while typing and becomes 4 on leaving; at 320 the (i) and the ▸ arrow stay glued to their last word",
         "points": 1.64,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:475:39\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:474:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.64,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
         "repro": "rent box, vacancy box, target toggle, stat grid labels",
-        "seconds": 0
+        "seconds": 4.4
       },
       {
         "id": "J28",
         "category": "J",
         "name": "Remove-all: a Remove button sits next to Finances and Settings on the Planned page only; it asks first, files the portfolio in Saved, removes every planned asset (bought ones stay), Undo restores; the Saved page has the same action; nothing overflows at 320",
         "points": 1.23,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:494:39\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:493:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.23,
+        "ratio": 1,
+        "detail": "7/7 sub-checks pass",
         "repro": "Planned header, Saved page",
-        "seconds": 0
+        "seconds": 0.9
       },
       {
         "id": "J29",
         "category": "J",
         "name": "Category cards end with a \"Monthly income and expenses\" list instead of the grey Lasts note: total income (cash flow without any expense), each expense, cash flow before the loan payment and cash flow after all expenses; the lines add up and the last line equals the sum of the rows' \"now\" cash flows; no raw template text; no overflow at 320",
         "points": 1.23,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:509:39\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:508:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.23,
+        "ratio": 1,
+        "detail": "3/3 sub-checks pass",
         "repro": "Planned and Real pages",
-        "seconds": 0
+        "seconds": 1.2
       },
       {
         "id": "J30",
         "category": "J",
         "name": "Calculated boxes always match the price you typed: type a plain price, stop for a moment while still in the box, and Down payment $ and Loan amount show 25% / 75% of it (no stale numbers); math such as 1000000*16 is still not applied until you leave the box",
         "points": 1.03,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:526:39\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:525:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.03,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
         "repro": "asset page of a planned business",
-        "seconds": 0
+        "seconds": 4.2
       },
       {
         "id": "J31",
         "category": "J",
         "name": "Business Total revenue box: an amount plus per month / per year in any common form (\"1,200,000/yr\", \"$1.2M per year\", \"100k/month\", \"90000 mo\", \"15000*12/yr\", \"1.2m/y\") lands as the MONTHLY revenue; a bare trailing m is million, \"/m\" is a month; \"8000/week\" is rejected politely; \"100/yr/mo\" says Check the math and keeps the number",
         "points": 1.64,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:541:39\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:540:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.64,
+        "ratio": 1,
+        "detail": "29/29 sub-checks pass",
         "repro": "new business asset page, Total revenue box",
-        "seconds": 0
+        "seconds": 9
       },
       {
         "id": "J32",
         "category": "J",
         "name": "Business asset page: Total revenue + Profit margin are the inputs, Owner profit (per month and per year) is auto and read-only = revenue x margin; it drives the engine (rent), the row and the Monthly income and expenses lines; a margin edit changes owner profit; there is no editable Monthly owner profit box",
         "points": 1.44,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:554:39\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:553:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.44,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
         "repro": "new business asset page",
-        "seconds": 0
+        "seconds": 2.4
       },
       {
         "id": "J33",
         "category": "J",
         "name": "Seeded businesses keep their owner profit and show revenue = profit / 20%; default plan numbers are unchanged; an old portfolio / backup without revenue or margin loads unchanged (revenue and margin stay empty, nothing rewritten)",
         "points": 1.23,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:572:39\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:571:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.23,
+        "ratio": 1,
+        "detail": "5/5 sub-checks pass",
         "repro": "asset page of a seeded business, engine plan, import of an old backup",
-        "seconds": 0
+        "seconds": 1.3
       },
       {
         "id": "J34",
         "category": "J",
         "name": "New business asset page at 320 and 390: no horizontal scroll, every box and button at least 44px tall, nothing overflows its row",
         "points": 0.82,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:586:46\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:584:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 0.82,
+        "ratio": 1,
+        "detail": "4/4 sub-checks pass",
         "repro": "new business asset page at 320 and 390",
-        "seconds": 0
+        "seconds": 2.3
       },
       {
         "id": "J35",
         "category": "J",
         "name": "Add flow, home type: Single family | Multi-family choice (a segmented control like Home / Commercial / Business); single keeps today's list and button; multi shows units, five one-tap presets and Building / Pack of houses",
         "points": 1.64,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:599:34\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:598:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.64,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
         "repro": "open Add, tap Multi-family, tap each preset",
-        "seconds": 0
+        "seconds": 1
       },
       {
         "id": "J36",
         "category": "J",
         "name": "Add flow, unit count: whole numbers 2-500 only; 0, 1, 501, abc and 2.5 are refused with a short hint and the last good number is kept; 2*3 and 1,2 style math work like every other number box",
         "points": 1.64,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:615:34\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:614:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.64,
+        "ratio": 1,
+        "detail": "13/13 sub-checks pass",
         "repro": "type into the Number of units box",
-        "seconds": 0
+        "seconds": 4.3
       },
       {
         "id": "J37",
         "category": "J",
         "name": "Add flow, loan options: every multi-family option is listed, the ones that do not fit the unit count are greyed with a one-line reason (not hidden), the first fitting one is preselected, every option has an (i), info-only options are labelled",
         "points": 1.64,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:630:34\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:629:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.64,
+        "ratio": 1,
+        "detail": "16/16 sub-checks pass",
         "repro": "compare the add screen with Engine.mfLoans for 2 / 4 / 5 pack / 20 / 50 / 51 units",
-        "seconds": 0
+        "seconds": 2
       },
       {
         "id": "J38",
         "category": "J",
         "name": "Multi-family asset page: N units in the header and row (\"Pack of 5 houses\"), rent per unit and total rent (auto), per-unit costs table, reserve and other costs with (i), the expense ratio check, the collapsible guide; the breakdown adds up",
         "points": 2.05,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.goto: Target page, context or browser has been closed\n    at load (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:25:16)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:644:36\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:642:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 2.05,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
         "repro": "add a 50-unit building and a pack of 5; read the asset page, the row and the Monthly income and expenses list",
-        "seconds": 0.1
+        "seconds": 4.1
       },
       {
         "id": "J39",
         "category": "J",
         "name": "Multi-family persistence: kind / units / pack survive a reload, Undo after Remove, Saved, backup export and restore; the default plan is untouched and nothing else changes",
         "points": 1.64,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:667:34\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:666:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.64,
+        "ratio": 1,
+        "detail": "10/10 sub-checks pass",
         "repro": "add, reload, remove + Undo, Save + open, export + restore",
-        "seconds": 0
+        "seconds": 4.2
       },
       {
         "id": "J40",
         "category": "J",
         "name": "Start from an example: a quiet collapsed line near the bottom; open, pick, Add = 3 taps for Home, Multi-family, Commercial and Business; the asset equals the example; (i), clear, Back, keyboard and Escape work",
         "points": 2.87,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)\n    at exPrep (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:683:47)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:688:13\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:685:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 2.87,
+        "ratio": 1,
+        "detail": "26/26 sub-checks pass",
         "repro": "on #add for each category: toggle, rows, pick, chip, Add; compare the stored asset with the engine example",
-        "seconds": 0.1
+        "seconds": 5.2
       },
       {
         "id": "J41",
         "category": "J",
         "name": "Examples persist like any asset: reload, Undo after Remove, Saved, backup and restore keep every field; the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes)",
         "points": 1.23,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)\n    at exPrep (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:683:47)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:708:65\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:706:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.23,
+        "ratio": 1,
+        "detail": "8/8 sub-checks pass",
         "repro": "add one example per category, then reload / remove + Undo / Save / backup",
-        "seconds": 0.1
+        "seconds": 5.5
       },
       {
         "id": "J42",
         "category": "J",
         "name": "Edit an example: Edit beside the (i) opens the editor; calculator math, /yr revenue and units math work; the live line and warnings follow; Save keeps it across reload and shows Edited; the added asset equals the edited example; Reset returns only that example; Back asks before discarding",
         "points": 3.29,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at openEd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:722:63)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:732:11\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:730:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 3.29,
+        "ratio": 1,
+        "detail": "20/20 sub-checks pass",
         "repro": "on #add: Edit, type, Save, reload, add, reset, back",
-        "seconds": 0
+        "seconds": 8.3
       },
       {
         "id": "J43",
         "category": "J",
         "name": "Editing and the rest of the app: multi-family units re-check the loan and per-unit costs, the loan picker updates down payment and cash, revenue per year keeps profit = revenue x margin, future dollars and tight widths work, backup / Saved / Undo / examples already owned behave, storage unavailable and two tabs and an old cached engine do not break it",
         "points": 3.7,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at openEd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:722:63)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:758:11\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:756:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 3.7,
+        "ratio": 1,
+        "detail": "26/26 sub-checks pass",
         "repro": "units, loan, revenue, unit toggle, backup, saved, storage stub, second tab, old engine",
-        "seconds": 0
+        "seconds": 17.6
       },
       {
         "id": "J44",
         "category": "J",
         "name": "Build stamp: app.js, engine.js, info.js, style.css (as --build) and the service worker cache name carry one hash of the four files; editing a file without restamping is caught; stamp.py and build-artifact.py write it",
         "points": 1.85,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.goto: Target page, context or browser has been closed\n    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:827:11\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:816:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.85,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
         "repro": "node: grader/stamp-check.js on v4/ and on a temp copy that is edited, restamped and bundled; browser: window.__app.stamps and the --build property",
-        "seconds": 0.2
+        "seconds": 0.5
       },
       {
         "id": "J45",
         "category": "J",
         "name": "Mixed versions: an old engine.js under a new app.js is detected at start, caches are purged, the service worker removed and the page reloads exactly ONCE (no loop), the event is logged, the stored portfolio is untouched; if it is still mixed the notice shows instead; a stale cache name heals the same way, but never after the person has touched the page",
         "points": 2.46,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)\n    at async rawCtx (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:812:42)\n    at async mkp (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:835:55)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:837:29\n    at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:832:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 2.46,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
         "repro": "route engine.js to a copy with another stamp (first request only, then always), count page loads; add a stale portfolio-v4 cache",
-        "seconds": 0
+        "seconds": 8.4
       },
       {
         "id": "J46",
         "category": "J",
         "name": "Safety copies are taken BEFORE a migration, an additions append, an unreadable save, loading a sample, Remove all planned, opening a Saved portfolio, a backup restore, removing an asset, and once a day; each copy equals the state just before; Restore brings back the exact copy (deep-equal), files the current state first and offers Undo",
         "points": 3.29,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.goto: Target page, context or browser has been closed\n    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:860:48\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:856:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 3.29,
+        "ratio": 1,
+        "detail": "16/16 sub-checks pass",
         "repro": "inject states / click through each action and read rep-v4-safety",
-        "seconds": 0
+        "seconds": 7.2
       },
       {
         "id": "J47",
         "category": "J",
         "name": "Safety ring limits: at most 5 copies, oldest dropped, size capped, newest first, quota errors and a throwing localStorage never throw and never lose the newest copy; the app still works and Undo still shows",
         "points": 1.44,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)\n    at async rawCtx (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:812:42)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:897:23\n    at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:887:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.44,
+        "ratio": 1,
+        "detail": "5/5 sub-checks pass",
         "repro": "node: Engine.Diag with a stub storage; browser: setItem throws for rep-v4-safety",
-        "seconds": 0.8
+        "seconds": 1.5
       },
       {
         "id": "J48",
         "category": "J",
         "name": "Portfolio replaced: a start whose state is the default plan with other asset ids than the last-known fingerprint, with no logged migration / sample / restore explaining it, shows \"may have been replaced\" with Restore my previous portfolio; nothing is restored by itself; restore returns the earlier portfolio; explained or normal starts show nothing",
         "points": 2.46,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.goto: Target page, context or browser has been closed\n    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:911:11\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:906:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 2.46,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
         "repro": "fake rep-v4-diag fingerprint + safety copy, then load the default plan",
-        "seconds": 0.1
+        "seconds": 6.6
       },
       {
         "id": "J49",
         "category": "J",
         "name": "Anomaly monitor: NaN in a KPI, a changed total, a failed read-back, mismatched stamps and a wrong state version are each flagged with their code; the Planned page shows \"Something looked wrong. Tap to copy a bug report\" (one tap copies, dismiss works); errors, rejections and storage failures land in a 60-entry, size-capped event ring",
         "points": 2.87,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.goto: Target page, context or browser has been closed\n    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:939:11\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:928:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 2.87,
+        "ratio": 1,
+        "detail": "15/15 sub-checks pass",
         "repro": "inject NaN into a KPI, stub the clipboard, fire errors; node: Engine.Diag.checks with faked inputs",
-        "seconds": 0.3
+        "seconds": 4
       },
       {
         "id": "J50",
         "category": "J",
         "name": "Bug report: 8 sections, parseable, <= 8,000 characters; with \"Include my numbers\" off no street names, addresses or dollar amounts (sentinel address and price), with it on prices and rents but still no address; Copy uses the clipboard with the select-by-hand fallback; the GitHub link is valid, <= 7,500 characters and says the full report was copied; the app makes no network request",
         "points": 3.29,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)\n    at async rawCtx (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:812:42)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:963:23\n    at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:961:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 3.29,
+        "ratio": 1,
+        "detail": "13/13 sub-checks pass",
         "repro": "sentinel address 7731 Zebra Quartz Ln / $7,777,777; stub window.open and the clipboard; log page requests",
-        "seconds": 0.1
+        "seconds": 2.6
       },
       {
         "id": "J51",
         "category": "J",
         "name": "No slowdown: the safety / monitor start-up work costs under 50 ms on the default 36-asset plan (median of 5 starts), the monitor under 50 ms, and the invariants run in node in under 20 ms",
         "points": 0.82,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.goto: Target page, context or browser has been closed\n    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:997:98\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:996:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 0.82,
+        "ratio": 1,
+        "detail": "3/3 sub-checks pass",
         "repro": "window.__app.bootMs + monMs over 5 loads; node timing of Engine.Diag.checks",
-        "seconds": 0
+        "seconds": 5.3
       },
       {
         "id": "J52",
         "category": "J",
         "name": "Nothing else changed: backup export excludes safety and diagnostic keys, backup import still restores, Saved portfolios do not hold safety copies, and the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes)",
         "points": 1.03,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.goto: Target page, context or browser has been closed\n    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)\n    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:1004:60\n    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)\n    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:1003:9)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16",
+        "earned": 1.03,
+        "ratio": 1,
+        "detail": "4/4 sub-checks pass",
         "repro": "export backup text, restore it, read all rep-v4* keys",
-        "seconds": 0
+        "seconds": 2.2
       }
     ]
   },
   "design": {
-    "earned": 0,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
-        "id": "K00",
+        "id": "K1",
         "category": "K",
-        "name": "Design module failed to run",
-        "points": 100,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "ERROR: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:21:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1059:20",
-        "repro": "node -e \"require('./design-grade.js')\""
+        "name": "Colours come only from the existing CSS variables: no hard-coded colour in the new CSS rules or in the new screens' inline styles, and every var() used is a defined token",
+        "points": 3.85,
+        "earned": 3.85,
+        "ratio": 1,
+        "detail": "5/5 sub-checks pass",
+        "repro": "scan style.css after the multi-family marker and the app.js Add / asset templates",
+        "seconds": 0
+      },
+      {
+        "id": "K2",
+        "category": "K",
+        "name": "Every piece of text on the new screens has contrast >= 4.5:1 in light and dark mode (greyed options, chips, hints, tables, the guide)",
+        "points": 4.49,
+        "earned": 4.49,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
+        "repro": "emulate prefers-color-scheme on every new screen and measure text vs its real background",
+        "seconds": 7.9
+      },
+      {
+        "id": "K3",
+        "category": "K",
+        "name": "The new UI is built from the existing components: field rows (label + (i) + box), .card sections with the same collapsible header, segmented controls like Home / Commercial / Business, chips, loan cards with an (i), the cmp table, the warning box; at most a handful of new classes, all defined with tokens",
+        "points": 5.13,
+        "earned": 5.13,
+        "ratio": 1,
+        "detail": "7/7 sub-checks pass",
+        "repro": "compare class names on the new screens with the classes of the existing screens",
+        "seconds": 12.6
+      },
+      {
+        "id": "K4",
+        "category": "K",
+        "name": "Tap targets are >= 44px and nothing scrolls sideways at 320, 390 and 430 on every new screen; nothing is wider than its card",
+        "points": 3.85,
+        "earned": 3.85,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "measure buttons, inputs and selects and the page width on each new screen at three widths",
+        "seconds": 11.2
+      },
+      {
+        "id": "K5",
+        "category": "K",
+        "name": "No text overlaps: the bounding boxes of every line of text on the new screens (and the greyed reasons, chips, table cells, (i) buttons) never collide, at 320 and 390",
+        "points": 3.85,
+        "earned": 3.85,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
+        "repro": "collect Range client rects of every text node and test them pairwise",
+        "seconds": 7.7
+      },
+      {
+        "id": "K6",
+        "category": "K",
+        "name": "Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use (no new size, margin, padding or radius)",
+        "points": 3.85,
+        "earned": 3.85,
+        "ratio": 1,
+        "detail": "3/3 sub-checks pass",
+        "repro": "collect computed font-size / margin / padding / radius on the existing screens, then on the new screens, and compare the sets",
+        "seconds": 3.8
+      },
+      {
+        "id": "K7",
+        "category": "K",
+        "name": "The same state looks the same: the new Single / Multi and Building / Pack controls match the Home / Commercial / Business tabs; a selected multi-family loan card matches a selected single-family card; greyed cards are visibly different but readable",
+        "points": 2.56,
+        "earned": 2.56,
+        "ratio": 1,
+        "detail": "4/4 sub-checks pass",
+        "repro": "compare computed styles of existing and new controls",
+        "seconds": 0.6
+      },
+      {
+        "id": "K8",
+        "category": "K",
+        "name": "No walls of text on the new screens: every note is short (<= 170 characters), the guide shows scannable rows and a short checklist, and the long explanations live in (i) buttons",
+        "points": 2.56,
+        "earned": 2.56,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
+        "repro": "measure every .note and the guide on the new screens",
+        "seconds": 3.9
+      },
+      {
+        "id": "K9",
+        "category": "K",
+        "name": "First-time flow: from the Add screen a multi-family asset is 3 taps away (Multi-family, a preset, Add); from the portfolio 3 taps with the default duplex; Back returns without adding anything; presets are one tap; the unit box has the numeric keyboard settings of the other boxes; the result opens on the asset page",
+        "points": 3.21,
+        "earned": 3.21,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "tap through the flow and count",
+        "seconds": 7.5
+      },
+      {
+        "id": "K10",
+        "category": "K",
+        "name": "Screenshots (dpr 2) of the new screens at 390 and 320 in light and dark are saved to grader/screens/mf-*.png, full height, with no sideways overflow",
+        "points": 1.92,
+        "earned": 1.92,
+        "ratio": 1,
+        "detail": "1/1 sub-checks pass",
+        "repro": "full-page screenshots of every new screen",
+        "seconds": 24.3
+      },
+      {
+        "id": "K11",
+        "category": "K",
+        "name": "Examples control: colours come only from tokens (no hard-coded colour in its CSS or its inline styles), it reuses the loan card, (i), chip, link-button and empty-line components, and adds at most 2 new classes",
+        "points": 3.85,
+        "earned": 3.85,
+        "ratio": 1,
+        "detail": "5/5 sub-checks pass",
+        "repro": "scan the examples CSS block and the addPage template; list the classes used by the control",
+        "seconds": 0.3
+      },
+      {
+        "id": "K12",
+        "category": "K",
+        "name": "Every piece of text on the example screens (closed line, 4 rows for each category, the chosen line) has contrast >= 4.5:1 in light and dark",
+        "points": 4.49,
+        "earned": 4.49,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
+        "repro": "emulate prefers-color-scheme and measure text vs its real background on each example screen",
+        "seconds": 5.1
+      },
+      {
+        "id": "K13",
+        "category": "K",
+        "name": "Example screens: every button is >= 44px tall, nothing scrolls sideways or passes the edge, and no two lines of text overlap, at 320, 390 and 430",
+        "points": 4.49,
+        "earned": 4.49,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
+        "repro": "measure buttons, page width and text rectangles on each example screen at three widths",
+        "seconds": 7.6
+      },
+      {
+        "id": "K14",
+        "category": "K",
+        "name": "Discreet and short flow: closed by default as one quiet 44px line (the same size and weight as the other link buttons) that adds at most 56px to the Add screen; the Add button stays in the first screen (390x844) wherever it was before; spacing, fonts and radii come from the existing sets; 3 taps to add; Back adds nothing",
+        "points": 4.49,
+        "earned": 4.49,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
+        "repro": "measure the closed line, the Add button position with and without the line, and compare style sets with the existing screens",
+        "seconds": 4.2
+      },
+      {
+        "id": "K15",
+        "category": "K",
+        "name": "Screenshots (dpr 2) of the example screens at 390 and 320 in light and dark are saved to grader/screens/ex-*.png",
+        "points": 1.92,
+        "earned": 1.92,
+        "ratio": 1,
+        "detail": "1/1 sub-checks pass",
+        "repro": "full-page screenshots of every example screen",
+        "seconds": 16.9
+      },
+      {
+        "id": "K16",
+        "category": "K",
+        "name": "Editor reuses the app: colours only from tokens (CSS and inline styles), no new class (only existing card, field, loan select, warning box, tag, chip, button, (i), confirm and live-line components), the loan picker is the same select as the asset page, fields use the same label + (i) + box",
+        "points": 4.49,
+        "earned": 4.49,
+        "ratio": 1,
+        "detail": "4/4 sub-checks pass",
+        "repro": "scan the editor CSS block and template; list the classes on the editor screens against the existing screens",
+        "seconds": 3.4
+      },
+      {
+        "id": "K17",
+        "category": "K",
+        "name": "Every piece of text on the editor screens (fields, live line, warnings, tags, confirm, list with Edit and Edited) has contrast >= 4.5:1 in light and dark",
+        "points": 4.49,
+        "earned": 4.49,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
+        "repro": "emulate prefers-color-scheme and measure text vs its real background on each editor screen",
+        "seconds": 5.8
+      },
+      {
+        "id": "K18",
+        "category": "K",
+        "name": "Editor screens: every button, select and box is >= 44px tall, nothing scrolls sideways or passes the edge, no two lines of text overlap, at 320, 390 and 430 (also the list with the Edit buttons)",
+        "points": 4.49,
+        "earned": 4.49,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
+        "repro": "measure controls, page width and text rectangles on each editor screen at three widths",
+        "seconds": 8.8
+      },
+      {
+        "id": "K19",
+        "category": "K",
+        "name": "Flow and keyboard: first time = open the list, Edit, change a field, Save (4 taps) and the Add button is still there; Back asks before dropping changes and not otherwise; Escape closes; Tab reaches Edit and Enter opens the editor with focus on the first field; Escape returns focus to Edit; short on-screen text (notes <= 170 characters); the long text is in the (i)",
+        "points": 3.85,
+        "earned": 3.85,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "tap through the flow, press keys, measure notes",
+        "seconds": 2.2
+      },
+      {
+        "id": "K20",
+        "category": "K",
+        "name": "Screenshots (dpr 2) of the editor screens at 390 and 320 in light and dark are saved to grader/screens/ex-edit-*.png",
+        "points": 1.92,
+        "earned": 1.92,
+        "ratio": 1,
+        "detail": "1/1 sub-checks pass",
+        "repro": "full-page screenshots of every editor screen",
+        "seconds": 15.6
+      },
+      {
+        "id": "K21",
+        "category": "K",
+        "name": "The safety and report UI adds no CSS of its own: style.css equals the shipped file apart from the build stamp line; no colour, hex or rgb in its templates; every inline style it uses is already used elsewhere in the app",
+        "points": 3.21,
+        "earned": 3.21,
+        "ratio": 1,
+        "detail": "4/4 sub-checks pass",
+        "repro": "diff style.css with git HEAD (minus the stamp line); scan the new templates in app.js",
+        "seconds": 0
+      },
+      {
+        "id": "K22",
+        "category": "K",
+        "name": "Every piece of text on the new screens (copies list, confirm, report card, text box, both notices) has contrast >= 4.5:1 in light and dark mode",
+        "points": 4.49,
+        "earned": 4.49,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
+        "repro": "emulate prefers-color-scheme on each new screen and measure text vs its real background",
+        "seconds": 9.3
+      },
+      {
+        "id": "K23",
+        "category": "K",
+        "name": "Built only from existing components: every class on the new screens is already used by the old screens (card, scard, sname, smeta, sstat, sact, btn, pbtn, plain, chip, link, migrate, warnbox, chips, seg, f, lb, note, confirm, info); no new class; the sections use the same collapsible header",
+        "points": 3.21,
+        "earned": 3.21,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "compare class names with the baseline of existing screens",
+        "seconds": 7.3
+      },
+      {
+        "id": "K24",
+        "category": "K",
+        "name": "Tap targets are >= 44px and nothing scrolls sideways or passes the edge at 320, 390 and 430 on every new screen",
+        "points": 3.85,
+        "earned": 3.85,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "measure buttons, boxes and the page width on each new screen at three widths",
+        "seconds": 13.7
+      },
+      {
+        "id": "K25",
+        "category": "K",
+        "name": "No text overlaps on the new screens (copies, confirm, report box, both notices), at 320 and 390",
+        "points": 3.21,
+        "earned": 3.21,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
+        "repro": "collect Range client rects of every text node and test them pairwise",
+        "seconds": 9.1
+      },
+      {
+        "id": "K26",
+        "category": "K",
+        "name": "Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use",
+        "points": 2.56,
+        "earned": 2.56,
+        "ratio": 1,
+        "detail": "3/3 sub-checks pass",
+        "repro": "collect computed font-size / margin / padding / radius on the existing screens, then on the new ones",
+        "seconds": 4.6
+      },
+      {
+        "id": "K27",
+        "category": "K",
+        "name": "Short first-time flow and short text: Assumptions to a copied bug report is 2 taps (open the section, Copy), the Planned notice copies in 1 tap, Restore is 3 taps (open, Restore, confirm); every note on the new screens is <= 170 characters and the long explanations are in the (i) entries",
+        "points": 3.85,
+        "earned": 3.85,
+        "ratio": 1,
+        "detail": "6/6 sub-checks pass",
+        "repro": "count taps; measure notes; open the (i) sheet",
+        "seconds": 7.8
+      },
+      {
+        "id": "K28",
+        "category": "K",
+        "name": "Screenshots (dpr 2) of the new screens at 390 and 320 in light and dark are saved to grader/screens/diag-*.png",
+        "points": 1.92,
+        "earned": 1.92,
+        "ratio": 1,
+        "detail": "1/1 sub-checks pass",
+        "repro": "full-page screenshots of every new screen",
+        "seconds": 26.6
       }
     ]
   },
   "numb": {
-    "earned": 0,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
-        "id": "N00",
+        "id": "N1",
         "category": "N",
-        "name": "Numbering module failed to run",
-        "points": 100,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "ERROR: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/numbering-grade.js:43:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1065:18",
-        "repro": "node -e \"require('./numbering-grade.js')\""
+        "name": "Engine numbering(): contiguous 1..n per view in purchase order on 300 seeded random portfolios, pure, shifts by one on removal",
+        "points": 10,
+        "earned": 10,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
+        "repro": "node -e \"E=require('./v4/engine.js'); E.numbering(S, E.plan(S))\"",
+        "seconds": 5.1
+      },
+      {
+        "id": "N2",
+        "category": "N",
+        "name": "The screenshot: one planned commercial + one planned home (+ a bought asset) show 1 and 2 in purchase order, nothing skipped",
+        "points": 10,
+        "earned": 10,
+        "ratio": 1,
+        "detail": "11/11 sub-checks pass",
+        "repro": "state: [owned house, planned commercial, planned home] and the same without the owned one; read the Planned badges",
+        "seconds": 1.9
+      },
+      {
+        "id": "N3",
+        "category": "N",
+        "name": "Hidden assets never take a Planned number: two bought assets, a bought commercial and business, a sold-in-plan asset",
+        "points": 10,
+        "earned": 10,
+        "ratio": 1,
+        "detail": "30/30 sub-checks pass",
+        "repro": "state with owned house + owned business + owned commercial + planned mix + a plan-sold asset",
+        "seconds": 2.2
+      },
+      {
+        "id": "N4",
+        "category": "N",
+        "name": "Remove an asset (first / middle / last) shifts every later number down by one at once, read without reloading, and again after a reload",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "14/14 sub-checks pass",
+        "repro": "select row > Remove > Yes; read the badges immediately",
+        "seconds": 4.2
+      },
+      {
+        "id": "N5",
+        "category": "N",
+        "name": "Remove all planned assets, Undo, and add after Remove-all keep the numbers right (bought assets stay 1..m, new planned asset is 1)",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "11/11 sub-checks pass",
+        "repro": "Planned > Remove > Yes, remove all; Undo; add a home",
+        "seconds": 1.6
+      },
+      {
+        "id": "N6",
+        "category": "N",
+        "name": "Undo of a removal, Duplicate, Move up/down and the owned <-> planned toggle all leave contiguous numbers in order",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "30/30 sub-checks pass",
+        "repro": "row panel buttons: Remove+Undo, Duplicate, Move down, asset page Owned/Planned",
+        "seconds": 4.8
+      },
+      {
+        "id": "N7",
+        "category": "N",
+        "name": "Adding an asset (Add flow, an example, a bought asset) numbers it last in its own view and renumbers nothing else",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
+        "repro": "Planned > + Add home > Add; + Add a bought asset; an example",
+        "seconds": 1.8
+      },
+      {
+        "id": "N8",
+        "category": "N",
+        "name": "Scenario load, Saved open, backup import, ADDITIONS append and an old unsorted save all give contiguous numbers in both views",
+        "points": 12,
+        "earned": 12,
+        "ratio": 1,
+        "detail": "53/53 sub-checks pass",
+        "repro": "Assumptions > sample > Yes; Saved > Open; Restore backup; state without the lost-creek-704 key; v8 save with shuffled assets",
+        "seconds": 10.3
+      },
+      {
+        "id": "N9",
+        "category": "N",
+        "name": "Seeded random portfolios (home / commercial / business / multi-family, planned / bought / sold / merged): both pages contiguous, headers and labels agree, and after a random Remove",
+        "points": 10,
+        "earned": 10,
+        "ratio": 1,
+        "detail": "135/135 sub-checks pass",
+        "repro": "9 random states loaded in the app; sweep rows, headers, then remove one",
+        "seconds": 15
+      },
+      {
+        "id": "N10",
+        "category": "N",
+        "name": "Every \"#N\" the app prints is a real number of its own view; Finances and Saved pages carry no stale numbers; the default plan is 1..36 in order and unchanged",
+        "points": 8,
+        "earned": 8,
+        "ratio": 1,
+        "detail": "15/15 sub-checks pass",
+        "repro": "scan the text of Planned, Real, Finances, Assumptions and an asset page; default plan numbers",
+        "seconds": 2.4
       }
     ]
   }

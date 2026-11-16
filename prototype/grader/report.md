@@ -1,12 +1,12 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-16T03:49:05.520Z  |  588s
+Target: `prototype/v4`  |  Run: 2026-11-16T04:06:59.406Z  |  958s
 
-## Automated score: **84.41 / 84.99700000000001** (a separate design review adds 15)
+## Automated score: **83.45 / 84.99700000000001** (a separate design review adds 15)
 
 | Category | Score |
 |---|---|
-| A. Requirement / propagation | 17.88 / 18.00 |
+| A. Requirement / propagation | 16.92 / 18.00 |
 | B. Engine correctness | 12.00 / 12.00 |
 | C. UX conciseness & usability | 9.53 / 10.00 |
 | D. PWA / local-first | 8.00 / 8.00 |
@@ -44,7 +44,7 @@ Target: `prototype/v4`  |  Run: 2026-11-16T03:49:05.520Z  |  588s
 | A32 | Show figures in: Assumptions has Today's dollars | Future dollars with an (i), default Today's, tap targets >= 44px; switching shows the engine's future-dollar figures on the Planned and Real top cards and the breakdown; the choice persists in the UI storage and after a reload; nothing in the portfolio data changes | 0.72 | 0.72 | 11/11 sub-checks pass |
 | A33 | Prices stay today's prices: every planned asset's price on screen is the entered price (nothing is inflated), the cash a purchase needs is its down payment + closing + improvements on that price whatever month it is bought, and the glossary says so | 0.48 | 0.48 | 5/5 sub-checks pass |
 | A34 | An older default plan (v18) opens silently on the new default: no pop-up or Undo banner, the working portfolio is the new plan, the old portfolio is filed in Saved as "Portfolio N (before the update)" and loads back exactly; the unit choice is not touched | 0.24 | 0.24 | 3/3 sub-checks pass |
-| A35 | A release never overwrites or resurrects the user's own portfolio (v19 -> v20 keeps it, S.added bookkeeping): empty stays empty, own assets kept with no second Lost Creek, missing S.added adds nothing, a new ADDITIONS entry lands once as the LAST planned asset and never returns after removal, Undo / Saved / backup keep S.added, v<=18 still switch with the "before the update" entry, new default plan targets hold | 0.96 | 0.96 | 19/19 sub-checks pass |
+| A35 | A release never overwrites or resurrects the user's own portfolio (v19 -> v20 keeps it, S.added bookkeeping): empty stays empty, own assets kept with no second Lost Creek, missing S.added adds nothing, a new ADDITIONS entry lands once as the LAST planned asset and never returns after removal, Undo / Saved / backup keep S.added, v<=18 still switch with the "before the update" entry, new default plan targets hold | 0.96 | 0.00 | CRASH in check: page.click: Timeout 4000ms exceeded. Call log: [2m  - waiting for locator('[data-row="testhouse1"] [data-testid=row-extra-toggle]')[22m  |
 | B01 | P&I for 240k @6.5% 30y = 1516.96 | 0.21 | 0.21 | got 1516.9632563831167 |
 | B02 | Scheduled balance after 60 mo = 224666.35 | 0.21 | 0.21 | 2/2 sub-checks pass |
 | B03 | Balance after 60 mo with +500 extra = 189329.36 | 0.21 | 0.21 | got 189329.3620868643 |
@@ -57,7 +57,7 @@ Target: `prototype/v4`  |  Run: 2026-11-16T03:49:05.520Z  |  588s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.42 | 0.42 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.21 | 0.21 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.21 | 0.21 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 16.1ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 15.0ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.31 | 0.31 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.31 | 0.31 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.42 | 0.42 | 5/5 sub-checks pass |
@@ -88,7 +88,7 @@ Target: `prototype/v4`  |  Run: 2026-11-16T03:49:05.520Z  |  588s
 | D01 | Manifest valid; icons load with true declared dimensions | 1.14 | 1.14 | 8/8 sub-checks pass |
 | D02 | Service worker (index.html) registers, activates, controls page after reload; precache complete | 1.14 | 1.14 | 3/3 sub-checks pass |
 | D03 | Works offline: reload, deep-link, and edit with network off | 1.52 | 1.52 | 4/4 sub-checks pass |
-| D04 | Zero external (non-localhost) network requests across every flow | 0.76 | 0.76 | 1231 requests, 0 external  |
+| D04 | Zero external (non-localhost) network requests across every flow | 0.76 | 0.76 | 1186 requests, 0 external  |
 | D05 | Data persists across reload and new tab (localStorage rep-v4, v7); no server round-trip | 1.14 | 1.14 | 5/5 sub-checks pass |
 | D06 | Backup: Show backup gives valid JSON text; pasted text and file restore state (with confirm); invalid text rejected without damage | 1.52 | 1.52 | 6/6 sub-checks pass |
 | D07 | iOS install meta: apple-touch-icon loads, viewport-fit=cover, apple-mobile-web-app-capable, theme-color | 0.38 | 0.38 | 4/4 sub-checks pass |
@@ -114,10 +114,16 @@ Target: `prototype/v4`  |  Run: 2026-11-16T03:49:05.520Z  |  588s
 
 ## Top failures
 
-1. **C01 At 390x844: summary KPIs, plan headline and the first ledger rows are visible without scrolling** (-0.47)
+1. **A35 A release never overwrites or resurrects the user's own portfolio (v19 -> v20 keeps it, S.added bookkeeping): empty stays empty, own assets kept with no second Lost Creek, missing S.added adds nothing, a new ADDITIONS entry lands once as the LAST planned asset and never returns after removal, Undo / Saved / backup keep S.added, v<=18 still switch with the "before the update" entry, new default plan targets hold** (-0.96)
+   - Detail: CRASH in check: page.click: Timeout 4000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-row="testhouse1"] [data-testid=row-extra-toggle]')[22m
+
+   - Reproduce: Load v19 states (empty, partial, with Lost Creek), v20 without S.added, a state lacking a test addition key; reload, remove, Undo, Saved open, backup
+2. **C01 At 390x844: summary KPIs, plan headline and the first ledger rows are visible without scrolling** (-0.47)
    - Detail: 2/3 sub-checks pass. FAIL: first ledger row visible [{"nw":294.515625,"mon":294.515625,"cf":379.1875,"dscr":379.1875,"head":511.859375,"row1":898.703125}]
    - Reproduce: Open main at 390x844
-2. **A07 No "Today" / "20 years" view toggle anywhere (single portfolio snapshot)** (-0.12)
+3. **A07 No "Today" / "20 years" view toggle anywhere (single portfolio snapshot)** (-0.12)
    - Detail: 2/3 sub-checks pass. FAIL: no [data-view] buttons [1]
    - Reproduce: Scan buttons on main, asset, assumptions, add pages
 
@@ -194,7 +200,7 @@ None.
 
 None.
 
-## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **42.71 / 100** (separate scale)
+## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **100.00 / 100** (separate scale)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -220,277 +226,93 @@ None.
 | J20 | Number boxes at rest and on leaving: 1000+500 then Tab leaves "1,500" and no hint; a blanked box tabbed away goes back (Kept $X), and abc after that keeps the stored value; 4% in a percent box shows 4; a typed prefix (5 of 5/0) never reaches the state | 2.05 | 2.05 | 7/7 sub-checks pass |
 | J21 | Names and layout: saved name "Portfolio 1 (before Stretch: 607 Siena Way)" has no nested parentheses; breakdown values never touch at 320; the long stretch title wraps with its edit link (320) | 1.23 | 1.23 | 3/3 sub-checks pass |
 | J22 | Planned page: headline says what Checks says (savings $0 -> "once you add $X from your own pocket"); Open Finances shows with Details closed; sold asset page has no "Can the plan buy it?" or trust-timing text; no "1 years" | 1.23 | 1.23 | 4/4 sub-checks pass |
-| J23 | Slow typing never commits a prefix: price 5, pause 450 ms, then /0 leaves the price alone; the "= result" hint shows while typing; the value lands on Enter / blur and the totals follow | 2.46 | 0.00 | CRASH in check: elementHandle.click: Target page, context or browser has been closed Call log: [2m  - attempting click action[22m [2m    - waiting for element to be visible, enabled and stable[22m [2m    - element is visible, enabled and stable[22m [2m    - scrolling into view if needed[22m [2m    - done scrolling[22m [2m    - performing click action[22m      at openAllColl (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:35:156)     at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:412:147     at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)     at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:411:3)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J24 | Tap targets: every row "edit ›" is >= 44px tall at 390 and 430 (and its hit area really is: elementFromPoint), the Assumptions "How the numbers are built" summary is >= 44px, no sideways scroll at 320/390/430 | 1.64 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:433:18     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:430:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J25 | Breakdown table header at 320 and 390: "Equity" and its (i) sit on one line, "Cash flow/mo" does not wrap, the header cells are right-aligned over their numbers and nothing overflows | 1.64 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:448:18     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:445:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J26 | Months boxes round to whole months and cap at 600: 1.5 -> 2 with a "Rounded" note, 100000 -> 600 with a "Capped" note (asset page and Finances), and the date under the box matches | 2.05 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:462:39     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:461:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J27 | % handling is consistent: 5% in a dollar box stays as typed with a hint until you leave, then goes back with "No % in a dollar box, kept"; 4% in a percent box stays 4% while typing and becomes 4 on leaving; at 320 the (i) and the ▸ arrow stay glued to their last word | 1.64 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:475:39     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:474:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J28 | Remove-all: a Remove button sits next to Finances and Settings on the Planned page only; it asks first, files the portfolio in Saved, removes every planned asset (bought ones stay), Undo restores; the Saved page has the same action; nothing overflows at 320 | 1.23 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:494:39     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:493:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J29 | Category cards end with a "Monthly income and expenses" list instead of the grey Lasts note: total income (cash flow without any expense), each expense, cash flow before the loan payment and cash flow after all expenses; the lines add up and the last line equals the sum of the rows' "now" cash flows; no raw template text; no overflow at 320 | 1.23 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:509:39     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:508:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J30 | Calculated boxes always match the price you typed: type a plain price, stop for a moment while still in the box, and Down payment $ and Loan amount show 25% / 75% of it (no stale numbers); math such as 1000000*16 is still not applied until you leave the box | 1.03 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:526:39     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:525:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J31 | Business Total revenue box: an amount plus per month / per year in any common form ("1,200,000/yr", "$1.2M per year", "100k/month", "90000 mo", "15000*12/yr", "1.2m/y") lands as the MONTHLY revenue; a bare trailing m is million, "/m" is a month; "8000/week" is rejected politely; "100/yr/mo" says Check the math and keeps the number | 1.64 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:541:39     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:540:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J32 | Business asset page: Total revenue + Profit margin are the inputs, Owner profit (per month and per year) is auto and read-only = revenue x margin; it drives the engine (rent), the row and the Monthly income and expenses lines; a margin edit changes owner profit; there is no editable Monthly owner profit box | 1.44 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:554:39     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:553:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J33 | Seeded businesses keep their owner profit and show revenue = profit / 20%; default plan numbers are unchanged; an old portfolio / backup without revenue or margin loads unchanged (revenue and margin stay empty, nothing rewritten) | 1.23 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:572:39     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:571:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J34 | New business asset page at 320 and 390: no horizontal scroll, every box and button at least 44px tall, nothing overflows its row | 0.82 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:586:46     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:584:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J35 | Add flow, home type: Single family | Multi-family choice (a segmented control like Home / Commercial / Business); single keeps today's list and button; multi shows units, five one-tap presets and Building / Pack of houses | 1.64 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:599:34     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:598:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J36 | Add flow, unit count: whole numbers 2-500 only; 0, 1, 501, abc and 2.5 are refused with a short hint and the last good number is kept; 2*3 and 1,2 style math work like every other number box | 1.64 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:615:34     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:614:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J37 | Add flow, loan options: every multi-family option is listed, the ones that do not fit the unit count are greyed with a one-line reason (not hidden), the first fitting one is preselected, every option has an (i), info-only options are labelled | 1.64 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:630:34     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:629:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J38 | Multi-family asset page: N units in the header and row ("Pack of 5 houses"), rent per unit and total rent (auto), per-unit costs table, reserve and other costs with (i), the expense ratio check, the collapsible guide; the breakdown adds up | 2.05 | 0.00 | CRASH in check: page.goto: Target page, context or browser has been closed     at load (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:25:16)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:644:36     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:642:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J39 | Multi-family persistence: kind / units / pack survive a reload, Undo after Remove, Saved, backup export and restore; the default plan is untouched and nothing else changes | 1.64 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:667:34     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:666:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J40 | Start from an example: a quiet collapsed line near the bottom; open, pick, Add = 3 taps for Home, Multi-family, Commercial and Business; the asset equals the example; (i), clear, Back, keyboard and Escape work | 2.87 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)     at exPrep (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:683:47)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:688:13     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:685:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J41 | Examples persist like any asset: reload, Undo after Remove, Saved, backup and restore keep every field; the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes) | 1.23 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)     at exPrep (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:683:47)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:708:65     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:706:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J42 | Edit an example: Edit beside the (i) opens the editor; calculator math, /yr revenue and units math work; the live line and warnings follow; Save keeps it across reload and shows Edited; the added asset equals the edited example; Reset returns only that example; Back asks before discarding | 3.29 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at openEd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:722:63)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:732:11     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:730:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J43 | Editing and the rest of the app: multi-family units re-check the loan and per-unit costs, the loan picker updates down payment and cash, revenue per year keeps profit = revenue x margin, future dollars and tight widths work, backup / Saved / Undo / examples already owned behave, storage unavailable and two tabs and an old cached engine do not break it | 3.70 | 0.00 | CRASH in check: page.setViewportSize: Target page, context or browser has been closed     at openEd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:722:63)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:758:11     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:756:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J44 | Build stamp: app.js, engine.js, info.js, style.css (as --build) and the service worker cache name carry one hash of the four files; editing a file without restamping is caught; stamp.py and build-artifact.py write it | 1.85 | 0.00 | CRASH in check: page.goto: Target page, context or browser has been closed     at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:827:11     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:816:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J45 | Mixed versions: an old engine.js under a new app.js is detected at start, caches are purged, the service worker removed and the page reloads exactly ONCE (no loop), the event is logged, the stored portfolio is untouched; if it is still mixed the notice shows instead; a stale cache name heals the same way, but never after the person has touched the page | 2.46 | 0.00 | CRASH in check: browser.newContext: Target page, context or browser has been closed     at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)     at async rawCtx (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:812:42)     at async mkp (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:835:55)     at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:837:29     at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)     at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:832:3)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J46 | Safety copies are taken BEFORE a migration, an additions append, an unreadable save, loading a sample, Remove all planned, opening a Saved portfolio, a backup restore, removing an asset, and once a day; each copy equals the state just before; Restore brings back the exact copy (deep-equal), files the current state first and offers Undo | 3.29 | 0.00 | CRASH in check: page.goto: Target page, context or browser has been closed     at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:860:48     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:856:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J47 | Safety ring limits: at most 5 copies, oldest dropped, size capped, newest first, quota errors and a throwing localStorage never throw and never lose the newest copy; the app still works and Undo still shows | 1.44 | 0.00 | CRASH in check: browser.newContext: Target page, context or browser has been closed     at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)     at async rawCtx (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:812:42)     at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:897:23     at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)     at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:887:3)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J48 | Portfolio replaced: a start whose state is the default plan with other asset ids than the last-known fingerprint, with no logged migration / sample / restore explaining it, shows "may have been replaced" with Restore my previous portfolio; nothing is restored by itself; restore returns the earlier portfolio; explained or normal starts show nothing | 2.46 | 0.00 | CRASH in check: page.goto: Target page, context or browser has been closed     at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:911:11     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:906:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J49 | Anomaly monitor: NaN in a KPI, a changed total, a failed read-back, mismatched stamps and a wrong state version are each flagged with their code; the Planned page shows "Something looked wrong. Tap to copy a bug report" (one tap copies, dismiss works); errors, rejections and storage failures land in a 60-entry, size-capped event ring | 2.87 | 0.00 | CRASH in check: page.goto: Target page, context or browser has been closed     at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:939:11     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:928:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J50 | Bug report: 8 sections, parseable, <= 8,000 characters; with "Include my numbers" off no street names, addresses or dollar amounts (sentinel address and price), with it on prices and rents but still no address; Copy uses the clipboard with the select-by-hand fallback; the GitHub link is valid, <= 7,500 characters and says the full report was copied; the app makes no network request | 3.29 | 0.00 | CRASH in check: browser.newContext: Target page, context or browser has been closed     at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)     at async rawCtx (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:812:42)     at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:963:23     at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)     at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:961:3)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J51 | No slowdown: the safety / monitor start-up work costs under 50 ms on the default 36-asset plan (median of 5 starts), the monitor under 50 ms, and the invariants run in node in under 20 ms | 0.82 | 0.00 | CRASH in check: page.goto: Target page, context or browser has been closed     at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:997:98     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:996:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
-| J52 | Nothing else changed: backup export excludes safety and diagnostic keys, backup import still restores, Saved portfolios do not hold safety copies, and the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes) | 1.03 | 0.00 | CRASH in check: page.goto: Target page, context or browser has been closed     at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)     at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:1004:60     at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)     at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:1003:9)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16 |
+| J23 | Slow typing never commits a prefix: price 5, pause 450 ms, then /0 leaves the price alone; the "= result" hint shows while typing; the value lands on Enter / blur and the totals follow | 2.46 | 2.46 | 5/5 sub-checks pass |
+| J24 | Tap targets: every row "edit ›" is >= 44px tall at 390 and 430 (and its hit area really is: elementFromPoint), the Assumptions "How the numbers are built" summary is >= 44px, no sideways scroll at 320/390/430 | 1.64 | 1.64 | 4/4 sub-checks pass |
+| J25 | Breakdown table header at 320 and 390: "Equity" and its (i) sit on one line, "Cash flow/mo" does not wrap, the header cells are right-aligned over their numbers and nothing overflows | 1.64 | 1.64 | 6/6 sub-checks pass |
+| J26 | Months boxes round to whole months and cap at 600: 1.5 -> 2 with a "Rounded" note, 100000 -> 600 with a "Capped" note (asset page and Finances), and the date under the box matches | 2.05 | 2.05 | 5/5 sub-checks pass |
+| J27 | % handling is consistent: 5% in a dollar box stays as typed with a hint until you leave, then goes back with "No % in a dollar box, kept"; 4% in a percent box stays 4% while typing and becomes 4 on leaving; at 320 the (i) and the ▸ arrow stay glued to their last word | 1.64 | 1.64 | 6/6 sub-checks pass |
+| J28 | Remove-all: a Remove button sits next to Finances and Settings on the Planned page only; it asks first, files the portfolio in Saved, removes every planned asset (bought ones stay), Undo restores; the Saved page has the same action; nothing overflows at 320 | 1.23 | 1.23 | 7/7 sub-checks pass |
+| J29 | Category cards end with a "Monthly income and expenses" list instead of the grey Lasts note: total income (cash flow without any expense), each expense, cash flow before the loan payment and cash flow after all expenses; the lines add up and the last line equals the sum of the rows' "now" cash flows; no raw template text; no overflow at 320 | 1.23 | 1.23 | 3/3 sub-checks pass |
+| J30 | Calculated boxes always match the price you typed: type a plain price, stop for a moment while still in the box, and Down payment $ and Loan amount show 25% / 75% of it (no stale numbers); math such as 1000000*16 is still not applied until you leave the box | 1.03 | 1.03 | 2/2 sub-checks pass |
+| J31 | Business Total revenue box: an amount plus per month / per year in any common form ("1,200,000/yr", "$1.2M per year", "100k/month", "90000 mo", "15000*12/yr", "1.2m/y") lands as the MONTHLY revenue; a bare trailing m is million, "/m" is a month; "8000/week" is rejected politely; "100/yr/mo" says Check the math and keeps the number | 1.64 | 1.64 | 29/29 sub-checks pass |
+| J32 | Business asset page: Total revenue + Profit margin are the inputs, Owner profit (per month and per year) is auto and read-only = revenue x margin; it drives the engine (rent), the row and the Monthly income and expenses lines; a margin edit changes owner profit; there is no editable Monthly owner profit box | 1.44 | 1.44 | 9/9 sub-checks pass |
+| J33 | Seeded businesses keep their owner profit and show revenue = profit / 20%; default plan numbers are unchanged; an old portfolio / backup without revenue or margin loads unchanged (revenue and margin stay empty, nothing rewritten) | 1.23 | 1.23 | 5/5 sub-checks pass |
+| J34 | New business asset page at 320 and 390: no horizontal scroll, every box and button at least 44px tall, nothing overflows its row | 0.82 | 0.82 | 4/4 sub-checks pass |
+| J35 | Add flow, home type: Single family | Multi-family choice (a segmented control like Home / Commercial / Business); single keeps today's list and button; multi shows units, five one-tap presets and Building / Pack of houses | 1.64 | 1.64 | 10/10 sub-checks pass |
+| J36 | Add flow, unit count: whole numbers 2-500 only; 0, 1, 501, abc and 2.5 are refused with a short hint and the last good number is kept; 2*3 and 1,2 style math work like every other number box | 1.64 | 1.64 | 13/13 sub-checks pass |
+| J37 | Add flow, loan options: every multi-family option is listed, the ones that do not fit the unit count are greyed with a one-line reason (not hidden), the first fitting one is preselected, every option has an (i), info-only options are labelled | 1.64 | 1.64 | 16/16 sub-checks pass |
+| J38 | Multi-family asset page: N units in the header and row ("Pack of 5 houses"), rent per unit and total rent (auto), per-unit costs table, reserve and other costs with (i), the expense ratio check, the collapsible guide; the breakdown adds up | 2.05 | 2.05 | 12/12 sub-checks pass |
+| J39 | Multi-family persistence: kind / units / pack survive a reload, Undo after Remove, Saved, backup export and restore; the default plan is untouched and nothing else changes | 1.64 | 1.64 | 10/10 sub-checks pass |
+| J40 | Start from an example: a quiet collapsed line near the bottom; open, pick, Add = 3 taps for Home, Multi-family, Commercial and Business; the asset equals the example; (i), clear, Back, keyboard and Escape work | 2.87 | 2.87 | 26/26 sub-checks pass |
+| J41 | Examples persist like any asset: reload, Undo after Remove, Saved, backup and restore keep every field; the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes) | 1.23 | 1.23 | 8/8 sub-checks pass |
+| J42 | Edit an example: Edit beside the (i) opens the editor; calculator math, /yr revenue and units math work; the live line and warnings follow; Save keeps it across reload and shows Edited; the added asset equals the edited example; Reset returns only that example; Back asks before discarding | 3.29 | 3.29 | 20/20 sub-checks pass |
+| J43 | Editing and the rest of the app: multi-family units re-check the loan and per-unit costs, the loan picker updates down payment and cash, revenue per year keeps profit = revenue x margin, future dollars and tight widths work, backup / Saved / Undo / examples already owned behave, storage unavailable and two tabs and an old cached engine do not break it | 3.70 | 3.70 | 26/26 sub-checks pass |
+| J44 | Build stamp: app.js, engine.js, info.js, style.css (as --build) and the service worker cache name carry one hash of the four files; editing a file without restamping is caught; stamp.py and build-artifact.py write it | 1.85 | 1.85 | 6/6 sub-checks pass |
+| J45 | Mixed versions: an old engine.js under a new app.js is detected at start, caches are purged, the service worker removed and the page reloads exactly ONCE (no loop), the event is logged, the stored portfolio is untouched; if it is still mixed the notice shows instead; a stale cache name heals the same way, but never after the person has touched the page | 2.46 | 2.46 | 9/9 sub-checks pass |
+| J46 | Safety copies are taken BEFORE a migration, an additions append, an unreadable save, loading a sample, Remove all planned, opening a Saved portfolio, a backup restore, removing an asset, and once a day; each copy equals the state just before; Restore brings back the exact copy (deep-equal), files the current state first and offers Undo | 3.29 | 3.29 | 16/16 sub-checks pass |
+| J47 | Safety ring limits: at most 5 copies, oldest dropped, size capped, newest first, quota errors and a throwing localStorage never throw and never lose the newest copy; the app still works and Undo still shows | 1.44 | 1.44 | 5/5 sub-checks pass |
+| J48 | Portfolio replaced: a start whose state is the default plan with other asset ids than the last-known fingerprint, with no logged migration / sample / restore explaining it, shows "may have been replaced" with Restore my previous portfolio; nothing is restored by itself; restore returns the earlier portfolio; explained or normal starts show nothing | 2.46 | 2.46 | 9/9 sub-checks pass |
+| J49 | Anomaly monitor: NaN in a KPI, a changed total, a failed read-back, mismatched stamps and a wrong state version are each flagged with their code; the Planned page shows "Something looked wrong. Tap to copy a bug report" (one tap copies, dismiss works); errors, rejections and storage failures land in a 60-entry, size-capped event ring | 2.87 | 2.87 | 15/15 sub-checks pass |
+| J50 | Bug report: 8 sections, parseable, <= 8,000 characters; with "Include my numbers" off no street names, addresses or dollar amounts (sentinel address and price), with it on prices and rents but still no address; Copy uses the clipboard with the select-by-hand fallback; the GitHub link is valid, <= 7,500 characters and says the full report was copied; the app makes no network request | 3.29 | 3.29 | 13/13 sub-checks pass |
+| J51 | No slowdown: the safety / monitor start-up work costs under 50 ms on the default 36-asset plan (median of 5 starts), the monitor under 50 ms, and the invariants run in node in under 20 ms | 0.82 | 0.82 | 3/3 sub-checks pass |
+| J52 | Nothing else changed: backup export excludes safety and diagnostic keys, backup import still restores, Saved portfolios do not hold safety copies, and the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes) | 1.03 | 1.03 | 4/4 sub-checks pass |
 
 ### J failures
 
-- **J23 Slow typing never commits a prefix: price 5, pause 450 ms, then /0 leaves the price alone; the "= result" hint shows while typing; the value lands on Enter / blur and the totals follow** (-2.46): CRASH in check: elementHandle.click: Target page, context or browser has been closed
-Call log:
-[2m  - attempting click action[22m
-[2m    - waiting for element to be visible, enabled and stable[22m
-[2m    - element is visible, enabled and stable[22m
-[2m    - scrolling into view if needed[22m
-[2m    - done scrolling[22m
-[2m    - performing click action[22m
+None.
 
-    at openAllColl (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:35:156)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:412:147
-    at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)
-    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:411:3)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: asset page price box, keyboard.type with pauses
-- **J24 Tap targets: every row "edit ›" is >= 44px tall at 390 and 430 (and its hit area really is: elementFromPoint), the Assumptions "How the numbers are built" summary is >= 44px, no sideways scroll at 320/390/430** (-1.64): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:433:18
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:430:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: default Planned page with lists open; assumptions page
-- **J25 Breakdown table header at 320 and 390: "Equity" and its (i) sit on one line, "Cash flow/mo" does not wrap, the header cells are right-aligned over their numbers and nothing overflows** (-1.64): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:448:18
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:445:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: default Planned page; breakdown header cells
-- **J26 Months boxes round to whole months and cap at 600: 1.5 -> 2 with a "Rounded" note, 100000 -> 600 with a "Capped" note (asset page and Finances), and the date under the box matches** (-2.05): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:462:39
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:461:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: Not before (months), job Ends in (months)
-- **J27 % handling is consistent: 5% in a dollar box stays as typed with a hint until you leave, then goes back with "No % in a dollar box, kept"; 4% in a percent box stays 4% while typing and becomes 4 on leaving; at 320 the (i) and the ▸ arrow stay glued to their last word** (-1.64): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:475:39
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:474:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: rent box, vacancy box, target toggle, stat grid labels
-- **J28 Remove-all: a Remove button sits next to Finances and Settings on the Planned page only; it asks first, files the portfolio in Saved, removes every planned asset (bought ones stay), Undo restores; the Saved page has the same action; nothing overflows at 320** (-1.23): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:494:39
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:493:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: Planned header, Saved page
-- **J29 Category cards end with a "Monthly income and expenses" list instead of the grey Lasts note: total income (cash flow without any expense), each expense, cash flow before the loan payment and cash flow after all expenses; the lines add up and the last line equals the sum of the rows' "now" cash flows; no raw template text; no overflow at 320** (-1.23): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:509:39
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:508:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: Planned and Real pages
-- **J30 Calculated boxes always match the price you typed: type a plain price, stop for a moment while still in the box, and Down payment $ and Loan amount show 25% / 75% of it (no stale numbers); math such as 1000000*16 is still not applied until you leave the box** (-1.03): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:526:39
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:525:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: asset page of a planned business
-- **J31 Business Total revenue box: an amount plus per month / per year in any common form ("1,200,000/yr", "$1.2M per year", "100k/month", "90000 mo", "15000*12/yr", "1.2m/y") lands as the MONTHLY revenue; a bare trailing m is million, "/m" is a month; "8000/week" is rejected politely; "100/yr/mo" says Check the math and keeps the number** (-1.64): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:541:39
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:540:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: new business asset page, Total revenue box
-- **J32 Business asset page: Total revenue + Profit margin are the inputs, Owner profit (per month and per year) is auto and read-only = revenue x margin; it drives the engine (rent), the row and the Monthly income and expenses lines; a margin edit changes owner profit; there is no editable Monthly owner profit box** (-1.44): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:554:39
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:553:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: new business asset page
-- **J33 Seeded businesses keep their owner profit and show revenue = profit / 20%; default plan numbers are unchanged; an old portfolio / backup without revenue or margin loads unchanged (revenue and margin stay empty, nothing rewritten)** (-1.23): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:572:39
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:571:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: asset page of a seeded business, engine plan, import of an old backup
-- **J34 New business asset page at 320 and 390: no horizontal scroll, every box and button at least 44px tall, nothing overflows its row** (-0.82): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:586:46
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:584:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: new business asset page at 320 and 390
-- **J35 Add flow, home type: Single family | Multi-family choice (a segmented control like Home / Commercial / Business); single keeps today's list and button; multi shows units, five one-tap presets and Building / Pack of houses** (-1.64): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:599:34
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:598:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: open Add, tap Multi-family, tap each preset
-- **J36 Add flow, unit count: whole numbers 2-500 only; 0, 1, 501, abc and 2.5 are refused with a short hint and the last good number is kept; 2*3 and 1,2 style math work like every other number box** (-1.64): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:615:34
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:614:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: type into the Number of units box
-- **J37 Add flow, loan options: every multi-family option is listed, the ones that do not fit the unit count are greyed with a one-line reason (not hidden), the first fitting one is preselected, every option has an (i), info-only options are labelled** (-1.64): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:630:34
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:629:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: compare the add screen with Engine.mfLoans for 2 / 4 / 5 pack / 20 / 50 / 51 units
-- **J38 Multi-family asset page: N units in the header and row ("Pack of 5 houses"), rent per unit and total rent (auto), per-unit costs table, reserve and other costs with (i), the expense ratio check, the collapsible guide; the breakdown adds up** (-2.05): CRASH in check: page.goto: Target page, context or browser has been closed
-    at load (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:25:16)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:644:36
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:642:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: add a 50-unit building and a pack of 5; read the asset page, the row and the Monthly income and expenses list
-- **J39 Multi-family persistence: kind / units / pack survive a reload, Undo after Remove, Saved, backup export and restore; the default plan is untouched and nothing else changes** (-1.64): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:667:34
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:666:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: add, reload, remove + Undo, Save + open, export + restore
-- **J40 Start from an example: a quiet collapsed line near the bottom; open, pick, Add = 3 taps for Home, Multi-family, Commercial and Business; the asset equals the example; (i), clear, Back, keyboard and Escape work** (-2.87): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)
-    at exPrep (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:683:47)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:688:13
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:685:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: on #add for each category: toggle, rows, pick, chip, Add; compare the stored asset with the engine example
-- **J41 Examples persist like any asset: reload, Undo after Remove, Saved, backup and restore keep every field; the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes)** (-1.23): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at goAdd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:596:43)
-    at exPrep (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:683:47)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:708:65
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:706:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: add one example per category, then reload / remove + Undo / Save / backup
-- **J42 Edit an example: Edit beside the (i) opens the editor; calculator math, /yr revenue and units math work; the live line and warnings follow; Save keeps it across reload and shows Edited; the added asset equals the edited example; Reset returns only that example; Back asks before discarding** (-3.29): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at openEd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:722:63)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:732:11
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:730:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: on #add: Edit, type, Save, reload, add, reset, back
-- **J43 Editing and the rest of the app: multi-family units re-check the loan and per-unit costs, the loan picker updates down payment and cash, revenue per year keeps profit = revenue x margin, future dollars and tight widths work, backup / Saved / Undo / examples already owned behave, storage unavailable and two tabs and an old cached engine do not break it** (-3.70): CRASH in check: page.setViewportSize: Target page, context or browser has been closed
-    at openEd (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:722:63)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:758:11
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:756:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: units, loan, revenue, unit toggle, backup, saved, storage stub, second tab, old engine
-- **J44 Build stamp: app.js, engine.js, info.js, style.css (as --build) and the service worker cache name carry one hash of the four files; editing a file without restamping is caught; stamp.py and build-artifact.py write it** (-1.85): CRASH in check: page.goto: Target page, context or browser has been closed
-    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:827:11
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:816:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: node: grader/stamp-check.js on v4/ and on a temp copy that is edited, restamped and bundled; browser: window.__app.stamps and the --build property
-- **J45 Mixed versions: an old engine.js under a new app.js is detected at start, caches are purged, the service worker removed and the page reloads exactly ONCE (no loop), the event is logged, the stored portfolio is untouched; if it is still mixed the notice shows instead; a stale cache name heals the same way, but never after the person has touched the page** (-2.46): CRASH in check: browser.newContext: Target page, context or browser has been closed
-    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)
-    at async rawCtx (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:812:42)
-    at async mkp (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:835:55)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:837:29
-    at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)
-    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:832:3)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: route engine.js to a copy with another stamp (first request only, then always), count page loads; add a stale portfolio-v4 cache
-- **J46 Safety copies are taken BEFORE a migration, an additions append, an unreadable save, loading a sample, Remove all planned, opening a Saved portfolio, a backup restore, removing an asset, and once a day; each copy equals the state just before; Restore brings back the exact copy (deep-equal), files the current state first and offers Undo** (-3.29): CRASH in check: page.goto: Target page, context or browser has been closed
-    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:860:48
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:856:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: inject states / click through each action and read rep-v4-safety
-- **J47 Safety ring limits: at most 5 copies, oldest dropped, size capped, newest first, quota errors and a throwing localStorage never throw and never lose the newest copy; the app still works and Undo still shows** (-1.44): CRASH in check: browser.newContext: Target page, context or browser has been closed
-    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)
-    at async rawCtx (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:812:42)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:897:23
-    at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)
-    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:887:3)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: node: Engine.Diag with a stub storage; browser: setItem throws for rep-v4-safety
-- **J48 Portfolio replaced: a start whose state is the default plan with other asset ids than the last-known fingerprint, with no logged migration / sample / restore explaining it, shows "may have been replaced" with Restore my previous portfolio; nothing is restored by itself; restore returns the earlier portfolio; explained or normal starts show nothing** (-2.46): CRASH in check: page.goto: Target page, context or browser has been closed
-    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:911:11
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:906:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: fake rep-v4-diag fingerprint + safety copy, then load the default plan
-- **J49 Anomaly monitor: NaN in a KPI, a changed total, a failed read-back, mismatched stamps and a wrong state version are each flagged with their code; the Planned page shows "Something looked wrong. Tap to copy a bug report" (one tap copies, dismiss works); errors, rejections and storage failures land in a 60-entry, size-capped event ring** (-2.87): CRASH in check: page.goto: Target page, context or browser has been closed
-    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:939:11
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:928:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: inject NaN into a KPI, stub the clipboard, fire errors; node: Engine.Diag.checks with faked inputs
-- **J50 Bug report: 8 sections, parseable, <= 8,000 characters; with "Include my numbers" off no street names, addresses or dollar amounts (sentinel address and price), with it on prices and rents but still no address; Copy uses the clipboard with the select-by-hand fallback; the GitHub link is valid, <= 7,500 characters and says the full report was copied; the app makes no network request** (-3.29): CRASH in check: browser.newContext: Target page, context or browser has been closed
-    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)
-    at async rawCtx (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:812:42)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:963:23
-    at async jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:15)
-    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:961:3)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: sentinel address 7731 Zebra Quartz Ln / $7,777,777; stub window.open and the clipboard; log page requests
-- **J51 No slowdown: the safety / monitor start-up work costs under 50 ms on the default 36-asset plan (median of 5 starts), the monitor under 50 ms, and the invariants run in node in under 20 ms** (-0.82): CRASH in check: page.goto: Target page, context or browser has been closed
-    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:997:98
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:996:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: window.__app.bootMs + monMs over 5 loads; node timing of Engine.Diag.checks
-- **J52 Nothing else changed: backup export excludes safety and diagnostic keys, backup import still restores, Saved portfolios do not hold safety copies, and the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes)** (-1.03): CRASH in check: page.goto: Target page, context or browser has been closed
-    at loadX (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:804:16)
-    at /home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:1004:60
-    at jcheck (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:13:21)
-    at Object.run (/home/user/Real-estate-portfolio-/prototype/grader/ux-grade.js:1003:9)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1053:16
-  - Reproduce: export backup text, restore it, read all rep-v4* keys
-
-## K. Design consistency and flow: **0.00 / 100** (separate scale; the multi-family screens against the existing design language)
+## K. Design consistency and flow: **100.00 / 100** (separate scale; the multi-family screens against the existing design language)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| K00 | Design module failed to run | 100.00 | 0.00 | ERROR: browser.newContext: Target page, context or browser has been closed     at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)     at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:21:15)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1059:20 |
+| K1 | Colours come only from the existing CSS variables: no hard-coded colour in the new CSS rules or in the new screens' inline styles, and every var() used is a defined token | 3.85 | 3.85 | 5/5 sub-checks pass |
+| K2 | Every piece of text on the new screens has contrast >= 4.5:1 in light and dark mode (greyed options, chips, hints, tables, the guide) | 4.49 | 4.49 | 2/2 sub-checks pass |
+| K3 | The new UI is built from the existing components: field rows (label + (i) + box), .card sections with the same collapsible header, segmented controls like Home / Commercial / Business, chips, loan cards with an (i), the cmp table, the warning box; at most a handful of new classes, all defined with tokens | 5.13 | 5.13 | 7/7 sub-checks pass |
+| K4 | Tap targets are >= 44px and nothing scrolls sideways at 320, 390 and 430 on every new screen; nothing is wider than its card | 3.85 | 3.85 | 6/6 sub-checks pass |
+| K5 | No text overlaps: the bounding boxes of every line of text on the new screens (and the greyed reasons, chips, table cells, (i) buttons) never collide, at 320 and 390 | 3.85 | 3.85 | 2/2 sub-checks pass |
+| K6 | Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use (no new size, margin, padding or radius) | 3.85 | 3.85 | 3/3 sub-checks pass |
+| K7 | The same state looks the same: the new Single / Multi and Building / Pack controls match the Home / Commercial / Business tabs; a selected multi-family loan card matches a selected single-family card; greyed cards are visibly different but readable | 2.56 | 2.56 | 4/4 sub-checks pass |
+| K8 | No walls of text on the new screens: every note is short (<= 170 characters), the guide shows scannable rows and a short checklist, and the long explanations live in (i) buttons | 2.56 | 2.56 | 2/2 sub-checks pass |
+| K9 | First-time flow: from the Add screen a multi-family asset is 3 taps away (Multi-family, a preset, Add); from the portfolio 3 taps with the default duplex; Back returns without adding anything; presets are one tap; the unit box has the numeric keyboard settings of the other boxes; the result opens on the asset page | 3.21 | 3.21 | 6/6 sub-checks pass |
+| K10 | Screenshots (dpr 2) of the new screens at 390 and 320 in light and dark are saved to grader/screens/mf-*.png, full height, with no sideways overflow | 1.92 | 1.92 | 1/1 sub-checks pass |
+| K11 | Examples control: colours come only from tokens (no hard-coded colour in its CSS or its inline styles), it reuses the loan card, (i), chip, link-button and empty-line components, and adds at most 2 new classes | 3.85 | 3.85 | 5/5 sub-checks pass |
+| K12 | Every piece of text on the example screens (closed line, 4 rows for each category, the chosen line) has contrast >= 4.5:1 in light and dark | 4.49 | 4.49 | 2/2 sub-checks pass |
+| K13 | Example screens: every button is >= 44px tall, nothing scrolls sideways or passes the edge, and no two lines of text overlap, at 320, 390 and 430 | 4.49 | 4.49 | 9/9 sub-checks pass |
+| K14 | Discreet and short flow: closed by default as one quiet 44px line (the same size and weight as the other link buttons) that adds at most 56px to the Add screen; the Add button stays in the first screen (390x844) wherever it was before; spacing, fonts and radii come from the existing sets; 3 taps to add; Back adds nothing | 4.49 | 4.49 | 9/9 sub-checks pass |
+| K15 | Screenshots (dpr 2) of the example screens at 390 and 320 in light and dark are saved to grader/screens/ex-*.png | 1.92 | 1.92 | 1/1 sub-checks pass |
+| K16 | Editor reuses the app: colours only from tokens (CSS and inline styles), no new class (only existing card, field, loan select, warning box, tag, chip, button, (i), confirm and live-line components), the loan picker is the same select as the asset page, fields use the same label + (i) + box | 4.49 | 4.49 | 4/4 sub-checks pass |
+| K17 | Every piece of text on the editor screens (fields, live line, warnings, tags, confirm, list with Edit and Edited) has contrast >= 4.5:1 in light and dark | 4.49 | 4.49 | 2/2 sub-checks pass |
+| K18 | Editor screens: every button, select and box is >= 44px tall, nothing scrolls sideways or passes the edge, no two lines of text overlap, at 320, 390 and 430 (also the list with the Edit buttons) | 4.49 | 4.49 | 9/9 sub-checks pass |
+| K19 | Flow and keyboard: first time = open the list, Edit, change a field, Save (4 taps) and the Add button is still there; Back asks before dropping changes and not otherwise; Escape closes; Tab reaches Edit and Enter opens the editor with focus on the first field; Escape returns focus to Edit; short on-screen text (notes <= 170 characters); the long text is in the (i) | 3.85 | 3.85 | 6/6 sub-checks pass |
+| K20 | Screenshots (dpr 2) of the editor screens at 390 and 320 in light and dark are saved to grader/screens/ex-edit-*.png | 1.92 | 1.92 | 1/1 sub-checks pass |
+| K21 | The safety and report UI adds no CSS of its own: style.css equals the shipped file apart from the build stamp line; no colour, hex or rgb in its templates; every inline style it uses is already used elsewhere in the app | 3.21 | 3.21 | 4/4 sub-checks pass |
+| K22 | Every piece of text on the new screens (copies list, confirm, report card, text box, both notices) has contrast >= 4.5:1 in light and dark mode | 4.49 | 4.49 | 2/2 sub-checks pass |
+| K23 | Built only from existing components: every class on the new screens is already used by the old screens (card, scard, sname, smeta, sstat, sact, btn, pbtn, plain, chip, link, migrate, warnbox, chips, seg, f, lb, note, confirm, info); no new class; the sections use the same collapsible header | 3.21 | 3.21 | 6/6 sub-checks pass |
+| K24 | Tap targets are >= 44px and nothing scrolls sideways or passes the edge at 320, 390 and 430 on every new screen | 3.85 | 3.85 | 6/6 sub-checks pass |
+| K25 | No text overlaps on the new screens (copies, confirm, report box, both notices), at 320 and 390 | 3.21 | 3.21 | 2/2 sub-checks pass |
+| K26 | Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use | 2.56 | 2.56 | 3/3 sub-checks pass |
+| K27 | Short first-time flow and short text: Assumptions to a copied bug report is 2 taps (open the section, Copy), the Planned notice copies in 1 tap, Restore is 3 taps (open, Restore, confirm); every note on the new screens is <= 170 characters and the long explanations are in the (i) entries | 3.85 | 3.85 | 6/6 sub-checks pass |
+| K28 | Screenshots (dpr 2) of the new screens at 390 and 320 in light and dark are saved to grader/screens/diag-*.png | 1.92 | 1.92 | 1/1 sub-checks pass |
 
 ### K failures
 
-- **K00 Design module failed to run** (-100.00): ERROR: browser.newContext: Target page, context or browser has been closed
-    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)
-    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:21:15)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1059:20
-  - Reproduce: node -e "require('./design-grade.js')"
+None.
 
-## N. Asset numbering: **0.00 / 100** (separate scale; policy and ideation in numbering-bugs.md)
+## N. Asset numbering: **100.00 / 100** (separate scale; policy and ideation in numbering-bugs.md)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| N00 | Numbering module failed to run | 100.00 | 0.00 | ERROR: browser.newContext: Target page, context or browser has been closed     at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)     at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/numbering-grade.js:43:15)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1065:18 |
+| N1 | Engine numbering(): contiguous 1..n per view in purchase order on 300 seeded random portfolios, pure, shifts by one on removal | 10.00 | 10.00 | 9/9 sub-checks pass |
+| N2 | The screenshot: one planned commercial + one planned home (+ a bought asset) show 1 and 2 in purchase order, nothing skipped | 10.00 | 10.00 | 11/11 sub-checks pass |
+| N3 | Hidden assets never take a Planned number: two bought assets, a bought commercial and business, a sold-in-plan asset | 10.00 | 10.00 | 30/30 sub-checks pass |
+| N4 | Remove an asset (first / middle / last) shifts every later number down by one at once, read without reloading, and again after a reload | 12.00 | 12.00 | 14/14 sub-checks pass |
+| N5 | Remove all planned assets, Undo, and add after Remove-all keep the numbers right (bought assets stay 1..m, new planned asset is 1) | 8.00 | 8.00 | 11/11 sub-checks pass |
+| N6 | Undo of a removal, Duplicate, Move up/down and the owned <-> planned toggle all leave contiguous numbers in order | 12.00 | 12.00 | 30/30 sub-checks pass |
+| N7 | Adding an asset (Add flow, an example, a bought asset) numbers it last in its own view and renumbers nothing else | 8.00 | 8.00 | 12/12 sub-checks pass |
+| N8 | Scenario load, Saved open, backup import, ADDITIONS append and an old unsorted save all give contiguous numbers in both views | 12.00 | 12.00 | 53/53 sub-checks pass |
+| N9 | Seeded random portfolios (home / commercial / business / multi-family, planned / bought / sold / merged): both pages contiguous, headers and labels agree, and after a random Remove | 10.00 | 10.00 | 135/135 sub-checks pass |
+| N10 | Every "#N" the app prints is a real number of its own view; Finances and Saved pages carry no stale numbers; the default plan is 1..36 in order and unchanged | 8.00 | 8.00 | 15/15 sub-checks pass |
 
 ### N failures
 
-- **N00 Numbering module failed to run** (-100.00): ERROR: browser.newContext: Target page, context or browser has been closed
-    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:93:15)
-    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/numbering-grade.js:43:15)
-    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1065:18
-  - Reproduce: node -e "require('./numbering-grade.js')"
+None.
