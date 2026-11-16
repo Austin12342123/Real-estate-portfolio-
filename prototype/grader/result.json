@@ -29,59 +29,15 @@
   },
   "results": [
     {
-      "id": "A25",
+      "id": "A21",
       "category": "A",
-      "name": "Saved portfolios: Rename, Duplicate and Delete (confirm; Cancel keeps it) work, persist after reload, and the empty state returns when the last one is deleted",
-      "points": 3.75,
-      "rawPoints": 2.5,
-      "earned": 3.75,
+      "name": "Main screen: always-visible tab bar Planned | Real | Saved (even when Real is empty), exactly one page at a time, tabs >= 44px at 320/390/430 with no sideways scroll, swipe or tap, page remembered while you move around",
+      "points": 18,
+      "rawPoints": 3,
+      "earned": 18,
       "ratio": 1,
       "detail": "7/7 sub-checks pass",
-      "repro": "Saved page card buttons"
-    },
-    {
-      "id": "A26",
-      "category": "A",
-      "name": "Backup includes the saved portfolios and the start-page choice; Restore brings them back (also after the storage was wiped)",
-      "points": 3.75,
-      "rawPoints": 2.5,
-      "earned": 3.75,
-      "ratio": 1,
-      "detail": "5/5 sub-checks pass",
-      "repro": "Assumptions > Show backup; wipe; paste; restore"
-    },
-    {
-      "id": "A27",
-      "category": "A",
-      "name": "Default plan on screen: in TODAY'S dollars net worth at least $125.0M (up to about $135M) and cash flow at least $1.3M a month at year 28 (the future-dollar amounts, at the cost-increase rate, shown smaller), in one clear plan line and in the KPIs",
-      "points": 3,
-      "rawPoints": 2,
-      "earned": 3,
-      "ratio": 1,
-      "detail": "4/4 sub-checks pass",
-      "repro": "Fresh load: read the plan line and KPIs"
-    },
-    {
-      "id": "A30",
-      "category": "A",
-      "name": "Opening an old save (v9-v18): no pop-up or Undo banner, the working portfolio is the current default plan (net worth >= $125M in today's dollars), and the old portfolio sits in Saved as \"Portfolio N (before the update)\" and loads back exactly",
-      "points": 3,
-      "rawPoints": 2,
-      "earned": 3,
-      "ratio": 1,
-      "detail": "4/4 sub-checks pass",
-      "repro": "Load a v16 state, read Planned and Saved, open the filed copy"
-    },
-    {
-      "id": "A31",
-      "category": "A",
-      "name": "Today's dollars on screen: with 5% cost increase and a sold asset, the Planned top card, category strips, breakdown and every row show the engine's future-dollar figure divided by 1.05^(months/12) (28 years at the plan end), the smaller line shows the future-dollar figure, and the Saved card follows the same rule",
-      "points": 4.5,
-      "rawPoints": 3,
-      "earned": 4.5,
-      "ratio": 1,
-      "detail": "9/9 sub-checks pass",
-      "repro": "Load a state with inflation 5%; read KPIs, breakdown, rows; save it and read the Saved card"
+      "repro": "Main page: read the tab bar, switch pages, resize, swipe, open an asset and come back"
     },
     {
       "id": "C01",
