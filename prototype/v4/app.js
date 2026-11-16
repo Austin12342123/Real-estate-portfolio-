@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'17fe2f82'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'4fff5c6b'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
@@ -98,8 +98,8 @@
   const stamp = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const H = (id) => E.H(S, id);
   /* viewer-safe routes: #house-<id>, #assumptions, #import-<id|new> */
-  const hashOf = (p) => (!p ? '#' : p === 'settings' ? '#assumptions' : p.startsWith('h/') ? '#house-' + p.slice(2) : p.startsWith('import/') ? '#import-' + p.slice(7) : p === 'add' ? '#add' : p === 'finances' ? '#finances' : '#');
-  const routeOf = () => { const h = location.hash.slice(1); return h === 'assumptions' ? 'settings' : h.startsWith('house-') ? 'h/' + h.slice(6) : h.startsWith('import-') ? 'import/' + h.slice(7) : h === 'add' ? 'add' : h === 'finances' ? 'finances' : ''; };
+  const hashOf = (p) => (!p ? '#' : p === 'settings' ? '#assumptions' : p.startsWith('h/') ? '#house-' + p.slice(2) : p.startsWith('import/') ? '#import-' + p.slice(7) : p === 'add' ? '#add' : p === 'finances' ? '#finances' : p === 'order' ? '#order' : '#');
+  const routeOf = () => { const h = location.hash.slice(1); return h === 'assumptions' ? 'settings' : h.startsWith('house-') ? 'h/' + h.slice(6) : h.startsWith('import-') ? 'import/' + h.slice(7) : h === 'add' ? 'add' : h === 'finances' ? 'finances' : h === 'order' ? 'order' : ''; };
   const goto = (p) => { location.hash = hashOf(p); };
 
   /* ---------- formatting ---------- */
@@ -252,13 +252,46 @@
     ['#nwx', '#nwd'].forEach((q) => svg.querySelector(q).setAttribute('visibility', 'hidden')); const tip = document.getElementById('nwtip'); if (tip) tip.hidden = true;
   }
 
-  /* Can the plan buy this planned asset? One test, one clock (months from today): the pool of everything above it (what you own plus the planned assets above it) pays when its borrowing room + the cash it holds >= the cash the asset needs. */
+  /* Can the plan buy this planned asset? One test list (E.feasible): funding from the pool on the one clock (months from today), the lender tests, reserves, income fit, deal quality, stress tests and concentration.
+     The result is worked out again from the live state every time (memoised only per plan object, so an edit, an added / removed / reordered asset always shows). */
+  const FEM = new WeakMap();
+  function feasFor(pl) {
+    const raw = pl.raw || pl; let m = FEM.get(raw);
+    if (!m) { const fin = S.p ? E.finance(S, raw) : null; m = { fin, fe: fin && fin.feas ? fin.feas : E.feasible(S, raw, null) }; FEM.set(raw, m); }
+    return m;
+  }
   function verdictFor(pl, h) {
-    const tr = pl.trust[h.id], a = E.afford(S, h, pl);
+    const tr = pl.trust[h.id], A = feasFor(pl).fe.assets[h.id];
+    if (A) { const cls = A.verdict === 'no' ? 'bad' : A.verdict === 'tight' ? 'warn' : 'ok';
+      return { cls, word: cls === 'bad' ? 'Not possible' : cls === 'warn' ? 'Possible, tight' : 'Possible', why: A.short ? A.short.replace(/^(Not possible|Tight|Late) - /, '') : '', verdict: A.verdict, kind: A.kind }; }
+    const a = E.afford(S, h, pl);
     if (!tr.ok) return { cls: 'bad', word: 'Not possible', why: '' };
     if (a.cls === 'bad') return { cls: 'bad', word: 'Not possible', why: a.dti >= 999 ? 'no qualifying income is set' : 'lenders would decline: debt-to-income ' + r(a.dti) + '% vs ' + S.g.dti + '% limit' };
     if (a.cls === 'warn') return { cls: 'warn', word: 'Possible, tight', why: 'debt-to-income ' + r(a.dti) + '% is near the ' + S.g.dti + '% limit' };
     return { cls: 'ok', word: 'Possible', why: '' };
+  }
+  /* the shortfall panel (planned assets that are not 'yes') and the 'Can I buy this?' scorecard (every planned asset): both read E.feasible / E.shortfall for the live plan */
+  const LVC = { ok: 'ok', caution: 'warn', fail: 'bad' };
+  function buyPanel(pl, h) {
+    const m = feasFor(pl), A = m.fe.assets[h.id]; if (!A) return '';
+    const raw = pl.raw || pl, sf = A.verdict !== 'yes' ? E.shortfall(S, raw, m.fin, h.id, { sim: true }) : null, vd = verdictFor(pl, h);
+    const sgnv = (n) => (n < -0.5 ? '−' : '') + $f(Math.abs(n));
+    const ln = (k, cls, tid) => { const l = sf.lines[k], v = l.value; return `<div class="f sfl" data-testid="${tid || 'sf-' + k}"><span class="lb">${esc(l.label)}<small class="dh">${esc(l.how)}</small></span><b class="${cls}" data-v="${Math.round(v)}">${sgnv(v)}</b></div>`; };
+    let panel = '';
+    if (sf) {
+      const c = sf.cash, mo = sf.monthly, top = A.top;
+      panel = `<section class="card sfp ${vd.cls}" data-testid="shortfall-panel" data-verdict="${A.verdict}" data-kind="${A.kind}"><div class="f head"><span class="lb"><b>Can I buy this?</b>${infoBtn('buyscore')}</span><span class="vchip ${vd.cls}" data-testid="sf-verdict">${vd.word}</span></div>
+        <p class="note sfwhy" data-testid="sf-why">${esc(top ? top.text : '')}</p>
+        <div class="sfh">Cash to close · month ${c.month}${c.closest ? ' (closest the plan gets)' : ''}</div>
+        ${ln('cashNeeded', '')}${ln('savings', '')}${ln('trustCash', '')}${ln('room', '')}${ln('pull', '')}${ln('downShort', c.short > 0.5 ? 'bad' : 'ok')}${ln('uncovered', c.uncovered > 0.5 ? 'bad' : 'ok')}
+        <div class="sfh">Every month · today's dollars</div>
+        ${ln('payment', '')}${ln('available', '')}${ln('monthShort', mo.covered ? 'ok' : 'bad')}
+        <div class="sfh">What needs to change</div>${sf.changes.length ? `<ol class="sfch" data-testid="sf-changes">${sf.changes.map((x) => `<li data-testid="sf-change-${x.id}">${esc(x.text)}</li>`).join('')}</ol>` : '<p class="note" data-testid="sf-changes">Nothing in the numbers is short. The note above says what is tight.</p>'}
+        <p class="note">Worked out from your live plan each time. Cash amounts are the plan's own, at the month it buys this (prices are today's, nothing is inflated); monthly amounts are in today's dollars.</p></section>`;
+    }
+    const cs = A.criteria, worst = cs.reduce((a2, x) => Math.max(a2, x.status === 'fail' ? 2 : x.status === 'caution' ? 1 : 0), 0), open = !(UI.coll.score === undefined ? worst === 0 : UI.coll.score), nBad = cs.filter((x) => x.status !== 'ok').length;
+    const card = `<section class="card checks ${worst === 0 ? 'safe' : worst === 2 ? 'over' : 'caution'}" data-testid="scorecard" data-verdict="${A.verdict}"><div class="chkh"><h2 class="chkt">Can I buy this?${infoBtn('buyscore')}</h2><button type="button" class="chip link chkbtn" data-coll="score" aria-expanded="${open}" data-testid="scorecard-details">Details ${open ? '▾' : '▸'}</button></div>${worst === 0 ? '<p class="chkok" data-testid="scorecard-ok">✓ Every test passes</p>' : `<p class="chkflag ${worst === 2 ? 'bad' : 'warn'}" data-testid="scorecard-flag">${nBad} to look at</p>`}${open ? `<div class="chklist" data-testid="scorecard-list">${cs.map((x) => `<div class="chk lv-${LVC[x.status]}" data-testid="sc-${x.id}" data-lvl="${LVC[x.status]}" data-status="${x.status}"><div class="ct"><b>${esc(x.label)}</b><span class="cv lv-${LVC[x.status]}">${esc(x.measured)}</span></div><small>${esc(x.how)}${x.limit ? ' · limit: ' + esc(x.limit) : ''}</small></div>`).join('')}</div>` : ''}</section>`;
+    return panel + card;
   }
   /* the one-line math under a planned row: what it needs, what the pool has, and the month (full numbers are in the row's panel and on the asset page) */
   function shortFor(pl, h) {
@@ -309,6 +342,7 @@
       return `<div class="panel" data-testid="asset-panel" data-for="${h.id}">
         ${soldBy ? '<p class="note" style="margin:0 0 6px">Sold in this plan, so there is no extra payment to set.</p>' : `<label class="f ex"><span class="lb">Extra payment / month${infoBtn('extra')}</span><span class="iw"><em>$</em><input inputmode="text" data-num="1" data-pre="$" data-suf="" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" data-testid="extra-input" data-p="${P}extra" data-k="x-${h.id}" aria-label="Extra monthly payment for ${esc(h.addr)}" value="${grp(X)}"></span></label>`}
         ${eff}
+        ${!soldBy && h.status !== 'owned' ? field('Buy position', P + 'pos', bno[h.id], { info: 'buypos' }) : ''}
         <div class="pact">${mv ? `<button class="pbtn" data-move="${h.id}:-1" data-testid="move-up" ${ci === 0 ? 'disabled' : ''}>↑ Move up</button><button class="pbtn" data-move="${h.id}:1" data-testid="move-down" ${ci === vis.length - 1 ? 'disabled' : ''}>↓ Move down</button>` : ''}<button class="pbtn" data-dup="${h.id}" data-testid="row-duplicate">Duplicate</button><button class="pbtn" data-go="h/${h.id}" data-testid="open-details">Open details ›</button></div>
         ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? The trust re-works the funding of every asset after it.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="rm" data-del="${h.id}" data-testid="row-remove" aria-label="Remove ${esc(h.addr)}">Remove</button>`}</div>`;
     };
@@ -386,7 +420,7 @@
     const lastPayoff = Math.max(0, ...ownedAll.filter((h) => pl.V[h.id].B0 > 0.5).map((h) => pl.loanEnd[h.id]));
     const head = `<h1>Portfolio <span class="hb">${page === 'planned' ? '<button class="txtbtn dng" data-clear-ask data-testid="clear-plan-btn">Remove</button>' : ''}<button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>
         ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
-    <div class="seg pagetabs" role="tablist" aria-label="Portfolio pages" data-testid="page-tabs">${[['planned', 'Planned'], ['real', 'Real'], ['saved', 'Saved']].map(([k, l]) => `<button type="button" role="tab" id="tab-${k}" data-page="${k}" class="${page === k ? 'on' : ''}" aria-selected="${page === k}" data-testid="tab-${k}">${l}</button>`).join('')}</div>${page === 'planned' ? notesHtml() : ''}${page === 'planned' && ask === 'clearplan' ? clearBox() : ''}${page === 'planned' && UI.migNote ? `<div class="migrate" role="status" data-testid="migrate-note"><span>Your earlier portfolio is saved in Saved as “${esc(UI.migNote)}”.</span><button type="button" class="chip link" data-mig-dismiss data-testid="migrate-dismiss" aria-label="Dismiss this note">Dismiss</button></div>` : ''}`;
+    <div class="seg pagetabs" role="tablist" aria-label="Portfolio pages" data-testid="page-tabs">${[['planned', 'Planned'], ['real', 'Real'], ['saved', 'Saved']].map(([k, l]) => `<button type="button" role="tab" id="tab-${k}" data-page="${k}" class="${page === k ? 'on' : ''}" aria-selected="${page === k}" data-testid="tab-${k}">${l}</button>`).join('')}</div>${page === 'planned' && S.houses.filter((x) => x.status !== 'owned').length > 1 ? '<button type="button" class="linkbtn leftbtn" data-go="order" data-testid="buy-order-link">Buy order: change which asset is bought first ›</button>' : ''}${page === 'planned' ? notesHtml() : ''}${page === 'planned' && ask === 'clearplan' ? clearBox() : ''}${page === 'planned' && UI.migNote ? `<div class="migrate" role="status" data-testid="migrate-note"><span>Your earlier portfolio is saved in Saved as “${esc(UI.migNote)}”.</span><button type="button" class="chip link" data-mig-dismiss data-testid="migrate-dismiss" aria-label="Dismiss this note">Dismiss</button></div>` : ''}`;
     const tail = `<button class="linkbtn" data-go="import/new" data-testid="import-link">Import from a listing</button>`;
     if (page === 'saved') return head + savedPage(pl);
     /* ---------- Real: only what you have bought. Its totals are the sums of the rows shown (plan-end numbers, like every row) ---------- */
@@ -426,7 +460,10 @@
       const short = Math.max(0, -kp.minLiquid), lvC = kp.minLiquid < 0 ? 'bad' : kp.reserveGap > 0.5 || low < Math.min(rsvLow, kp.reserveTarget0) - 0.5 ? 'warn' : 'ok';
       chkRows.push({ id: 'check-cushion', lvl: lvC, label: 'Cash cushion', val: kp.minLiquid < 0 ? 'short ' + $c(short) : 'lowest ' + $f(low), info: 'cushion', sub: kp.minLiquid < 0 ? `Your cash runs out ${inm(kp.firstShortMonth)} and would be about ${$f(short)} short at the lowest point, ${inm(kp.minLiquidMonth)}.` : `Lowest cash is ${$f(low)} ${lowM <= 0 ? 'today (' + dt(0) + ')' : inm(lowM)}; your cushion at that point is ${$f(rsvLow)}${isToday() ? ' (both in today\'s dollars)' : ' (the cushion grows with inflation)'}.` }); }
     if (lastsAll.length) { const w = lastsAll.slice().sort((a, b) => a.months - b.months)[0], lv = w.months < SAFE.lastsOver ? 'bad' : w.months < SAFE.lastsCaution ? 'warn' : 'ok'; chkRows.push({ id: 'check-lasts', lvl: lv, label: 'If big earners stop', val: isFinite(w.months) ? lastTxt(w.months) : 'covered', info: 'lasts', sub: isFinite(w.months) ? `If about 45% of your biggest ${w.name} stopped paying, your cash would cover the shortfall for ${lastTxt(w.months)}.` : 'Even if your biggest earners stopped paying, nothing would run short.' }); }
-    if (pl.unfunded.length || pl.lastBuy > SAFE.paceCaution * pl.planM) chkRows.push({ id: 'check-pace', lvl: pl.unfunded.length ? 'bad' : 'warn', label: 'Plan timing', val: noStart ? 'cannot start' : pl.unfunded.length ? pl.unfunded.length + ' never funded' : mond(pl.lastBuy), info: 'planpace', sub: noStart ? 'None of the ' + nPlan0 + ' planned asset' + (nPlan0 === 1 ? '' : 's') + ' can be funded under the current numbers, so the plan cannot start. The first purchase needs your savings above the cushion plus your job money, and they do not reach it.' : pl.unfunded.length ? pl.unfunded.length + ' planned asset' + (pl.unfunded.length > 1 ? 's are' : ' is') + ' never funded under the current numbers.' : `The last purchase is ${pl.lastBuy > pl.planM ? 'after the plan ends' : 'late in the plan'} (${Math.round(pl.planM / 12)} year${Math.round(pl.planM / 12) === 1 ? '' : 's'}, ${pl.planM} month${pl.planM === 1 ? '' : 's'}).` });
+    if (pl.unfunded.length || pl.lastBuy > SAFE.paceCaution * pl.planM) chkRows.push({ id: 'check-pace', lvl: pl.unfunded.length || pl.lastBuy > pl.planM ? 'bad' : 'warn', label: 'Plan timing', val: noStart ? 'cannot start' : pl.unfunded.length ? pl.unfunded.length + ' never funded' : mond(pl.lastBuy), info: 'planpace', sub: noStart ? 'None of the ' + nPlan0 + ' planned asset' + (nPlan0 === 1 ? '' : 's') + ' can be funded under the current numbers, so the plan cannot start. The first purchase needs your savings above the cushion plus your job money, and they do not reach it.' : pl.unfunded.length ? pl.unfunded.length + ' planned asset' + (pl.unfunded.length > 1 ? 's are' : ' is') + ' never funded under the current numbers.' : `The last purchase is ${pl.lastBuy > pl.planM ? 'after the plan ends' : 'late in the plan'} (${Math.round(pl.planM / 12)} year${Math.round(pl.planM / 12) === 1 ? '' : 's'}, ${pl.planM} month${pl.planM === 1 ? '' : 's'}).` });
+    { const fe = feasFor(pl).fe, notYes = fe.planned.map((id) => fe.assets[id]).filter((x) => x.verdict !== 'yes'); /* the can-I-buy-this tests: one row for the planned assets, plus the portfolio tests the other rows do not already show */
+      if (notYes.length) { const top = notYes.slice().sort((a2, b2) => (b2.verdict === 'no') - (a2.verdict === 'no'))[0]; chkRows.push({ id: 'check-buy', lvl: notYes.some((x) => x.verdict === 'no') ? 'bad' : 'warn', label: 'Assets you can buy', val: fe.planned.length - notYes.length + ' of ' + fe.planned.length, info: 'buyscore', sub: esc(top.addr) + ': ' + esc(top.top ? top.top.text : '') + (notYes.length > 1 ? ' (+' + (notYes.length - 1) + ' more)' : '') }); }
+      fe.criteria.filter((c) => /^p-(cltv|concentration)$/.test(c.id) && c.status !== 'ok').forEach((c) => chkRows.push({ id: 'check-' + c.id.slice(2), lvl: c.status === 'fail' ? 'bad' : 'warn', label: c.label, val: c.measured, info: 'buyscore', sub: esc(c.how) })); }
     const chkWorst = Math.max(0, ...chkRows.map((x) => LV[x.lvl])), chkAll = chkWorst === 0, chkCollapsed = UI.coll.checks === undefined ? chkAll : UI.coll.checks, chkOpen = !chkCollapsed;
     CDEF.checks = chkAll; /* all safe: the rows stay folded behind Details; something to look at: they start open. The Details button is there in both states and never moves. */
     const nFlag = chkRows.filter((x) => x.lvl !== 'ok').length;
@@ -460,6 +497,20 @@
       ${homeWarn}${sn.cash > 0.5 ? `<p class="note" data-testid="cash-note">Trust cash = cash the trust holds: what is kept after selling costs and the loan payoff, and pooled cash flow not yet spent${infoBtn('cashfromselling')}. It counts in net worth.</p>` : ''}${drivers}
       <div class="seg" role="tablist"><button data-tab="timeline" class="${tab === 'timeline' && UI.open ? 'on' : ''}" data-testid="timeline-toggle">Timeline</button><button data-tab="nw" class="${tab === 'nw' && UI.open ? 'on' : ''}" data-testid="networth-toggle">Net worth</button><button data-tab="hide" class="${!UI.open ? 'on' : ''}">Hide</button></div>
       ${UI.open ? (tab === 'nw' ? nwChart(pl) : timeline(pl)) : ''}</section>`;
+  }
+
+  /* ---------- Buy order: every planned asset in one list, across homes, commercial and businesses. The list order IS the buy order (E.reorder); an asset is never bought before one above it. ---------- */
+  function orderPage() {
+    const pl = PLAN(S), list = S.houses.filter((h) => h.status !== 'owned'), n = list.length;
+    const rows = list.map((h, i) => { const vd = verdictFor(pl, h), tr = pl.trust[h.id], type = h.type || 'house', P = 'h.' + h.id + '.', sold = !!(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM);
+      const when = !tr || !tr.ok ? 'never funded in the plan' : 'funded ' + mond(tr.month), why = vd.why ? ' · ' + esc(vd.why) : '';
+      return `<div class="rw" data-rw="${h.id}"><div class="row ord" data-row="${h.id}" data-handle="1" data-testid="order-row" data-pos="${i + 1}"><div class="r1"><span class="nm"><button type="button" class="draghandle" data-testid="order-handle" aria-label="Hold and drag to move ${esc(h.addr)}" title="Hold and drag">⋮⋮</button><span class="addr" data-go="h/${h.id}" data-testid="order-name"><b class="bn" data-testid="order-no" aria-label="Buy number ${i + 1}">${i + 1}</b>${addrNb(h.addr, '')}</span><span class="pay"><span class="tag">${TL[type]}</span> price ${$c(h.price)}${sold ? ' · sold in the plan' : ''}</span></span></div>
+        <div class="r2"><div class="fcol"><span class="locline" data-testid="order-status"><span class="vchip sm ${vd.cls}">${vd.word}</span><span class="vsep" aria-hidden="true"> · </span>${when}${why}</span></div></div>
+        <div class="ordact"><button type="button" class="pbtn" data-ordmove="${h.id}:-1" data-testid="order-up" aria-label="Move ${esc(h.addr)} up" ${i === 0 ? 'disabled' : ''}>↑ Up</button><button type="button" class="pbtn" data-ordmove="${h.id}:1" data-testid="order-down" aria-label="Move ${esc(h.addr)} down" ${i === n - 1 ? 'disabled' : ''}>↓ Down</button><button type="button" class="pbtn" data-ordtop="${h.id}" data-testid="order-top" aria-label="Move ${esc(h.addr)} to the top" ${i === 0 ? 'disabled' : ''}>⤒ Top</button>
+        <label class="ordto"><span class="lb">Move to #</span><input inputmode="text" data-num="1" data-pre="" data-suf="" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" data-testid="order-pos" data-p="${P}pos" data-k="ord-${h.id}" aria-label="Buy position for ${esc(h.addr)}" value="${i + 1}"></label></div></div></div>`; }).join('');
+    return `<div class="top"><button class="ic" data-go="" aria-label="Back" data-testid="order-back">‹</button><h2>Buy order</h2></div>
+    <section class="card" data-testid="order-intro"><p class="note" style="margin:0">The first asset is bought first. The trust funds each one from everything above it, so nothing is bought before the assets above it. Move an asset with the buttons, type its number, or hold ⋮⋮ and drag. Homes, commercial properties and businesses share this one list. Assets you already own are not part of it.</p></section>
+    ${n ? `<section class="card ordlist" data-testid="order-list">${rows}</section>` : '<section class="card"><p class="note" style="margin:0" data-testid="order-empty">Nothing is planned yet.</p></section>'}`;
   }
 
   /* ---------- Saved page: portfolios kept on this device ---------- */
@@ -567,6 +618,7 @@
     const NUMB = E.numbering(S, pl);
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" autocorrect="on" autocapitalize="words" spellcheck="true" autocomplete="off" enterkeyhint="done" value="${esc(h.addr)}" aria-label="Name or address" title="${esc(h.addr)}"></h2><span class="tag" style="margin:0" data-testid="asset-buy-no" data-no="${NUMB.num[h.id]}" data-nview="${NUMB.view[h.id]}" aria-label="${NUMB.view[h.id] === 'owned' ? 'Bought' : 'Planned'} asset number ${NUMB.num[h.id]}">#${NUMB.num[h.id]} ${NUMB.view[h.id] === 'owned' ? 'bought' : 'planned'} · ${TL[type]}${multi ? ' · ' + (h.pack ? 'pack of ' + mf.units : mf.units + ' units') : ''}</span></div>${String(h.addr).length > 19 ? `<p class="fulladdr" data-testid="full-addr">${esc(h.addr)}</p>` : ''}
     ${homeLoses}
+    ${h.status !== 'owned' && !exSold ? buyPanel(pl, h) : ''}
     ${h.fresh && type === 'house' && !multi ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
     <section class="card"><div class="kg">${kpi('h-payment', exS ? 'Payment while held' : 'Payment now', $f(v.payment), (() => { const parts = []; if (v.P > 0) parts.push((h.io ? 'interest ' : 'P&amp;I ') + $f(v.P)); if (v.X > 0.5) parts.push('extra ' + $f(v.X)); if (v.escrow > 0) parts.push('costs ' + $f(v.escrow)); if (v.mip > 0) parts.push('insurance ' + $f(v.mip)); return parts.length > 1 ? parts.join(' + ') : ''; })())}${kpi('h-cf', exS ? 'Cash flow while held' : 'Cash flow now', $s(v.cf), v.X > 0.5 ? `${$s(v.cf - v.X)} after extra` : '', v.cf < 0 ? 'bad' : '')}
       ${kpi('h-dscr', exS ? 'DSCR while held' : 'DSCR now', r(dscrH, 2), isFinite(dscrH) ? (dscrH >= 1.2 ? 'income covers the loan' : dscrH >= 1 ? 'thin cushion' : 'below 1.0') : 'no loan payment', isFinite(dscrH) && dscrH < 1 ? 'bad' : '', 1)}${kpi('h-coc', exS ? 'Cash-on-cash while held' : 'Cash-on-cash now', isFinite(coc) ? r(coc, 1) + '%' : '—', 'yearly cash flow ÷ cash invested', coc < 0 ? 'bad' : '', 1)}</div>
@@ -575,7 +627,7 @@
         const why = [], life2 = lifeOf(pl, h); if (v.growth > 0) why.push('rent grows ' + r(v.growth, 1) + '% a year'); if (v.L > 0.5 && isFinite(life2) && (h.status === 'owned' ? 0 : p0) + life2 <= pl.planM) why.push('the loan is paid off ' + (h.status === 'owned' ? 'in ' + ym(life2) : ym(life2) + ' after it is bought')); if (h.capex > 0 && h.liftIncome > 0) why.push('the renovation lifts rent ' + r(h.liftIncome, 1) + '%');
         return 'Price ' + $c(h.price).replace(/\.0M$/, 'M') + '. Portfolio row (at year ' + yr + ', in ' + UNIT() + '): ' + (sp.payment > 0.5 ? $f(sp.payment) + '/mo' : 'no loan') + ' · ' + $s(sp.cf) + '/mo cash flow · ' + $c(sp.equity) + ' equity.' + (sp.payment > 0.5 && v.L <= 0.5 ? ' With no loan of its own, the payment is a carry cost: taxes, insurance and line-of-credit interest.' : '') + (Math.abs(sp.cf - v.cf) > Math.max(50, 0.2 * Math.abs(v.cf)) && why.length ? ' Cash flow at year ' + yr + ' (' + $s(sp.cf) + '/mo) is not the same as now (' + $s(v.cf) + '/mo): ' + why.join(', ') + '.' : ''); })()}</p>
       <div class="f" style="border-top:0;min-height:36px"><span class="lb">Plan for this asset${infoBtn('exit')}</span></div><div class="seg" style="margin-top:0" role="tablist"><button data-exit="hold" class="${h.exit === 'hold' ? 'on' : ''}">Hold</button><button data-exit="sell" class="${h.exit === 'sell' ? 'on' : ''}" data-testid="exit-sell">Sell</button><button data-exit="merge" class="${h.exit === 'merge' ? 'on' : ''}">Merge</button></div>
-      ${exS ? `<div class="f" style="border-top:0;min-height:30px" data-testid="sold-status"><span class="lb">Status</span><b>Sold in ${mond(pl.sellAt[h.id])}</b></div><div class="f" style="border-top:0;min-height:30px"><span class="lb">Until the sale it is</span></div>` : `<div class="f" style="border-top:0;min-height:30px"><span class="lb">Status</span></div>`}<div class="seg" style="margin-top:0"><button class="${h.status === 'owned' ? 'on' : ''}" data-status="owned">Owned</button><button class="${h.status === 'planned' ? 'on' : ''}" data-status="planned">Planned</button></div>${timing}</section>
+      ${exS ? `<div class="f" style="border-top:0;min-height:30px" data-testid="sold-status"><span class="lb">Status</span><b>Sold in ${mond(pl.sellAt[h.id])}</b></div><div class="f" style="border-top:0;min-height:30px"><span class="lb">Until the sale it is</span></div>` : `<div class="f" style="border-top:0;min-height:30px"><span class="lb">Status</span></div>`}<div class="seg" style="margin-top:0"><button class="${h.status === 'owned' ? 'on' : ''}" data-status="owned">Owned</button><button class="${h.status === 'planned' ? 'on' : ''}" data-status="planned">Planned</button></div>${h.status === 'planned' ? field('Buy position', P + 'pos', NUMB.num[h.id], { info: 'buypos' }) + '<p class="note" data-testid="pos-note">1 is bought first, of ' + NUMB.count.planned + ' planned. Type a number to move it, even across homes, commercial and businesses.</p>' : ''}${timing}</section>
     ${h.listingUrl ? `<p class="note" style="margin:10px 4px 0">Imported from a listing${h.info && h.info.beds ? ' · ' + h.info.beds + ' bd / ' + h.info.baths + ' ba · ' + (h.info.sqft || '?') + ' sqft' : ''}.</p>` : ''}
     ${statusCard}
     ${saleCard}
@@ -861,9 +913,9 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     RN++; const route = routeOf(), a = document.activeElement, id = a && a.dataset && (a.dataset.p || a.dataset.sel), typed = a && a.value, pos = a && a.selectionStart;
     const app = document.getElementById('app'); if (selId && !H(selId)) selId = null;
     app.innerHTML = '';
-    app.innerHTML = route === 'finances' ? finances() : route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
+    app.innerHTML = route === 'finances' ? finances() : route === 'order' ? orderPage() : route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
     app.insertAdjacentHTML('beforeend', sheetHtml());
-    if (undo && route === '') app.insertAdjacentHTML('beforeend', `<div class="toast" role="status" aria-live="polite" data-testid="undo-banner"><span class="tmsg">${undo.text ? esc(undo.text) : 'Removed ' + esc(undo.label) + '.'}</span><button class="chip link" data-undo>Undo</button><button class="tx" data-undo-dismiss aria-label="Dismiss this message">×</button></div>`); /* a floating note that never moves the page; it goes away by itself after 10 seconds */
+    if (undo && (route === '' || (undo.order && (route === 'order' || route.startsWith('h/'))))) app.insertAdjacentHTML('beforeend', `<div class="toast" role="status" aria-live="polite" data-testid="undo-banner"><span class="tmsg">${undo.text ? esc(undo.text) : 'Removed ' + esc(undo.label) + '.'}</span><button class="chip link" data-undo>Undo</button><button class="tx" data-undo-dismiss aria-label="Dismiss this message">×</button></div>`); /* a floating note that never moves the page; it goes away by itself after 10 seconds */
     if (route.startsWith('h/') && !UI.seenLegend) { UI.seenLegend = true; save(); }
     /* aria-modal: while the sheet is open nothing behind it can be reached with the keyboard or a screen reader */
     [...app.children].forEach((el) => { if (infoKey && !el.matches('.sheet-bg,.sheet')) el.setAttribute('inert', ''); });
@@ -1006,6 +1058,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t === 'p') { S.p[x] = n; S.p = E.normalizePersonal(S.p); return true; }
     if (list) { const it = S.p[list].find((q) => q.id === x); if (!it) return false; it[k] = n; S.p = E.normalizePersonal(S.p); return true; }
     if (t === 'a') { if (k !== 'units' || n !== Math.round(n) || n < 2 || n > 500) return false; UI.addUnits = n; return true; } /* the Add screen's unit count */
+    if (t === 'h' && k === 'pos') { const hh = H(x); if (!hh || hh.status === 'owned') return false; const before = JSON.stringify(S), r0 = E.moveTo(S, x, n); if (r0.changed) { logEv('reorder', 'moved one planned asset to a new buy position'); setUndo({ text: 'Moved ' + hh.addr + ' to #' + r0.pos + '. Every number below it is updated.', label: hh.addr, snap: before, order: true }); } return true; } /* the buy position: list order across all planned assets */
     const h = H(x), v = E.view(S, h); h.fresh = false;
     if (k === 'units' || k === 'rentUnit' || k === 'mgmtPct' || k === 'maintPct') { if (!E.isMulti(h)) return false; }
     if (k === 'units') { if (n !== Math.round(n) || n < 2 || n > 500) return false; const f = n / E.unitsOf(h), sc = (x) => Math.round(x * f); /* more or fewer units of the same kind: price, rent, tax, insurance, HOA and other owner costs scale with the count, so every per-unit figure stays the same */
@@ -1083,6 +1136,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   const EMPTYOK = (p) => /^j\.[^.]+\.(end|tax)$/.test(p) || /^p\.(portfolioTaxPct|salesTaxPct)$/.test(p) || /^h\.[^.]+\.(refiRate|refiTermY)$/.test(p);
   /* whole-month boxes (dates counted in months from today, months already paid, ...): rounded to a whole number and capped at 600 months (or the plan length + 10 years when that is longer), with a 'Rounded / Capped' note */
   const MONTHSBOX = (p) => /^h\.[^.]+\.(buyIn|wait|paid|mat|payoff|capexMonths|exitMonth)$/.test(p) || p === 'x.capexMonths' || /^[oc]\.[^.]+\.month$/.test(p) || /^j\.[^.]+\.(end|start)$/.test(p);
+  const POSBOX = (p) => /^h\.[^.]+\.pos$/.test(p); /* the buy position: a whole number from 1 to the number of planned assets, moved on blur / Enter */
   const monthsCap = () => Math.max(600, Math.round((S.g.planYears || 20) * 12) + 120);
   let pendT = null;
   const clearHintDom = () => { clearTimeout(hintTimer); calcHint = null; document.querySelectorAll('#app .chint').forEach((n) => n.remove()); };
@@ -1100,7 +1154,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       if (c.kind !== 'plain' && !c.ok) { calcHint = { p, text: c.msg || 'Check the math', bad: true }; placeHint(); return; }
       calcHint = c.kind === 'plain' ? null : { p, text: c.hint || '= ' + c.v.toLocaleString('en-US', { maximumFractionDigits: 4 }) };
       const dh = e.target.closest('label') && e.target.closest('label').querySelector('.dh'); if (dh) { const tv = boxNum(e.target, c); if (isFinite(tv) && String(e.target.value).trim() !== '') { const mv = Math.min(Math.round(tv), monthsCap()); dh.textContent = mv <= 0 ? 'today (' + dt(0) + ')' : 'on ' + dt(mv); } } /* the date under a months box follows what you type (display only) */
-      if (c.kind === 'plain' && !dh && String(e.target.value).trim() !== '' && isFinite(boxNum(e.target, c))) { const el = e.target; pendT = setTimeout(() => { if (document.activeElement === el && el.dataset.p === p && setField(p, el.value)) { save(); render(); } }, 700); } /* a plain number you stop typing for a moment lands by itself so the calculated boxes beside it (down payment $, loan amount, ratios) always match what the box shows; math (650*3, 5/0) and % never land until you leave the box */
+      if (c.kind === 'plain' && !dh && !POSBOX(p) && String(e.target.value).trim() !== '' && isFinite(boxNum(e.target, c))) { const el = e.target; pendT = setTimeout(() => { if (document.activeElement === el && el.dataset.p === p && setField(p, el.value)) { save(); render(); } }, 700); } /* a plain number you stop typing for a moment lands by itself so the calculated boxes beside it (down payment $, loan amount, ratios) always match what the box shows; math (650*3, 5/0) and % never land until you leave the box */
       placeHint(); return; } /* nothing is committed while you type: the value lands when you leave the box or press Enter, so a half-typed prefix ('5' of '5/0') can never become the live number */
     txtInput(e.target); }); /* free text (names): nothing is redrawn while you type, so the keyboard's autocorrect and predictions keep working and typing stays fast */
   /* A name box keeps the SAME element while you type. The text is saved after a short pause and the page is redrawn only when you leave the box (blur / Enter / Back / another tap / leaving the app); Escape puts the old name back. */
@@ -1129,6 +1183,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       el.value = orig; showNote(p, fix + ' ' + (String(orig).trim() === '' ? 'blank' : (el.dataset.pre || '') + orig + (el.dataset.suf || '')));
       if (nxtP) setTimeout(render, 0); else if (nxt) deferRender(); else render(); return; }
     let mnote = null, n2 = n;
+    if (!blank && POSBOX(p) && isFinite(n)) { const cnt = E.plannedIds(S).length, rn = Math.round(n), q = Math.max(1, Math.min(cnt, rn)); n2 = q; mnote = q !== n ? (q !== rn ? 'Moved to ' + q + ' (1 to ' + cnt + ')' : 'Rounded to ' + q) : null; if (n2 !== n) el.value = String(n2); }
     if (!blank && MONTHSBOX(p) && isFinite(n)) { const cp = monthsCap(), rn = Math.round(n); n2 = Math.min(cp, rn); if (n2 > cp) n2 = cp; mnote = n > cp ? 'Capped at ' + cp + ' months' : rn !== n ? 'Rounded to ' + rn + ' months' : null; if (n2 !== n) { el.value = String(n2); } }
     const had = !!calcHint || !!document.querySelector('#app .chint'); clearHintDom();
     const changed = liveCommit(el, true), txt = blank ? '' : fmtBox(el, n2, editGood && editGood.p === p ? editGood.text : '');
@@ -1222,6 +1277,8 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
     if (t.dataset.importYes !== undefined) { safeCopy('before restoring a backup'); logEv('import', 'backup restored'); const bk = { saved: pendingImport.saved, openOn: pendingImport.openOn, exOv: pendingImport.exOv }; S = E.normalize(pendingImport); delete S.saved; delete S.openOn; delete S.exOv; if (EXED && bk.exOv && typeof bk.exOv === 'object') { try { exStoreOK = E.exImport(bk.exOv, localStorage); } catch (e2) { exStoreOK = false; } } /* an old backup without example edits leaves the ones on this device alone */ if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; E.applyAdditions(S); fixOrder(S); if (Array.isArray(bk.saved)) { SAVED = cleanSaved(bk.saved); saveSaved(); } if (PAGES.indexOf(bk.openOn) >= 0) UI.openOn = bk.openOn; page = UI.openOn; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     { const bt = t.closest('button') || t, sc = SCN.find((x) => bt.dataset[x.k] !== undefined || bt.dataset[x.k + 'Yes'] !== undefined); if (sc) { if (bt.dataset[sc.k + 'Yes'] !== undefined) loadScenario(sc); else { ask = sc.k; render(); } return; } }
+    const om = t.closest('[data-ordmove]'); if (om) { const [id, d] = om.dataset.ordmove.split(':'), ids = E.plannedIds(S), i = ids.indexOf(id), j = i + +d; if (i >= 0 && j >= 0 && j < ids.length) { const before = JSON.stringify(S), hh = H(id), r0 = E.moveTo(S, id, j + 1); if (r0.changed) { setUndo({ text: 'Moved ' + hh.addr + ' to #' + r0.pos + '. Every number is updated.', label: hh.addr, snap: before, order: true }); save(); } render(); const nb = app.querySelector(`[data-ordmove="${id}:${d}"]`) || app.querySelector(`[data-ordmove="${id}:${-d}"]`); if (nb && !nb.disabled) nb.focus(); } return; }
+    const ot = t.closest('[data-ordtop]'); if (ot) { const id = ot.dataset.ordtop, hh = H(id), before = JSON.stringify(S), r0 = E.moveTo(S, id, 1); if (r0.changed) { setUndo({ text: 'Moved ' + hh.addr + ' to the top (#1). Every number is updated.', label: hh.addr, snap: before, order: true }); save(); } render(); return; }
     const mvb = t.closest('[data-move]'); if (mvb) { const [id, d] = mvb.dataset.move.split(':'); moveBy(id, +d); return; }
     const dpb = t.closest('[data-dup]'); if (dpb) { const c = E.duplicate(S, dpb.dataset.dup); if (c) { ask = null; UI.coll['cat-' + (c.type || 'house')] = false; save(); if (routeOf().startsWith('h/')) { selId = null; goto('h/' + c.id); } else { selId = c.id; page = 'planned'; /* the copy is always planned */ render(); } } return; }
     const rwEl = t.closest('[data-row]'); if (rwEl && !t.closest('[data-go]') && !t.closest('.panel')) { if (Date.now() - lastDragEnd < 350) return; if (t.closest('[data-panel]')) { selId = selId === rwEl.dataset.row ? null : rwEl.dataset.row; ask = null; render(); return; } if (!t.closest('select,input,textarea,a,[data-info],button:not(.addrbtn)')) { goto('h/' + rwEl.dataset.row); return; } }
@@ -1232,7 +1289,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   const visibleIds = (h0) => { const pl = E.plan(S); return S.houses.filter((x) => (x.type || 'house') === (h0.type || 'house') && (x.status === 'owned') === (h0.status === 'owned') && !(pl.exits[x.id] && pl.sellAt[x.id] <= pl.planM)).map((x) => x.id); }; /* the rows of one list: same kind of asset, bought or planned */
   function moveBy(id, d) {
     const h = H(id); if (!h) return; const vis = visibleIds(h), i = vis.indexOf(id), j = i + d; if (i < 0 || j < 0 || j >= vis.length) return;
-    [vis[i], vis[j]] = [vis[j], vis[i]]; E.reorder(S, vis); save(); render();
+    const before = JSON.stringify(S); [vis[i], vis[j]] = [vis[j], vis[i]]; E.reorder(S, vis); setUndo({ text: 'Moved ' + h.addr + ' ' + (d < 0 ? 'up' : 'down') + '. Every number below it is updated.', label: h.addr, snap: before, order: true }); save(); render();
     const nb = app.querySelector(`[data-move="${id}:${d}"]`) || app.querySelector(`[data-move="${id}:${-d}"]`); if (nb && !nb.disabled) nb.focus();
   }
   const LONG = 450;
@@ -1259,12 +1316,12 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   function endDrag(commit) {
     const d = drag; drag = null; press = null; if (!d) return; cancelAnimationFrame(d.raf);
     d.items.forEach((el) => { el.style.transform = ''; el.classList.remove('lift'); }); app.classList.remove('dragmode'); lastDragEnd = Date.now();
-    if (commit && d.to !== d.idx) { const ids = d.items.map((el) => el.dataset.rw); ids.splice(d.to, 0, ids.splice(d.idx, 1)[0]); E.reorder(S, ids); save(); }
+    if (commit && d.to !== d.idx) { const ids = d.items.map((el) => el.dataset.rw), before = JSON.stringify(S), mv = H(d.id); ids.splice(d.to, 0, ids.splice(d.idx, 1)[0]); if (E.reorder(S, ids)) setUndo({ text: 'Moved ' + (mv ? mv.addr : 'an asset') + '. Every number below it is updated.', label: mv ? mv.addr : 'asset', snap: before, order: true }); save(); }
     render();
   }
   app.addEventListener('pointerdown', (e) => {
     if (drag) return; if (e.pointerType === 'mouse' && e.button !== 0) return;
-    const row = e.target.closest && e.target.closest('.row[data-row]'); if (!row || row.hasAttribute('data-nodrag') || e.target.closest('select,input,textarea,a,[data-info]')) return;
+    const row = e.target.closest && e.target.closest('.row[data-row]'); if (!row || row.hasAttribute('data-nodrag') || e.target.closest('select,input,textarea,a,[data-info]')) return; if (row.hasAttribute('data-handle') && !e.target.closest('.draghandle')) return;
     clearTimeout(press && press.timer); press = { id: row.dataset.row, el: row, x: e.clientX, y: e.clientY, pid: e.pointerId }; press.timer = setTimeout(startDrag, LONG);
   });
   document.addEventListener('pointermove', (e) => {

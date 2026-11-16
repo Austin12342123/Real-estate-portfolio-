@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'17fe2f82'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'4fff5c6b'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -425,7 +425,8 @@
       }
       blocked = qi < queue.length ? queue[qi] : null;
     }
-    const settle = () => { for (let i = 0; i <= queue0.length + 1; i++) { run(); if (!blocked) break; skipped[blocked.id] = 1; } };
+    const keepBest = {}; /* the closest an unfunded asset got to its cash (recorded in the run where it blocked the queue; the final run leaves it out) */
+    const settle = () => { for (let i = 0; i <= queue0.length + 1; i++) { run(); if (!blocked) break; if (best[blocked.id]) keepBest[blocked.id] = best[blocked.id]; skipped[blocked.id] = 1; } };
     settle();
     if (pp && g.autoPay !== false && CALLS.some((c) => c > 0.5)) { /* second pass: now the costs still to come are known, so loan payments never use up the cash they need */
       FUT = new Array(TS + 2).fill(0); for (let t = TS - 1; t >= 0; t--) FUT[t] = FUT[t + 1] + CALLS[t + 1]; settle(); }
@@ -471,7 +472,7 @@
     const funds = {}; hs.forEach((h) => { funds[h.id] = !!(fund[h.id] && fund[h.id].pool); });
     const trust = {}; let prevM = 0; hs.forEach((h) => { if (h.status === 'owned') return; const m = P0[h.id], f = fund[h.id] || null, bi = Math.max(0, Math.round(h.buyIn || 0)), rd = readyAt[h.id] === undefined ? Infinity : readyAt[h.id];
       /* month = the one clock everywhere: months from today. ready = the first month the pool could pay (room + cash >= need); month = ready, or the 'not before' month if that is later (held = true). */
-      trust[h.id] = { month: m, ready: rd, held: isFinite(m) && isFinite(rd) && m > rd, buyIn: bi, ok: isFinite(m), pooled: funds[h.id], n: f ? f.n : 0, room: f ? f.room : 0, cf: f ? f.cf : 0, cash: f ? f.cash : 0, draw: f ? f.draw : 0, heldCash: f ? f.heldCash : 0, have: f ? f.have : 0, need: f ? f.need : needFor(S, h), savings: f ? f.savings || 0 : 0, rsv: f ? f.rsv || 0 : 0, gross: f ? f.gross : 0, best: best[h.id] || null };
+      trust[h.id] = { month: m, ready: rd, held: isFinite(m) && isFinite(rd) && m > rd, buyIn: bi, ok: isFinite(m), pooled: funds[h.id], n: f ? f.n : 0, room: f ? f.room : 0, cf: f ? f.cf : 0, cash: f ? f.cash : 0, draw: f ? f.draw : 0, heldCash: f ? f.heldCash : 0, have: f ? f.have : 0, need: f ? f.need : needFor(S, h), savings: f ? f.savings || 0 : 0, rsv: f ? f.rsv || 0 : 0, gross: f ? f.gross : 0, best: best[h.id] || keepBest[h.id] || null };
     });
     /* loans: balance at any month, and the month each loan is paid off (with the extra from your own profit and your job); 0 = no loan, Infinity = not within the plan horizon */
     const loanEnd = {}, balAt = (id, t) => (BAL[id] ? BAL[id][Math.max(0, Math.min(TS, Math.round(t)))] || 0 : 0);
@@ -587,6 +588,14 @@
     const out = { series: R, T, status, headline, saleInfo, reasons, fixes, calls: callsAll,
       kpis: { planEnd: { month: pe, cfBefore: R.portfolio[pe], tax: R.portTax[pe], cfAfter: R.portfolio[pe] - R.portTax[pe], net: R.net[pe] }, peakHours: peakH, peakHoursMonth: peakHM, managerCost0: R.gm[0], managerCostMax: gmMax, peakBusinesses: peakBiz, takeHome: R.income[0], portfolioAfterTax: R.portfolio[0] - R.portTax[0], extra: R.extra[0], living: R.living[0], debts: R.debts[0], net0: R.net[0], worstNet, cash0: p.cash, reserveMonths0: R.living[0] + R.debts[0] > 0 ? p.cash / (R.living[0] + R.debts[0]) : Infinity,
         jobSurplus0: R.jobSurplus[0], jobSplit0: R.jobSplit[0], jobSurplusMax: Math.max.apply(null, R.jobSurplus), minLiquid: minT, minLiquidMonth: minM, shortAmount: short, firstShortMonth: firstShort, reserveTarget0: R.reserve[0], reserveGap, runway0: R.runway[0], minRunway: minRun, totalOutside, capitalTotal, savingsUsed: Math.min(p.cash, totalOutside), gap: Math.max(0, totalOutside - p.cash - capitalTotal), dtiPeak: pl.worst.dti, reserveGapMonth: gapAt } };
+    /* can-I-buy-this: the portfolio verdict is the worst of this one and the feasibility tests (a planned asset that cannot be funded or financed is 'no', never 'tight') */
+    const feas = feasible(S, pl, out, true); out.feas = feas;
+    const RK = { yes: 0, tight: 1, no: 2 };
+    if (RK[feas.verdict] > RK[out.status]) { const wasNo = out.status === 'no'; out.status = feas.verdict; if (!wasNo) out.headline = feas.headline; }
+    const lead = feas.reasons.filter((x) => x.asset || /^p-(funding|cltv|concentration|earners)$/.test(x.id)).map((x) => ({ sev: x.sev, text: x.text, short: x.short }));
+    out.reasons = lead.concat(out.reasons);
+    const topAsset = feas.reasons.find((x) => x.asset && x.sev === 'bad') || feas.reasons.find((x) => x.asset);
+    if (topAsset) { const sf = shortfall(S, pl, out, topAsset.asset); if (sf) sf.changes.slice(0, 2).forEach((c) => out.fixes.push(c.text + '.')); }
     return real ? finToday(S, out, pl) : out;
   }
   /* a finance result in today's dollars: every money series is divided by the factor of its own month; an amount that belongs to one month (lowest cash, cash needed, ...) by that month's factor */
@@ -605,8 +614,11 @@
   }
 
   /* Can the lenders carry this purchase? Debt-to-income (including your own rent or mortgage) in the month the trust buys the asset. Assets owned today have nothing to afford. */
-  function afford(S, h, pl) {
+  function afford(S, h, pl, fe) {
     pl = pl || plan(S);
+    if (fe && h && fe.assets && fe.assets[h.id]) { const A = fe.assets[h.id]; /* the full can-I-buy-this result: the verdict, its kind (nofund / nolender / nocashflow) and the one short clause */
+      const cls = A.verdict === 'no' ? 'bad' : A.verdict === 'tight' ? 'warn' : 'ok', b = afford(S, h, pl);
+      return Object.assign({}, b, { cls, verdict: A.verdict, kind: A.kind, short: A.short, criteria: A.criteria, txt: cls === 'ok' ? '✓ Afford' : cls === 'warn' ? '△ Tight' : '✗ Short', why: A.top ? A.top.text : b.why }); }
     if (!h || h.status === 'owned') return { cls: 'na', txt: 'Owned', why: 'You already own this one.' };
     const m = pl.purchase[h.id];
     if (!isFinite(m)) return { cls: 'bad', txt: '✗ Not reachable', why: 'The trust (all the assets before it) cannot fund this within 50 years.' };
@@ -615,6 +627,153 @@
     const cls = dti <= lim * 0.8 ? 'ok' : dti <= lim ? 'warn' : 'bad';
     return { cls, dti, txt: cls === 'ok' ? '✓ Afford' : cls === 'warn' ? '△ Tight' : '✗ Short', why: 'Debt-to-income ' + dti.toFixed(0) + '% (including your own rent or mortgage) vs ' + lim + '% limit when ' + h.addr + ' closes.' };
   }
+  /* ---------- CAN I BUY THIS? One test list per planned asset and one for the whole portfolio ----------
+     Every criterion is { id, label, status: 'ok' | 'caution' | 'fail', measured, limit, how, hard, kind, text, short }.
+     hard = a fail that makes the verdict 'no' (cannot be funded in the plan, a lender test fails, the monthly money does not carry it, a home loses money). Any other caution or fail makes it 'tight'.
+     Money for the funding test is exactly what the plan uses (pl.trust: the pool's borrowing room + the cash it holds, or your savings above the cushion for the first purchase), at the month the plan buys it;
+     monthly figures are in today's dollars. Nothing here is stored: it is worked out again from the live state each time it is asked for. */
+  const FEAS = { concCaution: 35, concFail: 60, concMin: 3, capMin: 4, vacPts: 10, ratePts: 2, dscrDefault: 1.25, dscrNear: 0.05, runCaution: 3, runFail: 1, dtiCaution: 0.85, pace: 0.9, lastsCaution: 3, lastsFail: 1, loanMax: { sba7a: 5000000 } };
+  const fm = (n) => { const a = Math.abs(+n || 0); return '$' + (a >= 1e6 ? String(+(a / 1e6).toFixed(2)) + 'M' : Math.round(a).toLocaleString('en-US')); };
+  const sgn = (n) => (n < -0.5 ? '−' : '') + fm(n);
+  const dscrMinOf = (h) => { const l = loanById(h.loanId); return l || MINDSCR[h.loanId] != null ? minDscrOf(h.loanId) : FEAS.dscrDefault; };
+  const mkC = (id, label, status, measured, limit, how, o) => Object.assign({ id, label, status, measured, limit, how, hard: false, kind: '', text: '', short: '' }, o || {});
+  const worstOf = (cs) => cs.reduce((a, c) => (c.status === 'fail' ? 'fail' : c.status === 'caution' && a !== 'fail' ? 'caution' : a), 'ok');
+  const FRANK = { fail: 0, caution: 1, ok: 2 }, KRANK = { nofund: 0, nolender: 1, nocashflow: 2, '': 3 };
+  const sortC = (cs) => cs.slice().sort((a, b) => FRANK[a.status] - FRANK[b.status] || (b.hard ? 1 : 0) - (a.hard ? 1 : 0) || KRANK[a.kind || ''] - KRANK[b.kind || '']);
+  function feasAsset(S, pl, fin, h, ctx) {
+    const g = S.g, v = pl.V[h.id], tr = pl.trust[h.id], T = pl.T, planM = pl.planM, type = h.type || 'house', ok = tr.ok, m0 = ok ? tr.month : Infinity;
+    const L = loan(h), pay = payment(h) + mipMonthly(h), noi = v.noi, need = tr.need, price = h.price, yrs = Math.round(planM / 12);
+    const bm = ok ? m0 : tr.best ? tr.best.month : 0, mi2 = Math.max(0, Math.min(T, bm)), dfm = dfac(S, mi2), pa = pl.poolAt(mi2);
+    let have = 0, room = 0, tcash = 0, sav = 0; const pooled = ok ? !!tr.pooled : pa.n > 0;
+    if (ok) { have = tr.have; if (pooled) { room = tr.room; tcash = tr.heldCash || 0; } else sav = tr.have; } else if (tr.best) { have = tr.best.avail; if (pooled) { tcash = Math.min(pa.cash, have); room = have - tcash; } else sav = have; }
+    const cashShort = Math.max(0, need - have), uncovered = Math.max(0, price - have), down = downAmt(h), closing = (price * clPct(S, h)) / 100, rehab = h.finCapex ? 0 : Math.max(0, h.capex || 0);
+    const poolCf = Math.max(0, pa.cf) / dfm, personal = !pooled && fin ? Math.max(0, fin.kpis.net0 || 0) : 0, avail = poolCf + noi + personal, absorb = fin ? Math.max(0, fin.series.net[mi2] / dfm, poolCf + personal) : poolCf + personal; /* what you can absorb if the asset earns less: your whole monthly surplus (job + portfolio - living costs, extra payments) */
+    const cs = [], add = (c) => { cs.push(c); return c; };
+    /* 1) funding */
+    const pc = Math.round(planM * FEAS.pace);
+    const how1 = 'needs ' + fm(need) + ' (down ' + fm(down) + ' + closing ' + fm(closing) + (rehab > 0 ? ' + rehab ' + fm(rehab) : '') + '); can pull out ' + fm(have) + ' (' + (pooled ? 'room ' + fm(room) + ' + trust cash ' + fm(tcash) : 'savings above the cushion ' + fm(sav)) + ')' + (ok ? ' by ' + mAt(m0) : '');
+    if (!ok) add(mkC('funding', 'Cash to close', 'fail', fm(have) + ' of ' + fm(need), 'needs ' + fm(need), how1 + ' - the plan never reaches it', { hard: true, kind: 'nofund', text: 'Not possible: needs ' + fm(need) + ', the plan never reaches it', short: 'Not possible - short ' + fm(cashShort) }));
+    else if (m0 > planM) add(mkC('funding', 'Cash to close', 'fail', mAt(m0), 'by ' + mAt(planM), how1, { hard: true, kind: 'nofund', text: 'Not possible: funded only ' + inM(m0) + ', after the ' + yrs + '-year plan ends', short: 'Not possible - funded only ' + inM(m0) }));
+    else if (m0 > pc) add(mkC('funding', 'Cash to close', 'caution', mAt(m0), 'by ' + mAt(pc), how1, { kind: 'nofund', text: 'Late: funded only ' + inM(m0) + ', near the end of the ' + yrs + '-year plan', short: 'Late - funded ' + inM(m0) }));
+    else add(mkC('funding', 'Cash to close', 'ok', fm(have) + ' of ' + fm(need), 'needs ' + fm(need), how1));
+    /* 2) lender tests */
+    const dmin = dscrMinOf(h), hasLoan = L > 0.5 && pay > 0.5, dscr = hasLoan ? noi / pay : Infinity;
+    if (!hasLoan) add(mkC('dscr', 'Loan DSCR', 'ok', 'no loan', '', 'No loan on this asset, so no lender test.'));
+    else add(mkC('dscr', 'Loan DSCR', dscr < dmin - FEAS.dscrNear ? 'fail' : dscr < dmin + FEAS.dscrNear ? 'caution' : 'ok', dscr.toFixed(2), 'min ' + dmin, 'income ' + fm(noi) + '/mo / loan payment ' + fm(pay) + '/mo = ' + dscr.toFixed(2) + ' vs the ' + dmin + ' this loan wants',
+      { hard: dscr < dmin - FEAS.dscrNear, kind: 'nolender', text: (dscr < dmin - FEAS.dscrNear ? 'Not possible: ' : '') + "the loan's DSCR is " + dscr.toFixed(2) + (dscr < dmin ? ', under the ' : ', close to the ') + dmin + ' the lender wants', short: (dscr < dmin - FEAS.dscrNear ? 'Not possible - ' : 'Tight - ') + 'DSCR ' + dscr.toFixed(2) + ' vs ' + dmin }));
+    const pre = loanById(h.loanId), ltv = baseAmt(h) > 0 && hasLoan ? ((L / (1 + (h.mipUp || 0) / 100)) / baseAmt(h)) * 100 : 0, ltvMax = pre && pre.dp < 100 ? 100 - pre.dp : null;
+    if (ltvMax === null || !hasLoan) add(mkC('ltv', 'Loan-to-value', 'ok', hasLoan ? ltv.toFixed(0) + '%' : 'no loan', '', hasLoan ? 'Custom loan: no program limit to test.' : 'No loan on this asset.'));
+    else add(mkC('ltv', 'Loan-to-value', ltv > ltvMax + 0.01 ? 'fail' : 'ok', ltv.toFixed(0) + '%', 'max ' + ltvMax + '%', 'loan ' + fm(L) + ' / price ' + fm(baseAmt(h)) + ' = ' + ltv.toFixed(0) + '% vs the ' + ltvMax + '% the ' + pre.name + ' lends', { hard: ltv > ltvMax + 0.01, kind: 'nolender', text: 'Not possible: the loan is ' + ltv.toFixed(0) + '% of the price, over the ' + ltvMax + '% this loan lends', short: 'Not possible - LTV ' + ltv.toFixed(0) + '% over ' + ltvMax + '%' }));
+    const cap = FEAS.loanMax[h.loanId];
+    add(cap ? mkC('loanmax', 'Loan size limit', L > cap ? 'fail' : 'ok', fm(L), 'max ' + fm(cap), 'loan ' + fm(L) + ' vs the ' + fm(cap) + ' this program stops at', { hard: L > cap, kind: 'nolender', text: 'Not possible: the loan is ' + fm(L) + ', over the ' + fm(cap) + ' limit of this program', short: 'Not possible - loan over ' + fm(cap) }) : mkC('loanmax', 'Loan size limit', 'ok', hasLoan ? fm(L) : 'no loan', 'none', 'This loan has no program size limit in the app.'));
+    const dti = pl.series.dti[mi2], dl = g.dti;
+    add(mkC('dti', 'Total debt-to-income', dti >= 999 ? 'fail' : dti > dl ? 'fail' : dti > FEAS.dtiCaution * dl ? 'caution' : 'ok', dti >= 999 ? 'no income' : dti.toFixed(0) + '%', 'max ' + dl + '%', 'all debt payments incl. this loan and your own housing / qualifying income = ' + (dti >= 999 ? 'no qualifying income set' : dti.toFixed(0) + '%') + ' ' + (ok ? 'when it closes' : 'at the closest month') + ' vs ' + dl + '%',
+      { hard: dti > dl, kind: 'nolender', text: dti >= 999 ? 'Not possible: no qualifying income is set' : (dti > dl ? 'Not possible: ' : '') + 'debt-to-income reaches ' + dti.toFixed(0) + '% with this loan (limit ' + dl + '%)', short: dti >= 999 ? 'Not possible - no income set' : (dti > dl ? 'Not possible - ' : 'Tight - ') + 'debt-to-income ' + dti.toFixed(0) + '%' }));
+    /* 3) reserves after closing, 4) income fit */
+    if (fin) {
+      const tot = fin.series.total[mi2], rsv = fin.series.reserve[mi2], runw = fin.series.runway[mi2];
+      add(mkC('reserve', 'Reserves after closing', tot < 0 ? 'fail' : tot < rsv - 0.5 ? 'caution' : 'ok', fm(tot / dfm), 'keep ' + fm(rsv / dfm), 'cash after closing ' + fm(tot / dfm) + ' vs the ' + ((S.p && S.p.emergencyMonths) || 0) + '-month reserve ' + fm(rsv / dfm) + ' (today\'s dollars)', { kind: 'nocashflow', text: tot < 0 ? 'Cash runs out around closing' : 'Cash after closing is below the ' + ((S.p && S.p.emergencyMonths) || 0) + '-month reserve', short: 'Tight - cash below your reserve' }));
+      add(mkC('runway', 'If the paycheck stops', runw < FEAS.runFail ? 'fail' : runw < FEAS.runCaution ? 'caution' : 'ok', isFinite(runw) ? runw.toFixed(1) + ' mo' : 'covered', 'at least ' + FEAS.runCaution + ' mo', isFinite(runw) ? 'cash ' + fm(tot / dfm) + ' / monthly burn without the job = ' + runw.toFixed(1) + ' months of runway' : 'portfolio income covers your bills without the job', { kind: 'nocashflow', text: 'If your paycheck stopped, cash would last only ' + (isFinite(runw) ? runw.toFixed(1) : '0') + ' months', short: 'Tight - thin runway' }));
+    }
+    add(mkC('carry', 'Monthly: carry the payment', hasLoan && avail < pay - 0.5 ? 'fail' : 'ok', fm(avail) + '/mo', 'needs ' + fm(pay) + '/mo', 'payment ' + fm(pay) + '/mo; available ' + fm(avail) + '/mo = asset income ' + fm(noi) + ' + pool cash flow ' + fm(poolCf) + (personal > 0 ? ' + your monthly surplus ' + fm(personal) : ''),
+      { hard: hasLoan && avail < pay - 0.5, kind: 'nocashflow', text: 'Not possible: the loan payment is ' + fm(pay) + '/mo but only ' + fm(avail) + '/mo is available to carry it', short: 'Not possible - short ' + fm(pay - avail) + '/mo' }));
+    /* 5) deal quality */
+    const lose = v.cf < -0.5, absorbed = -v.cf <= absorb + 0.5;
+    if (type === 'house' && lose) add(mkC('cashflow', 'Cash flow after the loan', 'fail', sgn(v.cf) + '/mo', 'not below $0', 'income ' + fm(noi) + ' - payment ' + fm(pay) + ' = ' + sgn(v.cf) + '/mo', { hard: true, kind: 'nocashflow', text: 'Not possible: a home must never lose money, and this one is ' + sgn(v.cf) + '/mo after the loan', short: 'Not possible - loses ' + fm(-v.cf) + '/mo' }));
+    else add(mkC('cashflow', 'Cash flow after the loan', lose && !absorbed ? 'caution' : 'ok', sgn(v.cf) + '/mo', type === 'house' ? 'not below $0' : 'covered by the pool', 'income ' + fm(noi) + ' - payment ' + fm(pay) + ' = ' + sgn(v.cf) + '/mo' + (lose ? '; the pool (' + fm(absorb) + '/mo) ' + (absorbed ? 'covers it' : 'cannot cover it') : ''), { kind: 'nocashflow', text: 'The asset loses ' + fm(-v.cf) + '/mo after its loan and the pool cannot cover it', short: 'Tight - loses ' + fm(-v.cf) + '/mo' }));
+    const capR = v.capRate;
+    add(mkC('cap', 'Cap rate vs price', price > 0 && !(capR >= FEAS.capMin) ? 'caution' : 'ok', isFinite(capR) ? capR.toFixed(1) + '%' : '-', 'at least ' + FEAS.capMin + '%', 'income ' + fm(noi * 12) + '/yr / price ' + fm(price) + ' = ' + (isFinite(capR) ? capR.toFixed(1) : '0') + '% yield', { kind: 'nocashflow', text: 'The price is rich: it earns only ' + (isFinite(capR) ? capR.toFixed(1) : '0') + '% a year on its price', short: 'Tight - low yield' }));
+    const mat = matOf(h), rf = v.refi;
+    add(mat > 0 && hasLoan ? mkC('balloon', 'Balloon / refinance', rf && noi < rf.payment ? 'caution' : 'ok', rf ? fm(rf.payment) + '/mo refi' : 'paid off', 'income covers it', 'due in ' + mat + ' months' + (rf ? '; the ' + fm(rf.balance) + ' left is refinanced at ' + rf.rate + '%: payment ' + fm(rf.payment) + '/mo vs income ' + fm(noi) + '/mo' : '; nothing is left to refinance'), { kind: 'nocashflow', text: 'After the loan comes due, the refinance payment is more than the income', short: 'Tight - refinance risk' }) : mkC('balloon', 'Balloon / refinance', 'ok', 'none', '', 'No balloon: the loan pays off on schedule.'));
+    /* 6) stress tests */
+    const lossV = type === 'business' ? 0 : (FEAS.vacPts / 100) * (h.rent + reimbOf(h)) * (1 - mgmtOf(S, h) / 100), cfV = v.cf - lossV, okV = cfV >= -0.5 || -cfV <= absorb + 0.5;
+    add(mkC('stress-vac', 'Stress: vacancy +' + FEAS.vacPts + ' pts', okV ? 'ok' : 'caution', type === 'business' ? 'n/a' : sgn(cfV) + '/mo', 'not below what the pool covers', type === 'business' ? 'Owner profit already is the net; no vacancy test.' : 'cash flow ' + sgn(v.cf) + ' - ' + FEAS.vacPts + ' pts of income ' + fm(lossV) + ' = ' + sgn(cfV) + '/mo', { kind: 'nocashflow', text: 'With ' + FEAS.vacPts + ' more points of vacancy it loses ' + fm(-cfV) + '/mo', short: 'Tight - weak if vacancy rises' }));
+    const payR = hasLoan ? (h.io ? (L * (h.rate + FEAS.ratePts)) / 1200 : amort(L, (h.rate + FEAS.ratePts) / 1200, h.term)) + mipMonthly(h) : 0, cfR = noi - payR, okR = cfR >= -0.5 || -cfR <= absorb + 0.5;
+    add(mkC('stress-rate', 'Stress: rate +' + FEAS.ratePts + ' pts', okR ? 'ok' : 'caution', hasLoan ? sgn(cfR) + '/mo' : 'no loan', 'not below what the pool covers', hasLoan ? 'income ' + fm(noi) + ' - payment at ' + (h.rate + FEAS.ratePts) + '% ' + fm(payR) + ' = ' + sgn(cfR) + '/mo' : 'No loan, so a higher rate changes nothing.', { kind: 'nocashflow', text: 'If the rate were ' + FEAS.ratePts + ' points higher it would lose ' + fm(-cfR) + '/mo', short: 'Tight - weak if rates rise' }));
+    /* 7) concentration */
+    const totP = S.houses.reduce((a, q) => a + (+q.price || 0), 0), share = totP > 0 ? (price / totP) * 100 : 0, nA = S.houses.length;
+    add(mkC('concentration', 'Concentration', nA >= FEAS.concMin && share > FEAS.concFail ? 'fail' : nA >= FEAS.concMin && share > FEAS.concCaution ? 'caution' : 'ok', share.toFixed(0) + '% of value', 'under ' + FEAS.concCaution + '%', 'price ' + fm(price) + ' / all assets ' + fm(totP) + ' = ' + share.toFixed(0) + '%' + (nA < FEAS.concMin ? ' (not tested with fewer than ' + FEAS.concMin + ' assets)' : ''), { kind: 'nocashflow', text: 'One asset is ' + share.toFixed(0) + '% of the portfolio by value', short: 'Tight - ' + share.toFixed(0) + '% of the portfolio' }));
+    const hard = cs.filter((c) => c.hard && c.status === 'fail'), bad = sortC(cs).filter((c) => c.status !== 'ok'), top = bad[0] || null;
+    const verdict = hard.length ? 'no' : bad.length ? 'tight' : 'yes', kind = hard.length ? sortC(hard)[0].kind : '';
+    const reasons = bad.map((c) => ({ id: c.id, sev: c.status === 'fail' ? 'bad' : 'warn', text: c.text, short: c.short }));
+    return { id: h.id, addr: h.addr, verdict, kind, criteria: cs, reasons, top: top, short: top ? top.short : '', month: m0,
+      cash: { need, down, closing, rehab, have, savings: sav, trustCash: tcash, room, pooled, short: cashShort, uncovered, month: ok ? m0 : bm, closest: !ok, price },
+      monthly: { payment: pay, poolCf, asset: noi, personal, available: avail, short: avail - pay, covered: avail >= pay - 0.5 } };
+  }
+  function feasible(S, pl, fin, inner) {
+    if (!inner) { if (pl && pl.raw) pl = pl.raw; pl = pl || plan(S); fin = fin || finance(S, pl); if (fin && fin.feas) return fin.feas; }
+    const planned = S.houses.filter((h) => h.status !== 'owned'), assets = {}, g = S.g, T = pl.T, pe = Math.min(T, pl.planM), cs = [];
+    planned.forEach((h) => { assets[h.id] = feasAsset(S, pl, fin, h); });
+    const add = (c) => { cs.push(c); return c; }, nPl = planned.length, nUn = pl.unfunded.length, late = pl.lastBuy > pl.planM;
+    add(nUn ? mkC('p-funding', 'Every planned asset can be funded', 'fail', nUn + ' of ' + nPl + ' cannot', 'all funded', nUn + ' planned asset' + (nUn === 1 ? '' : 's') + ' never reach the cash they need within the plan', { hard: true, kind: 'nofund', text: nUn + ' of ' + nPl + ' planned asset' + (nUn === 1 ? '' : 's') + ' cannot be funded in the plan', short: nUn + ' cannot be funded' }) : mkC('p-funding', 'Every planned asset can be funded', late ? 'fail' : pl.lastBuy > FEAS.pace * pl.planM ? 'caution' : 'ok', nPl ? 'last ' + inM(pl.lastBuy) : 'none planned', 'by ' + mAt(pl.planM), 'the last purchase is ' + inM(pl.lastBuy) + '; the plan runs ' + pl.planM + ' months', { hard: late, kind: 'nofund', text: late ? 'The last purchase comes ' + inM(pl.lastBuy) + ', after the plan ends' : 'The last purchase comes late in the plan, ' + inM(pl.lastBuy), short: late ? 'Not possible - last purchase after the plan' : 'Late purchases' }));
+    add(mkC('p-dti', 'Debt-to-income peak', pl.worst.dti > g.dti ? 'fail' : pl.worst.dti > FEAS.dtiCaution * g.dti ? 'caution' : 'ok', pl.worst.dti.toFixed(0) + '%', 'max ' + g.dti + '%', 'highest debt payments / qualifying income = ' + pl.worst.dti.toFixed(0) + '% ' + inM(pl.worst.month), { hard: false, kind: 'nolender', text: 'Lenders may decline: debt payments reach ' + pl.worst.dti.toFixed(0) + '% of income ' + inM(pl.worst.month) + ' (limit ' + g.dti + '%)', short: 'Lenders may decline' }));
+    const cl = pl.at(Math.min(T, pl.lastBuy)).cltv;
+    add(mkC('p-cltv', 'Debt vs value', cl > g.cap + 0.5 ? 'fail' : 'ok', cl.toFixed(0) + '%', 'max ' + g.cap + '%', 'all debt / all value when the last asset is bought = ' + cl.toFixed(0) + '% vs the ' + g.cap + '% cap', { hard: cl > g.cap + 0.5, kind: 'nolender', text: 'Total debt is ' + cl.toFixed(0) + '% of value, over the ' + g.cap + '% cap', short: 'Debt over the cap' }));
+    if (fin) { const k = fin.kpis;
+      add(mkC('p-cash', 'Cash never runs out', k.minLiquid < 0 ? 'fail' : k.reserveGap > 0.5 ? 'caution' : 'ok', k.minLiquid < 0 ? 'short ' + fm(-k.minLiquid) : 'lowest ' + fm(Math.max(0, k.minLiquid)), 'above the reserve', k.minLiquid < 0 ? 'your cash is about ' + fm(-k.minLiquid) + ' short at its lowest point, ' + mAt(k.minLiquidMonth) : 'lowest cash ' + fm(k.minLiquid) + '; reserve gap ' + fm(k.reserveGap), { hard: k.minLiquid < 0, kind: 'nocashflow', text: k.minLiquid < 0 ? 'You run out of cash ' + inM(k.firstShortMonth) : 'Your cash dips below your emergency reserve', short: k.minLiquid < 0 ? 'Cash runs out' : 'Cash below reserve' }));
+      add(mkC('p-runway', 'If the paycheck stops', k.minRunway < FEAS.runFail ? 'fail' : k.minRunway < FEAS.runCaution ? 'caution' : 'ok', isFinite(k.minRunway) ? k.minRunway.toFixed(1) + ' mo' : 'covered', 'at least ' + FEAS.runCaution + ' mo', 'lowest runway over the plan', { kind: 'nocashflow', text: 'Little cushion if your paycheck stops', short: 'Thin runway' }));
+      add(mkC('p-hours', 'Hours in a week', k.peakHours > 70 ? 'caution' : 'ok', Math.round(k.peakHours) + ' h', 'under 70 h', 'job + businesses you run at the busiest month', { kind: 'nocashflow', text: 'The hours do not fit in a week around ' + mAt(k.peakHoursMonth), short: 'Too many hours' })); }
+    const cats = ['house', 'commercial', 'business'], lasts = [];
+    cats.forEach((tp) => { const rows = pl.snap.filter((x) => x.type === tp && S.houses.some((q) => q.id === x.id && q.status !== 'owned')); if (!rows.length) return; const cash = fin ? Math.max(0, fin.series.total[pe] || 0) : 0, st = stress(S, pl, rows, cash); lasts.push({ tp, months: st.burn >= -0.5 ? Infinity : st.months }); });
+    const w = lasts.sort((a, b) => a.months - b.months)[0];
+    if (w) add(mkC('p-earners', 'Stress: biggest earners lost', w.months < FEAS.lastsFail ? 'fail' : w.months < FEAS.lastsCaution ? 'caution' : 'ok', isFinite(w.months) ? w.months.toFixed(1) + ' mo' : 'covered', 'at least ' + FEAS.lastsCaution + ' mo', 'cash lasts this long if about 45% of the biggest ' + w.tp + ' earners stop paying', { kind: 'nocashflow', text: 'If your biggest earners stopped, cash would last ' + (isFinite(w.months) ? w.months.toFixed(1) : 0) + ' months', short: 'Weak if big earners stop' }));
+    const totP = S.houses.reduce((a, q) => a + (+q.price || 0), 0), big = S.houses.slice().sort((a, b) => b.price - a.price)[0], sh = big && totP > 0 ? (big.price / totP) * 100 : 0;
+    add(mkC('p-concentration', 'Concentration', S.houses.length >= FEAS.concMin && sh > FEAS.concFail ? 'fail' : S.houses.length >= FEAS.concMin && sh > FEAS.concCaution ? 'caution' : 'ok', sh.toFixed(0) + '% in one', 'under ' + FEAS.concCaution + '%', big ? 'biggest asset ' + fm(big.price) + ' / all assets ' + fm(totP) + ' = ' + sh.toFixed(0) + '%' : 'no assets', { kind: 'nocashflow', text: (big ? big.addr : 'One asset') + ' is ' + sh.toFixed(0) + '% of the portfolio by value', short: 'Concentrated' }));
+    const aList = planned.map((h) => assets[h.id]), rank = { yes: 0, tight: 1, no: 2 };
+    const pHard = cs.filter((c) => c.hard && c.status === 'fail'), pBad = sortC(cs).filter((c) => c.status !== 'ok');
+    let verdict = pHard.length ? 'no' : pBad.length ? 'tight' : 'yes'; aList.forEach((a) => { if (rank[a.verdict] > rank[verdict]) verdict = a.verdict; });
+    /* reasons: the most important first. A planned asset that cannot be funded or financed leads, in buy order, then the portfolio checks, then the assets that are only tight */
+    const reasons = [], seen = {}, push = (r) => { const k = r.text; if (!seen[k]) { seen[k] = 1; reasons.push(r); } };
+    aList.filter((a) => a.verdict === 'no').sort((a, b) => KRANK[a.kind] - KRANK[b.kind]).forEach((a) => { const c = sortC(a.criteria).find((x) => x.hard && x.status === 'fail'); push({ sev: 'bad', id: c.id, asset: a.id, text: (a.addr ? a.addr + ' - ' : '') + c.text, short: c.short, kind: a.kind }); });
+    pBad.filter((c) => c.status === 'fail').forEach((c) => push({ sev: 'bad', id: c.id, text: c.text, short: c.short, kind: c.kind }));
+    aList.filter((a) => a.verdict === 'tight').forEach((a) => { const c = a.top; if (c) push({ sev: 'warn', id: c.id, asset: a.id, text: (a.addr ? a.addr + ' - ' : '') + c.text, short: c.short, kind: c.kind }); });
+    pBad.filter((c) => c.status === 'caution').forEach((c) => push({ sev: 'warn', id: c.id, text: c.text, short: c.short, kind: c.kind }));
+    const first = reasons[0] || null, nNo = aList.filter((a) => a.verdict === 'no').length;
+    const headline = verdict === 'yes' ? 'Yes. You can carry this plan.' : verdict === 'no' ? 'Not yet. ' + (first ? first.text + (nNo > 1 ? ' (' + nNo + ' planned assets are not possible)' : '') + '.' : 'The plan does not work yet.') : 'Tight. ' + (first ? (first.short || first.text).replace(/^Tight - /, '').replace(/^./, (c) => c.toUpperCase()) + '.' : 'It works, but with thin margins.');
+    return { verdict, headline, reasons, criteria: sortC(cs), assets, planned: planned.map((h) => h.id), unfunded: pl.unfunded.slice(), nNo, top: first };
+  }
+
+  /* The shortfall panel for one planned asset: the cash lines, the monthly lines and what would have to change, every number from the live plan. opts.sim = also try the plan with the asset moved to the end of the buy order (one extra plan run). */
+  function shortfall(S, pl, fin, id, opts) {
+    if (pl && pl.raw) pl = pl.raw; pl = pl || plan(S); fin = fin || finance(S, pl);
+    const h = H(S, id); if (!h || h.status === 'owned') return null;
+    const F = fin && fin.feas ? fin.feas : feasible(S, pl, fin), A = F.assets[id]; if (!A) return null;
+    const c = A.cash, mo = A.monthly, v = pl.V[id], tr = pl.trust[id], g = S.g, type = h.type || 'house', ch = [];
+    const cfNow = tr && tr.ok && tr.pooled ? Math.max(0, tr.cf || 0) / dfac(S, tr.month) : mo.poolCf + mo.personal, perMo = cfNow > 0.5 ? cfNow : 0;
+    const fund = A.criteria.find((x) => x.id === 'funding'), dsc = A.criteria.find((x) => x.id === 'dscr'), car = A.criteria.find((x) => x.id === 'carry');
+    const needAt = (price) => needFor(S, Object.assign({}, h, { price }));
+    if (c.short > 0.5) {
+      ch.push({ id: 'cash', text: 'Raise ' + fm(c.short) + ' more cash' + (perMo > 0 ? ' (about ' + Math.ceil(c.short / perMo) + ' months at ' + fm(perMo) + '/mo of cash flow)' : ' (the portfolio has no spare monthly cash flow to build it)'), amount: c.short, months: perMo > 0 ? Math.ceil(c.short / perMo) : null });
+      const n1 = needAt(1e6), n0 = needAt(0), slope = (n1 - n0) / 1e6;
+      if (slope > 0 && c.have > n0) { const P = Math.floor((c.have - n0) / slope); if (P > 0 && P < h.price) ch.push({ id: 'price', text: 'Lower the price to ' + fm(P) + ' or less (now ' + fm(h.price) + ')', price: P }); }
+      const fits = loansFor(type, h).filter((l) => l.id !== h.loanId && !l.ownerOcc && !l.finRehab && !l.info && (type !== 'house' || !h.kind || h.kind !== 'multi' || mfFit(l, unitsOf(h), !!h.pack).ok)).filter((l) => !FEAS.loanMax[l.id] || (h.price * (100 - l.dp)) / 100 <= FEAS.loanMax[l.id]).map((l) => ({ id: l.id, name: l.name, need: (h.price * (l.dp + l.closing)) / 100 + (h.finCapex ? 0 : Math.max(0, h.capex || 0)), dp: l.dp })).sort((a, b) => a.need - b.need);
+      const ok2 = fits.filter((l) => l.need <= c.have + 0.5);
+      if (ok2.length) ch.push({ id: 'loan', text: 'Pick a loan that needs less down: ' + ok2.slice(0, 3).map((l) => l.name + ' (' + fm(l.need) + ' to close)').join('; '), loans: ok2.slice(0, 3) });
+      else if (fits.length && fits[0].need < c.need - 0.5) ch.push({ id: 'loan', text: 'No loan in the app fits what you can pull out; the lowest is ' + fits[0].name + ', ' + fm(fits[0].need) + ' to close', loans: fits.slice(0, 1) });
+    }
+    if (!mo.covered) { const need2 = -mo.short; ch.push({ id: 'cashflow', text: 'Add ' + fm(need2) + '/mo of cash flow to carry the payment', amount: need2 }); }
+    if (tr && tr.ok && (fund.status !== 'ok') && fund.status !== 'fail') ch.push({ id: 'wait', text: 'Wait: the plan funds it ' + inM(tr.month), month: tr.month });
+    if (dsc && dsc.status === 'fail') { const min = dscrMinOf(h), want = min * mo.payment - v.noi, k = type === 'business' ? 1 : (1 - g.vac / 100) * (1 - mgmtOf(S, h) / 100); if (want > 0) ch.push({ id: 'rent', text: 'Raise ' + (type === 'business' ? 'profit' : 'rent') + ' by ' + fm(want / k) + '/mo so the loan reaches DSCR ' + min, amount: want / k }); }
+    else if (!mo.covered) { const k = type === 'business' ? 1 : (1 - g.vac / 100) * (1 - mgmtOf(S, h) / 100); ch.push({ id: 'rent', text: 'Raise ' + (type === 'business' ? 'profit' : 'rent') + ' by ' + fm(-mo.short / k) + '/mo', amount: -mo.short / k }); }
+    const after = S.houses.slice(S.houses.indexOf(h) + 1).filter((q) => q.status !== 'owned' && pl.trust[q.id] && pl.trust[q.id].ok && pl.V[q.id].cf > 0), z = after.reduce((a, q) => a + pl.V[q.id].cf, 0);
+    if (c.short > 0.5 && after.length && z > 0.5) {
+      const o = { id: 'earlier', text: 'Buy the ' + after.length + ' assets after it first (they add ' + fm(z) + '/mo of cash flow) by moving it down the buy order', amount: z, n: after.length };
+      if (opts && opts.sim) { const S2 = JSON.parse(JSON.stringify(S)), ids = S2.houses.filter((q) => q.status !== 'owned').map((q) => q.id).filter((q) => q !== id).concat([id]); reorder(S2, ids); const p2 = plan(S2), m2 = p2.purchase[id]; o.simMonth = isFinite(m2) ? m2 : null; o.text += isFinite(m2) ? ': then it is bought ' + inM(m2) : ': it still cannot be funded in the plan'; }
+      ch.push(o);
+    }
+    return { id, verdict: A.verdict, cash: c, monthly: mo, changes: ch, lines: {
+      cashNeeded: { label: 'Cash needed to close', value: c.need, how: 'down ' + fm(c.down) + ' + closing ' + fm(c.closing) + (c.rehab > 0 ? ' + cash rehab ' + fm(c.rehab) : '') + ' = ' + fm(c.need) },
+      savings: { label: 'Your savings above the cushion', value: c.savings, how: c.pooled ? 'savings fund only the first purchase; later ones come from the trust' : 'cash on hand above the ' + ((S.p && S.p.emergencyMonths) || 0) + '-month reserve, plus job money saved by then' },
+      trustCash: { label: 'Cash the trust holds', value: c.trustCash, how: 'cash held by the assets above it' + (c.closest ? ' at the closest month, ' + mAt(c.month) : c.pooled ? ' ' + inM(c.month) : '') },
+      room: { label: 'Borrowing room', value: c.room, how: g.cap + '% of the assets\' value (a business ' + g.capBiz + '%) less their loans and what is already drawn' },
+      pull: { label: 'Cash you can pull out then', value: c.have, how: fm(c.savings) + ' + ' + fm(c.trustCash) + ' + ' + fm(c.room) + ' = ' + fm(c.have) },
+      downShort: { label: 'Down payment short', value: -c.short, how: fm(c.have) + ' can pull out - ' + fm(c.need) + ' needed = ' + sgn(c.have - c.need) },
+      uncovered: { label: 'Money still uncovered', value: -c.uncovered, how: fm(c.have) + ' can pull out - price ' + fm(c.price) + ' = ' + sgn(c.have - c.price) },
+      payment: { label: 'New loan payment', value: mo.payment, how: 'principal + interest' + (mipMonthly(h) > 0 ? ' + mortgage insurance' : '') + ' on ' + fm(loan(h)) + ' at ' + h.rate + '%' },
+      available: { label: 'Cash flow available to carry it', value: mo.available, how: 'asset income ' + fm(mo.asset) + ' + pool ' + fm(mo.poolCf) + (mo.personal > 0 ? ' + your surplus ' + fm(mo.personal) : '') + ' per month, today\'s dollars' },
+      monthShort: { label: mo.covered ? 'Monthly cash flow covered' : 'Monthly cash flow short', value: mo.short, how: fm(mo.available) + ' available - ' + fm(mo.payment) + ' payment = ' + sgn(mo.short) + '/mo' } } };
+  }
+
   function normalize(S) {
     S.g = Object.assign({}, GDEF, S.g || {}); S.g.autoPay = S.g.autoPay !== false;
     ['cap', 'capBiz', 'vac', 'refiRate', 'refiTerm'].forEach((k) => { if (!isFinite(+S.g[k])) S.g[k] = GDEF[k]; });
@@ -854,6 +1013,13 @@
     const set = new Set(ids), slots = []; S.houses.forEach((h, i) => { if (set.has(h.id)) slots.push(i); });
     const cur = slots.map((i) => S.houses[i].id); if (cur.join() === ids.join()) return false;
     const by = {}; S.houses.forEach((h) => { by[h.id] = h; }); ids.forEach((id, k) => { S.houses[slots[k]] = by[id]; }); return true;
+  }
+  /* the buy order = the list order of the planned (not owned) assets, across categories. moveTo puts asset id at position n (1 = first), clamping to 1..count; returns { changed, pos, clamped, ids }. */
+  const plannedIds = (S) => S.houses.filter((h) => h.status !== 'owned').map((h) => h.id);
+  function moveTo(S, id, n) {
+    const ids = plannedIds(S), i = ids.indexOf(id); if (i < 0) return { changed: false, pos: 0, clamped: false, ids };
+    const want = Math.round(+n), bad = !isFinite(want), pos = bad ? i + 1 : Math.max(1, Math.min(ids.length, want)), clamped = bad || pos !== want;
+    ids.splice(i, 1); ids.splice(pos - 1, 0, id); const changed = reorder(S, ids); return { changed, pos, clamped, ids };
   }
   /* ---------- purchase EXAMPLES: four typical purchases in each category, one per cost and quality tier (typical, not a quote; research brief in grader/multifamily-research.md).
      One table. To add an example, append one entry: { id, cat: 'house'|'multi'|'commercial'|'business', tier 1-4, tierName, name, type, loanId, units/pack (multi only), f: fields that go on the new asset, why(m) -> [basis text, arithmetic text] }.
@@ -1178,6 +1344,6 @@
     }
     return { SAFEKEY, DIAGKEY, SAFE_MAX, SAFE_BYTES, EV_MAX, ACT_MAX, DIAG_BYTES, REPORT_MAX, URL_MAX, ISSUE, hash, idsHash, fingerprint, okState, safeRead, safeWrite, safeAdd, safeDaily, safeInfo, replacedCheck, restoreCandidate, EXPLAIN, checks, anomalies, plannedParts, scrub, report, parseReport, issueUrl, CODE };
   })();
-  const E = { Diag, numbering, buyKey, EXAMPLES, EXKEY, EXV, EXF, exFields, exLabel, exLoanOk, exCheck, exEff, exEffective, exVal, exPrune, exClean, exOverrides, exSet, exRead, exWrite, exLoad, exCommit, exExport, exImport, exClearAll, exDraftSet, exDirty, exWarnings, exFmt, exampleShipped, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { Diag, FEAS, feasible, shortfall, moveTo, plannedIds, numbering, buyKey, EXAMPLES, EXKEY, EXV, EXF, exFields, exLabel, exLoanOk, exCheck, exEff, exEffective, exVal, exPrune, exClean, exOverrides, exSet, exRead, exWrite, exLoad, exCommit, exExport, exImport, exClearAll, exDraftSet, exDirty, exWarnings, exFmt, exampleShipped, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

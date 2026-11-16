@@ -117,9 +117,9 @@ exports.run = async function run(X) {
     P.t((await lvlOf(mk((T) => { T.g.dti = Math.floor(pk) - 2; }), '[data-testid=check-dti]')) === 'bad', 'DTI over the limit is red (limit ' + (Math.floor(pk) - 2) + '% vs peak ' + pk.toFixed(1) + '%)', 1.5, '');
     P.t((await lvlOf(mk((T) => { T.g.dti = Math.floor(pk / 0.85); }), '[data-testid=check-dti]')) === 'warn', 'DTI inside 85% of the limit but under it is amber', 1.5, '');
     P.t((await lvlOf(mk(() => {}), '[data-testid=check-dti]')) === 'ok', 'DTI far under the limit is plain', 0.5, '');
-    P.t((await lvlOf(mk((T) => { T.p.living = 5050; }), '[data-testid=check-pace]')) === 'warn', 'a tight profile (about $580/mo of job money) shows the plan-timing row amber (the last purchase comes after the plan ends)', 1.5, '');
+    P.t((await lvlOf(mk((T) => { T.p.living = 5050; }), '[data-testid=check-pace]')) === 'bad', 'a tight profile (about $580/mo of job money) shows the plan-timing row red (was amber: the last purchase comes after the plan ends, which is now not possible)', 1.5, '');
     await load(mk((T) => { T.p.living = 5050; }), ''); const chip = await page.locator('[data-testid=afford-chip]').getAttribute('data-lvl'), chk = await page.locator('[data-testid=checks-flag]').count();
-    P.t(chip === 'warn' && chk === 1, 'the Can I afford this chip and the Checks header turn amber together only when a number is past safe', 1, chip + ' flag ' + chk);
+    P.t(chip === 'bad' && chk === 1, 'the Can I afford this chip and the Checks header turn red together when a number is past its limit (was amber: a purchase after the plan ends is now Not yet)', 1, chip + ' flag ' + chk);
     await load(S, ''); P.t((await page.locator('[data-testid=afford-chip]').getAttribute('data-lvl')) === 'ok', 'afford chip is neutral (level ok) when the verdict is Yes', 0.5, '');
     return P;
   });
@@ -164,7 +164,7 @@ exports.run = async function run(X) {
     await page.click('[data-testid=load-stretch]'); const ct = await page.locator('[role=alertdialog]').textContent(); P.t(/Siena/.test(ct), 'confirm text names the house', 1, ct);
     await page.click('[data-stretch-yes]'); await page.waitForTimeout(150);
     const st = await store(), h = st.houses.find((x) => /607 Siena Way/.test(x.addr)); P.t(!!h && h.price === 135000000 && h.status === 'planned', 'the portfolio holds 607 Siena Way at $135,000,000', 2, h && h.addr);
-    const S1 = E.normalize(clone(st)), pl = E.planR(S1), f = E.finance(S1, pl); P.t(h && isFinite(pl.purchase[h.id]) && pl.purchase[h.id] <= pl.planM && f.status !== 'no', 'it is bought inside the plan (month ' + (h && pl.purchase[h.id]) + ') and the verdict is ' + f.status, 3, '');
+    const S1 = E.normalize(clone(st)), pl = E.planR(S1), f = E.finance(S1, pl); P.t(h && isFinite(pl.purchase[h.id]) && pl.purchase[h.id] <= pl.planM && f.feas.assets[h.id].verdict !== 'no', 'it is bought inside the plan (month ' + (h && pl.purchase[h.id]) + ') and its own can-I-buy-this verdict is ' + f.feas.assets[h.id].verdict + ' (was: the whole portfolio verdict is not no; the sample Bridgeway loan is over the SBA $5M cap)', 3, '');
     await page.goto(base() + '/index.html?j=' + seq++); await page.waitForSelector('#app > *'); const txt = await page.evaluate(() => document.getElementById('app').innerText);
     P.t(/Siena/.test(txt) || (await page.locator('[data-testid^=cat-header]').count()) > 0, 'the Planned page renders the new portfolio', 0.5, ''); const hh = page.locator('[data-testid=cat-header-house]'); if ((await hh.getAttribute('aria-expanded')) === 'false') await hh.click(); const t2 = await page.evaluate(() => document.getElementById('app').innerText);
     P.t(/607 Siena Way/.test(t2), 'the row 607 Siena Way is visible under Homes', 1.5, '');

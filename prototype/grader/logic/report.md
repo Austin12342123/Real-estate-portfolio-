@@ -1,22 +1,23 @@
 # Logic and math grader (LOGIC_ONLY)
 
-Run: 2026-11-16T10:28:33.993Z
+Run: 2026-11-16T11:46:03.245Z
 
 **TOTAL 100 / 100**
 
 | Cat | Area | Earned | Max |
 |---|---|---|---|
-| L1 | Loan / amortization / payoff math | 10.52 | 10.52 |
-| L2 | Income, expense and NOI model | 6.58 | 6.58 |
-| L3 | Leverage, LTV/CLTV and credit-line rules | 12.82 | 12.82 |
-| L4 | Lender qualification (DTI / DSCR / rental haircut) | 7.23 | 7.23 |
-| L5 | Loan-product terms vs sources (every LOANS preset) | 5.64 | 5.64 |
-| L6 | Appreciation, rent growth, inflation and time basis | 9.86 | 9.86 |
-| L7 | Taxes, selling costs and depreciation | 9.53 | 9.53 |
-| L8 | Business valuation, growth and operating model | 9.21 | 9.21 |
-| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 13.48 | 13.48 |
-| L10 | Disclosure, labels, units and glossary accuracy | 3.95 | 3.95 |
-| L11 | Purchase examples (16 typical purchases) | 11.18 | 11.18 |
+| L1 | Loan / amortization / payoff math | 9.41 | 9.41 |
+| L2 | Income, expense and NOI model | 5.88 | 5.88 |
+| L3 | Leverage, LTV/CLTV and credit-line rules | 11.47 | 11.47 |
+| L4 | Lender qualification (DTI / DSCR / rental haircut) | 6.47 | 6.47 |
+| L5 | Loan-product terms vs sources (every LOANS preset) | 5.04 | 5.04 |
+| L6 | Appreciation, rent growth, inflation and time basis | 8.82 | 8.82 |
+| L7 | Taxes, selling costs and depreciation | 8.53 | 8.53 |
+| L8 | Business valuation, growth and operating model | 8.23 | 8.23 |
+| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 12.05 | 12.05 |
+| L10 | Disclosure, labels, units and glossary accuracy | 3.53 | 3.53 |
+| L12 | Can-I-buy-this feasibility, shortfall and buy order (engine) | 10.58 | 10.58 |
+| L11 | Purchase examples (16 typical purchases) | 10 | 10 |
 
 ## Checks
 
@@ -109,9 +110,9 @@ Run: 2026-11-16T10:28:33.993Z
 | L10.4 | Preset notes that state a number or rule match LOANS fields (FHA/203(k)/SBA caps, owner-occupancy, interest-only) and the sellerb/sellerc notes say the share seller-financed is partial and negotiable | 1 | 1 | PASS The seller finances part of the price. This preset has the seller carry 80%, which is aggressive; sellers usually carry 10% to 50%. |  |
 | L10.5 | Source ledger (logic/sources.md) lists at least 40 distinct fetched-and-read sources, each with a URL, an access date (header) and an exact fact; every source id cited by a check exists and is not withdrawn; unverified checks are not scored | 1 | 1 | PASS 42 sources with URL and fact; cited ids missing: none |  |
 | L8.6 | Default plan has renovations on at least the first two houses bought (rehab $20K-$40K paid from cash, not financed, new appraisal adds 1.2x-1.6x the rehab cost, rent lift 8-12%), and the engine follows the rules: the value is the new appraisal when the work finishes, income rises by the lift, homes still cash flow positive | 1.5 | 1.5 | PASS maple $25000 -> $70000; cedar $30000 -> $87000 |  |
-| L8.7 | Default plan is robust and honest: with the default finance profile net worth >= $125M and cash flow >= $1.3M/mo in today's dollars, verdict Yes, debt-to-income peak <= 35%, no unfunded asset, every purchase inside the plan years; with a much tighter profile (about $580/mo of job money left after living costs) the plan is NOT silently Yes: the verdict is Tight with a reason that names the late last purchase | 2 | 2 | PASS default NW $303.9M, cf $3.45M, DTI 20%, last buy month 299; weak profile (job money $580/mo): NW $31.3M, verdict tight, last buy month 407 |  |
+| L8.7 | Default plan is robust and honest: with the default finance profile net worth >= $125M and cash flow >= $1.3M/mo in today's dollars, verdict Yes, debt-to-income peak <= 35%, no unfunded asset, every purchase inside the plan years; with a much tighter profile (about $580/mo of job money left after living costs) the plan is NOT silently Yes: the verdict is Not yet (no; was Tight before the can-I-buy-this tests: a purchase after the plan ends is not possible) with a reason that names the late last purchase | 2 | 2 | PASS default NW $303.9M, cf $3.45M, DTI 20%, last buy month 299; weak profile (job money $580/mo): NW $31.3M, verdict no, last buy month 407 |  |
 | L8.8 | Sold asset cash profit (pl.exits[id].profit) = sale price - selling costs - loan and liens paid off - tax on the sale - (down payment + closing costs + cash improvements), checked against independent reference math on 40 random sales (gain, loss, flat-rate tax, improvements) | 2 | 2 | PASS 0 / 40 disagree  |  |
-| L9.8 | Stretch scenario affords 607 Siena Way (Bel Air, Los Angeles CA 90077): it is a planned $135,000,000 asset bought inside the plan years, the finance verdict is not "no", the cash flow after the purchase still covers the house's carry (property tax + insurance + upkeep), no partner capital, and net worth stays large | 2 | 2 | PASS bought in month 170 (plan 240), verdict yes, NW end $542M, cash flow after $1859253 vs carry $287500/mo |  |
+| L9.8 | Stretch scenario affords 607 Siena Way (Bel Air, Los Angeles CA 90077): it is a planned $135,000,000 asset bought inside the plan years, the can-I-buy-this verdict of that asset is not "no" (was: the whole portfolio verdict; the stretch sample Bridgeway loan is over the $5M SBA 7(a) cap), the cash flow after the purchase still covers the house's carry (property tax + insurance + upkeep), no partner capital, and net worth stays large | 2 | 2 | PASS bought in month 170 (plan 240), verdict no, NW end $542M, cash flow after $1859253 vs carry $287500/mo |  |
 | L11.1 | Examples table: 4 examples in each of Home single-family, Multi-family, Commercial, Business, tiers 1-4 once each (cost ascending), unique ids, none uses the user's illustrative 80,000 / 20,000 / 140,000, every (i) text says typical, not a quote and shows arithmetic | 1 | 1 | PASS  |  |
 | L11.2 | Every example is internally consistent when built through the Add path (newAsset + applyLoan + mfDefaults): cash flow after the loan >= 0, DSCR >= the loan's minimum on today's rent and after any rent lift, the loan fits the unit count, cash needed = down payment + closing + cash rehab, rent total = units x rent per unit | 2 | 2 | PASS  |  |
 | L11.3 | Market sanity: commercial cap rate is inside the property band and within 0.15 of its CBRE-based target; business price / yearly profit is inside its multiple range and SBA 7(a) loans stay under $5M; the homes follow the stated rules (70% rule and rent under the HUD FMR for the budget fixer, appraisal 1.2-1.6x the rehab for the value-add, all-in <= 75% of value) | 2 | 2 | PASS  |  |
@@ -121,5 +122,15 @@ Run: 2026-11-16T10:28:33.993Z
 | L11.7 | Warnings fire exactly when the rule is broken: over thousands of random edits the set of warnings equals an independent reference of the rules (cash flow < 0; DSCR < the loan's minimum; loan not for the unit count; SBA 7(a) above $5M; price / profit outside its range; cap rate outside its band; price above the 70% rule), and none fires on the 16 shipped examples | 2 | 2 | PASS  fired {"dscr":1518,"cf":1450,"elig":121,"mult":592,"cap":556,"rule":85,"sba":100} |  |
 | L11.8 | Overrides stay apart from everything else: the shipped table and the default plan are byte-for-byte unchanged after editing, saving, resetting and importing overrides; the effective example is shipped + overrides through one function (examplesFor / exampleById / exEffective agree), unedited fields follow the shipped value, an edit equal to the shipped value is not an override, and a shipped value changed later flows through to unedited fields while an edited field wins | 2 | 2 | PASS  |  |
 | L11.9 | Loading is defensive and storage failure is survivable: garbage text, wrong types, unknown ids and fields, numbers out of range, NaN, a loan of the wrong kind and a future version are cleaned (clamped or dropped) without throwing; a storage that throws on read or write keeps the edits in memory; a second tab's edits to other examples survive a save (merge on write); old backups without overrides leave them alone | 2 | 2 | PASS  |  |
+| L12.1 | The user's example ($10M business, $2.5M down, $1M can be pulled out, $250,000/mo of income): cash needed $2.5M, down payment short -$1.5M, money uncovered -$9M, payment from the loan formula, monthly covered | 3 | 3 | PASS  |  |
+| L12.2 | A portfolio that can afford it: $3M cash covers the $2.5M down, income covers the payment -> verdict yes, every criterion ok, no cash shortfall | 2 | 2 | PASS yes  yes |  |
+| L12.3 | Cash-only short (income covers the payment) is no-fund and offers a lower price of $4M; monthly-only short (plenty of cash, income cannot carry the payment) is no-cashflow with monthly short = available - payment | 3 | 3 | PASS  |  |
+| L12.4 | Lender hard tests: a DSCR below the loan minimum and an SBA 7(a) loan over $5M each make the verdict no (kind nolender) with plenty of cash; a DSCR of 1.24 against 1.25 is only a caution | 2 | 2 | PASS  |  |
+| L12.5 | Concentration: with 4 assets one worth 70% of the total is a fail (soft, never makes it no), 40% a caution, 20% ok; fewer than 3 assets are not tested | 1 | 1 | PASS  |  |
+| L12.6 | Stress tests: the rate +2 pts and vacancy +10 pts figures equal the loan formula and the income model (hand computed) | 1 | 1 | PASS  |  |
+| L12.7 | The screenshot case ($20,000 cash, $96,000 salary, $27M business needing $10.3M, $6.75M down): verdict no (not tight), headline starts Not yet, first reason 'Not possible: needs $10.3M, the plan never reaches it' | 2 | 2 | PASS  |  |
+| L12.8 | Live updates: the same asset is no, then yes with more cash, then no again; the asset list follows an added, removed or moved asset (nothing is cached) | 1 | 1 | PASS  |  |
+| L12.9 | Buy order engine: moveTo puts an asset at position N across categories, clamps to 1..n, keeps owned assets where they are, numbering is 1..n, nothing is bought before the assets above it | 2 | 2 | PASS  |  |
+| L12.10 | The default plan stays green: 36 assets, nothing owned, verdict yes, every asset and portfolio test ok, real net worth >= $125M | 1 | 1 | PASS yes  132808837 |  |
 
 Checks marked "disclosed, not source-verified" pass on disclosure or a benchmark file whose sources could not be fetched; see sources.md.

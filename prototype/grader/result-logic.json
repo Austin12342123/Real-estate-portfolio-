@@ -1,62 +1,67 @@
 {
- "run": "2026-11-16T10:28:33.993Z",
+ "run": "2026-11-16T12:08:15.893Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 10.52,
-   "max": 10.52
+   "earned": 9.41,
+   "max": 9.41
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 6.58,
-   "max": 6.58
+   "earned": 5.88,
+   "max": 5.88
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 12.82,
-   "max": 12.82
+   "earned": 11.47,
+   "max": 11.47
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 7.23,
-   "max": 7.23
+   "earned": 6.47,
+   "max": 6.47
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 5.64,
-   "max": 5.64
+   "earned": 5.04,
+   "max": 5.04
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 9.86,
-   "max": 9.86
+   "earned": 8.82,
+   "max": 8.82
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 9.53,
-   "max": 9.53
+   "earned": 8.53,
+   "max": 8.53
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 9.21,
-   "max": 9.21
+   "earned": 8.23,
+   "max": 8.23
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 13.48,
-   "max": 13.48
+   "earned": 12.05,
+   "max": 12.05
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 3.95,
-   "max": 3.95
+   "earned": 3.53,
+   "max": 3.53
+  },
+  "L12": {
+   "name": "Can-I-buy-this feasibility, shortfall and buy order (engine)",
+   "earned": 10.58,
+   "max": 10.58
   },
   "L11": {
    "name": "Purchase examples (16 typical purchases)",
-   "earned": 11.18,
-   "max": 11.18
+   "earned": 10,
+   "max": 10
   }
  },
  "checks": [
@@ -1020,11 +1025,11 @@
   {
    "cat": "L8",
    "id": "L8.7",
-   "name": "Default plan is robust and honest: with the default finance profile net worth >= $125M and cash flow >= $1.3M/mo in today's dollars, verdict Yes, debt-to-income peak <= 35%, no unfunded asset, every purchase inside the plan years; with a much tighter profile (about $580/mo of job money left after living costs) the plan is NOT silently Yes: the verdict is Tight with a reason that names the late last purchase",
+   "name": "Default plan is robust and honest: with the default finance profile net worth >= $125M and cash flow >= $1.3M/mo in today's dollars, verdict Yes, debt-to-income peak <= 35%, no unfunded asset, every purchase inside the plan years; with a much tighter profile (about $580/mo of job money left after living costs) the plan is NOT silently Yes: the verdict is Not yet (no; was Tight before the can-I-buy-this tests: a purchase after the plan ends is not possible) with a reason that names the late last purchase",
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "default NW $303.9M, cf $3.45M, DTI 20%, last buy month 299; weak profile (job money $580/mo): NW $31.3M, verdict tight, last buy month 407",
+   "detail": "default NW $303.9M, cf $3.45M, DTI 20%, last buy month 299; weak profile (job money $580/mo): NW $31.3M, verdict no, last buy month 407",
    "source": "",
    "disclosedOnly": false
   },
@@ -1042,11 +1047,11 @@
   {
    "cat": "L9",
    "id": "L9.8",
-   "name": "Stretch scenario affords 607 Siena Way (Bel Air, Los Angeles CA 90077): it is a planned $135,000,000 asset bought inside the plan years, the finance verdict is not \"no\", the cash flow after the purchase still covers the house's carry (property tax + insurance + upkeep), no partner capital, and net worth stays large",
+   "name": "Stretch scenario affords 607 Siena Way (Bel Air, Los Angeles CA 90077): it is a planned $135,000,000 asset bought inside the plan years, the can-I-buy-this verdict of that asset is not \"no\" (was: the whole portfolio verdict; the stretch sample Bridgeway loan is over the $5M SBA 7(a) cap), the cash flow after the purchase still covers the house's carry (property tax + insurance + upkeep), no partner capital, and net worth stays large",
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "bought in month 170 (plan 240), verdict yes, NW end $542M, cash flow after $1859253 vs carry $287500/mo",
+   "detail": "bought in month 170 (plan 240), verdict no, NW end $542M, cash flow after $1859253 vs carry $287500/mo",
    "source": "",
    "disclosedOnly": false
   },
@@ -1146,6 +1151,116 @@
    "earned": 2,
    "pass": true,
    "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.1",
+   "name": "The user's example ($10M business, $2.5M down, $1M can be pulled out, $250,000/mo of income): cash needed $2.5M, down payment short -$1.5M, money uncovered -$9M, payment from the loan formula, monthly covered",
+   "pts": 3,
+   "earned": 3,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.2",
+   "name": "A portfolio that can afford it: $3M cash covers the $2.5M down, income covers the payment -> verdict yes, every criterion ok, no cash shortfall",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "yes  yes",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.3",
+   "name": "Cash-only short (income covers the payment) is no-fund and offers a lower price of $4M; monthly-only short (plenty of cash, income cannot carry the payment) is no-cashflow with monthly short = available - payment",
+   "pts": 3,
+   "earned": 3,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.4",
+   "name": "Lender hard tests: a DSCR below the loan minimum and an SBA 7(a) loan over $5M each make the verdict no (kind nolender) with plenty of cash; a DSCR of 1.24 against 1.25 is only a caution",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.5",
+   "name": "Concentration: with 4 assets one worth 70% of the total is a fail (soft, never makes it no), 40% a caution, 20% ok; fewer than 3 assets are not tested",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.6",
+   "name": "Stress tests: the rate +2 pts and vacancy +10 pts figures equal the loan formula and the income model (hand computed)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.7",
+   "name": "The screenshot case ($20,000 cash, $96,000 salary, $27M business needing $10.3M, $6.75M down): verdict no (not tight), headline starts Not yet, first reason 'Not possible: needs $10.3M, the plan never reaches it'",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.8",
+   "name": "Live updates: the same asset is no, then yes with more cash, then no again; the asset list follows an added, removed or moved asset (nothing is cached)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.9",
+   "name": "Buy order engine: moveTo puts an asset at position N across categories, clamps to 1..n, keeps owned assets where they are, numbering is 1..n, nothing is bought before the assets above it",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.10",
+   "name": "The default plan stays green: 36 assets, nothing owned, verdict yes, every asset and portfolio test ok, real net worth >= $125M",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "yes  132808837",
    "source": "",
    "disclosedOnly": false
   }

@@ -1,8 +1,8 @@
 # Portfolio gestures grader (GEST_ONLY)
 
-Run: 2026-11-16T10:10:31.228Z  |  35s
+Run: 2026-11-16T10:45:31.738Z  |  53s
 
-## I. Portfolio sections, gestures and funding order: **100.00 / 100** (separate scale; not included in A-E + R, F, G or H)
+## I. Portfolio sections, gestures and funding order: **128.00 / 128** (separate scale; not included in A-E + R, F, G or H)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -16,6 +16,8 @@ Run: 2026-11-16T10:10:31.228Z  |  35s
 | I8 | Rent & expenses shows the loan payment (P&I + mortgage insurance, extra) and the cash flow after the loan, in sync with Payment now / Cash flow now | 6.00 | 6.00 | 6/6 sub-checks pass |
 | I9 | Swipe down closes the keyboard (blurs the focused field); Enter / Done also closes it; swipes inside the field or upward do not | 6.00 | 6.00 | 6/6 sub-checks pass |
 | I10 | Layout and hygiene: no sideways scroll at 320 / 390 / 430 with a panel open and while dragging, new buttons >= 44 px, no console errors or outside requests | 4.00 | 4.00 | 4/4 sub-checks pass |
+| I11 | Buy order screen: one flat list of all planned assets (homes, commercial, business) with number badges; Up / Down / Top / Move to # / Buy position box / drag move assets ACROSS categories, renumber at once, Undo works, targets >= 44 px, no overflow at 320 / 390 / 430 in light and dark | 14.00 | 14.00 | 14/14 sub-checks pass |
+| I12 | Shortfall panel: for a $10M business with $2.5M down and $1M to pull out the asset page shows the cash lines, down short -$1,500,000, uncovered -$9,000,000, the monthly lines and ranked changes; the row says Not possible - short $1.5M; the Finances chip and headline say Not yet with that reason; it all updates without a reload; scorecard lists every test | 14.00 | 14.00 | 11/11 sub-checks pass |
 
 ### I failures
 

@@ -13,7 +13,7 @@ const R = require('./logic/ref.js');
 
 const CATS = { L1: ['Loan / amortization / payoff math', 14], L2: ['Income, expense and NOI model', 14], L3: ['Leverage, LTV/CLTV and credit-line rules', 12], L4: ['Lender qualification (DTI / DSCR / rental haircut)', 10],
   L5: ['Loan-product terms vs sources (every LOANS preset)', 12], L6: ['Appreciation, rent growth, inflation and time basis', 10], L7: ['Taxes, selling costs and depreciation', 8], L8: ['Business valuation, growth and operating model', 8],
-  L9: ['Plan integrity (ordering, trust funding, cash recycling, stress test)', 7], L10: ['Disclosure, labels, units and glossary accuracy', 5], L11: ['Purchase examples (16 typical purchases)', 6] };
+  L9: ['Plan integrity (ordering, trust funding, cash recycling, stress test)', 7], L10: ['Disclosure, labels, units and glossary accuracy', 5], L12: ['Can-I-buy-this feasibility, shortfall and buy order (engine)', 14], L11: ['Purchase examples (16 typical purchases)', 6] };
 const checks = [], unverified = [];
 const near = (a, b, tol) => Math.abs(a - b) <= (tol === undefined ? 0.01 : tol);
 const nearRel = (a, b, t) => Math.abs(a - b) <= Math.max(0.01, Math.abs(b) * (t || 1e-9));
@@ -550,10 +550,10 @@ chk('L8', 'L8.6', 'Default plan has renovations on at least the first two houses
     if (plS.V[h.id].cf < 0) bad.push(h.id + ' loses money'); });
   return { pass: first.length === 2 && bad.length === 0, detail: first.map((h) => h.id + ' $' + h.capex + ' -> $' + h.arv).join('; ') + (bad.length ? ' | ' + bad.join('; ') : '') };
 });
-chk('L8', 'L8.7', 'Default plan is robust and honest: with the default finance profile net worth >= $125M and cash flow >= $1.3M/mo in today\'s dollars, verdict Yes, debt-to-income peak <= 35%, no unfunded asset, every purchase inside the plan years; with a much tighter profile (about $580/mo of job money left after living costs) the plan is NOT silently Yes: the verdict is Tight with a reason that names the late last purchase', 2, () => {
+chk('L8', 'L8.7', 'Default plan is robust and honest: with the default finance profile net worth >= $125M and cash flow >= $1.3M/mo in today\'s dollars, verdict Yes, debt-to-income peak <= 35%, no unfunded asset, every purchase inside the plan years; with a much tighter profile (about $580/mo of job money left after living costs) the plan is NOT silently Yes: the verdict is Not yet (no; was Tight before the can-I-buy-this tests: a purchase after the plan ends is not possible) with a reason that names the late last purchase', 2, () => {
   const f = E.finance(seed, plS), h = plS.horizon;
   const T = JSON.parse(JSON.stringify(seed)); T.p.living = 5050; E.normalize(T); const pw = E.plan(T), fw = E.finance(T, pw), sur = fw.kpis.jobSurplus0;
-  const d28 = Math.pow(1 + seed.p.inflation / 100, 28), ok = h.nw / d28 >= 125e6 && h.cf / d28 >= 1.3e6 && f.status === 'yes' && plS.worst.dti <= 35 && plS.unfunded.length === 0 && plS.lastBuy <= plS.planM && Math.abs(sur - 580) < 5 && fw.status === 'tight' && /last purchase/i.test(fw.reasons.map((x) => x.text).join(' ')) && pw.unfunded.length === 0;
+  const d28 = Math.pow(1 + seed.p.inflation / 100, 28), ok = h.nw / d28 >= 125e6 && h.cf / d28 >= 1.3e6 && f.status === 'yes' && plS.worst.dti <= 35 && plS.unfunded.length === 0 && plS.lastBuy <= plS.planM && Math.abs(sur - 580) < 5 && fw.status === 'no' && /last purchase/i.test(fw.reasons.map((x) => x.text).join(' ')) && pw.unfunded.length === 0;
   return { pass: ok, detail: 'default NW $' + (h.nw / 1e6).toFixed(1) + 'M, cf $' + (h.cf / 1e6).toFixed(2) + 'M, DTI ' + plS.worst.dti.toFixed(0) + '%, last buy month ' + plS.lastBuy + '; weak profile (job money $' + Math.round(sur) + '/mo): NW $' + (pw.horizon.nw / 1e6).toFixed(1) + 'M, verdict ' + fw.status + ', last buy month ' + pw.lastBuy };
 });
 chk('L8', 'L8.8', 'Sold asset cash profit (pl.exits[id].profit) = sale price - selling costs - loan and liens paid off - tax on the sale - (down payment + closing costs + cash improvements), checked against independent reference math on 40 random sales (gain, loss, flat-rate tax, improvements)', 2, () => {
@@ -566,11 +566,11 @@ chk('L8', 'L8.8', 'Sold asset cash profit (pl.exits[id].profit) = sale price - s
     if (!nearRel(ex0.profit, want, 1e-6) || !near(ex0.proceeds, proceeds, 0.01) || !near(ex0.cashIn, cashIn, 0.01) || !near(ex0.tax, tax, 0.01)) { bad++; ex = [price, dp, sm, Math.round(ex0.profit), Math.round(want)].join(' '); } }
   return { pass: bad === 0, detail: bad + ' / 40 disagree ' + ex };
 });
-chk('L9', 'L9.8', 'Stretch scenario affords 607 Siena Way (Bel Air, Los Angeles CA 90077): it is a planned $135,000,000 asset bought inside the plan years, the finance verdict is not "no", the cash flow after the purchase still covers the house\'s carry (property tax + insurance + upkeep), no partner capital, and net worth stays large', 2, () => {
+chk('L9', 'L9.8', 'Stretch scenario affords 607 Siena Way (Bel Air, Los Angeles CA 90077): it is a planned $135,000,000 asset bought inside the plan years, the can-I-buy-this verdict of that asset is not "no" (was: the whole portfolio verdict; the stretch sample Bridgeway loan is over the $5M SBA 7(a) cap), the cash flow after the purchase still covers the house\'s carry (property tax + insurance + upkeep), no partner capital, and net worth stays large', 2, () => {
   const st = E.seedStretch(), pl = E.plan(st), f = E.finance(st, pl), h = st.houses.find((x) => /607 Siena Way/.test(x.addr)), m = h ? pl.purchase[h.id] : Infinity;
   if (!h) return { pass: false, detail: 'house missing' };
   const carry = h.tax + h.ins + (st.g.maint / 100) * h.price / 12, after = isFinite(m) ? pl.at(m + 1) : null;
-  const ok = h.price === 135000000 && h.status === 'planned' && /Los Angeles CA 90077/.test(h.addr) && isFinite(m) && m <= pl.planM && f.status !== 'no' && after && after.cf >= carry && pl.horizon.nw >= 300e6 && st.p.capital.every((c) => c.amount === 0 || true) && pl.unfunded.length === 0;
+  const ok = h.price === 135000000 && h.status === 'planned' && /Los Angeles CA 90077/.test(h.addr) && isFinite(m) && m <= pl.planM && f.feas.assets[h.id].verdict !== 'no' && after && after.cf >= carry && pl.horizon.nw >= 300e6 && st.p.capital.every((c) => c.amount === 0 || true) && pl.unfunded.length === 0;
   return { pass: !!ok, detail: 'bought in month ' + m + ' (plan ' + pl.planM + '), verdict ' + f.status + ', NW end $' + (pl.horizon.nw / 1e6).toFixed(0) + 'M, cash flow after $' + (after && Math.round(after.cf)) + ' vs carry $' + Math.round(carry) + '/mo' };
 });
 
@@ -666,6 +666,69 @@ chk('L11', 'L11.9', 'Loading is defensive and storage failure is survivable: gar
   E.exSet({}); const t1 = exStub(); E.exCommit(t1, 'home-s8', { price: 120000 }); const stale = JSON.stringify(E.exExport()); E.exSet({}); /* tab B wrote another example while tab A still had the old map */ t1.m['rep-v4-examples'] = JSON.stringify({ v: 1, ov: { 'home-s8': { price: 120000 }, 'comm-nnn': { price: 1700000 } } }); E.exSet(JSON.parse(stale).ov); E.exCommit(t1, 'biz-sba', { margin: 15 }); const kept = JSON.parse(t1.m['rep-v4-examples']).ov; if (!(kept['comm-nnn'] && kept['biz-sba'] && kept['home-s8'])) bad.push('merge on write ' + Object.keys(kept));
   if (!/"v":1/.test(t1.m['rep-v4-examples'])) bad.push('no version'); E.exSet({}); return { pass: !bad.length, detail: bad.join('; ') }; });
 }
+}
+
+
+/* ---------------- L12: can I buy this? feasibility, shortfall panel, buy order ---------------- */
+{
+  const P0 = (o) => Object.assign({ cash: 0, cashApy: 0, living: 0, inflation: 0, emergencyMonths: 0, portfolioTaxPct: 0, salesTaxPct: 0, statePct: 0, landPct: 20, bizIntPct: 70, housing: 0, operating: 1, gmMonthly: 0, bizHours: 0, jobs: [], planned: [], capital: [] }, o || {});
+  const mkF = (houses, p, g) => E.normalize({ g: Object.assign({}, E.GDEF, { closing: 0, autoPay: false }, g || {}), p: P0(p), houses });
+  const biz = (o) => A('business', 'bankbiz', Object.assign({ id: 'b1', addr: 'Big Business', price: 10000000, dp: 25, closingPct: 0, rent: 250000, capex: 0, growth: 0 }, o || {}));
+  const run = (S) => { const pl = E.plan(S), f = E.finance(S, pl); return { pl, f, F: f.feas, sf: (id) => E.shortfall(S, pl, f, id) }; };
+  chk('L12', 'L12.1', "The user's example ($10M business, $2.5M down, $1M can be pulled out, $250,000/mo of income): cash needed $2.5M, down payment short -$1.5M, money uncovered -$9M, payment from the loan formula, monthly covered", 3, () => {
+    const S = mkF([biz()], { cash: 1e6 }), r = run(S), sf = r.sf('b1'), pay = R.paymentClosed(7.5e6, 9, 84), v = r.F.assets.b1, bad = [];
+    if (sf.cash.need !== 2.5e6) bad.push('need ' + sf.cash.need); if (!near(sf.lines.downShort.value, -1.5e6, 0.5)) bad.push('down ' + sf.lines.downShort.value); if (!near(sf.lines.uncovered.value, -9e6, 0.5)) bad.push('uncov ' + sf.lines.uncovered.value);
+    if (!near(sf.monthly.payment, pay, 0.01)) bad.push('pay ' + sf.monthly.payment + ' vs ' + pay); if (!sf.monthly.covered || !near(sf.lines.monthShort.value, 250000 - pay, 0.01)) bad.push('monthly ' + sf.lines.monthShort.value);
+    if (v.verdict !== 'no' || v.kind !== 'nofund' || r.f.status !== 'no') bad.push('verdict ' + v.verdict + '/' + v.kind + '/' + r.f.status); if (!/^Not possible: needs \$2\.5M, the plan never reaches it/.test(v.reasons[0].text)) bad.push('reason ' + v.reasons[0].text);
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.2', 'A portfolio that can afford it: $3M cash covers the $2.5M down, income covers the payment -> verdict yes, every criterion ok, no cash shortfall', 2, () => {
+    const r = run(mkF([biz()], { cash: 3e6 })), a = r.F.assets.b1, bad = a.criteria.filter((c) => c.status !== 'ok').map((c) => c.id + ':' + c.status);
+    return { pass: a.verdict === 'yes' && !bad.length && r.f.status !== 'no' && r.sf('b1') === null || (a.verdict === 'yes' && !bad.length && r.f.status !== 'no'), detail: a.verdict + ' ' + bad.join(',') + ' ' + r.f.status }; });
+  chk('L12', 'L12.3', 'Cash-only short (income covers the payment) is no-fund and offers a lower price of $4M; monthly-only short (plenty of cash, income cannot carry the payment) is no-cashflow with monthly short = available - payment', 3, () => {
+    const a = run(mkF([biz()], { cash: 1e6 })), pay = R.paymentClosed(7.5e6, 9, 84), bad = [], sa = a.sf('b1');
+    if (a.F.assets.b1.kind !== 'nofund' || !sa.monthly.covered) bad.push('cash-only kind ' + a.F.assets.b1.kind); if (!sa.changes.some((c) => c.id === 'price' && c.price === 4e6)) bad.push('price option ' + JSON.stringify(sa.changes.map((c) => c.id + c.price)));
+    const b = run(mkF([biz({ rent: 90000 })], { cash: 5e6 })), sb = b.sf('b1'), vb = b.F.assets.b1;
+    if (vb.verdict !== 'no' || vb.kind !== 'nolender' && vb.kind !== 'nocashflow') bad.push('monthly-only ' + vb.verdict + '/' + vb.kind); if (!near(sb.lines.monthShort.value, 90000 - pay, 0.01) || sb.monthly.covered) bad.push('monthly short ' + sb.lines.monthShort.value); if (sb.cash.short !== 0) bad.push('cash short ' + sb.cash.short);
+    if (!sb.changes.some((c) => c.id === 'cashflow' && near(c.amount, pay - 90000, 0.01))) bad.push('cashflow option');
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.4', 'Lender hard tests: a DSCR below the loan minimum and an SBA 7(a) loan over $5M each make the verdict no (kind nolender) with plenty of cash; a DSCR of 1.24 against 1.25 is only a caution', 2, () => {
+    const bad = [], pay = R.paymentClosed(7.5e6, 9, 84), d = run(mkF([biz({ rent: 100000 })], { cash: 9e6 })), dd = d.F.assets.b1.criteria.find((c) => c.id === 'dscr');
+    if (dd.status !== 'fail' || !near(+dd.measured, 100000 / pay, 0.01) || d.F.assets.b1.verdict !== 'no' || d.F.assets.b1.kind !== 'nolender') bad.push('dscr ' + dd.status + ' ' + dd.measured);
+    const s = run(mkF([A('business', 'sba7a', { id: 's1', addr: 'SBA', price: 8e6, dp: 10, closingPct: 0, rent: 400000, growth: 0 })], { cash: 9e6 })), lm = s.F.assets.s1.criteria.find((c) => c.id === 'loanmax');
+    if (lm.status !== 'fail' || s.F.assets.s1.kind !== 'nolender' || s.F.assets.s1.verdict !== 'no') bad.push('sba ' + lm.status);
+    const c = run(mkF([biz({ rent: Math.round(1.24 * pay) })], { cash: 9e6 })), cc = c.F.assets.b1.criteria.find((x) => x.id === 'dscr'); if (cc.status !== 'caution') bad.push('1.24 should be caution ' + cc.status + ' ' + cc.measured);
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.5', 'Concentration: with 4 assets one worth 70% of the total is a fail (soft, never makes it no), 40% a caution, 20% ok; fewer than 3 assets are not tested', 1, () => {
+    const hs = (p) => [0, 1, 2].map((i) => A('house', 'conv30', { id: 'h' + i, price: 100000, rent: 1500, tax: 100, ins: 50, growth: 0 })).concat([A('house', 'conv30', { id: 'big', price: p, rent: 1500 * p / 100000, tax: 100 * p / 100000, ins: 50, growth: 0 })]);
+    const st = (p) => run(mkF(hs(p), { cash: 5e7 })).F.assets.big, cs = (p) => st(p).criteria.find((c) => c.id === 'concentration').status, pr = (sh) => Math.round(300000 * sh / (1 - sh)), bad = [];
+    if (cs(pr(0.7)) !== 'fail') bad.push('70% ' + cs(pr(0.7))); if (cs(pr(0.4)) !== 'caution') bad.push('40% ' + cs(pr(0.4))); if (cs(pr(0.2)) !== 'ok') bad.push('20% ' + cs(pr(0.2)));
+    if (run(mkF([biz()], { cash: 3e6 })).F.assets.b1.criteria.find((c) => c.id === 'concentration').status !== 'ok') bad.push('1 asset tested'); if (st(pr(0.7)).verdict === 'no') bad.push('concentration made it no ' + st(pr(0.7)).reasons.map((r) => r.id));
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.6', 'Stress tests: the rate +2 pts and vacancy +10 pts figures equal the loan formula and the income model (hand computed)', 1, () => {
+    const h = A('commercial', 'comm25', { id: 'c1', addr: 'Strip', price: 1000000, dp: 25, closingPct: 0, rent: 9000, tax: 0, ins: 0, hoa: 0, nnn: 0, growth: 0 }), S = mkF([h], { cash: 1e6 }), r = run(S), v = r.pl.V.c1, bad = [];
+    const num = (c) => +String(c.measured).replace(/[^0-9.]/g, ''), rs = r.F.assets.c1.criteria.find((c) => c.id === 'stress-rate'), cf2 = v.noi - R.paymentClosed(750000, 9.25, 300); if (!near(num(rs), Math.abs(cf2), 1)) bad.push('rate ' + rs.measured + ' vs ' + cf2);
+    const vac = r.F.assets.c1.criteria.find((c) => c.id === 'stress-vac'), cfv = v.cf - 0.10 * 9000 * (1 - S.g.mgmt / 100); if (!near(num(vac), Math.abs(cfv), 1)) bad.push('vac ' + vac.measured + ' vs ' + cfv);
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.7', "The screenshot case ($20,000 cash, $96,000 salary, $27M business needing $10.3M, $6.75M down): verdict no (not tight), headline starts Not yet, first reason 'Not possible: needs $10.3M, the plan never reaches it'", 2, () => {
+    const S = mkF([biz({ id: 'g', addr: 'Premier Florida General Contractor', price: 27e6, dp: 25, closingPct: 2, capex: 3.01e6, rent: 340000, growth: 4 })], { cash: 20000, living: 3600, emergencyMonths: 6, inflation: 3, jobs: [{ id: 'j', name: 'Job', kind: 'salary', gross: 96000, raise: 3, tax: 24, hours: 40, start: 0, end: null }] }), r = run(S), a = r.F.assets.g, bad = [];
+    if (r.pl.unfunded.indexOf('g') < 0) bad.push('plan funded it'); if (r.f.status !== 'no' || r.F.verdict !== 'no' || a.verdict !== 'no' || a.kind !== 'nofund') bad.push('status ' + r.f.status + '/' + a.verdict); if (!/^Not yet\./.test(r.f.headline)) bad.push('headline ' + r.f.headline);
+    if (!/Not possible: needs \$10\.3M, the plan never reaches it/.test(r.f.reasons[0].text)) bad.push('first reason ' + r.f.reasons[0].text); if (a.cash.need !== 10.3e6 || a.cash.down !== 6.75e6) bad.push('need ' + a.cash.need + ' down ' + a.cash.down);
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.8', 'Live updates: the same asset is no, then yes with more cash, then no again; the asset list follows an added, removed or moved asset (nothing is cached)', 1, () => {
+    const S = mkF([biz()], { cash: 1e6 }), bad = [], v0 = run(S).F.assets.b1.verdict; S.p.cash = 3e6; const v1 = run(S).F.assets.b1.verdict; S.p.cash = 1e6; const v2 = run(S).F.assets.b1.verdict; if (v0 !== 'no' || v1 !== 'yes' || v2 !== 'no') bad.push(v0 + v1 + v2);
+    const S2 = mkF([A('house', 'conv30', { id: 'a', price: 100000, rent: 1500, tax: 100, ins: 50, growth: 0 }), biz()], { cash: 3e6 }), x = run(S2); if (Object.keys(x.F.assets).length !== 2) bad.push('assets ' + Object.keys(x.F.assets));
+    if (Object.keys(run(E.without(S2, 'a')).F.assets).length !== 1) bad.push('removed'); const S4 = JSON.parse(JSON.stringify(S2)); E.moveTo(S4, 'b1', 1); if (S4.houses[0].id !== 'b1') bad.push('moved ' + S4.houses[0].id);
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.9', 'Buy order engine: moveTo puts an asset at position N across categories, clamps to 1..n, keeps owned assets where they are, numbering is 1..n, nothing is bought before the assets above it', 2, () => {
+    const hs = [A('house', 'conv30', { id: 'o1', status: 'owned', price: 100000, rent: 1500, tax: 100, ins: 50, paid: 12 }), A('house', 'conv30', { id: 'h1', price: 100000, rent: 1500, tax: 100, ins: 50 }), A('commercial', 'comm25', { id: 'c1', price: 800000, rent: 8000, tax: 100, ins: 50 }), A('business', 'bankbiz', { id: 'b1', price: 500000, rent: 12000 })];
+    const S = mkF(hs, { cash: 1e6 }), bad = [], own = S.houses.findIndex((h) => h.id === 'o1'), r = E.moveTo(S, 'b1', 1), ids = S.houses.filter((h) => h.status !== 'owned').map((h) => h.id);
+    if (JSON.stringify(ids) !== '["b1","h1","c1"]' || !r.changed || r.pos !== 1) bad.push('order ' + ids); if (S.houses.findIndex((h) => h.id === 'o1') !== own) bad.push('owned moved');
+    const r2 = E.moveTo(S, 'b1', 99); if (r2.pos !== 3 || !r2.clamped || S.houses.filter((h) => h.status !== 'owned').pop().id !== 'b1') bad.push('clamp hi ' + r2.pos); const r3 = E.moveTo(S, 'b1', 0); if (r3.pos !== 1 || !r3.clamped) bad.push('clamp lo ' + r3.pos);
+    const pl = E.plan(S), nm = E.numbering(S, pl); if (nm.num.b1 !== 1 || nm.num.h1 !== 2 || nm.num.c1 !== 3) bad.push('numbers ' + JSON.stringify(nm.num)); const ms = ['b1', 'h1', 'c1'].map((i) => pl.purchase[i]).filter(isFinite); if (ms.some((m, i) => i && m < ms[i - 1])) bad.push('bought out of order ' + ms);
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.10', "The default plan stays green: 36 assets, nothing owned, verdict yes, every asset and portfolio test ok, real net worth >= $125M", 1, () => {
+    const S = E.seedPlan(), pl = E.plan(S), f = E.finance(S, pl), F = f.feas, bad = F.criteria.filter((c) => c.status !== 'ok').map((c) => c.id).concat(...Object.values(F.assets).map((a) => a.criteria.filter((c) => c.status !== 'ok').map((c) => a.addr + ':' + c.id)));
+    const nw = E.planR(S).horizon.nw; return { pass: S.houses.length === 36 && !S.houses.some((h) => h.status === 'owned') && f.status === 'yes' && F.verdict === 'yes' && !bad.length && nw >= 125e6, detail: f.status + ' ' + bad.slice(0, 4) + ' ' + Math.round(nw) }; });
 }
 
 /* ---------------- score ---------------- */

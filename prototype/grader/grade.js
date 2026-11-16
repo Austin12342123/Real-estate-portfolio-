@@ -874,7 +874,7 @@ async function uxChecks(page) {
     const P = new Parts(); await reset(page); const cnt = () => page.evaluate(() => [...document.querySelectorAll('#app input')].filter((i) => i.type !== 'hidden' && i.offsetParent).length);
     const plS = E.planR(E.seedPlan()), sold = E.seedPlan().houses.filter((h) => plS.exits[h.id] && plS.sellAt[h.id] <= plS.planM)[0];
     P.t((await cnt()) === 0, 'no text input anywhere on the Portfolio page until a row is selected', 0.6, await cnt());
-    await selRow(page, 'maple'); P.t((await cnt()) === 1 && (await page.locator('[data-for=maple] [data-testid=extra-input]').count()) === 1, 'selecting an asset shows exactly one extra-payment field, inside its panel', 0.6);
+    await selRow(page, 'maple'); P.t((await cnt()) === 2 && (await page.locator('[data-for=maple] [data-testid=extra-input]').count()) === 1 && (await page.locator('[data-for=maple] [data-p="h.maple.pos"]').count()) === 1, 'selecting an asset shows exactly one extra-payment field and the Buy position box (was: only the extra-payment field), inside its panel', 0.6);
     await selRow(page, 'maple'); await page.click('[data-row=maple] [data-testid=row-extra-toggle]'); await page.waitForTimeout(50); P.t((await cnt()) === 0, 'tapping the row again closes the panel', 0.2);
     if (sold) { P.t((await page.locator(`[data-row=${sold.id}] [data-testid=row-extra-toggle]`).count()) === 0 && (await cnt()) === 0, 'a sold asset has no Extra button and no extra field', 0.2); }
     for (let i = 0; i < 3; i++) { await goHash(page, '#add'); await page.click('[data-testid=confirm-add]'); await goMain(page); } P.t((await page.locator('[data-testid=ledger-row]').count()) === NSEED + 3, (NSEED + 3) + ' rows after adding 3', 0.2); return P; });

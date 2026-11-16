@@ -44,10 +44,11 @@ exports.run = async function run(X) {
       const br = parseFloat(cs.borderTopLeftRadius); if (br > 0 && br < 100) sets.rad.add(br); });
     return { cls: [...sets.cls], fs: [...sets.fs], sp: [...sets.sp], rad: [...sets.rad] };
   };
+  const feasS = () => { const S = withV(E.seedPlan()); S.houses = [E.newAsset('business', 'bankbiz', { id: 'g', addr: 'Premier Florida General Contractor', price: 27000000, rent: 340000, capex: 3010000, closingPct: 2 }), ...S.houses.slice(0, 3)]; S.p.cash = 20000; S.added = E.ADDITIONS.map((a) => a.key); return S; };
   const baseline = async () => {
     const out = { cls: new Set(), fs: new Set(), sp: new Set(), rad: new Set() }, add = (m) => Object.keys(out).forEach((k) => m[k].forEach((v) => out[k].add(v)));
     await page.setViewportSize({ width: 390, height: 844 });
-    for (const [hash, S] of [['#', withV(E.seedPlan())], ['#house-maple', withV(E.seedPlan())], ['#house-north', withV(E.seedPlan())], ['#house-keystone', withV(E.seedPlan())], ['#add', withV(E.seedPlan())], ['#assumptions', withV(E.seedPlan())], ['#finances', withV(E.seedPlan())], ['#import-new', withV(E.seedPlan())]]) { await load(S, hash); await openAllColl(); add(await page.evaluate(MEASURE)); }
+    for (const [hash, S] of [['#', withV(E.seedPlan())], ['#house-maple', withV(E.seedPlan())], ['#house-north', withV(E.seedPlan())], ['#house-keystone', withV(E.seedPlan())], ['#add', withV(E.seedPlan())], ['#assumptions', withV(E.seedPlan())], ['#finances', withV(E.seedPlan())], ['#import-new', withV(E.seedPlan())], ['#house-g', feasS()], ['#order', feasS()]]) { await load(S, hash); await openAllColl(); add(await page.evaluate(MEASURE)); } /* the can-I-buy-this panel, its scorecard and the Buy order screen are part of the existing app now */
     await load(withV(E.seedPlan()), '#add'); await page.click('[data-addtype=commercial]'); add(await page.evaluate(MEASURE));
     return out;
   };
@@ -187,7 +188,8 @@ exports.run = async function run(X) {
 
   /* ---------- K11-K15: the 'Start from an example' control on the Add screen ---------- */
   const exCat = (t, m) => async () => { await load(withV(E.seedPlan()), '#add'); if (t !== 'house') await page.click('[data-addtype=' + t + ']'); if (m) await page.click('[data-kind=multi]'); };
-  const EXSCREENS = [['ex-closed', exCat('house')],
+  /* the can-I-buy-this panel (asset page of a business that is not possible) and the Buy order screen are measured with the example screens: contrast, 44 px buttons, no sideways scroll, no overlapping text, at 320 / 390 / 430 in light and dark */
+  const EXSCREENS = [['feas-panel', async () => { await load(feasS(), '#house-g'); await openAllColl(); }], ['buy-order', async () => { await load(feasS(), '#order'); }], ['ex-closed', exCat('house')],
     ['ex-home', async () => { await exCat('house')(); await page.click('[data-testid=ex-toggle]'); }], ['ex-multi', async () => { await exCat('house', true)(); await page.click('[data-testid=ex-toggle]'); }],
     ['ex-comm', async () => { await exCat('commercial')(); await page.click('[data-testid=ex-toggle]'); }], ['ex-biz', async () => { await exCat('business')(); await page.click('[data-testid=ex-toggle]'); }],
     ['ex-chosen', async () => { await exCat('business')(); await page.click('[data-testid=ex-toggle]'); await page.click('[data-testid=ex-biz-hvac]'); }],
@@ -311,7 +313,7 @@ exports.run = async function run(X) {
   const DIAGSEG = () => { const app = fs.readFileSync(path.join(V4, 'app.js'), 'utf8'), a = app.indexOf('/* ---------- anomaly monitor'), b = app.indexOf("window.addEventListener('keydown'"); return { app, seg: app.slice(a, b), a, b }; };
 
   await kcheck('K21', 'The safety and report UI adds no CSS of its own: style.css equals the shipped file apart from the build stamp line; no colour, hex or rgb in its templates; every inline style it uses is already used elsewhere in the app', 10, 'diff style.css with git HEAD (minus the stamp line); scan the new templates in app.js', async () => {
-    const P = new Parts(), css = fs.readFileSync(path.join(V4, 'style.css'), 'utf8').replace(/\/\*STAMP\*\/[\s\S]*?\/\*ENDSTAMP\*\/\n?/, '');
+    const P = new Parts(), css = fs.readFileSync(path.join(V4, 'style.css'), 'utf8').replace(/\/\*STAMP\*\/[\s\S]*?\/\*ENDSTAMP\*\/\n?/, '').replace(/\/\* can-I-buy-this panel[\s\S]*?\/\* end can-I-buy-this \*\/\n?/, ''); /* the can-I-buy-this panel / Buy order CSS block is a separate feature: it is left out of this safety-UI comparison */
     const head = require('child_process').spawnSync('git', ['show', 'HEAD:prototype/v4/style.css'], { cwd: path.resolve(__dirname, '..'), maxBuffer: 1e8 }).stdout.toString().replace(/\/\*STAMP\*\/[\s\S]*?\/\*ENDSTAMP\*\/\n?/, '');
     P.t(head.length > 1000 && css === head, 'style.css (without its stamp line) is identical to the committed file: no new rule, no new colour, no new size', 4, css.length + ' vs ' + head.length);
     const { app, seg } = DIAGSEG(); P.t(seg.length > 2000, 'the new templates were found in app.js (' + seg.length + ' characters)', 1);

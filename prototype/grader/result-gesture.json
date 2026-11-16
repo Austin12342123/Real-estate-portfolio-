@@ -1,7 +1,7 @@
 {
   "gest": {
-    "earned": 100,
-    "max": 100,
+    "earned": 128,
+    "max": 128,
     "checks": [
       {
         "id": "I1",
@@ -12,7 +12,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
-        "seconds": 6
+        "seconds": 6.3
       },
       {
         "id": "I2",
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "8/8 sub-checks pass",
         "repro": "Select row, press Move",
-        "seconds": 3.1
+        "seconds": 3.2
       },
       {
         "id": "I4",
@@ -45,7 +45,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Reorder with Move buttons; read wait lines + saved state + plan",
-        "seconds": 3.8
+        "seconds": 4.2
       },
       {
         "id": "I5",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Panel > Duplicate; asset page > Duplicate",
-        "seconds": 2.6
+        "seconds": 2.7
       },
       {
         "id": "I6",
@@ -78,7 +78,7 @@
         "ratio": 1,
         "detail": "25/25 sub-checks pass",
         "repro": "Panel on maple, type extra, compare with engine + asset page",
-        "seconds": 2.5
+        "seconds": 2.6
       },
       {
         "id": "I8",
@@ -89,7 +89,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Asset page > Rent & expenses",
-        "seconds": 1.6
+        "seconds": 1.5
       },
       {
         "id": "I9",
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Focus the extra field, swipe",
-        "seconds": 3.1
+        "seconds": 3.2
       },
       {
         "id": "I10",
@@ -111,7 +111,29 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "Resize, measure, collected errors",
-        "seconds": 2.4
+        "seconds": 2.5
+      },
+      {
+        "id": "I11",
+        "category": "I",
+        "name": "Buy order screen: one flat list of all planned assets (homes, commercial, business) with number badges; Up / Down / Top / Move to # / Buy position box / drag move assets ACROSS categories, renumber at once, Undo works, targets >= 44 px, no overflow at 320 / 390 / 430 in light and dark",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "14/14 sub-checks pass",
+        "repro": "Playwright: #order, buttons, boxes, mouse long-press drag, Undo, screenshots",
+        "seconds": 11.7
+      },
+      {
+        "id": "I12",
+        "category": "I",
+        "name": "Shortfall panel: for a $10M business with $2.5M down and $1M to pull out the asset page shows the cash lines, down short -$1,500,000, uncovered -$9,000,000, the monthly lines and ranked changes; the row says Not possible - short $1.5M; the Finances chip and headline say Not yet with that reason; it all updates without a reload; scorecard lists every test",
+        "points": 14,
+        "earned": 14,
+        "ratio": 1,
+        "detail": "11/11 sub-checks pass",
+        "repro": "Playwright",
+        "seconds": 4.8
       }
     ]
   }
