@@ -1,0 +1,27 @@
+{
+  "schema": "business-listing/1",
+  "listingUrl": "https://www.bizbuysell.com/business-opportunity/premier-florida-general-contractor/2564259/",
+  "capturedOn": "2026-11-16",
+  "source": "Read by the user from screenshots of the BizBuySell listing; no figure here was checked against the live page.",
+  "name": "Premier Florida General Contractor",
+  "address": "Florida (BizBuySell #2564259)",
+  "description": "General contractor and construction-management firm in Florida serving government, hospitality and residential markets.",
+  "price": { "value": 27000000, "source": "user", "note": "Price supplied by the user, not stated in the screenshots." },
+  "revenueAnnual": { "value": 50000000, "source": "listing", "note": "Approximately $50 million." },
+  "ebitdaAnnual": { "value": 4000000, "source": "listing", "note": "Approximately $4 million, so the margin is 8%. Before any pay to the owner or to a manager who replaces the owner." },
+  "ffe": { "value": 1120000, "source": "listing", "note": "Included in the asking price." },
+  "employees": 70,
+  "established": 1997,
+  "backlog": "$41M added to 2027 as of Nov 2026",
+  "realEstate": { "included": false, "leasedFromSellerEntity": true, "rentMonthly": 10000, "leaseExpires": "2027-12-31", "sqft": 4425, "note": "A new lease or a purchase of the property may be negotiated." },
+  "reasonForSelling": "Transition to retirement. The seller offers transition and training.",
+  "financingChosen": { "loan": "Bank term loan", "downPct": 25, "note": "The app's existing business loan option (9.0%, 84 months). Not an SBA 7(a) loan: the SBA 7(a) cap of $5M does not apply." },
+  "appModel": { "type": "business", "price": 27000000, "revenueMonthly": 4166666.67, "marginPct": 8, "ownerProfitMonthly": 333333, "growthPct": 4, "sellCostPct": 8, "status": "planned", "addition": "premier-fl-gc-bizbuysell-2564259" },
+  "notes": [
+    "Cash needed is about $6.75M down (25% of $27M) plus closing costs.",
+    "Debt service coverage is about 1.0 (thin): the owner profit is roughly the loan payment.",
+    "The plan may flag it as late or unfunded in a portfolio that cannot afford it.",
+    "EBITDA is before owner pay; the business depends on a 70-person workforce and its management, so a buyer who does not run it needs to pay for a manager.",
+    "The lease on the 4,425 sq ft office expires 12/31/2027."
+  ]
+}

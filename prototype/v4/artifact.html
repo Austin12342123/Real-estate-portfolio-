@@ -1,7 +1,7 @@
 <title>Real Estate Portfolio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/*STAMP*/html{--build:"c4e8a7fb"}/*ENDSTAMP*/
+/*STAMP*/html{--build:"bb1cbef5"}/*ENDSTAMP*/
 :root{--bg:#f2f2f7;--card:#fff;--ink:#111;--mut:#6b6b72;--line:#e5e5ea;--acc:#0a5fd6;--ok:#167a41;--warn:#965600;--bad:#c4271f;--flash:#fff0a0;--bar:#dfe6f5;--field:#f2f2f7}
 :root[data-theme=dark]{color-scheme:dark;--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mut:#a0a0a8;--line:#2c2c2e;--acc:#5aa2ff;--ok:#32d27a;--warn:#ffb340;--bad:#ff7a72;--flash:#5a4a00;--bar:#2a3550;--field:#2c2c2e}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mut:#a0a0a8;--line:#2c2c2e;--acc:#5aa2ff;--ok:#32d27a;--warn:#ffb340;--bad:#ff7a72;--flash:#5a4a00;--bar:#2a3550;--field:#2c2c2e}}
@@ -461,7 +461,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 </style>
 <main id="app" aria-live="polite"></main>
 <script>
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'c4e8a7fb'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'bb1cbef5'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -1204,7 +1204,9 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     return newAsset('house', 'conv30', Object.assign({ id: 'lostcreek' }, L.patch, { growth: 4, buyIn: 0, capex: 17000, capexMonths: 3, arv: 245000 })); };
   /* ADDITIONS: assets a release adds to EVERY device's own planned portfolio, once (never replacing it). S.added lists the keys already applied (or deliberately excluded, as in the seeds), so a removed asset never comes back.
      To add an asset: append { key, make } here and bump DATA_V in app.js. NEVER replace users' portfolios in a migration. */
-  const ADDITIONS = [{ key: 'lost-creek-704', make: lostCreek }];
+  /* Premier Florida General Contractor (BizBuySell #2564259; prototype/listing-import/premier-florida-general-contractor.business.json). Asking price was supplied by the user (not visible in the listing screenshots). Revenue about $50M/yr and EBITDA about $4M/yr (8%) come from the listing: owner profit = revenue x margin. Bank term loan with 25% down. Real estate is leased from the seller's entity, not included. */
+  const premierGC = () => newAsset('business', 'bankbiz', { id: 'premierflgc', addr: 'Premier Florida General Contractor', price: 27000000, revenue: 50000000 / 12, margin: 8, rent: Math.round(50000000 / 12 * 0.08), dp: 25, buyIn: 0 });
+  const ADDITIONS = [{ key: 'lost-creek-704', make: lostCreek }, { key: 'premier-fl-gc-bizbuysell-2564259', make: premierGC }];
   const ak = () => ADDITIONS.map((a) => a.key);
   function applyAdditions(S) {
     if (!Array.isArray(S.added)) { S.added = ak(); return S; } /* a state without S.added (v19 or an old backup) already has whatever it wants: add nothing */
@@ -1640,7 +1642,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 
 </script>
 <script>
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'c4e8a7fb'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'bb1cbef5'});/*ENDSTAMP*/
 /* Plain-language definitions shown by the "i" buttons. t = title, b = what it means, e = a short example (optional).
    Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
 (function (root) {
@@ -1808,7 +1810,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 
 </script>
 <script>
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'c4e8a7fb'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'bb1cbef5'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
@@ -1856,7 +1858,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
   let exStoreOK = true, exMsg = '', exEdit = null; /* editable examples: the user's overrides live in their own key (rep-v4-examples), never in a portfolio; exEdit = the open editor { id, draft, base } */
   try { exStoreOK = typeof E.exLoad === 'function' ? E.exLoad(localStorage) : true; } catch (e) { exStoreOK = false; }
   const EXED = typeof E.exCheck === 'function' && typeof E.exEff === 'function'; /* an old cached engine without the editor still works: no Edit buttons */
-  const DATA_V = 20; /* bump when a release changes the data; NEVER replace a user's portfolio in a migration (new assets go through ADDITIONS in engine.js) */
+  const DATA_V = 21; /* bump when a release changes the data; NEVER replace a user's portfolio in a migration (new assets go through ADDITIONS in engine.js) */
   const ADDED_ALL = () => E.ADDITIONS.map((x) => x.key);
   let switched = null;
   if (S && Array.isArray(S.houses) && S.g) {

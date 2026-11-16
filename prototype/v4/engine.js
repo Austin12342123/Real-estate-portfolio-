@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'c4e8a7fb'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'bb1cbef5'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -741,7 +741,9 @@
     return newAsset('house', 'conv30', Object.assign({ id: 'lostcreek' }, L.patch, { growth: 4, buyIn: 0, capex: 17000, capexMonths: 3, arv: 245000 })); };
   /* ADDITIONS: assets a release adds to EVERY device's own planned portfolio, once (never replacing it). S.added lists the keys already applied (or deliberately excluded, as in the seeds), so a removed asset never comes back.
      To add an asset: append { key, make } here and bump DATA_V in app.js. NEVER replace users' portfolios in a migration. */
-  const ADDITIONS = [{ key: 'lost-creek-704', make: lostCreek }];
+  /* Premier Florida General Contractor (BizBuySell #2564259; prototype/listing-import/premier-florida-general-contractor.business.json). Asking price was supplied by the user (not visible in the listing screenshots). Revenue about $50M/yr and EBITDA about $4M/yr (8%) come from the listing: owner profit = revenue x margin. Bank term loan with 25% down. Real estate is leased from the seller's entity, not included. */
+  const premierGC = () => newAsset('business', 'bankbiz', { id: 'premierflgc', addr: 'Premier Florida General Contractor', price: 27000000, revenue: 50000000 / 12, margin: 8, rent: Math.round(50000000 / 12 * 0.08), dp: 25, buyIn: 0 });
+  const ADDITIONS = [{ key: 'lost-creek-704', make: lostCreek }, { key: 'premier-fl-gc-bizbuysell-2564259', make: premierGC }];
   const ak = () => ADDITIONS.map((a) => a.key);
   function applyAdditions(S) {
     if (!Array.isArray(S.added)) { S.added = ak(); return S; } /* a state without S.added (v19 or an old backup) already has whatever it wants: add nothing */

@@ -276,7 +276,7 @@ exports.run = async function run(X) {
     await page.evaluate(() => { location.hash = ''; }); await page.waitForTimeout(60); st = await full('after a backup import (list reversed),', 1.2);
     P.t(st.houses.length >= 6, 'the backup replaced the portfolio', 0.2, String(st.houses.length));
     /* (d) ADDITIONS appended once, last in Planned */
-    const sa = clone(SRC); sa.added = []; sa.v = DATA_V; await load(sa); await toMain(); st = await store(); const lc = st.houses.find((h) => h.id === 'lostcreek');
+    const sa = clone(SRC); sa.added = ['premier-fl-gc-bizbuysell-2564259']; sa.v = DATA_V; await load(sa); await toMain(); st = await store(); const lc = st.houses.find((h) => h.id === 'lostcreek');
     const ex = expectOf(clone(st)), nPl = Object.keys(ex.planned).length;
     P.t(!!lc && ex.planned[lc.id] === nPl && nPl === 5, 'the ADDITIONS asset is appended as the LAST planned asset (number 5 here) and the 4 planned assets keep 1..4', 1.5, lc ? lc.id + ':' + ex.planned[lc.id] + '/' + nPl : 'no addition found');
     await full('after the ADDITIONS append,', 1.2); const again = await store(); await page.reload(); await page.waitForSelector('#app > *'); await settle(); const st3 = await store(); P.t(st3.houses.length === again.houses.length, 'the addition is applied once (a reload does not add it again)', 0.5);

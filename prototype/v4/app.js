@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'c4e8a7fb'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'bb1cbef5'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
@@ -46,7 +46,7 @@
   let exStoreOK = true, exMsg = '', exEdit = null; /* editable examples: the user's overrides live in their own key (rep-v4-examples), never in a portfolio; exEdit = the open editor { id, draft, base } */
   try { exStoreOK = typeof E.exLoad === 'function' ? E.exLoad(localStorage) : true; } catch (e) { exStoreOK = false; }
   const EXED = typeof E.exCheck === 'function' && typeof E.exEff === 'function'; /* an old cached engine without the editor still works: no Edit buttons */
-  const DATA_V = 20; /* bump when a release changes the data; NEVER replace a user's portfolio in a migration (new assets go through ADDITIONS in engine.js) */
+  const DATA_V = 21; /* bump when a release changes the data; NEVER replace a user's portfolio in a migration (new assets go through ADDITIONS in engine.js) */
   const ADDED_ALL = () => E.ADDITIONS.map((x) => x.key);
   let switched = null;
   if (S && Array.isArray(S.houses) && S.g) {
