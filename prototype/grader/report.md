@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-16T05:18:25.409Z  |  977s
+Target: `prototype/v4`  |  Run: 2026-11-16T08:41:33.564Z  |  1045s
 
 ## Automated score: **85.00 / 84.99700000000001** (a separate design review adds 15)
 
@@ -57,7 +57,7 @@ Target: `prototype/v4`  |  Run: 2026-11-16T05:18:25.409Z  |  977s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.42 | 0.42 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.21 | 0.21 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.21 | 0.21 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 15.6ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 24.7ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.31 | 0.31 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.31 | 0.31 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.42 | 0.42 | 5/5 sub-checks pass |
@@ -185,7 +185,7 @@ None.
 
 None.
 
-## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **100.00 / 100** (separate scale)
+## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **99.92 / 100** (separate scale)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -231,7 +231,7 @@ None.
 | J40 | Start from an example: a quiet collapsed line near the bottom; open, pick, Add = 3 taps for Home, Multi-family, Commercial and Business; the asset equals the example; (i), clear, Back, keyboard and Escape work | 2.87 | 2.87 | 26/26 sub-checks pass |
 | J41 | Examples persist like any asset: reload, Undo after Remove, Saved, backup and restore keep every field; the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes) | 1.23 | 1.23 | 8/8 sub-checks pass |
 | J42 | Edit an example: Edit beside the (i) opens the editor; calculator math, /yr revenue and units math work; the live line and warnings follow; Save keeps it across reload and shows Edited; the added asset equals the edited example; Reset returns only that example; Back asks before discarding | 3.29 | 3.29 | 20/20 sub-checks pass |
-| J43 | Editing and the rest of the app: multi-family units re-check the loan and per-unit costs, the loan picker updates down payment and cash, revenue per year keeps profit = revenue x margin, future dollars and tight widths work, backup / Saved / Undo / examples already owned behave, storage unavailable and two tabs and an old cached engine do not break it | 3.70 | 3.70 | 26/26 sub-checks pass |
+| J43 | Editing and the rest of the app: multi-family units re-check the loan and per-unit costs, the loan picker updates down payment and cash, revenue per year keeps profit = revenue x margin, future dollars and tight widths work, backup / Saved / Undo / examples already owned behave, storage unavailable and two tabs and an old cached engine do not break it | 3.70 | 3.62 | 25/26 sub-checks pass. FAIL: editing with Future dollars on stores the same plain number (the editor has no inflation) |
 | J44 | Build stamp: app.js, engine.js, info.js, style.css (as --build) and the service worker cache name carry one hash of the four files; editing a file without restamping is caught; stamp.py and build-artifact.py write it | 1.85 | 1.85 | 6/6 sub-checks pass |
 | J45 | Mixed versions: an old engine.js under a new app.js is detected at start, caches are purged, the service worker removed and the page reloads exactly ONCE (no loop), the event is logged, the stored portfolio is untouched; if it is still mixed the notice shows instead; a stale cache name heals the same way, but never after the person has touched the page | 2.46 | 2.46 | 9/9 sub-checks pass |
 | J46 | Safety copies are taken BEFORE a migration, an additions append, an unreadable save, loading a sample, Remove all planned, opening a Saved portfolio, a backup restore, removing an asset, and once a day; each copy equals the state just before; Restore brings back the exact copy (deep-equal), files the current state first and offers Undo | 3.29 | 3.29 | 16/16 sub-checks pass |
@@ -244,7 +244,8 @@ None.
 
 ### J failures
 
-None.
+- **J43 Editing and the rest of the app: multi-family units re-check the loan and per-unit costs, the loan picker updates down payment and cash, revenue per year keeps profit = revenue x margin, future dollars and tight widths work, backup / Saved / Undo / examples already owned behave, storage unavailable and two tabs and an old cached engine do not break it** (-0.08): 25/26 sub-checks pass. FAIL: editing with Future dollars on stores the same plain number (the editor has no inflation)
+  - Reproduce: units, loan, revenue, unit toggle, backup, saved, storage stub, second tab, old engine
 
 ## K. Design consistency and flow: **100.00 / 100** (separate scale; the multi-family screens against the existing design language)
 
