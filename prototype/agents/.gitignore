@@ -4,3 +4,6 @@ ledger/runs/
 ledger/tmp/
 handbacks/*
 !handbacks/.gitkeep
+audit-runs/*/*.json
+audit-runs/*/scripts/
+audit-runs/*/*.log

@@ -111,7 +111,8 @@ const EXPAND_JS = () => { let n = 0; for (let i = 0; i < 30; i++) { const b = [.
 async function expandAll(page) { try { await page.evaluate(EXPAND_JS); } catch (e) {} }
 async function reset(page, hash) {
   await page.goto(BASE + '/index.html?r=' + rn++);
-  await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
+  /* wipe the storage, then stop the old page from writing anything back (its self-diagnosis timer / pagehide would refile a diag record of the OLD portfolio and the fresh default plan would show a false 'portfolio replaced' note) */
+  await page.evaluate(() => { try { localStorage.clear(); Storage.prototype.setItem = function () {}; } catch (e) {} });
   await page.goto(BASE + '/index.html?r=' + rn++ + (hash || ''));
   await page.waitForSelector('#app > *');
   await expandAll(page);
@@ -119,7 +120,7 @@ async function reset(page, hash) {
 /* Load the app with a custom saved state (state must be normalized, v:7). */
 async function loadState(page, S, hash) {
   await page.goto(BASE + '/index.html?r=' + rn++);
-  await page.evaluate(([k, s]) => { try { localStorage.clear(); localStorage.setItem(k, JSON.stringify(s)); } catch (e) {} }, [KEY, S]);
+  await page.evaluate(([k, s]) => { try { localStorage.clear(); localStorage.setItem(k, JSON.stringify(s)); Storage.prototype.setItem = function () {}; /* the old page must not refile its own records */ } catch (e) {} }, [KEY, S]);
   await page.goto(BASE + '/index.html?r=' + rn++ + (hash || ''));
   await page.waitForSelector('#app > *');
   await expandAll(page);

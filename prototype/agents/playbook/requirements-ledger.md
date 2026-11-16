@@ -1,0 +1,18 @@
+# Requirements ledger (the user's standing rules, each with a worked example)
+Orchestrator pastes applicable rows into every delegation prompt. Add a row whenever the user states or corrects a rule; keep the user's own words and the timestamp. If a row is wrong, the user corrects it, not an agent. Quotes are verbatim from the session.
+
+| id | rule | user words (time UTC) | worked example |
+|---|---|---|---|
+| R1 | Portfolio = accumulation of every asset in it; no "today vs 20 years" split | "The portfolio should represent the accumulation of every asset managed inside the portfolio" (11-08 20:44) | headline = sum of assets on that page now; no separate 20-year column unless asked |
+| R2 | Funding by prior assets | "every asset in this portfolio needs to be funded by the total cash flow the assets previous in the list" (11-10 20:25) | assets 1,2,3 listed, add 4: 4's down payment comes from positive cash flow + extra payments of 1-3; credit-line wait = time until those accumulate enough |
+| R3 | Purchase order is monotonic | "How can asset #4,5,6,7 be funded before the second asset can be purchased?" (11-12 01:47) | if #2 is bought at month 12, #3.. cannot be bought before month 12 |
+| R4 | Real vs Planned portfolios | "I haven't bought any assets yet so in the 'real' portfolio it shouldn't show that I bought any" (11-12 02:27) | Real page empty until the user marks an asset bought; Planned assumes none bought |
+| R5 | Three pages; totals unique per page | "On every page the total portfolio finances should be unique to that page" (11-12 04:29) | Planned page totals count only planned assets; Real page only bought assets |
+| R6 | Saved portfolio default name | "portfolio n" where n = number of saved portfolios (11-12 04:29) | 2 saved -> next default name "portfolio 3" |
+| R7 | Today's dollars | "shouldn't include inflation in its pricing ... show how much the portfolio would be worth in today's dollars" (11-14 02:09); cash flow per asset also in today's dollars (11-16 04:02); label "2026*" instead of "in today's dollars", remove "year 28 outlook" (11-16 03:57) | a $1M house in 2054 shown as ~$X in 2026 dollars with the "2026*" label; main-page asset cash flow = today's value |
+| R8 | Add a house | "add the house ... ask me for any information you can't find online before you post it" ; default = planned portfolio, last in order (11-14 03:01); see CLAUDE.md | 3 assets exist -> new one is #4 |
+| R9 | Never resurrect/replace user data | "when the new house was added the portfolio I removed came back" (11-14 03:45); CLAUDE.md ADDITIONS + DATA_V | user removed all planned assets, app updated -> still empty + the ONE new asset appended once |
+| R10 | Property manager expense | "The number shown on the main page should be included, and reflect all the assets in its category. I should be able to change the money allocated to a property manager for every asset" (11-16 03:32) | main-page property-manager total = sum of per-asset editable amounts |
+| R11 | Planned portfolio targets | planned portfolio reaches 125 million net worth and 1.3 a month (11-12 04:59) | invariants NW >= 125M; monthly 1.3M (current grader invariant) |
+| R12 | Publish only when graders pass | "Publish it to the Artifact when the graders pass" (11-12 04:59) | full ledger run clean on the tree being published |
+| R13 | Time to credit line shown in months | "time till credit line opens should be in months not years and months" (11-08 20:06) | "14 months", not "1 year 2 months" |

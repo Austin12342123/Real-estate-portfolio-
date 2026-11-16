@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-16T04:58:35.585Z  |  6s
+Target: `prototype/v4`  |  Run: 2026-11-16T05:01:46.700Z  |  7s
 
 ## Automated score: **28.00 / 28** (a separate design review adds 15)
 
@@ -17,7 +17,7 @@ Target: `prototype/v4`  |  Run: 2026-11-16T04:58:35.585Z  |  6s
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| A21 | Main screen: always-visible tab bar Planned | Real | Saved (even when Real is empty), exactly one page at a time, tabs >= 44px at 320/390/430 with no sideways scroll, swipe or tap, page remembered while you move around | 18.00 | 18.00 | 7/7 sub-checks pass |
+| A29 | Each page's totals are unique to it: with 2 bought and 4 planned assets, Planned totals = sum of the planned rows (never the bought ones), Real totals = sum of the bought rows, the two differ, and together they equal the whole plan | 18.00 | 18.00 | 9/9 sub-checks pass |
 | C01 | At 390x844: summary KPIs, plan headline and the first ledger rows are visible without scrolling | 10.00 | 10.00 | 3/3 sub-checks pass |
 
 ## Top failures

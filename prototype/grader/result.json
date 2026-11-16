@@ -29,15 +29,15 @@
   },
   "results": [
     {
-      "id": "A21",
+      "id": "A29",
       "category": "A",
-      "name": "Main screen: always-visible tab bar Planned | Real | Saved (even when Real is empty), exactly one page at a time, tabs >= 44px at 320/390/430 with no sideways scroll, swipe or tap, page remembered while you move around",
+      "name": "Each page's totals are unique to it: with 2 bought and 4 planned assets, Planned totals = sum of the planned rows (never the bought ones), Real totals = sum of the bought rows, the two differ, and together they equal the whole plan",
       "points": 18,
       "rawPoints": 3,
       "earned": 18,
       "ratio": 1,
-      "detail": "7/7 sub-checks pass",
-      "repro": "Main page: read the tab bar, switch pages, resize, swipe, open an asset and come back"
+      "detail": "9/9 sub-checks pass",
+      "repro": "Mixed fixture: read Planned and Real"
     },
     {
       "id": "C01",
