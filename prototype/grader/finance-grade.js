@@ -164,11 +164,11 @@ exports.run = async function run(X) {
     const no1 = run({ cash: 0, living: 3000, jobs: [] }), no2 = run({ cash: 20000, living: 1000, jobs: [salary(5000)], planned: [{ id: 'x', name: 'house', amount: 60000, month: 6 }] });
     const firstNeg = (o) => o.f.series.total.findIndex((x) => x < 0);
     P.t(no1.f.status === 'no' && no1.f.kpis.firstShortMonth === 0 && firstNeg(no1) === 0 && /today/.test(no1.f.headline) && no1.f.reasons.some((x) => x.sev === 'bad'), "'no' headline names month 0 when you start with no cash and no pay", 1, no1.f.headline);
-    P.t(no2.f.status === 'no' && no2.f.kpis.firstShortMonth === firstNeg(no2) && no2.f.kpis.firstShortMonth > 0 && new RegExp('month ' + no2.f.kpis.firstShortMonth + '\\b').test(no2.f.headline), "'no' headline names the first month total goes negative (" + firstNeg(no2) + ')', 1.5, no2.f.headline + ' / ' + no2.f.kpis.firstShortMonth);
+    P.t(no2.f.status === 'no' && no2.f.kpis.firstShortMonth === firstNeg(no2) && no2.f.kpis.firstShortMonth > 0 && new RegExp('\\b' + no2.f.kpis.firstShortMonth + ' months? from today').test(no2.f.headline), "'no' headline names the first month total goes negative (" + firstNeg(no2) + ')', 1.5, no2.f.headline + ' / ' + no2.f.kpis.firstShortMonth);
     P.t(closeAbs(no2.f.kpis.shortAmount, -Math.min(...no2.f.series.total), 0.01) && closeAbs(no2.f.kpis.minLiquid, Math.min(...no2.f.series.total), 0.01) && no2.f.series.total[no2.f.kpis.minLiquidMonth] === Math.min(...no2.f.series.total), 'kpis.shortAmount = -min(total); minLiquidMonth points at the minimum', 1);
     /* fix text amounts equal kpis */
     const sh = money0(no2.f.kpis.shortAmount), gp = (r) => money0(r.f.kpis.reserveGap), resR = run(cases[0][1]);
-    P.t(no2.f.fixes.some((x) => x.includes(sh) && new RegExp('before month ' + no2.f.kpis.firstShortMonth + '\\b').test(x)) && no2.f.reasons.some((x) => x.text.includes(sh)), "'no' fix says 'Line up at least " + sh + "... before month " + no2.f.kpis.firstShortMonth + "' (amount equals kpis.shortAmount)", 1.5, no2.f.fixes.join(' | '));
+    P.t(no2.f.fixes.some((x) => x.includes(sh) && new RegExp('before ' + no2.f.kpis.firstShortMonth + ' months? from today').test(x)) && no2.f.reasons.some((x) => x.text.includes(sh)), "'no' fix says 'Line up at least " + sh + "... before N months from today (date)' with N = " + no2.f.kpis.firstShortMonth + " (amount equals kpis.shortAmount)", 1.5, no2.f.fixes.join(' | '));
     P.t(resR.f.fixes.some((x) => x.includes(gp(resR))) && resR.f.reasons.some((x) => x.text.includes(gp(resR))), 'reserve-gap fix and reason carry kpis.reserveGap (' + gp(resR) + ')', 1, resR.f.fixes.join(' | '));
     const negN = run(cases[1][1]); P.t(negN.f.fixes.some((x) => x.includes(money0(-negN.f.kpis.net0))) && negN.f.reasons.some((x) => x.text.includes(money0(-negN.f.kpis.net0))), 'negative-net fix and reason carry the monthly gap (' + money0(-negN.f.kpis.net0) + ')', 0.8, negN.f.fixes.join(' | '));
     /* applying the suggested capital at the first short month rescues the plan (random + stretch) */
@@ -246,7 +246,7 @@ exports.run = async function run(X) {
     const f = E.finance(S, E.planR(S)), k = f.kpis; const want = [k.takeHome, k.portfolioAfterTax, -k.managerCost0, -k.extra, -k.living, -k.debts, k.net0];
     P.t(d.chip === VL[f.status] && d.head === f.headline, label + ': verdict chip + headline equal the engine (' + VL[f.status] + ')', w, `${d.chip} / ${d.head} vs ${VL[f.status]} / ${f.headline}`);
     const got = d.rows.map((r) => money(r[1])); P.t(d.rows.length === 7 && want.every((x, i) => numTol(got[i], x)), label + ': monthly picture rows equal the engine', w, got.map(Math.round).join(',') + ' vs ' + want.map(Math.round).join(','));
-    const lowM = /month (\d+)/.exec(d.low || ''); P.t(d.low && numTol(money(d.low), k.minLiquid) && lowM && +lowM[1] === k.minLiquidMonth, label + ': lowest cash + month equal the engine', w, d.low + ' vs ' + Math.round(k.minLiquid) + ' m' + k.minLiquidMonth);
+    const lowM = /(\d+) months? from today/.exec(d.low || ''); P.t(d.low && numTol(money(d.low), k.minLiquid) && lowM && +lowM[1] === k.minLiquidMonth, label + ': lowest cash + month equal the engine', w, d.low + ' vs ' + Math.round(k.minLiquid) + ' m' + k.minLiquidMonth);
     const fx = f.fixes.join('|'); P.t(d.fixes.join('|') === fx, label + ': fix list equals the engine', w / 2, d.fixes.join('|').slice(0, 120));
   }
   const chipMain = async (pg) => { await goMain(pg); return pg.evaluate(() => (document.querySelector('[data-testid=afford-chip]') || {}).textContent || null); };

@@ -1,6 +1,6 @@
 {
   "info": {
-    "earned": 99,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
@@ -8,9 +8,9 @@
         "category": "H",
         "name": "Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained",
         "points": 8,
-        "earned": 7,
-        "ratio": 0.875,
-        "detail": "8/9 sub-checks pass. FAIL: plain language: no sentence over 40 words and every body reads at about grade 12 or easier (Flesch-Kincaid) [long buyscore hard ]",
+        "earned": 8,
+        "ratio": 1,
+        "detail": "9/9 sub-checks pass",
         "repro": "node: inspect v4/info.js INFO / LABEL / LOAN",
         "seconds": 0
       },
@@ -23,7 +23,7 @@
         "ratio": 1,
         "detail": "112/112 sub-checks pass",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 12.1
+        "seconds": 11.5
       },
       {
         "id": "H3",
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 22.3
+        "seconds": 21
       },
       {
         "id": "H4",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 3.6
+        "seconds": 3.4
       },
       {
         "id": "H6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 6.3
+        "seconds": 5.9
       },
       {
         "id": "H7",
@@ -78,7 +78,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Load crafted localStorage states; pasted old backup restore",
-        "seconds": 1.4
+        "seconds": 1.5
       },
       {
         "id": "H8",
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 3.2
+        "seconds": 3.1
       },
       {
         "id": "H10",

@@ -5,5 +5,5 @@ function dateAt(m, today) { const [y0, m0, d0] = (today || TODAY).split('-').map
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fmt = (m, today) => { const [mo, d, y] = dateAt(m, today); return MON[mo - 1] + ' ' + d + ', ' + y; };
 const fmtM = (m, today) => { const [mo, , y] = dateAt(m, today); return MON[mo - 1] + ' ' + y; };
-const mond = (m, today) => (m <= 0 ? 'today' : 'month ' + m + ' (' + fmtM(m, today) + ')');
+const mond = (m, today) => (m <= 0 ? 'today' : m + (m === 1 ? ' month' : ' months') + ' from today (' + fmtM(m, today) + ')'); /* a point in time: 'N months from today (Mon YYYY)' (was 'month N (Mon YYYY)') */
 module.exports = { TODAY, dateAt, fmt, fmtM, mond };

@@ -1,6 +1,6 @@
 # Design consistency grader (DESIGN_ONLY)
 
-Run: 2026-11-16T12:43:23.607Z
+Run: 2026-11-16T16:23:00.060Z
 
 ## K. Design consistency and flow: **100.00 / 100** (separate scale; the multi-family screens against the existing design language)
 

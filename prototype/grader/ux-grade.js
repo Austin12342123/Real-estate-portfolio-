@@ -77,7 +77,7 @@ exports.run = async function run(X) {
     await page.goto(base() + '/index.html?j=' + seq++ + '#house-maple'); await page.waitForSelector('#app > *'); await openAllColl();
     P.t(near2(num(await page.locator('[data-testid=rent-noi]').first().textContent()), v.noi, 1.5), 'asset page income after costs follows the typed math', 1, '');
     await page.goto(base() + '/index.html?j=' + seq++); await page.waitForSelector('#app > *');
-    const rowTxt = await page.locator('[data-row=maple] [data-testid=row-cashflow] b').first().textContent(); const sp = pl.snap.find((x) => x.id === 'maple'); P.t(sp && near2(Math.abs(num(rowTxt)), Math.abs(sp.cf), Math.max(2, Math.abs(sp.cf) * 0.002)) || !sp, 'Planned row and totals follow the typed rent', 1, rowTxt);
+    const rowTxt = await page.locator('[data-row=maple] [data-testid=row-cashflow] b').first().textContent(); const sp = pl.snap.find((x) => x.id === 'maple'), v0 = pl.V.maple, cf0 = v0.noi - v0.P - v0.mip; P.t(sp && near2(Math.abs(num(rowTxt)), Math.abs(cf0), Math.max(2, Math.abs(cf0) * 0.002)) || !sp, 'Planned row (today\'s cash flow) and totals follow the typed rent', 1, rowTxt);
     /* invalid input never corrupts state */
     await page.goto(base() + '/index.html?j=' + seq++ + '#house-maple'); await page.waitForSelector('#app > *'); const before = await rent();
     for (const bad of ['650*', '5/0', '(2+3', 'abc', '650**3', '1/(2-2)', '12 34x']) { await typeIn(rentSel, bad); await page.waitForTimeout(60); const after = await rent(); const hint = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => ''); const aria = await page.locator('[data-testid=calc-hint]').first().getAttribute('aria-live').catch(() => ''); await blur(); P.t(after === before && num(await val()) === before && /Check the math/.test(hint) && aria === 'polite', `invalid "${bad}": state unchanged (${before}), "Check the math" shown (aria-live), box restored`, 1, `${after} / ${await val()} / ${hint}`); }
@@ -131,7 +131,7 @@ exports.run = async function run(X) {
     const line = (await page.locator(`[data-row=${id}] .exitline`).textContent().catch(() => '')) || '', cell = (await page.locator(`[data-row=${id}] [data-testid=row-cashflow]`).textContent().catch(() => '')) || '', strip = (await page.locator('[data-testid^=cat-profit-]').first().evaluate((e) => e.parentElement.textContent).catch(() => '')) || '';
     const money = (t) => num(t) * (/M/.test(t) ? 1e6 : /B/.test(t) ? 1e9 : 1), signOk = (t, v) => (/^[+]/.test(t.trim()) || t.includes('+')) === (v >= 0);
     const rp = ((await page.locator(`[data-row=${id}] [data-testid=row-payment]`).textContent().catch(() => 'x')) || '').trim();
-    P.t(/^sold for \$[\d,.]+[MB]? in month/.test(line.trim()) && !/cash profit/.test(line) && rp === '', 'Sold row states the cash profit once (right column and category header, not again inline) and has no stray lone "sold" word under edit', 3, line + ' / pay: [' + rp + ']');
+    P.t(/^sold for \$[\d,.]+[MB]? in \d+ months? from today/.test(line.trim()) && !/cash profit/.test(line) && rp === '', 'Sold row states the cash profit once (right column and category header, not again inline) and has no stray lone "sold" word under edit', 3, line + ' / pay: [' + rp + ']');
     P.t(line.includes(D.mond(pl.sellAt[id])), 'the sold row names the month and its date', 1, line);
     P.t(/cash profit/.test(cell) && Math.abs(money(cell.replace(/cash profit/, '')) - Math.abs(ex.profit)) <= Math.max(1, Math.abs(ex.profit) * 0.006), 'the big number on the Sold row is the cash profit', 2, cell);
     P.t(/cash profit/.test(strip) && Math.abs(money(strip.replace(/cash profit/, '')) - Math.abs(ex.profit)) <= Math.max(1, Math.abs(ex.profit) * 0.006), 'the Sold category strip shows the total cash profit', 2, strip);
@@ -267,11 +267,11 @@ exports.run = async function run(X) {
   });
 
   /* ---------- J13 Finances dates ---------- */
-  await jcheck('J13', 'Finances writes every month as "month N (Mon YYYY)" (or "today"), including the Biggest cash calls rows; the Breakdown table keeps every figure inside the card at 320px', 6, 'Finances page with a cash call; Planned breakdown at 320px', async () => {
+  await jcheck('J13', 'Finances writes every point in time as "N months from today (Mon YYYY)" (or "today"), including the Biggest cash calls rows; the Breakdown table keeps every figure inside the card at 320px', 6, 'Finances page with a cash call; Planned breakdown at 320px', async () => {
     const P = new Parts(); await page.setViewportSize({ width: 390, height: 844 });
     const S = withV(E.seedPlan()); S.p.cash = 0; S.p.living = 3000; await load(S, '#finances'); await openAllColl();
     const calls = await page.evaluate(() => [...document.querySelectorAll('#app .drv span:first-child')].map((e) => e.textContent.trim()));
-    P.t(calls.length >= 1 && calls.every((t) => /^(Month \d+ \([A-Z][a-z]{2} \d{4}\)|Today)/.test(t)), 'Biggest cash calls rows start with "Month N (Mon YYYY)"', 2.5, calls.join(' | '));
+    P.t(calls.length >= 1 && calls.every((t) => /^(\d+ months? from today \([A-Z][a-z]{2} \d{4}\)|Today)/.test(t)), 'Biggest cash calls rows start with "N months from today (Mon YYYY)"', 2.5, calls.join(' | '));
     const txt = await page.evaluate(() => document.getElementById('app').innerText), bare = txt.match(/\b[Mm]onth \d+(?!\d)(?! \([A-Z][a-z]{2} \d{4}\))/g);
     P.t(!bare, 'no month number on Finances is missing its date', 2, (bare || []).join(', '));
     await page.setViewportSize({ width: 320, height: 700 }); await load(withV(E.seedPlan()), ''); await page.waitForSelector('[data-testid=breakdown]');
@@ -509,7 +509,7 @@ exports.run = async function run(X) {
     const P = new Parts(); await page.setViewportSize({ width: 320, height: 844 }); const S = withV(E.seedPlan()); await load(S, ''); await openAllColl();
     const d = await page.evaluate(() => { const num = (t) => { const m = String(t).replace(/[−–]/g, '-').match(/-?\+?\$?-?[\d,]+(\.\d+)?/); return m ? parseFloat(m[0].replace(/[$,+]/g, '')) : NaN; };
       return [...document.querySelectorAll('[data-testid=cat-breakdown]')].map((bk) => { const rows = [...bk.querySelectorAll('.bkr')].map((r) => ({ l: r.querySelector('span').textContent.trim(), v: num(r.querySelector('b').textContent) }));
-        const cat = bk.closest('.cat'), nows = [...cat.querySelectorAll('[data-testid=row-cashflow]')].map((e) => { const m = (e.parentElement.textContent.match(/now\s*([−+-]\s*\$[\d,]+)/) || [])[1]; return m ? num(m.replace(/\s/g, '')) : NaN; });
+        const cat = bk.closest('.cat'), nows = [...cat.querySelectorAll('[data-testid=row-cashflow]')].map((e) => { const m = (e.querySelector('b').textContent.match(/([−+-]\s*\$[\d,]+)/) || [])[1]; return m ? num(m.replace(/\s/g, '')) : NaN; }); /* the row's big cash flow is today's (month-0) */
         return { rows, nows }; }); });
     const okSum = d.length >= 3 && d.every((c) => { const g = (re) => (c.rows.find((r) => re.test(r.l)) || {}).v; const inc = g(/^Total income/), noi = g(/before the loan/), fin = g(/after all expenses/), pay = g(/^Loan payment/), mip = g(/^Mortgage insurance/) || 0;
       const ex = c.rows.filter((r) => /^(Vacancy|Property tax|Insurance|HOA|Maintenance|Property management)/.test(r.l)).reduce((a, r) => a + r.v, 0);

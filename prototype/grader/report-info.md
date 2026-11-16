@@ -1,12 +1,12 @@
 # Help / hourly-job grader (INFO_ONLY)
 
-Run: 2026-11-16T11:01:30.946Z  |  49s
+Run: 2026-11-16T16:18:25.125Z  |  47s
 
-## H. Help buttons and hourly jobs: **99.00 / 100** (separate scale; not included in the A-E + R total, F or G)
+## H. Help buttons and hourly jobs: **100.00 / 100** (separate scale; not included in the A-E + R total, F or G)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| H1 | Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained | 8.00 | 7.00 | 8/9 sub-checks pass. FAIL: plain language: no sentence over 40 words and every body reads at about grade 12 or easier (Flesch-Kincaid) [long buyscore hard ] |
+| H1 | Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained | 8.00 | 8.00 | 9/9 sub-checks pass |
 | H2 | Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries | 16.00 | 16.00 | 112/112 sub-checks pass |
 | H3 | Info sheet: opens with the right content, closes by button / Escape / backdrop / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data | 16.00 | 16.00 | 22/22 sub-checks pass |
 | H4 | Definitions are accurate: numbers quoted match the engine constants and loan table, examples do their own arithmetic, stated rules behave that way in the engine | 16.00 | 16.00 | 42/42 sub-checks pass |
@@ -19,5 +19,4 @@ Run: 2026-11-16T11:01:30.946Z  |  49s
 
 ### H failures
 
-- **H1 Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained** (-1.00): 8/9 sub-checks pass. FAIL: plain language: no sentence over 40 words and every body reads at about grade 12 or easier (Flesch-Kincaid) [long buyscore hard ]
-  - Reproduce: node: inspect v4/info.js INFO / LABEL / LOAN
+None.
