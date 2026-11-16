@@ -1,12 +1,12 @@
 # UX grader (UX_ONLY)
 
-Run: 2026-11-16T03:45:12.872Z
+Run: 2026-11-16T03:46:48.255Z
 
 ## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **100.00 / 100** (separate scale)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| J48 | Portfolio replaced: a start whose state is the default plan with other asset ids than the last-known fingerprint, with no logged migration / sample / restore explaining it, shows "may have been replaced" with Restore my previous portfolio; nothing is restored by itself; restore returns the earlier portfolio; explained or normal starts show nothing | 100.00 | 100.00 | 9/9 sub-checks pass |
+| J43 | Editing and the rest of the app: multi-family units re-check the loan and per-unit costs, the loan picker updates down payment and cash, revenue per year keeps profit = revenue x margin, future dollars and tight widths work, backup / Saved / Undo / examples already owned behave, storage unavailable and two tabs and an old cached engine do not break it | 100.00 | 100.00 | 26/26 sub-checks pass |
 
 ### J failures
 
