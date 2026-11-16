@@ -4,15 +4,26 @@
     "max": 100,
     "checks": [
       {
-        "id": "K19",
+        "id": "K23",
         "category": "K",
-        "name": "Flow and keyboard: first time = open the list, Edit, change a field, Save (4 taps) and the Add button is still there; Back asks before dropping changes and not otherwise; Escape closes; Tab reaches Edit and Enter opens the editor with focus on the first field; Escape returns focus to Edit; short on-screen text (notes <= 170 characters); the long text is in the (i)",
-        "points": 100,
-        "earned": 100,
+        "name": "Built only from existing components: every class on the new screens is already used by the old screens (card, scard, sname, smeta, sstat, sact, btn, pbtn, plain, chip, link, migrate, warnbox, chips, seg, f, lb, note, confirm, info); no new class; the sections use the same collapsible header",
+        "points": 50,
+        "earned": 50,
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
-        "repro": "tap through the flow, press keys, measure notes",
-        "seconds": 2.5
+        "repro": "compare class names with the baseline of existing screens",
+        "seconds": 16.2
+      },
+      {
+        "id": "K25",
+        "category": "K",
+        "name": "No text overlaps on the new screens (copies, confirm, report box, both notices), at 320 and 390",
+        "points": 50,
+        "earned": 50,
+        "ratio": 1,
+        "detail": "2/2 sub-checks pass",
+        "repro": "collect Range client rects of every text node and test them pairwise",
+        "seconds": 9.7
       }
     ]
   }

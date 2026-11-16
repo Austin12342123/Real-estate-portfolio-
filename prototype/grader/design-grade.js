@@ -289,6 +289,109 @@ exports.run = async function run(X) {
     const P = new Parts(); fs.mkdirSync(SHOTS, { recursive: true }); let n = 0; const bad = [];
     for (const scheme of ['light', 'dark']) { await page.emulateMedia({ colorScheme: scheme }); for (const w of [390, 320]) { await page.setViewportSize({ width: w, height: 844 }); for (const [name, go] of EDSCREENS) { await go(); await page.waitForTimeout(60); const f = path.join(SHOTS, `ex-${name}-${w}-${scheme}.png`); await page.screenshot({ path: f, fullPage: true }); n++; const b = fs.readFileSync(f); if (b.length < 8000 || b.readUInt32BE(16) !== w * 2) bad.push(path.basename(f)); } } }
     await page.emulateMedia({ colorScheme: 'light' }); await page.setViewportSize({ width: 390, height: 844 }); P.t(n === EDSCREENS.length * 4 && !bad.length, n + ' screenshots saved: ' + (bad.join('; ') || 'ok'), 6); return P; });
+
+  /* ================= K21-K28: the safety / report UI follows the app's design (Assumptions: Safety copies, Report a problem; Planned: the notices) ================= */
+  const DGK = E.Diag, SHOTK = SHOTS, SAFEKEY_K = 'rep-v4-safety', DGKEY_K = 'rep-v4-diag';
+  const memK = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); } }; };
+  const ringK = () => { const st = memK(), now = Date.now(); const a = withV(E.seed()); a.added = E.ADDITIONS.map((x) => x.key); const b = withV(E.seedPlan()), c = withV(E.seedBig()); DGK.safeAdd(st, a, 'daily copy', 'b', now - 3 * 86400e3); DGK.safeAdd(st, c, 'before loading a sample portfolio', 'b', now - 86400e3); DGK.safeAdd(st, b, 'before removing all planned assets', 'b', now - 3600e3); return st.getItem(SAFEKEY_K); };
+  const diagK = () => { const a = withV(E.seed()); a.added = E.ADDITIONS.map((x) => x.key); return { v: 1, ev: [], act: [], fp: { ids: DGK.idsHash(a), n: a.houses.length, own: 1, ts: Date.now() - 60000, v: DATA_V }, flags: {} }; };
+  async function loadK(S, hash, keys) {
+    await page.goto(base() + '/manifest.webmanifest?k=' + seq++);
+    await page.evaluate(([k, s, ex]) => { try { localStorage.clear(); sessionStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); Object.keys(ex).forEach((n) => localStorage.setItem(n, typeof ex[n] === 'string' ? ex[n] : JSON.stringify(ex[n]))); } catch (e) {} }, [KEY, S || null, keys || {}]);
+    await page.goto(base() + '/index.html?k=' + seq++ + (hash || '')); await page.waitForSelector('#app > *');
+  }
+  const stubK = () => page.evaluate(() => { window.__clip = null; try { Object.defineProperty(navigator.clipboard, 'writeText', { configurable: true, value: (t) => { window.__clip = t; return Promise.resolve(); } }); } catch (e) {} });
+  const NEWSCREENS = [
+    ['diag-settings', async () => { await loadK(withV(E.seedPlan()), '#assumptions', { [SAFEKEY_K]: ringK() }); await openAllColl(); await page.waitForSelector('[data-testid=safety-item]'); }],
+    ['diag-restore', async () => { await loadK(withV(E.seedPlan()), '#assumptions', { [SAFEKEY_K]: ringK() }); await openAllColl(); await page.waitForSelector('[data-testid=safety-item]'); await page.click('[data-testid=safety-restore]'); }],
+    ['diag-report', async () => { await loadK(withV(E.seedPlan()), '#assumptions', { [SAFEKEY_K]: ringK() }); await stubK(); await openAllColl(); await page.fill('#bugdesc', 'The total changed after I opened a saved plan'); await page.click('[data-testid=bug-copy]'); await page.waitForTimeout(200); }],
+    ['diag-notice', async () => { await loadK(withV(E.seedPlan()), '#', {}); await page.waitForTimeout(650); await page.evaluate(() => { document.querySelector('[data-testid=kpi-networth]').textContent = 'NaN'; window.__app.check(); }); await page.waitForSelector('[data-testid=anomaly-note]'); }],
+    ['diag-replaced', async () => { await loadK(withV(E.seedPlan()), '#', { [SAFEKEY_K]: ringK(), [DGKEY_K]: diagK() }); await page.waitForSelector('[data-testid=replaced-note]'); await page.waitForTimeout(650); }]];
+  const gotoN = async (name) => NEWSCREENS.find((s) => s[0] === name)[1]();
+  const DIAGSEG = () => { const app = fs.readFileSync(path.join(V4, 'app.js'), 'utf8'), a = app.indexOf('/* ---------- anomaly monitor'), b = app.indexOf("window.addEventListener('keydown'"); return { app, seg: app.slice(a, b), a, b }; };
+
+  await kcheck('K21', 'The safety and report UI adds no CSS of its own: style.css equals the shipped file apart from the build stamp line; no colour, hex or rgb in its templates; every inline style it uses is already used elsewhere in the app', 10, 'diff style.css with git HEAD (minus the stamp line); scan the new templates in app.js', async () => {
+    const P = new Parts(), css = fs.readFileSync(path.join(V4, 'style.css'), 'utf8').replace(/\/\*STAMP\*\/[\s\S]*?\/\*ENDSTAMP\*\/\n?/, '');
+    const head = require('child_process').spawnSync('git', ['show', 'HEAD:prototype/v4/style.css'], { cwd: path.resolve(__dirname, '..'), maxBuffer: 1e8 }).stdout.toString().replace(/\/\*STAMP\*\/[\s\S]*?\/\*ENDSTAMP\*\/\n?/, '');
+    P.t(head.length > 1000 && css === head, 'style.css (without its stamp line) is identical to the committed file: no new rule, no new colour, no new size', 4, css.length + ' vs ' + head.length);
+    const { app, seg } = DIAGSEG(); P.t(seg.length > 2000, 'the new templates were found in app.js (' + seg.length + ' characters)', 1);
+    const tpl = seg.slice(seg.indexOf('const notesHtml'), seg.indexOf('const lazy') > 0 ? seg.length : seg.length);
+    P.t(!/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/.test(seg.replace(/'#'|"#"|\$\{|\(#|#bug|#safe|'#[a-z]*'/g, '')) && !/style="[^"]*(color|background|border-color)/i.test(seg), 'no hex / rgb() / hsl() and no colour in any inline style of the new templates', 3);
+    const inl = [...new Set((seg.match(/style="([^"]*)"/g) || []))], outside = app.slice(0, DIAGSEG().a) + app.slice(DIAGSEG().b), notOld = inl.filter((x) => !outside.includes(x));
+    P.t(!notOld.length, 'every inline style (' + inl.length + ') already exists elsewhere in the app' + (notOld.length ? ': ' + notOld.join(' ') : ''), 2, notOld.join(' ')); void tpl; return P; });
+
+  await kcheck('K22', 'Every piece of text on the new screens (copies list, confirm, report card, text box, both notices) has contrast >= 4.5:1 in light and dark mode', 14, 'emulate prefers-color-scheme on each new screen and measure text vs its real background', async () => {
+    const P = new Parts(), bad = [];
+    for (const scheme of ['light', 'dark']) { await page.emulateMedia({ colorScheme: scheme }); let tot = 0;
+      for (const [name] of NEWSCREENS) { await gotoN(name);
+        const r = await page.evaluate(() => {
+          const cv = document.createElement('canvas'); cv.width = cv.height = 1; const cx = cv.getContext('2d', { willReadFrequently: true });
+          const px = (c) => { cx.clearRect(0, 0, 1, 1); cx.fillStyle = '#000'; cx.fillStyle = c; cx.fillRect(0, 0, 1, 1); const d = cx.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2], d[3] / 255]; };
+          const over = (f, b) => [0, 1, 2].map((i) => f[i] * f[3] + b[i] * (1 - f[3]));
+          const bgOf = (el) => { const L = []; for (let e = el; e; e = e.parentElement) { const c = px(getComputedStyle(e).backgroundColor); if (c[3] > 0) { L.push(c); if (c[3] >= 0.999) break; } } let bg = [255, 255, 255]; if (L.length && L[L.length - 1][3] >= 0.999) bg = L.pop().slice(0, 3); else bg = matchMedia('(prefers-color-scheme: dark)').matches ? [0, 0, 0] : [255, 255, 255]; while (L.length) bg = over(L.pop(), bg); return bg; };
+          const lum = (c) => { const f = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2]; };
+          const out = [], seen = new Set();
+          document.querySelectorAll('#app *').forEach((el) => { const has = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()), inp = (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.value; if (!has && !inp) return; const b = el.getBoundingClientRect(); if (b.width < 1 || b.height < 1) return; const cs = getComputedStyle(el); if (cs.visibility === 'hidden' || cs.display === 'none') return;
+            const fg = px(cs.color), bg = bgOf(el), f = fg[3] < 1 ? over(fg, bg) : fg.slice(0, 3), L1 = lum(f), L2 = lum(bg), cr = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05), key = el.tagName + el.className + (el.textContent || el.value).trim().slice(0, 14); if (seen.has(key)) return; seen.add(key); out.push({ k: key, cr }); });
+          return out; });
+        tot += r.length; r.filter((x) => x.cr < 4.5).forEach((x) => bad.push(scheme + '/' + name + ': ' + x.k + ' ' + x.cr.toFixed(2))); }
+      P.t(!bad.some((x) => x.startsWith(scheme)), scheme + ' mode: ' + tot + ' text styles on ' + NEWSCREENS.length + ' screens all >= 4.5:1', 7, bad.filter((x) => x.startsWith(scheme)).slice(0, 5).join('; ')); }
+    await page.emulateMedia({ colorScheme: 'light' }); return P; });
+
+  await kcheck('K23', 'Built only from existing components: every class on the new screens is already used by the old screens (card, scard, sname, smeta, sstat, sact, btn, pbtn, plain, chip, link, migrate, warnbox, chips, seg, f, lb, note, confirm, info); no new class; the sections use the same collapsible header', 10, 'compare class names with the baseline of existing screens', async () => {
+    const P = new Parts(), B0 = await getBase(), B = { cls: new Set(B0.cls) }, cls = new Set(); await page.setViewportSize({ width: 390, height: 844 });
+    { /* the old screens that carry the Saved card, confirm and migration-note patterns */ await loadK(withV(E.seedPlan()), '#', {}); await page.evaluate(() => { const u = JSON.parse(localStorage.getItem('rep-v4-ui') || '{}'); u.migNote = 'Portfolio 1'; localStorage.setItem('rep-v4-ui', JSON.stringify(u)); }); await page.reload(); await page.waitForSelector('[data-testid=clear-plan-btn]'); await page.click('[data-testid=clear-plan-btn]'); (await page.evaluate(MEASURE)).cls.forEach((c) => B.cls.add(c));
+      await loadK(withV(E.seedPlan()), '#', { 'rep-v4-saved': [{ id: 's1', name: 'Old', ts: Date.now(), state: withV(E.seed()) }] }); await page.click('[data-testid=tab-saved]'); await page.click('[data-testid=saved-open]'); (await page.evaluate(MEASURE)).cls.forEach((c) => B.cls.add(c)); }
+    for (const [name] of NEWSCREENS) { await gotoN(name); (await page.evaluate(MEASURE)).cls.forEach((c) => cls.add(c)); }
+    const old = new Set(); { const { app, a, b } = DIAGSEG(); (app.slice(0, a) + app.slice(b)).replace(/class="([^"$]*)"/g, (m, c) => { c.split(/\s+/).forEach((x) => x && old.add(x)); return m; }); }
+    const fresh = [...cls].filter((c) => !B.cls.has(c) && !old.has(c)); P.t(fresh.length === 0, [...cls].length + ' classes are in use on the new screens, none of them new' + (fresh.length ? ': ' + fresh.join(',') : ''), 5, fresh.join(','));
+    await gotoN('diag-settings'); const m = await page.evaluate(() => ({ hdr: ['safety', 'report'].map((i) => { const h = document.querySelector('[data-coll=' + i + ']'); return h && h.classList.contains('sec') && h.classList.contains('cs') && h.getAttribute('role') === 'button' && h.getAttribute('aria-expanded') === 'true' && h.getBoundingClientRect().height >= 20; }), seg: (() => { const s = document.querySelector('[data-testid=report-card] .seg'); return s && s.getAttribute('role') === 'radiogroup' && s.querySelectorAll('button[role=radio]').length === 2; })(), items: [...document.querySelectorAll('[data-testid=safety-item]')].every((c) => c.classList.contains('card') && c.classList.contains('scard') && c.querySelector('.sname') && c.querySelector('.smeta') && c.querySelector('.sact')), infos: [...document.querySelectorAll('[data-testid=safety-card] button.info, [data-testid=report-card] button.info')].map((b) => b.dataset.info) }));
+    P.t(m.hdr.every(Boolean), 'both sections use the same collapsible header as Backup and Sample portfolios', 1.5, JSON.stringify(m.hdr)); P.t(m.seg, 'Include my numbers is the same segmented control as the other Off / On choices', 1.5); P.t(m.items, 'each copy is a Saved-portfolio style card (name, date line, stats, action grid)', 1.5);
+    P.t(m.infos.includes('safety') && m.infos.includes('bugreport'), 'each card has its own (i): ' + m.infos.join(), 0.5); await gotoN('diag-notice'); const n = await page.evaluate(() => { const a = document.querySelector('[data-testid=anomaly-note]'); return a && a.classList.contains('migrate') && !!a.querySelector('.chip.link'); }); P.t(n, 'the Planned-page notice is the migration-note pattern (.migrate with .chip.link)', 0.5); return P; });
+
+  await kcheck('K24', 'Tap targets are >= 44px and nothing scrolls sideways or passes the edge at 320, 390 and 430 on every new screen', 12, 'measure buttons, boxes and the page width on each new screen at three widths', async () => {
+    const P = new Parts();
+    for (const w of [320, 390, 430]) { await page.setViewportSize({ width: w, height: 844 }); const prob = [], ov = [];
+      for (const [name] of NEWSCREENS) { await gotoN(name);
+        const m = await page.evaluate(() => { const small = [...document.querySelectorAll('#app input:not([readonly]), #app textarea:not([readonly]), #app button, #app select')].filter((e) => { const r = e.getBoundingClientRect(); return e.offsetParent && r.width > 0 && r.height < 43.5 && !e.disabled; }).map((e) => (e.dataset.testid || e.className || e.tagName) + ':' + Math.round(e.getBoundingClientRect().height));
+          const de = document.documentElement, wide = [...document.querySelectorAll('#app *')].filter((e) => e.getBoundingClientRect().right > innerWidth + 1 && getComputedStyle(e).position !== 'fixed' && !e.closest('svg')).map((e) => e.className || e.tagName).slice(0, 3); return { small, ov: de.scrollWidth > innerWidth + 1 || document.body.scrollWidth > innerWidth + 1, wide }; });
+        m.small.forEach((x) => prob.push(name + ' ' + x)); if (m.ov || m.wide.length) ov.push(name + ' ' + JSON.stringify(m.wide)); }
+      P.t(!prob.length, w + 'px: every button and box is 44px or taller on all ' + NEWSCREENS.length + ' screens', 2, prob.slice(0, 5).join('; ')); P.t(!ov.length, w + 'px: no sideways scroll, nothing past the edge', 2, ov.join('; ')); }
+    await page.setViewportSize({ width: 390, height: 844 }); return P; });
+
+  await kcheck('K25', 'No text overlaps on the new screens (copies, confirm, report box, both notices), at 320 and 390', 10, 'collect Range client rects of every text node and test them pairwise', async () => {
+    const P = new Parts();
+    for (const w of [320, 390]) { await page.setViewportSize({ width: w, height: 844 }); const hits = [];
+      for (const [name] of NEWSCREENS) { await gotoN(name);
+        const r = await page.evaluate(() => { const rects = []; const wk = document.createTreeWalker(document.getElementById('app'), NodeFilter.SHOW_TEXT); let n; while ((n = wk.nextNode())) { if (!n.textContent.trim() || !n.parentElement || n.parentElement.closest('svg,.chint,textarea,details:not([open]):not(summary)') || !n.parentElement.closest('[data-testid=safety-card],[data-testid=safety-item],[data-testid=report-card],[data-testid=anomaly-note],[data-testid=replaced-note],[data-testid=page-tabs],[data-coll=safety],[data-coll=report]')) continue; const cs = getComputedStyle(n.parentElement); if (cs.visibility === 'hidden' || cs.display === 'none') continue; const rg = document.createRange(); rg.selectNodeContents(n); for (const q of rg.getClientRects()) if (q.width > 1 && q.height > 1) rects.push({ l: q.left, r: q.right, t: q.top, b: q.bottom, p: n.parentElement, s: n.textContent.trim().slice(0, 18) }); }
+          const bad = []; for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) { const a = rects[i], b = rects[j]; if (a.p === b.p) continue; const ox = Math.min(a.r, b.r) - Math.max(a.l, b.l), oy = Math.min(a.b, b.b) - Math.max(a.t, b.t); if (ox > 2 && oy > 3) bad.push(a.s + ' x ' + b.s); } return { n: rects.length, bad: bad.slice(0, 4) }; });
+        if (r.bad.length) hits.push(name + ': ' + r.bad.join(' | ')); }
+      P.t(!hits.length, w + 'px: no two lines of text overlap on any new screen', 5, hits.join('; ')); }
+    await page.setViewportSize({ width: 390, height: 844 }); return P; });
+
+  await kcheck('K26', 'Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use', 8, 'collect computed font-size / margin / padding / radius on the existing screens, then on the new ones', async () => {
+    const P = new Parts(), B = await getBase(); await page.setViewportSize({ width: 390, height: 844 }); const nf = new Set(), ns = new Set(), nr = new Set();
+    for (const [name] of NEWSCREENS) { await gotoN(name); const m = await page.evaluate(MEASURE); m.fs.forEach((x) => nf.add(x)); m.sp.forEach((x) => ns.add(x)); m.rad.forEach((x) => nr.add(x)); }
+    const fO = [...nf].filter((x) => !B.fs.has(x)), sO = [...ns].filter((x) => !B.sp.has(x)), rO = [...nr].filter((x) => !B.rad.has(x));
+    P.t(!fO.length, 'font sizes (' + [...nf].sort().join(' ') + ') are all already used elsewhere', 3, 'new: ' + fO.join(',')); P.t(!sO.length, 'margins and paddings are all on the existing scale', 3, 'new: ' + sO.join(',')); P.t(!rO.length, 'corner radii are all already used', 2, 'new: ' + rO.join(',')); return P; });
+
+  await kcheck('K27', 'Short first-time flow and short text: Assumptions to a copied bug report is 2 taps (open the section, Copy), the Planned notice copies in 1 tap, Restore is 3 taps (open, Restore, confirm); every note on the new screens is <= 170 characters and the long explanations are in the (i) entries', 12, 'count taps; measure notes; open the (i) sheet', async () => {
+    const P = new Parts(); await page.setViewportSize({ width: 390, height: 844 }); await loadK(withV(E.seedPlan()), '#assumptions', {}); await stubK(); let taps = 0;
+    await page.click('[data-coll=report]'); taps++; await page.click('[data-testid=bug-copy]'); taps++; await page.waitForTimeout(200); const clip = await page.evaluate(() => window.__clip);
+    P.t(taps === 2 && /^<!-- rep-bug-report/.test(clip || ''), 'Assumptions to a copied report = ' + taps + ' taps (<= 3)', 4);
+    await gotoN('diag-notice'); await stubK(); await page.click('[data-testid=anomaly-copy]'); await page.waitForTimeout(200); P.t(/^<!-- rep-bug-report/.test((await page.evaluate(() => window.__clip)) || ''), 'the notice on the Planned page copies the report in 1 tap', 2.5);
+    await loadK(withV(E.seedPlan()), '#assumptions', { [SAFEKEY_K]: ringK() }); await page.click('[data-coll=safety]'); await page.waitForSelector('[data-testid=safety-item]'); await page.click('[data-testid=safety-restore]'); await page.click('[data-testid=safety-restore-confirm]'); await page.waitForTimeout(250);
+    P.t((await page.evaluate(() => location.hash)) === '' || (await page.evaluate(() => location.hash)) === '#', 'Restore from the list = 3 taps and lands on the Planned page with the Undo toast', 2.5);
+    const lens = []; for (const [name] of NEWSCREENS) { await gotoN(name); lens.push(...(await page.evaluate(() => [...document.querySelectorAll('[data-testid=safety-card] .note, [data-testid=report-card] .note, [data-testid=safety-item] .note, [data-testid=safety-item] .confirm p, [data-testid=anomaly-note], [data-testid=replaced-note]')].map((n) => n.textContent.trim().length)))); }
+    P.t(lens.length > 6 && lens.every((n) => n <= 170), 'every note on the new screens is 170 characters or less (longest ' + Math.max(...lens) + ')', 1.5);
+    const I = require('../v4/info.js').INFO; P.t(I.safety && I.safety.b.length >= 300 && I.bugreport && I.bugreport.b.length >= 300, 'the long explanations live in the (i) glossary (' + (I.safety && I.safety.b.length) + ' and ' + (I.bugreport && I.bugreport.b.length) + ' characters)', 1);
+    await gotoN('diag-settings'); await page.click('[data-testid=report-card] button.info'); await page.waitForTimeout(100); const sh = await page.evaluate(() => (document.querySelector('.sheet') || {}).innerText || ''); P.t(/Report a problem/.test(sh) && /nothing by itself/.test(sh), 'the (i) beside Report a problem opens its explanation', 1.5); return P; });
+
+  await kcheck('K28', 'Screenshots (dpr 2) of the new screens at 390 and 320 in light and dark are saved to grader/screens/diag-*.png', 6, 'full-page screenshots of every new screen', async () => {
+    const P = new Parts(); fs.mkdirSync(SHOTK, { recursive: true }); let n = 0; const bad = [];
+    for (const scheme of ['light', 'dark']) { await page.emulateMedia({ colorScheme: scheme }); for (const w of [390, 320]) { await page.setViewportSize({ width: w, height: 844 }); for (const [name, go] of NEWSCREENS) { await go(); await page.waitForTimeout(60); const f = path.join(SHOTK, `${name}-${w}-${scheme}.png`); await page.screenshot({ path: f, fullPage: true }); if (fs.existsSync(f) && fs.statSync(f).size > 2000) n++; else bad.push(f); const ov = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); if (ov) bad.push(name + ' ' + w + ' overflows'); } } }
+    await page.emulateMedia({ colorScheme: 'light' }); await page.setViewportSize({ width: 390, height: 844 }); P.t(n === NEWSCREENS.length * 4 && !bad.length, n + ' screenshots saved: ' + (bad.join('; ') || 'ok'), 6); return P; });
+
   await ctx.close();
   const earned = checks.reduce((a, c) => a + c.earned, 0), max = checks.reduce((a, c) => a + c.points, 0);
   return { earned: Math.round(earned / max * 10000) / 100, max: 100, checks: checks.map((c) => Object.assign({}, c, { points: Math.round(c.points / max * 10000) / 100, earned: Math.round(c.earned / max * 10000) / 100 })) };

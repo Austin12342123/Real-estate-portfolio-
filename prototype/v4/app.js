@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'efc8ad77'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'9db24adc'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
@@ -929,7 +929,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const it = safeList().find((x) => x.ts === +ts); if (!it) return; const text = it.state ? JSON.stringify(it.state) : it.raw || ''; safeText = { ts: it.ts, text, msg: 'Copying…' }; render();
     toClipboard(text, () => { safeText.msg = 'Copied.'; const m = document.getElementById('safem'); if (m) m.textContent = 'Copied.'; }, () => { safeText.msg = 'Select the text above and copy it by hand.'; const m = document.getElementById('safem'), t2 = document.getElementById('safeout'); if (m) m.textContent = safeText.msg; if (t2) { t2.focus(); t2.select(); } });
   }
-  const anomActive = () => ANOM.filter((c) => !ANOMDIS[c]);
+  const anomActive = () => ANOM.filter((c) => !ANOMDIS[c] && !(c === 'state-replaced' && DG.flags.replaced)); /* the replaced banner already says it */
   const notesHtml = () => {
     if (!D) return ''; let h = '';
     if (DG.flags.replaced) { const cand = D.restoreCandidate(safeList(), S); h += `<div class="warnbox" role="status" data-testid="replaced-note"><b>Your portfolio may have been replaced by the default plan.</b> ${cand ? 'A safety copy from ' + fmtDT(cand.ts) + ' is ready.' : 'No safety copy was found.'}<div class="chips">${cand ? '<button type="button" class="chip link" data-replaced-restore data-testid="replaced-restore">Restore my previous portfolio</button>' : ''}<button type="button" class="chip link" data-replaced-dismiss data-testid="replaced-dismiss" aria-label="Dismiss this note">Dismiss</button></div></div>`; }
@@ -979,7 +979,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
         ${safeText && safeText.ts === it.ts ? `<textarea readonly rows="4" id="safeout" aria-label="Safety copy text" data-testid="safety-text">${esc(safeText.text)}</textarea><p class="note" id="safem">${esc(safeText.msg)}</p>` : ''}</section>`; }).join('');
   }
   function reportCard() {
-    return `<section class="card" data-testid="report-card"><p class="note" style="margin:0">Something wrong? Copy a report and paste it into your Claude chat. This app sends nothing by itself.${infoBtn('bugreport')}</p>
+    return `<section class="card scard" data-testid="report-card"><p class="note" style="margin:0">Something wrong? Copy a report and paste it into your Claude chat. This app sends nothing by itself.${infoBtn('bugreport')}</p>
       <label class="f stack"><span class="lb">What went wrong? (optional)</span><textarea rows="3" maxlength="500" data-bugdesc id="bugdesc" data-testid="bug-desc" aria-label="What went wrong" placeholder="A few words">${esc(bugDesc)}</textarea></label>
       <div class="f" style="border-top:0;min-height:36px"><span class="lb">Include my numbers</span></div><div class="seg" style="margin-top:0" role="radiogroup" aria-label="Include my numbers">${[['off', 'Off'], ['on', 'On']].map(([k, l]) => `<button type="button" role="radio" data-bugnum="${k}" class="${bugNums === (k === 'on') ? 'on' : ''}" aria-checked="${bugNums === (k === 'on')}" data-testid="bug-num-${k}">${l}</button>`).join('')}</div>
       <p class="note" data-testid="bug-num-help">${bugNums ? 'On: adds net worth, cash flow and each asset\'s price and rent. Never addresses.' : 'Off: counts and codes only. No names, addresses or dollar amounts.'}</p>
