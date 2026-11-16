@@ -6,5 +6,6 @@ Ledger-derived metrics (compute with jq from agents/ledger/grader-runs.jsonl; ex
 - full runs per task: `jq -s '[.[]|select(.event=="start" and .kind=="full")]|group_by(.task)|map({task:.[0].task,n:length})'`
 - invalid runs: `select(.verdict=="invalid-tree-changed")`; flake rate per check: failing ids across runs on the same tree hash.
 Targets vs baseline (judge improvement by comparing the next 10 agents with the baseline mean): grader_runs/agent < 15 (baseline ~25); full runs per task <= 1.3 (3.7); followup_handbacks 0 (23); agent_overlap_min 0 (40 real); orch commands inside agent windows 0 (4); unverified-tail 0 (4); WIP commits/100 < 3 (18.6); escaped defects per feature < 0.15 (0.36) with regression check 100%; review rounds <= 2; avoidable minutes < 10% (29%).
+Integrity metrics (manual until parsed): integrity_findings per agent (disclosed/undisclosed), kill/pkill commands, undisclosed grader edits.
 Planned fields (need transcript parsing, not yet implemented): tool-error classes, user "Like I said" repeats, per-agent real cost, orchestrator peak context, time-to-first-shipped per user request, hand-backs with ledger ids (%).
 Rerun cadence: after every 10 agents or weekly; orchestrator reads the last two lines and acts on any worse metric.

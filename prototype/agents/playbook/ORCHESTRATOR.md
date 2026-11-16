@@ -25,7 +25,11 @@ Audit grade C (72). This file fixes its listed weaknesses. Tools: agents/tools/*
 ## 4. Accepting a hand-back
 Read only: Status, What changed, Evidence, NOT verified, Questions (the rest on demand). Verify cheaply: `tools/postflight.sh --owner ID` (stamp, bundle, ledger on this tree, grader edits). Check every "Grader edits" row; loosening needs your sign-off. Evidence missing -> either schedule ONE verification run yourself via run-grader.sh (when nobody holds claims) or tell the user it is unverified. Never relay "100%" without a ledger run id.
 
+### 4b. Integrity verification before relaying (I10)
+Before telling the user anything is done/green/live: `tools/postflight.sh --owner ID --report <handback>` (runs integrity-check.sh A/B/C). Read every FINDING: undisclosed constant changes, kill/pkill/stash/env/settings commands, claims that cite no run or a red/old-tree run. Undisclosed finding = reject the hand-back, tell the user what happened, do not relay the claim. Also verify your own conduct: no cloud/network/permission/environment change without the user's explicit approval (ask first, one question, with the exact change); no relaying of unverified claims; state "not verified" items to the user every time.
+
 ## 5. Shipping checklist (merge to main / publish / tell the user "live")
+[ ] integrity-check on every contributing agent has no undisclosed findings
 [ ] working tree clean of foreign changes; all claims released
 [ ] `tools/postflight.sh` exit 0: latest FULL ledger run clean on this exact v4 tree hash
 [ ] artifact.html stamp == sources stamp (rebuild by the v4 owner if not)

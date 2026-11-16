@@ -16,7 +16,8 @@ Built from the audit of 44 agents + the orchestrator (audit/REPORT.md; evidence 
 12. Write the hand-back from playbook/templates/handback.md; `tools/handback.sh --owner ME --report F --final`; send it ONCE via SubagentHandback after all your background jobs ended (acc7e5 sent 10). [P05]
 13. Every "passes/100%/green" cites a ledger run id. List what you did NOT verify, what could not be done, assumptions, questions. [P30]
 14. No commit/push unless delegated; then only `tools/commit-owned.sh` (no WIP, no failing snapshots, never main without a clean full ledger run). [P12]
-15. Blocked >1 retry, budget hit, or surprise (files changed under you, tool errors x2) => tables D1-D4, then hand back BLOCKED. Never improvise around permissions/network/claims.
+15. INTEGRITY (playbook/integrity.md): list every changed threshold old->new; never weaken a check; kill only your own pids (`tools/safe-kill.sh`); no stash, no cloud/network/permission/git-history changes without the user's explicit approval; report failures and unknowns plainly; postflight runs `tools/integrity-check.sh`. [I1-I13]
+16. Blocked >1 retry, budget hit, or surprise (files changed under you, tool errors x2) => tables D1-D4, then hand back BLOCKED. Never improvise around permissions/network/claims.
 
 ## PHASE 0 Intake and interpretation (<=5 min)
 0.1 Read: this file, the delegation prompt, applicable rows of playbook/requirements-ledger.md, CLAUDE.md, and (bug fix) the matching escaped-defects.md rows.
@@ -96,7 +97,7 @@ Ask early with 2-4 options + default via the orchestrator (hand back QUESTION; s
 5.4 Primary flows still work (4.1 step 3), recorded as evidence or listed as NOT verified.
 
 ## PHASE 6 Hygiene and hand-off
-6.1 `tools/postflight.sh --owner ME --emit agents/plans/ME-handback.md` (add `--build` only if you own v4). Exit 0 = evidence present; exit 4 = list the gaps as UNVERIFIED. Fix stamp/bundle issues first.
+6.1 `tools/postflight.sh --owner ME --report agents/plans/ME-handback.md --emit agents/plans/ME-handback.md` (the integrity check compares your draft with the ledger) (add `--build` only if you own v4). Exit 0 = evidence present; exit 4 = list the gaps as UNVERIFIED. Fix stamp/bundle issues first.
 6.2 Review your diff: only claimed files; no scratch files; no grader report churn (they are restored by the tool); no stray processes (`pgrep -af 'node.*grade'` shows yours? let them finish or wait; never kill others').
 6.3 Commit only if delegated: `tools/commit-owned.sh --owner ME -m "<real message>" [--push]`. No WIP, no failing snapshots. Main requires `--to-main` and a clean full ledger run on the exact tree (tool enforces).
 6.4 Release claims (`claim.sh release`), remove worktree if the orchestrator merged it.
@@ -104,6 +105,18 @@ Ask early with 2-4 options + default via the orchestrator (hand back QUESTION; s
 
 ## PHASE 7 Post-task self-audit (2 min, written into the plan file; the orchestrator may include in metrics)
 Answer: minutes spent vs budget; grader runs (slices/full) vs budget; repeats with no edit; waits >5 min and why; anything I assumed; anything I would do differently; did any rule in this playbook cost me time (note for ADOPTION feedback). Then `tools/audit-now.sh` is the orchestrator's job, not yours.
+
+## INTEGRITY (binding; full text and evidence in playbook/integrity.md)
+I1 List every changed numeric assertion/threshold/floor/tolerance/removed check in the hand-back as `file:line old -> new why` (a8dd79 1500->1000; a13416 "except where noted" is not acceptable). Tool: integrity-check.sh section A highlights them.
+I2 Never weaken a check to pass; loosening needs orchestrator sign-off first. "Green" only for a run that started after your last edit, else UNVERIFIED TAIL (af60d8, ac7fb1, a8dd79, ad318e, a1d0d1).
+I3 Failures are facts: reproduce alone twice or report OPEN; no "known flaky" (6 agents did).
+I4 Kill only your own PIDs: `tools/safe-kill.sh --owner ME --pid N`; no kill/pkill/killall (a74ba5).
+I5 No cloud/network/credential/permission-settings/git-history changes without the user's explicit approval; hand back BLOCKED naming the change you need.
+I6 Claims cite ledger run ids; "NOT verified" stated plainly (a19344 is the model).
+I7 One hand-back, after all your jobs ended (acc7e5 x10, ad318e x4).
+I8 No stash, no hidden work, nothing outside your claim.
+I9-I13 Report unknowns and embarrassing facts; no concealed tool failures; label estimates and unverifiable sources; no invented evidence; disclose scope creep. Orchestrator verifies (postflight + integrity-check) before relaying anything (I10).
+Automated: postflight runs `tools/integrity-check.sh` = (A) changed constants/removed checks vs HEAD, (B) scan of your own Bash history for kill/pkill/stash/reset/checkout/restore/force-push/rebase/env-and-settings tools/raw `node grade.js`, (C) your hand-back vs the ledger. Any finding => postflight exit 4; you must disclose each with an explanation.
 
 ## Role-specific overrides
 - Reviewer: no pass bar, no previous scores, must interact; 10 min; read-only (playbook/review-loop-policy.md).

@@ -11,6 +11,7 @@ Follow prototype/agents/PLAYBOOK.md (quick card first). Tools: prototype/agents/
 - "All green" is claimed only with a ledger run id of a clean FULL run on the final tree; edits after it are UNVERIFIED TAIL.
 - Questions ("is there a way to...?") get an answer and a short plan, not a build. Ask early (2-4 options + default) when money/time-basis/order semantics, labels, or user data are involved (PLAYBOOK 2.3). Requirements the user already stated are in prototype/agents/playbook/requirements-ledger.md.
 - Every user-reported bug: failing regression check first, then a row in prototype/agents/playbook/escaped-defects.md, then the fix.
+- INTEGRITY: list every changed threshold/assertion old -> new; never weaken a check to pass; kill only your own PIDs (tools/safe-kill.sh); no cloud/network/permission/git-history changes without the user's explicit approval; report failures and unknowns plainly (prototype/agents/playbook/integrity.md).
 - Hand back exactly once (template prototype/agents/playbook/templates/handback.md, lint with tools/handback.sh), only after your background jobs finished. Commit/push only via tools/commit-owned.sh when delegated; no WIP commits; never push main without a clean full ledger run.
 ```
 Optional (user decision): add "Orchestrator: read prototype/agents/playbook/ORCHESTRATOR.md at session start and after each compaction."

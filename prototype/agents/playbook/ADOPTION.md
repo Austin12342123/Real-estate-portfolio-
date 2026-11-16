@@ -1,7 +1,7 @@
 # ADOPTION: rolling the playbook out and measuring it
 
 ## 1. What exists (all under prototype/agents/, nothing under v4/ or grader/ was touched)
-PLAYBOOK.md (the plan) | playbook/ (problem map, orchestrator protocol, review/research policies, templates, requirements ledger, escaped defects, canaries, metrics format) | tools/ (claim, run-grader, preflight, postflight, commit-owned, worktree, handback, audit-now, audit-auto.py, selftest-all) | ledger/, locks/, handbacks/, metrics/ (runtime state; locks/handbacks/ledger runs are git-ignored via agents/.gitignore; ledger/grader-runs.jsonl and metrics/metrics.jsonl are tracked). Baseline metrics line already recorded (label baseline-2026-11-16).
+PLAYBOOK.md (the plan) | playbook/ (problem map, orchestrator protocol, review/research policies, templates, requirements ledger, escaped defects, canaries, metrics format) | tools/ (claim, run-grader, preflight, postflight, commit-owned, worktree, handback, integrity-check, diff-constants.py, safe-kill, audit-now, audit-auto.py, selftest-all) | ledger/, locks/, handbacks/, metrics/ (runtime state; locks/handbacks/ledger runs are git-ignored via agents/.gitignore; ledger/grader-runs.jsonl and metrics/metrics.jsonl are tracked). Baseline metrics line already recorded (label baseline-2026-11-16).
 
 ## 2. How the orchestrator injects the playbook into every delegation
 1. Open every delegation prompt with playbook/templates/_common-header.md (fill all <> fields), then the typed template (implementer, bug-fixer, researcher, reviewer, auditor, grader-builder, debugger).
@@ -35,6 +35,9 @@ Rollback: delete agents/locks/*, stop using the tools; nothing else depends on t
 ## 7. Suggested follow-up for the grader owner (NOT applied; I may not edit grader files)
 Make raw runs fail fast too: in grade.js exit with code 78 and a message unless `process.env.RUN_GRADER_WRAPPER === '1'`, and add `RUN_GRADER_WRAPPER=1` to the env line in tools/run-grader.sh (one-line change on my side once the grader check exists). Until then enforcement is by convention: preflight flags raw `node grade.js` processes and handback.sh rejects claims without ledger run ids.
 
+## 7b. Integrity rollout
+Stage 1 includes integrity.md and postflight's integrity check from the first agent. Expect findings at first (raw `node grade.js` calls are flagged until agents use run-grader.sh; that is intended). The user should decide (open question 11) whether an undisclosed integrity finding blocks merging.
+
 ## 8. Open questions the user must decide
 1. Stop hook: disable the blind WIP-commit hook, or change it to call tools/commit-owned.sh (or to do nothing when other claims are live)? (24 of 129 commits were hook WIP commits that swept other agents' files.) I cannot change it.
 2. Push policy: keep pushing to the dev branch on every green hand-back (recommended) vs. never push without your say-so? Main only after a clean full run?
@@ -46,3 +49,5 @@ Make raw runs fail fast too: in grade.js exit with code 78 and a message unless 
 8. Network for research: do you want the research agents' environment fixed (the allowlist never took effect) or accept offline/unverified benchmarks and label them?
 9. Apply the CLAUDE.md proposal as written?
 10. Realism grader: show verified vs unverified points separately (grader change)?
+11. Integrity enforcement: should an undisclosed integrity finding (silent threshold change, kill of foreign processes, environment change) block the hand-back/merge automatically, or just be reported to you?
+12. Cloud/network changes: confirm that agents never change them and the orchestrator asks you first each time.

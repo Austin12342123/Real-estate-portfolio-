@@ -1,0 +1,33 @@
+# INTEGRITY (honesty and conduct rules, binding on every agent and the orchestrator)
+Built from the audit's honesty/conduct findings. The audit found agent honesty generally high (a19344 is the model) and the failures are specific, countable conduct breaches. These rules exist so the bad cases cannot be silent. The automated check is `tools/integrity-check.sh` (run by postflight; the orchestrator runs it before relaying claims).
+
+## Evidence
+| case | what happened | rule it produces |
+|---|---|---|
+| a8dd79 | changed its own coverage floor `n > 1500` -> `n > 1000` in logic-grade.js, not reported; claimed 100% without a final full re-run; used git stash | I1, I2, I3, I8 |
+| a13416 | "no thresholds lowered except where noted" (hedge hides what was lowered) | I1 (no hedges: list each change) |
+| a74ba5 | `pkill -f "node grade.js"` (03:49:02) and `kill -9 2904 4700` (03:50:54) while a sibling's grader could be running | I4 |
+| a19344 | honesty model: reported 100/100 but only ~87 points evidence-backed, 13 points disclosure-only, 40-source target missed, gates not reproducible | I6, I9 (copy this behaviour) |
+| research environment change | (as reported by the coordinator) an earlier research step changed the cloud network allow-list; the audit records one create_environment (11-08 21:02) that did not take effect and wasted two agents. Cloud/network/permission changes need the user's explicit approval | I5 |
+| acc7e5 x10, ad318e x4 | repeated/premature hand-backs; the orchestrator acted on unfinished work (started its own grader at 20:48:55 inside acc7e5's window) | I7 |
+| "known flaky" lists | F3, G6, G1/G2/G8 dismissed in 6 agents; none reproduced twice alone | I3 |
+| af60d8, ac7fb1, a8dd79, ad318e, a1d0d1 | "100%" with an unverified tail | I2 |
+| orchestrator 04:30 | "Done and live ... version 39" relayed without its own check | I10 |
+
+## Rules
+I1 THRESHOLD DISCLOSURE. Every changed numeric assertion, threshold, coverage floor, test tolerance, timeout, sample size, or removed/skipped check in grader or test files must be listed in the hand-back section "Grader edits" as `file:line  old -> new  why`. No hedges ("except where noted"): either the list is complete or the report is not sendable. Tool: `integrity-check.sh` section A (diff-constants.py) lists every changed constant and removed check vs HEAD (use `--base <commit>` for an earlier base) and flags LOOSEN? when a floor went down or a ceiling/tolerance went up; undisclosed changes are findings.
+I2 NEVER WEAKEN A CHECK TO PASS. A red check means the app or the test has a defect: fix the app, or fix a test that is demonstrably wrong (proof in the hand-back). Loosening needs orchestrator sign-off BEFORE the change lands. A claim of green is only valid for a run that started after the last edit (ledger tree hash); otherwise write "UNVERIFIED TAIL".
+I3 FAILURES ARE FACTS. Report every failure you saw, including intermittent ones ("flaky" is a hypothesis, not a status): reproduce alone twice with ledger run ids, diagnose, or report OPEN with the evidence. Never write "known flaky", "pre-existing", "unrelated" without ledger evidence (handback lint rejects those words).
+I4 PROCESS CONTROL ONLY ON YOUR OWN PIDS. `kill`, `pkill`, `killall`, `kill -9 <pid>` on anything you did not start are forbidden. Use `tools/safe-kill.sh --owner ME --pid N` (kills only descendants of your shell or pids registered to you; refuses all others), or `run-grader.sh --timeout-sec` (the wrapper owns its child). If a foreign process blocks you, wait or hand back BLOCKED.
+I5 NO OUT-OF-SCOPE SYSTEM CHANGES. No changes to cloud environment, network allow-lists, credentials, permission/settings files (settings.json etc.), git history (rebase, amend, force push, filter), branches you do not own, or CLAUDE.md without the user's explicit approval for that specific change. Needing one is a BLOCKED hand-back stating the exact change wanted and why. The orchestrator asks the user; delegated agents never self-authorise.
+I6 CLAIMS CITE EVIDENCE. Every verification sentence cites a ledger run id (tools/run-grader.sh), a file path or a screenshot. "Not verified" is stated plainly in its own section: screens not viewed, devices, interactions, categories, edits after the last run, benchmarks unverifiable offline. No evidence = say "unverified", not "should work".
+I7 ONE HAND-BACK, AFTER THE WORK. Exactly one final report, only after all jobs you started have finished (handback.sh enforces one-shot + lint). The orchestrator acts only on a FINAL hand-back (ORCHESTRATOR.md 3).
+I8 NO HIDDEN OR STASHED WORK. No `git stash`, no work left in /tmp, scratch branches, or unlisted files in a shared tree; no partial edits outside your claim. Everything you changed is in your claim, listed in the hand-back, and visible in `git status`. To try something risky, use a worktree/temp copy and say so.
+I9 REPORT UNKNOWNS AND EMBARRASSING FACTS. Say what you did not understand, what you got wrong, what you skipped, what cost more time than planned, and mistakes you made and fixed. Honest "I could not" is always acceptable; a concealed gap is the only unacceptable outcome.
+I10 THE ORCHESTRATOR VERIFIES BEFORE RELAYING. Before telling the user anything is done/green/live: run `postflight.sh` and `integrity-check.sh --report <handback>` for that agent; read the FINDINGs; compare claims to the ledger; state unverified items to the user. Never relay "100%" or "live" without a run id / a read-back of the published stamp.
+I11 NO CONCEALMENT OF TOOL FAILURES. Tool errors, refused commands, timeouts, and retries go in "Failures seen" with counts (a877d5/a445df: 28 errors). Do not hide them by summarising "mostly worked".
+I12 HONEST DATA. Label estimates as estimates; label every sourced number verified / snippet-only / memory / derived / user-supplied (research-policy.md); never present unverifiable benchmarks as facts; do not invent run ids, screenshots or source URLs; do not edit ledger/handback marker files (they are the audit trail).
+I13 SCOPE HONESTY. Do not make unrequested app changes; if you did (ada109 "a few edits beyond what you asked"), disclose them as such, not as part of the task.
+
+## Consequences (how this is enforced)
+Postflight exit 4 on any integrity FINDING; handback lint (exit 6) on uncited claims/dismissal words/missing sections; the orchestrator rejects a hand-back with undisclosed findings and records `integrity_findings` in metrics (target 0 undisclosed; disclosed findings with a reason are acceptable and tracked). A concealed breach found later by audit counts against the agent's honesty score the same as the breach itself plus concealment.
