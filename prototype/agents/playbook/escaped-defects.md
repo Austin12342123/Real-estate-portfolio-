@@ -22,3 +22,5 @@ Seeded from audit/02-cross-cutting-patterns.md (E1-E16; times UTC 2026).
 | E16 | 11-12 22:03 | phone did not update | deploy | SW update strategy | ship checklist: stamp/cache name changed | RULE |
 
 New rows go below, newest last: `| E17 | ... |`.
+| E17 | 11-16 | "typing a name for an asset: keyboard laggy, no auto correct" | impl1 | v4/app.js input handler did setField + save + full render() on EVERY keystroke for text boxes, replacing the <input> (iOS drops autocorrect/predictions, lag); boxes also lacked autocorrect/autocapitalize attrs | J53 (same element, 0 renders per key, flush on Back/leave/pause, Escape, attributes); RED ux run 20261116T095233-9352 | FIXED |
+| E18 | 11-16 | "duplicate should be (copy), (copy1), (copy2) ..." | impl1 | E.duplicate always appended ' (copy)' to the original name, so repeats stacked '(copy) (copy)' or repeated the same name | J54 (4 dups, copy of copy, removed middle, 80-char); RED ux run 20261116T095233-9352; I5 expectation updated | FIXED |

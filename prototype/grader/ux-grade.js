@@ -1010,6 +1010,58 @@ exports.run = async function run(X) {
     P.t(d.houses.length === 36 && pl.horizon.nw >= 125e6 && pl.horizon.cf >= 1.3e6 && /Yes/.test(hdr) && d.houses.every((h) => h.status !== 'owned'), 'default plan: ' + d.houses.length + ' assets, real NW $' + (pl.horizon.nw / 1e6).toFixed(0) + 'M, cash flow $' + Math.round(pl.horizon.cf) + '/mo, verdict Yes, nothing owned', 1.5);
     return P; });
 
+
+  /* ---------- J53 typing a name: no lag, keeps the keyboard's autocorrect (user bug: laggy, no auto-correct) ---------- */
+  await jcheck('J53', 'Typing a name: the box is never replaced or re-rendered per key (30 keys, same element, 0 renders, fast), the name lands after a pause / leaving the box / tapping Back mid-typing, Escape reverts, and every free-text box asks for autocorrect', 14, 'asset page name box typed with a 20 ms key delay; renders counted with window.__app.renders; Back tapped mid-typing; Escape; attributes of every text box', async () => {
+    const P = new Parts(), S0 = withV(E.seedPlan()), hid = S0.houses[0].id, name30 = 'Oak Hollow Duplex Number 12345';
+    await loadX(S0, '#house-' + hid); await openAllColl();
+    const sel = 'input.t[data-p$=".addr"]', box = page.locator(sel);
+    await box.click(); await page.keyboard.press('Control+A');
+    await page.evaluate((s) => { const el = document.querySelector(s); el.__mark = 'kept'; window.__r0 = window.__app.renders; window.__first = document.getElementById('app').firstElementChild; window.__first.__mark = 'kept'; }, sel);
+    const t0 = Date.now(); await page.keyboard.type(name30, { delay: 20 }); const ms = Date.now() - t0;
+    const mid = await page.evaluate((s) => { const el = document.querySelector(s); return { mark: el && el.__mark, foc: document.activeElement === el, val: el && el.value, rn: window.__app.renders - window.__r0, app: document.getElementById('app').firstElementChild.__mark }; }, sel);
+    P.t(name30.length === 30 && mid.mark === 'kept' && mid.foc && mid.val === name30 && mid.app === 'kept', 'while typing 30 characters the same box stays in the page, focused, with every character (no element replaced)', 3, JSON.stringify(mid));
+    P.t(mid.rn === 0, 'no full render per key: ' + mid.rn + ' renders during 30 keys', 3);
+    P.t(ms < 30 * 20 + 1500, 'typing 30 keys with a 20 ms delay took ' + ms + ' ms (< ' + (30 * 20 + 1500) + ')', 1);
+    await page.waitForTimeout(1200); const idle = await page.evaluate((s) => { const el = document.querySelector(s); return { mark: el && el.__mark, foc: document.activeElement === el, rn: window.__app.renders - window.__r0 }; }, sel);
+    let st = await store(); P.t(st.houses[0].addr === name30 && idle.mark === 'kept' && idle.foc && idle.rn === 0, 'after a short pause the name is saved without redrawing or taking the focus away', 2, JSON.stringify(idle) + ' ' + st.houses[0].addr);
+    await blur(); await page.waitForTimeout(150);
+    const title = await page.inputValue(sel); await page.click('[aria-label=Back]'); await page.waitForTimeout(150); const txt = await page.evaluate(() => document.getElementById('app').innerText);
+    P.t(title === name30 && txt.indexOf(name30) >= 0, 'after leaving the box the name is on the asset page title and on the portfolio rows', 1.5);
+    /* tapping Back in the middle of typing keeps the typed text */
+    await loadX(S0, '#house-' + hid); await box.click(); await page.keyboard.press('Control+A'); await page.keyboard.type('Quick Typed Name', { delay: 10 }); await page.click('[aria-label=Back]'); await page.waitForTimeout(250);
+    st = await store(); const txt2 = await page.evaluate(() => document.getElementById('app').innerText); P.t(st.houses[0].addr === 'Quick Typed Name' && txt2.indexOf('Quick Typed Name') >= 0 && !/#house-/.test(await page.evaluate(() => location.hash)), 'tapping Back mid-typing keeps the last typed text (saved and on the row) and still goes back', 2, st.houses[0].addr);
+    /* Escape reverts */
+    await loadX(S0, '#house-' + hid); const orig = S0.houses[0].addr; await box.click(); await page.keyboard.press('Control+A'); await page.keyboard.type('Zzz Not Wanted', { delay: 5 }); await page.waitForTimeout(1100); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+    st = await store(); P.t(st.houses[0].addr === orig && (await page.inputValue(sel)) === orig, 'Escape puts the old name back (even after the pause had saved the typing)', 1.5, st.houses[0].addr);
+    /* attributes on every free-text box */
+    const want = { autocorrect: 'on', autocapitalize: 'words', spellcheck: 'true', autocomplete: 'off', enterkeyhint: 'done' };
+    const attrs = () => page.evaluate((w) => [...document.querySelectorAll('#app input[type=text]:not([data-num])')].map((e) => ({ k: e.dataset.testid || e.getAttribute('aria-label'), bad: Object.keys(w).filter((a) => e.getAttribute(a) !== w[a]) })), want);
+    let all = await attrs(); const SF = clone(S0); SF.p = clone(SF.p || {}); SF.p.planned = [{ id: 'pe1', name: 'Wedding', amount: 20000, month: 12 }]; SF.p.capital = [{ id: 'cp1', name: 'Partner', amount: 50000, month: 6 }]; await loadX(SF, '#finances'); await openAllColl(); all = all.concat(await attrs());
+    await loadX(S0, '#'); await page.click('[data-testid=tab-saved]').catch(() => {}); await page.click('[data-save-open]').catch(() => {}); all = all.concat(await attrs());
+    await page.click('[data-save-yes]').catch(() => {}); await page.waitForTimeout(150); await page.click('[data-testid=saved-rename]').catch(() => {}); all = all.concat(await attrs());
+    const bad = all.filter((x) => x.bad.length), keys = all.map((x) => x.k).join('|');
+    P.t(!bad.length && all.length >= 6 && /Name or address/.test(keys) && /Job name/.test(keys) && /Expense name/.test(keys) && /Capital name/.test(keys) && /save-name/.test(keys) && /rename-input/.test(keys), 'every free-text box (asset name, job, expenses, Saved name and rename) has autocorrect on, words capitalised, spellcheck on, autocomplete off, Done key: ' + all.length + ' boxes, ' + bad.length + ' missing', 1.5, JSON.stringify(bad) + keys);
+    return P; });
+
+  /* ---------- J54 duplicate naming (user bug: copy, copy1, copy2 ...) ---------- */
+  await jcheck('J54', 'Duplicate names: "<name> (copy)", "(copy1)", "(copy2)" ...; a copy of a copy counts as a copy of the base; the first unused number is taken; names never repeat; long names keep the suffix; numbering, Undo and the default plan are unaffected', 10, 'E.duplicate x4, copy of a copy, remove a middle copy, 80-character and unicode names; asset page button twice', async () => {
+    const P = new Parts(), S = clone(withV(E.seedPlan())), id0 = S.houses[0].id, base0 = S.houses[0].addr;
+    const names = () => S.houses.map((h) => h.addr);
+    const c1 = E.duplicate(S, id0), c2 = E.duplicate(S, id0), c3 = E.duplicate(S, id0), c4 = E.duplicate(S, id0);
+    P.t([c1, c2, c3, c4].map((c) => c.addr).join('|') === [base0 + ' (copy)', base0 + ' (copy1)', base0 + ' (copy2)', base0 + ' (copy3)'].join('|'), 'four duplicates: (copy), (copy1), (copy2), (copy3)', 3, [c1, c2, c3, c4].map((c) => c.addr).join('|'));
+    const cc = E.duplicate(S, c2.id); P.t(cc.addr === base0 + ' (copy4)' && S.houses[S.houses.findIndex((h) => h.id === c2.id) + 1].id === cc.id, 'duplicating "(copy1)" gives "<name> (copy4)" (a copy of a copy is a copy of the base) placed right after it', 2, cc.addr);
+    S.houses.splice(S.houses.findIndex((h) => h.id === c2.id), 1); const c5 = E.duplicate(S, id0); P.t(c5.addr === base0 + ' (copy1)', 'after removing "(copy1)" the next duplicate takes "(copy1)" again', 1.5, c5.addr);
+    P.t(new Set(names()).size === names().length || names().filter((n) => n.indexOf(' (copy') > 0).length === new Set(names().filter((n) => n.indexOf(' (copy') > 0)).size, 'no two copies share a name', 1);
+    const S2 = clone(withV(E.seedPlan())), long = 'Ä'.repeat(40) + ' ' + 'é'.repeat(39); S2.houses[0].addr = long; const l1 = E.duplicate(S2, S2.houses[0].id), l2 = E.duplicate(S2, S2.houses[0].id);
+    P.t(l1.addr.length <= 80 && /\(copy\)$/.test(l1.addr) && l2.addr.length <= 80 && /\(copy1\)$/.test(l2.addr) && l1.addr !== l2.addr, 'an 80-character unicode name keeps the whole suffix by trimming the base', 1.5, l1.addr.length + ' ' + l2.addr);
+    const S3 = clone(withV(E.seedPlan())), n0 = S3.houses.length, seq0 = S3.seq; E.duplicate(S3, S3.houses[0].id); P.t(S3.houses.length === n0 + 1 && S3.seq === (+seq0 || 0) + 1 && S3.houses[1].status === 'planned', 'the copy still sits right after the original, planned, with the next creation number', 1);
+    const S0 = withV(E.seedPlan()), pl = E.planR(E.normalize(clone(S0))); P.t(S0.houses.length === 36 && pl.horizon.nw >= 125e6 && S0.houses.every((h) => h.status !== 'owned'), 'default plan untouched: 36 assets, nothing owned, real NW $' + (pl.horizon.nw / 1e6).toFixed(0) + 'M', 1);
+    await loadX(S0, '#house-' + S0.houses[0].id); await page.click('[data-testid=h-duplicate]'); await page.waitForTimeout(150); await page.click('[data-testid=h-duplicate]'); await page.waitForTimeout(150);
+    const st = await store(), nn = st.houses.map((h) => h.addr).filter((n) => n.indexOf(S0.houses[0].addr + ' (copy') === 0);
+    P.t(nn.length === 2 && nn.indexOf(S0.houses[0].addr + ' (copy)') >= 0 && nn.indexOf(S0.houses[0].addr + ' (copy1)') >= 0, 'the asset page Duplicate button numbers its copies (original, then a copy of the copy)', 1, nn.join('|'));
+    return P; });
+
   await ctx.close();
   const earned = checks.reduce((a, c) => a + c.earned, 0), max = checks.reduce((a, c) => a + c.points, 0);
   return { earned: Math.round(earned / max * 10000) / 100, max: 100, checks: checks.map((c) => Object.assign({}, c, { points: Math.round(c.points / max * 10000) / 100, earned: Math.round(c.earned / max * 10000) / 100 })) };

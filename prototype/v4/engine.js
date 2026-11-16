@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'bb1cbef5'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'17fe2f82'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -838,10 +838,15 @@
   /* creation sequence: the latest asset added in a category is the one with the highest seq (assets from before this feature have none: list position decides) */
   function register(S, h) { S.seq = (+S.seq || 0) + 1; h.seq = S.seq; h.created = Date.now(); return h; }
   function latestOf(list) { let best = null, bs = -Infinity; list.forEach((h) => { const q = h.seq != null && isFinite(+h.seq) ? +h.seq : -1; if (q >= bs) { bs = q; best = h; } }); return best; }
+  /* copy names: "<base> (copy)", "<base> (copy1)", "<base> (copy2)" ...; <base> is the name without a trailing (copy) / (copyN); the first suffix no asset uses is taken; the whole suffix survives the 80-character limit */
+  function copyName(S, name) {
+    const base = String(name == null ? '' : name).replace(/\s*\(copy\d*\)\s*$/, '').replace(/\s+$/, ''), used = new Set(S.houses.map((h) => h.addr));
+    for (let n = 0; ; n++) { const suf = ' (copy' + (n ? n : '') + ')', nm = base.slice(0, Math.max(0, 80 - suf.length)).replace(/\s+$/, '') + suf; if (!used.has(nm)) return nm; }
+  }
   function duplicate(S, id) {
     const i = S.houses.findIndex((h) => h.id === id); if (i < 0) return null;
     const o = S.houses[i], c = JSON.parse(JSON.stringify(o));
-    c.id = 'h' + Date.now().toString(36) + (uid++); c.addr = o.addr + ' (copy)'; c.status = 'planned'; c.paid = 0; c.target = ''; c.fresh = false; c.listingUrl = '';
+    c.id = 'h' + Date.now().toString(36) + (uid++); c.addr = copyName(S, o.addr); c.status = 'planned'; c.paid = 0; c.target = ''; c.fresh = false; c.listingUrl = '';
     register(S, c); S.houses.splice(i + 1, 0, c); return c;
   }
   /* move an asset one step inside its category (visible = ids shown in the category, in order); returns true if the order changed */

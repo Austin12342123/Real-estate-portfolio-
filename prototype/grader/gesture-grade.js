@@ -150,7 +150,7 @@ exports.run = async function run(X) {
     const wl = await page.locator(`[data-row="${cp.id}"] [data-testid=dp-line]`).textContent().catch(() => ''); P.t(!cp.target && !st.houses[i].target && /^(Possible|Not possible)/.test(wl.trim()) && (cp.price === st.houses[i].price) && cp.rent === st.houses[i].rent, 'no links to relink: the copy shows its own verdict and math line (planned, funded by everything above it); the numbers are copied', 2.5, wl);
     const ct = await page.locator('[data-testid=cat-count-house]').textContent(); P.t(ct.trim() === String(hb.length), 'the category stat strip counts it', 1, ct);
     await page.click('[data-for="' + cp.id + '"] [data-testid=open-details]'); await page.waitForTimeout(80); await page.click('[data-testid=h-duplicate]'); await page.waitForTimeout(120);
-    const s2 = await store(); P.t(s2.houses.length === n0 + 2 && /#house-/.test(await hash()) && (await hash()) !== '#house-' + cp.id && /\(copy\) \(copy\)$/.test((await page.inputValue('input.t'))), 'asset page Duplicate makes another copy and opens it', 1.8, await page.inputValue('input.t'));
+    const s2 = await store(); P.t(s2.houses.length === n0 + 2 && /#house-/.test(await hash()) && (await hash()) !== '#house-' + cp.id && / \(copy1\)$/.test((await page.inputValue('input.t'))), 'asset page Duplicate makes another copy and opens it', 1.8, await page.inputValue('input.t'));
     return P; });
 
   /* ---------------------------------------------------------------- I6 sections */

@@ -1,6 +1,6 @@
 # Portfolio gestures grader (GEST_ONLY)
 
-Run: 2026-11-14T20:40:31.058Z  |  33s
+Run: 2026-11-16T10:10:31.228Z  |  35s
 
 ## I. Portfolio sections, gestures and funding order: **100.00 / 100** (separate scale; not included in A-E + R, F, G or H)
 
