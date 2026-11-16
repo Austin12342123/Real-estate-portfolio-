@@ -1,6 +1,6 @@
 # Help / hourly-job grader (INFO_ONLY)
 
-Run: 2026-11-16T16:18:25.125Z  |  47s
+Run: 2026-11-16T17:49:04.881Z  |  44s
 
 ## H. Help buttons and hourly jobs: **100.00 / 100** (separate scale; not included in the A-E + R total, F or G)
 

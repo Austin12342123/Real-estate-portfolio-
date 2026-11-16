@@ -1,8 +1,8 @@
 # UX grader (UX_ONLY)
 
-Run: 2026-11-16T16:09:46.375Z
+Run: 2026-11-16T17:42:43.805Z
 
-## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **99.80 / 100** (separate scale)
+## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **100.00 / 100** (separate scale)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -54,7 +54,7 @@ Run: 2026-11-16T16:09:46.375Z
 | J46 | Safety copies are taken BEFORE a migration, an additions append, an unreadable save, loading a sample, Remove all planned, opening a Saved portfolio, a backup restore, removing an asset, and once a day; each copy equals the state just before; Restore brings back the exact copy (deep-equal), files the current state first and offers Undo | 3.13 | 3.13 | 16/16 sub-checks pass |
 | J47 | Safety ring limits: at most 5 copies, oldest dropped, size capped, newest first, quota errors and a throwing localStorage never throw and never lose the newest copy; the app still works and Undo still shows | 1.37 | 1.37 | 5/5 sub-checks pass |
 | J48 | Portfolio replaced: a start whose state is the default plan with other asset ids than the last-known fingerprint, with no logged migration / sample / restore explaining it, shows "may have been replaced" with Restore my previous portfolio; nothing is restored by itself; restore returns the earlier portfolio; explained or normal starts show nothing | 2.35 | 2.35 | 9/9 sub-checks pass |
-| J49 | Anomaly monitor: NaN in a KPI, a changed total, a failed read-back, mismatched stamps and a wrong state version are each flagged with their code; the Planned page shows "Something looked wrong. Tap to copy a bug report" (one tap copies, dismiss works); errors, rejections and storage failures land in a 60-entry, size-capped event ring | 2.74 | 2.54 | 14/15 sub-checks pass. FAIL: node: a total that is not the sum of its rows (engine or on screen) is total-mismatch |
+| J49 | Anomaly monitor: NaN in a KPI, a changed total, a failed read-back, mismatched stamps and a wrong state version are each flagged with their code; the Planned page shows "Something looked wrong. Tap to copy a bug report" (one tap copies, dismiss works); errors, rejections and storage failures land in a 60-entry, size-capped event ring | 2.74 | 2.74 | 15/15 sub-checks pass |
 | J50 | Bug report: 8 sections, parseable, <= 8,000 characters; with "Include my numbers" off no street names, addresses or dollar amounts (sentinel address and price), with it on prices and rents but still no address; Copy uses the clipboard with the select-by-hand fallback; the GitHub link is valid, <= 7,500 characters and says the full report was copied; the app makes no network request | 3.13 | 3.13 | 13/13 sub-checks pass |
 | J51 | No slowdown: the safety / monitor start-up work costs under 50 ms on the default 36-asset plan (median of 5 starts), the monitor under 50 ms, and the invariants run in node in under 20 ms | 0.78 | 0.78 | 3/3 sub-checks pass |
 | J52 | Nothing else changed: backup export excludes safety and diagnostic keys, backup import still restores, Saved portfolios do not hold safety copies, and the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes) | 0.98 | 0.98 | 4/4 sub-checks pass |
@@ -63,5 +63,4 @@ Run: 2026-11-16T16:09:46.375Z
 
 ### J failures
 
-- **J49 Anomaly monitor: NaN in a KPI, a changed total, a failed read-back, mismatched stamps and a wrong state version are each flagged with their code; the Planned page shows "Something looked wrong. Tap to copy a bug report" (one tap copies, dismiss works); errors, rejections and storage failures land in a 60-entry, size-capped event ring** (-0.20): 14/15 sub-checks pass. FAIL: node: a total that is not the sum of its rows (engine or on screen) is total-mismatch
-  - Reproduce: inject NaN into a KPI, stub the clipboard, fire errors; node: Engine.Diag.checks with faked inputs
+None.

@@ -293,12 +293,12 @@ exports.run = async function run(X) {
   }
   function chkAssetHero(main, hg, id, A, tag) {
     const S = main.state, h = S.houses.find((x) => x.id === id), v = planOf(main).V[id], T = (key, ok, w, info) => A.t(key, ok, w, tag + ' ' + id + ': ' + info);
-    const pay = kpiOf(hg, 'h-payment'), cf = kpiOf(hg, 'h-cf'), ds = kpiOf(hg, 'h-dscr'), coc = kpiOf(hg, 'h-coc');
+    const pay = kpiOf(hg, 'h-payment'), cf = kpiOf(hg, 'h-cf'), ds = kpiOf(hg, 'h-dscr'), cap = kpiOf(hg, 'h-cap');
     T('hero is labeled "Payment now" and "Cash flow now"', /Payment (now|while held)/i.test(pay.label) && /Cash flow (now|while held)/i.test(cf.label), 0.5, pay.label + ' / ' + cf.label);
     T('"Payment now" = P&I + extra + costs + insurance (engine view)', eq(pay.v, v.payment), 1, pay.v + ' vs ' + $f(v.payment));
     T('"Cash flow now" = NOI - payment (engine view)', eq(cf.v, v.cf), 1, cf.v + ' vs ' + $f(v.cf));
     const dscr = v.P > 0 ? v.noi / v.P : NaN; T('DSCR now = NOI / P&I', isFinite(dscr) ? Math.abs(parseFloat(ds.v) - dscr) <= 0.0051 : /—|NaN/.test(ds.v), 0.5, ds.v + ' vs ' + R(dscr, 2));
-    const cocv = v.invested > 0 ? v.cf * 12 / v.invested * 100 : NaN; T('cash-on-cash now = yearly cash flow / cash invested', isFinite(cocv) ? Math.abs(parseFloat(coc.v) - cocv) <= 0.051 : /—/.test(coc.v), 0.5, coc.v + ' vs ' + R(cocv, 1));
+    const capv = v.valueNow > 0 ? v.noi * 12 / v.valueNow * 100 : NaN; T('cap rate now = yearly NOI / value', isFinite(capv) ? Math.abs(parseFloat(cap.v) - capv) <= 0.051 : /—/.test(cap.v), 0.5, cap.v + ' vs ' + R(capv, 1));
     const comps = [v.P > 0, v.X > 0.5, v.escrow > 0, v.mip > 0].filter(Boolean).length, amts = (pay.sub.match(/\$[\d,.]+[MB]?/g) || []).map(money);
     T('"Payment now" subtext lists every part and the parts add up to the headline (no subtext when there is only one part)', comps > 1 ? amts.length === comps && Math.abs(amts.reduce((a, b) => a + b, 0) - money(pay.v)) <= 3.5 : pay.sub === '', 1, pay.v + ' but "' + pay.sub + '"' + (v.mip > 0 ? ' (insurance $' + Math.round(v.mip) + '/mo)' : ''));
     T('"Cash flow now" subtext = cash flow minus extra (no subtext when there is no extra payment)', v.X > 0.5 ? eq((/([−+]\$[\d,.]+[MB]?) after extra/.exec(cf.sub) || [])[1], v.cf - v.X) : cf.sub === '', 0.5, cf.sub + ' vs ' + $f(v.cf - v.X));
@@ -444,7 +444,10 @@ exports.run = async function run(X) {
     else if (k === 'arv') { e.arv = Math.max(0, n); e.gain = null; e.arvAuto = false; } else if (k === 'gain') { e.gain = n; e.arvAuto = false; e.arv = Math.max(0, Math.round(h0.price + (h0.capex || 0) + n)); }
     else if (k !== 'payoff') e[k] = Math.max(0, n);
     const price = e.price != null ? e.price : h0.price, capex = e.capex != null ? e.capex : h0.capex;
-    if (k === 'price' || k === 'capex') { const auto = h0.arvAuto; if (auto) e.arv = Math.round((price + (capex || 0)) * 1.15 / 1000) * 1000; else if (h0.gain !== null && isFinite(h0.gain)) e.arv = Math.max(0, Math.round(price + (capex || 0) + h0.gain)); }
+    const rule = (p, c) => (!(c > 0) ? 0 : h0.finCapex ? Math.round((p + c) * 1.15 / 1000) * 1000 : Math.round(p + 1.4 * c)), noGain = !(h0.gain !== null && h0.gain !== undefined && isFinite(h0.gain));
+    const wasAuto = k === 'capex' && noGain && (h0.arvAuto || (!(h0.arv > 0) && !(h0.capex > 0)) || (h0.arv > 0 && h0.arv === rule(h0.price, h0.capex))); /* the budget drives the appraisal (price + 1.4 x budget) unless the user typed one */
+    if (wasAuto) { e.arv = rule(price, capex); e.arvAuto = capex > 0; e.gain = null; }
+    else if (k === 'price' || k === 'capex') { const auto = h0.arvAuto; if (auto) e.arv = rule(price, capex || 0); else if (h0.gain !== null && isFinite(h0.gain)) e.arv = Math.max(0, Math.round(price + (capex || 0) + h0.gain)); }
     return e;
   }
   /* what the page must show for the stored state; returns a list of [key, ok, info] */
@@ -466,14 +469,14 @@ exports.run = async function run(X) {
     }
     add('gain/appraisal relation: value gained = appraisal - price - rehab', h.arv > 0 ? close(fnum(f('gain')), h.arv - h.price - (h.capex || 0), 0.51) : f('gain') === '', 'gain field ' + f('gain') + ', arv ' + h.arv + ', price ' + h.price + ', rehab ' + h.capex);
     if (h.gain !== null && isFinite(h.gain)) add('typed gain keeps appraisal = price + rehab + gain', Math.abs(h.arv - Math.max(0, Math.round(h.price + (h.capex || 0) + h.gain))) <= 1, 'arv ' + h.arv + ' gain ' + h.gain + ' price ' + h.price + ' rehab ' + h.capex);
-    if (h.arvAuto) add('auto appraisal = (price + rehab) x 1.15 (rounded to $1,000)', h.arv === Math.round((h.price + (h.capex || 0)) * 1.15 / 1000) * 1000, 'arv ' + h.arv + ' price ' + h.price + ' rehab ' + h.capex);
+    if (h.arvAuto) add('auto appraisal = (price + rehab) x 1.15 rounded to $1,000 (203(k) loan) or price + 1.4 x budget', h.arv === (h.finCapex ? Math.round((h.price + (h.capex || 0)) * 1.15 / 1000) * 1000 : Math.round(h.price + 1.4 * (h.capex || 0))), 'arv ' + h.arv + ' price ' + h.price + ' rehab ' + h.capex);
     if (h.type === 'commercial') g1('caprate', h.price > 0 ? noi * 12 / h.price * 100 : NaN, 0.06, 'cap rate = NOI x 12 / price');
     if (h.type === 'business') g1('mult', noi > 0 ? h.price / (noi * 12) : NaN, 0.06, 'price multiple = price / yearly profit');
     /* hero */
-    const pay = kpiOf(g, 'h-payment'), hcf = kpiOf(g, 'h-cf'), ds = kpiOf(g, 'h-dscr'), coc = kpiOf(g, 'h-coc');
+    const pay = kpiOf(g, 'h-payment'), hcf = kpiOf(g, 'h-cf'), ds = kpiOf(g, 'h-dscr'), cap = kpiOf(g, 'h-cap');
     add('hero "Payment now" = P&I + extra + costs', Math.abs(money(pay.v) - (P + X + I.escrow(h) + mip)) <= dispTol(pay.v) + 0.01, pay.v + ' vs ' + $f(P + X + I.escrow(h) + mip));
     add('hero "Cash flow now" = NOI - P&I - insurance', eq(hcf.v, cf), hcf.v + ' vs ' + $f(cf));
-    const inv = I.down(h) + h.price * I.cl(S, h) / 100; add('hero cash-on-cash = yearly cash flow / (down + closing)', inv > 0 ? Math.abs(parseFloat(coc.v) - cf * 12 / inv * 100) <= 0.051 : /—/.test(coc.v), coc.v + ' vs ' + R(cf * 12 / inv * 100, 1));
+    const valN = E.view(S, h).valueNow; add('hero cap rate = yearly NOI / value', valN > 0 ? Math.abs(parseFloat(cap.v) - noi * 12 / valN * 100) <= 0.051 : /—/.test(cap.v), cap.v + ' vs ' + R(noi * 12 / valN * 100, 1));
     add('hero DSCR = NOI / P&I', P > 0 ? Math.abs(parseFloat(ds.v) - noi / P) <= 0.0051 : /—|NaN/.test(ds.v), ds.v + ' vs ' + R(noi / P, 2));
     /* guardrail */
     const warn = g.t['home-loses'];

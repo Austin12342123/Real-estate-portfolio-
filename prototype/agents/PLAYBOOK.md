@@ -18,6 +18,7 @@ Built from the audit of 44 agents + the orchestrator (audit/REPORT.md; evidence 
 14. No commit/push unless delegated; then only `tools/commit-owned.sh` (no WIP, no failing snapshots, never main without a clean full ledger run). [P12]
 15. INTEGRITY (playbook/integrity.md): list every changed threshold old->new; never weaken a check; kill only your own pids (`tools/safe-kill.sh`); no stash, no cloud/network/permission/git-history changes without the user's explicit approval; report failures and unknowns plainly; postflight runs `tools/integrity-check.sh`. [I1-I13]
 16. Blocked >1 retry, budget hit, or surprise (files changed under you, tool errors x2) => tables D1-D4, then hand back BLOCKED. Never improvise around permissions/network/claims.
+17. Deviating from this plan is allowed only via playbook/DEVIATIONS.md: `tools/deviate.sh open`, tell your monitor, WAIT for its ack, act minimally, monitor verifies, then rejoin the plan and the monitor closes it. Unclosed deviations block the hand-back.
 
 ## PHASE 0 Intake and interpretation (<=5 min)
 0.1 Read: this file, the delegation prompt, applicable rows of playbook/requirements-ledger.md, CLAUDE.md, and (bug fix) the matching escaped-defects.md rows.

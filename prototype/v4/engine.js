@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'c627dd1f'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'b5dcc094'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -86,7 +86,7 @@
     const h = Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), type, status: 'planned', extra: 0, driver: 'extra', wait: 24, liens: 0, paid: 0, buyIn: 0,
       target: '', growth: null, io: false, closingPct: null, loanId: '', dp: 20, rate: 6.75, term: 360, mat: 0, refiRate: null, refiTerm: null,
       capex: 0, capexMonths: 6, arv: 0, arvAuto: false, gain: null, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false,
-      kind: 'single', units: 1, pack: false, mfRes: 300, mfOther: 0, mgmtPct: null, maintPct: null }, DEFAULTS[type]); /* kind 'multi' = a building or pack of houses with units >= 2 (still type 'house'); mfRes = replacement reserve per unit per year, mfOther = other owner-paid costs per month, mgmtPct / maintPct = this asset's own management / repairs % (null = the Assumptions rate) */
+      kind: 'single', units: 1, pack: false, mfRes: 300, mfOther: 0, mgmtPct: null, maintPct: null, boughtOn: null }, DEFAULTS[type]); /* kind 'multi' = a building or pack of houses with units >= 2 (still type 'house'); mfRes = replacement reserve per unit per year, mfOther = other owner-paid costs per month, mgmtPct / maintPct = this asset's own management / repairs % (null = the Assumptions rate) */
     applyLoan(h, loanId || (o && o.kind === 'multi' ? mfFirst(+o.units || 2, !!o.pack) : loansFor(type)[0].id));
     Object.assign(h, o || {});
     if (type === 'business' && o && o.rent !== undefined) { if (o.revenue === undefined) h.revenue = null; if (o.margin === undefined) h.margin = null; } /* a business made from its owner profit (the seeded ones) has no revenue of its own: the page shows rent / margin */
@@ -96,6 +96,11 @@
   /* a business's owner profit per month (h.rent) = revenue per month x margin. revOf / marginOf give the revenue and margin the page shows: stored ones, else the margin default (20%) and the revenue it implies */
   const marginOf = (h) => (isFinite(+h.margin) && h.margin !== null && h.margin !== '' ? +h.margin : 20);
   const revOf = (h) => { if (isFinite(+h.revenue) && h.revenue !== null && h.revenue !== '') return +h.revenue; const m = marginOf(h); return m > 0 ? (+h.rent || 0) / (m / 100) : 0; };
+  /* the new appraised value that follows the improvement budget: price + 1.4 x budget (the app's own convention: the first four homes are built on it). A 203(k) loan keeps its own older rule (15% above price + rehab). No budget = no new appraisal (0: the value does not change). */
+  const ARV_K = 1.4;
+  const autoArv = (h) => { const c = Math.max(0, +h.capex || 0); if (!(c > 0)) return 0; return h.finCapex ? Math.round(((h.price + c) * 1.15) / 1000) * 1000 : Math.round(h.price + ARV_K * c); };
+  /* is the appraisal 'auto' (follows the budget) rather than typed by the user? true when the flag says so, when there is no appraisal and no budget, or when it is exactly what the rule gives (so the seeded homes, built on 1.4x, follow too). */
+  const arvIsAuto = (h) => !!h.arvAuto || (!(+h.arv > 0) && !(+h.capex > 0)) || (+h.arv > 0 && +h.arv === autoArv(h) && !(h.gain !== null && h.gain !== undefined && isFinite(+h.gain)));
   const newHouse = (o) => newAsset((o && o.type) || 'house', o && o.loanId, o);
 
   const H = (S, id) => S.houses.find((h) => h.id === id);
@@ -130,7 +135,8 @@
   const unitsOf = (h) => (isMulti(h) ? Math.max(2, Math.round(+h.units || 2)) : 1);
   const mfReserve = (h) => (isMulti(h) ? (unitsOf(h) * Math.max(0, +h.mfRes || 0)) / 12 : 0);
   const mfOther = (h) => (isMulti(h) ? Math.max(0, +h.mfOther || 0) : 0);
-  const mgmtOf = (S, h) => (isMulti(h) && h.mgmtPct != null && h.mgmtPct !== '' && isFinite(+h.mgmtPct) ? +h.mgmtPct : S.g.mgmt);
+  const mgmtOf = (S, h) => ((h.type || 'house') !== 'business' && h.mgmtPct != null && h.mgmtPct !== '' && isFinite(+h.mgmtPct) ? +h.mgmtPct : S.g.mgmt); /* the property manager's % of rent collected: this asset's own (any home, building or commercial property; null = the Assumptions rate, which is what every asset used before). A business has no property manager: its owner profit is already after the people who run it, and a manager you pay when you do not run it is set in Finances. */
+  const mgmtAmt = (S, h) => ((h.type || 'house') === 'business' ? 0 : (mgmtOf(S, h) / 100) * (h.rent + reimbOf(h)) * (1 - S.g.vac / 100)); /* the property manager per month in dollars */
   const maintOf = (S, h) => (isMulti(h) && h.maintPct != null && h.maintPct !== '' && isFinite(+h.maintPct) ? +h.maintPct : S.g.maint);
   const noiOf = (S, h) => { const g = S.g; if ((h.type || 'house') === 'business') return h.rent; const egi = (h.rent + reimbOf(h)) * (1 - g.vac / 100); return egi - (h.tax + h.ins + h.hoa + (maintOf(S, h) / 100) * h.price / 12 + (mgmtOf(S, h) / 100) * egi + mfReserve(h) + mfOther(h)); };
   /* the multi-family money picture per month: every line, per unit, and the operating-expense ratio (costs before the loan / income after vacancy) */
@@ -206,7 +212,7 @@
     return { cltvAtLoc, L, B0, P, mip, X, infeasible, egi, noi, reimb, cap, refi: pth.refi, cf: noi - P - mip, escrow, pitia: P + escrow + mip, path: pth, payment: P + X + escrow + mip,
       D: Dn, cashDP, draw, cfSaved: cfSaved(S, h), down, closingCost, invested: down + closingCost, payoff: payoffN(h, X, S), locM: lm,
       head0: Math.max(0, (cap / 100) * (1 - g.haircut / 100) * valAt(S, h, 0) - B0 - (h.liens || 0)), debtNow: B0 + (h.liens || 0),
-      valueNow: valAt(S, h, 0), valueGain: +h.arv > 0 ? h.arv - h.price - (h.capex || 0) : 0, capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
+      valueNow: valAt(S, h, 0), valueGain: +h.arv > 0 ? h.arv - h.price - (h.capex || 0) : 0, capRate: h.price > 0 ? ((noi * 12) / h.price) * 100 : NaN, capNow: valAt(S, h, 0) > 0 ? ((noi * 12) / valAt(S, h, 0)) * 100 : NaN, mgmtAmt: mgmtAmt(S, h), multiple: noi > 0 ? h.price / (noi * 12) : NaN, growth: gr(S, h) };
   }
 
   /* ---------- personal finances: your jobs, savings and expenses ---------- */
@@ -827,6 +833,8 @@
       h.kind = h.type === 'house' && h.kind === 'multi' ? 'multi' : 'single'; h.units = h.kind === 'multi' ? Math.min(500, Math.max(2, Math.round(+h.units || 2))) : 1; h.pack = h.kind === 'multi' && !!h.pack;
       h.mfRes = isFinite(+h.mfRes) && h.mfRes !== null && h.mfRes !== '' ? Math.max(0, +h.mfRes) : 300; h.mfOther = isFinite(+h.mfOther) && h.mfOther !== null && h.mfOther !== '' ? Math.max(0, +h.mfOther) : 0;
       ['mgmtPct', 'maintPct'].forEach((k) => { h[k] = h[k] === null || h[k] === '' || h[k] === undefined || !isFinite(+h[k]) ? null : Math.max(0, +h[k]); });
+      h.boughtOn = h.status === 'owned' && typeof h.boughtOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(h.boughtOn) && isFinite(Date.parse(h.boughtOn)) ? h.boughtOn : null; /* the day the user marked it bought (YYYY-MM-DD); old owned assets have none: the page says 'date not recorded' */
+      if (h.type === 'business') h.mgmtPct = null;
       ['mipUp', 'mipAnn'].forEach((k) => { h[k] = isFinite(+h[k]) ? Math.max(0, +h[k]) : 0; }); h.finCapex = !!h.finCapex; h.ownerOcc = !!h.ownerOcc;
       if (h.term < 12 && !h.io) h.term = 360; h.io = !!h.io;
       if (h.growth != null && !isFinite(+h.growth)) h.growth = null;
@@ -1380,6 +1388,6 @@
     }
     return { SAFEKEY, DIAGKEY, SAFE_MAX, SAFE_BYTES, EV_MAX, ACT_MAX, DIAG_BYTES, REPORT_MAX, URL_MAX, ISSUE, hash, idsHash, fingerprint, okState, safeRead, safeWrite, safeAdd, safeDaily, safeInfo, replacedCheck, restoreCandidate, EXPLAIN, checks, anomalies, plannedParts, scrub, report, parseReport, issueUrl, CODE };
   })();
-  const E = { Diag, FEAS, feasible, todayTotals, checkList, shortfall, moveTo, plannedIds, numbering, buyKey, EXAMPLES, EXKEY, EXV, EXF, exFields, exLabel, exLoanOk, exCheck, exEff, exEffective, exVal, exPrune, exClean, exOverrides, exSet, exRead, exWrite, exLoad, exCommit, exExport, exImport, exClearAll, exDraftSet, exDirty, exWarnings, exFmt, exampleShipped, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { Diag, FEAS, feasible, todayTotals, checkList, shortfall, moveTo, plannedIds, numbering, buyKey, EXAMPLES, EXKEY, EXV, EXF, exFields, exLabel, exLoanOk, exCheck, exEff, exEffective, exVal, exPrune, exClean, exOverrides, exSet, exRead, exWrite, exLoad, exCommit, exExport, exImport, exClearAll, exDraftSet, exDirty, exWarnings, exFmt, exampleShipped, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, mgmtAmt, ARV_K, autoArv, arvIsAuto, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

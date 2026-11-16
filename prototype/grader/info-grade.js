@@ -109,8 +109,8 @@ exports.run = async function run(X) {
   expectOn('Portfolio (first asset needs outside cash)', () => { const S = E.seed(); S.houses = S.houses.filter((h) => h.status !== 'owned'); S.v = DATA_V; return S; }, '#', null, [[/^Net worth$/, ['networth']]]);
   const houseList = [[/^Months already paid/, ['paid']], [/^Plan for this asset/, ['exit']], [/^Purchase/, ['auto']], [/^Down payment$/, ['downpayment']], [/^Down payment \$/, ['downamt']], [/^Loan amount/, ['loanamount']],
     [/^Appreciation/, ['growth']], [/^Loan option$/, ['loanoption']], [/^Interest rate/, ['rate']], [/^Term/, ['term']], [/^Closing costs/, ['closing']], [/^Extra \/ month/, ['extra']], [/^Paid off in/, ['payoff']], [/^Other liens/, ['liens']],
-    [/^DSCR (now|while held)/, ['dscr']], [/^Cash flow (now|while held)/, ['cashflow']], [/^Cash-on-cash/, ['coc']], [/^Improvement budget/, ['capex']], [/^Months to finish/, ['capexmonths']],
-    [/^New appraised value/, ['arv']], [/^Value gained/, ['gain']], [/^Income lift/, ['liftincome']]];
+    [/^DSCR (now|while held)/, ['dscr']], [/^Cash flow (now|while held)/, ['cashflow']], [/^Cap rate (now|while held)/, ['caprate']], [/^Improvement budget/, ['capex']], [/^Months to finish/, ['capexmonths']],
+    [/^New appraised value/, ['arv']], [/^Value gained/, ['gain']], [/^Rent increase/, ['liftincome']]];
   expectOn('Asset page: owned home in the trust', sampleS, '#house-maple', null, houseList);
   expectOn('Asset page: planned commercial property that sells', sampleS, '#house-north', null, [[/^Cap rate/, ['caprate']], [/^Value growth/, ['growth']], [/^Not before/, ['buyin']], [/^Cash needed/, ['cashneeded']], [/^Trust can pay at/, ['nextdp']], [/^Selling costs/, ['sellcost']], [/^Net proceeds/, ['proceeds']], [/^Down payment$/, ['downpayment']], [/^Other liens/, ['liens']], [/^DSCR (now|while held)/, ['dscr']]]);
   expectOn('Asset page: business that merges', sampleS, '#house-keystone', null, [[/^Price ÷ yearly profit/, ['multiple']], [/^Business growth/, ['growth']], [/^Synergy lift/, ['merge']], [/^Not before/, ['buyin']], [/^Cash needed/, ['cashneeded']], [/^Trust can pay at/, ['nextdp']], [/^Other liens/, ['liens']]]);
@@ -281,14 +281,14 @@ exports.run = async function run(X) {
       P.t(/5% to 7%/.test(INFO.sellcost.b) && E.newAsset('house', 'conv30', {}).sellCost >= 5 && E.newAsset('house', 'conv30', {}).sellCost <= 7, 'Selling costs: homes "5% to 7%" contains the default for a home', 0.5);
       /* worked examples */
       const ex = (k) => numsIn(INFO[k].e || '');
-      const e1 = ex('downpayment'), e2 = ex('liens'), e3 = ex('dscr'), e4 = ex('coc'), e5 = ex('caprate'), e6 = ex('multiple'), e7 = ex('liftincome'), e8 = ex('debtcap');
+      const e1 = ex('downpayment'), e2 = ex('liens'), e3 = ex('dscr'), e5 = ex('caprate'), e6 = ex('multiple'), e7 = ex('liftincome'), e8 = ex('debtcap');
       P.t(e1[0] / 100 * e1[1] === e1[2], 'Example (down payment): 20% of $200,000 = $40,000', 0.8, e1.join(','));
       P.t(e2.length >= 4 && e2[0] - e2[1] - e2[2] === e2[3], 'Example (liens): $200,000 - $140,000 - $20,000 = $40,000 of real ownership', 0.8, e2.join(','));
       P.t(Math.abs(e3[0] / e3[1] - 1.3) < 1e-9 && /1\.3/.test(INFO.dscr.e), 'Example (DSCR): $1,300 / $1,000 = 1.3', 0.8, e3.join(','));
-      P.t(Math.abs(e4[0] / e4[1] * 100 - 8) < 1e-9 && e4.includes(8), 'Example (cash-on-cash): $2,400 / $30,000 = 8%', 0.8, e4.join(','));
+      P.t(!INFO.coc, 'Cash-on-cash is gone from the glossary (the asset page shows the cap rate)', 0.8, 'coc entry ' + (INFO.coc ? 'present' : 'absent'));
       P.t(Math.abs(e5[0] / e5[1] * 100 - 8) < 1e-9, 'Example (cap rate): $80,000 / $1,000,000 = 8%', 0.8, e5.join(','));
       P.t(Math.max(...e6.slice(0, 2)) / Math.min(...e6.slice(0, 2)) === e6[2], 'Example (price / yearly profit): $300,000 / $100,000 = 3x', 0.8, e6.join(','));
-      P.t(Math.abs(e7[1] * (1 + e7[0] / 100) - e7[2]) < 1e-9, 'Example (income lift): 10% on $2,000 = $2,200', 0.8, e7.join(','));
+      P.t(Math.abs(e7[1] * (1 + e7[0] / 100) - e7[2]) < 1e-9, 'Example (rent increase): 10% on $2,000 = $2,200', 0.8, e7.join(','));
       P.t(e8[0] / 100 * e8[1] === e8[2], 'Example (debt cap): 85% of $200,000 = $170,000', 0.8, e8.join(','));
       /* engine does what the text says */
       { const mk = (liens) => mkS({ closing: 0, appr: 0 }, [E.newAsset('house', 'conv30', { id: 'a', status: 'owned', price: 300000, paid: 0, exit: 'sell', exitMonth: 24, sellCost: 6, liens, growth: 0, rent: 2500, tax: 0, ins: 0 })]); const p0 = E.plan(mk(0)), p1 = E.plan(mk(20000));

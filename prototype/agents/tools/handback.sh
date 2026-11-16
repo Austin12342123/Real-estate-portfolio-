@@ -17,6 +17,7 @@ if [ "${1:-}" = "--self-test" ]; then T="$(mktemp -d)"; export AGENTS_HOME="$T/a
 owner="" rep="" task="${TASK_ID:-default}" lint=0 final=0
 while [ $# -gt 0 ]; do case "$1" in --owner) owner="$2"; shift 2;; --report) rep="$2"; shift 2;; --task) task="$2"; shift 2;; --lint-only) lint=1; shift;; --final) final=1; shift;; *) die "unknown arg $1";; esac; done
 [ -n "$owner" ] && [ -f "$rep" ] || die "--owner and --report FILE required" 
+[ $final = 1 ] && ! bash "$(dirname "$0")/deviate.sh" status --owner "$owner" >/dev/null 2>&1 && { echo "REFUSED (7): an open deviation for $owner is not closed by the monitor (tools/deviate.sh status --owner $owner; playbook/DEVIATIONS.md)."; exit 7; }
 mark="$HB/$owner.$task.done"; [ $final = 1 ] && [ -e "$mark" ] && { echo "REFUSED (5): hand-back for $owner/$task already sent at $(cat "$mark"). Exactly ONE hand-back is allowed. If you were wrong, tell the orchestrator via the final message of a NEW task, not a duplicate."; exit 5; }
 F=0; err() { echo "  LINT: $*"; F=1; }
 for s in "${SECTIONS[@]}"; do l="$(grep -n -i "^#\+ .*$s" "$rep" | head -1 | cut -d: -f1)"; [ -z "$l" ] && { err "missing section: $s"; continue; }
