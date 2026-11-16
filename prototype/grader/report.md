@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-16T11:45:43.919Z  |  1223s
+Target: `prototype/v4`  |  Run: 2026-11-16T13:03:33.361Z  |  1199s
 
 ## Automated score: **85.00 / 85.00000000000001** (a separate design review adds 15)
 
@@ -58,7 +58,7 @@ Target: `prototype/v4`  |  Run: 2026-11-16T11:45:43.919Z  |  1223s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.42 | 0.42 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.21 | 0.21 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.21 | 0.21 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 27.2ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 19.0ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.31 | 0.31 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.31 | 0.31 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.42 | 0.42 | 5/5 sub-checks pass |
@@ -131,32 +131,22 @@ None.
 
 None.
 
-## G. Number sync: **84.80 / 100** (separate scale; not included in the A-E + R total or in F)
+## G. Number sync: **100.00 / 100** (separate scale; not included in the A-E + R total or in F)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| G1 | Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine) | 14.00 | 13.66 | 43/44 sub-checks pass. FAIL: tooltip at the right end of the chart = KPI net worth (0/1 ok) [tooltip "$9,816,920in 240 mo (20y 0m)" vs KPI $132.8M] |
-| G2 | Asset page <-> Portfolio sync (share line, hero, impact, edits propagate) | 14.00 | 0.00 | CRASH in check: TypeError: Cannot read properties of undefined (reading 'id')     at /home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:155:76     at Array.find (<anonymous>)     at rowEng (/home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:155:53)     at chkAssetShare (/home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:280:177)     at /home/user/Real-estate-portfolio-/pr |
+| G1 | Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine) | 14.00 | 14.00 | 44/44 sub-checks pass |
+| G2 | Asset page <-> Portfolio sync (share line, hero, impact, edits propagate) | 14.00 | 14.00 | 74/74 sub-checks pass |
 | G3 | Portfolio <-> Finances sync (cash flow, funding, extra scope, verdict, edge cases) | 14.00 | 14.00 | 34/34 sub-checks pass |
 | G4 | Asset-page field dependencies re-derive after every edit (property-based, 60+ edit sequences) | 18.00 | 18.00 | 34/34 sub-checks pass |
 | G5 | Add page <-> created asset (loan option cards, option switching, 203(k) defaults) | 6.00 | 6.00 | 12/12 sub-checks pass |
 | G6 | Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light) | 12.00 | 12.00 | 12/12 sub-checks pass |
 | G7 | Shared settings (g.* and p.*) propagate to every dependent display | 10.00 | 10.00 | 150/150 sub-checks pass |
-| G8 | No stale / duplicate / contradictory numbers | 12.00 | 11.14 | 9/10 sub-checks pass. FAIL: asset hero and portfolio-share are labeled with their different bases (84/86 ok) [sample auto // sample keystone] |
+| G8 | No stale / duplicate / contradictory numbers | 12.00 | 12.00 | 10/10 sub-checks pass |
 
 ### G failures
 
-- **G1 Portfolio internal sync (KPIs = ledger total = rows = breakdown = chart = headline = engine)** (-0.34): 43/44 sub-checks pass. FAIL: tooltip at the right end of the chart = KPI net worth (0/1 ok) [tooltip "$9,816,920in 240 mo (20y 0m)" vs KPI $132.8M]
-  - Reproduce: Open the Portfolio page for the sample and 25 random states; compare every number that represents the same quantity (see sync-grade.js chkPortfolio)
-- **G2 Asset page <-> Portfolio sync (share line, hero, impact, edits propagate)** (-14.00): CRASH in check: TypeError: Cannot read properties of undefined (reading 'id')
-    at /home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:155:76
-    at Array.find (<anonymous>)
-    at rowEng (/home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:155:53)
-    at chkAssetShare (/home/user/Real-estate-portfolio-/prototype/grader/sync-grade.js:280:177)
-    at /home/user/Real-estate-portfolio-/pr
-  - Reproduce: For several assets per state: asset-share line == Portfolio row; impact "with" == KPIs; then edit asset inputs and re-check every Portfolio number
-- **G8 No stale / duplicate / contradictory numbers** (-0.86): 9/10 sub-checks pass. FAIL: asset hero and portfolio-share are labeled with their different bases (84/86 ok) [sample auto || sample keystone]
-  - Reproduce: Scan every page for repeated labels with different values, missing bases, redundant repeated numbers, subtext that restates the main value, and numbers that contradict adjacent statements
+None.
 
 ## H. Help buttons and hourly jobs: **100.00 / 100** (separate scale; not included in the A-E + R total, F or G)
 
@@ -198,7 +188,7 @@ None.
 
 None.
 
-## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **99.71 / 100** (separate scale)
+## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **100.00 / 100** (separate scale)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -221,7 +211,7 @@ None.
 | J17 | The Undo message is a floating toast: it does not move the page, stays readable (role=status), keeps Undo working, follows you across the tabs, and disappears by itself after about 10 seconds | 1.57 | 1.57 | 6/6 sub-checks pass |
 | J18 | Saved portfolio names never repeat ("Portfolio n" with n = saved count + 1, moved up when taken, also after a delete or a typed duplicate); the stretch sample no longer claims a net-worth figure the pages do not show | 1.17 | 1.17 | 4/4 sub-checks pass |
 | J19 | Planned rows: the verdict chip is separated from the sentence by a dot; "(Mon YYYY)" never splits across lines; "edit ›" stays on the same line as the last word of the name (320px) | 1.17 | 1.17 | 3/3 sub-checks pass |
-| J20 | Number boxes at rest and on leaving: 1000+500 then Tab leaves "1,500" and no hint; a blanked box tabbed away goes back (Kept $X), and abc after that keeps the stored value; 4% in a percent box shows 4; a typed prefix (5 of 5/0) never reaches the state | 1.96 | 1.66 | 6/7 sub-checks pass. FAIL: a percent box given "4%" shows 4 (no doubled %) and stores 4 [3] |
+| J20 | Number boxes at rest and on leaving: 1000+500 then Tab leaves "1,500" and no hint; a blanked box tabbed away goes back (Kept $X), and abc after that keeps the stored value; 4% in a percent box shows 4; a typed prefix (5 of 5/0) never reaches the state | 1.96 | 1.96 | 7/7 sub-checks pass |
 | J21 | Names and layout: saved name "Portfolio 1 (before Stretch: 607 Siena Way)" has no nested parentheses; breakdown values never touch at 320; the long stretch title wraps with its edit link (320) | 1.17 | 1.17 | 3/3 sub-checks pass |
 | J22 | Planned page: headline says what Checks says (savings $0 -> "once you add $X from your own pocket"); Open Finances shows with Details closed; sold asset page has no "Can the plan buy it?" or trust-timing text; no "1 years" | 1.17 | 1.17 | 4/4 sub-checks pass |
 | J23 | Slow typing never commits a prefix: price 5, pause 450 ms, then /0 leaves the price alone; the "= result" hint shows while typing; the value lands on Enter / blur and the totals follow | 2.35 | 2.35 | 5/5 sub-checks pass |
@@ -259,8 +249,7 @@ None.
 
 ### J failures
 
-- **J20 Number boxes at rest and on leaving: 1000+500 then Tab leaves "1,500" and no hint; a blanked box tabbed away goes back (Kept $X), and abc after that keeps the stored value; 4% in a percent box shows 4; a typed prefix (5 of 5/0) never reaches the state** (-0.30): 6/7 sub-checks pass. FAIL: a percent box given "4%" shows 4 (no doubled %) and stores 4 [3]
-  - Reproduce: #finances: Living costs, Cash interest, typed key by key
+None.
 
 ## K. Design consistency and flow: **100.00 / 100** (separate scale; the multi-family screens against the existing design language)
 

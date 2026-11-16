@@ -1,8 +1,8 @@
 # Design consistency grader (DESIGN_ONLY)
 
-Run: 2026-11-16T11:00:29.009Z
+Run: 2026-11-16T12:43:23.607Z
 
-## K. Design consistency and flow: **98.72 / 100** (separate scale; the multi-family screens against the existing design language)
+## K. Design consistency and flow: **100.00 / 100** (separate scale; the multi-family screens against the existing design language)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -11,7 +11,7 @@ Run: 2026-11-16T11:00:29.009Z
 | K3 | The new UI is built from the existing components: field rows (label + (i) + box), .card sections with the same collapsible header, segmented controls like Home / Commercial / Business, chips, loan cards with an (i), the cmp table, the warning box; at most a handful of new classes, all defined with tokens | 5.13 | 5.13 | 7/7 sub-checks pass |
 | K4 | Tap targets are >= 44px and nothing scrolls sideways at 320, 390 and 430 on every new screen; nothing is wider than its card | 3.85 | 3.85 | 6/6 sub-checks pass |
 | K5 | No text overlaps: the bounding boxes of every line of text on the new screens (and the greyed reasons, chips, table cells, (i) buttons) never collide, at 320 and 390 | 3.85 | 3.85 | 2/2 sub-checks pass |
-| K6 | Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use (no new size, margin, padding or radius) | 3.85 | 2.56 | 2/3 sub-checks pass. FAIL: margins and paddings (1 2 4 5 6 8 10 12 14 16 20 34 34.6 37.2 79.1 79.6 80.1 83.9 94.4 95.8 98.8 102.7 116.1 121.3 132.7 138.5 140.5 141.8 152 155.2 167.9 168.4 169.5 189 212.3 212.4) are all on the existing scale [new: 102.7,212.3,168.4,140.5,98.8,116.1,37.2,83.9,167.9,79.1,79.6,121.3,141.8,80.1,212.4,152,34.6,94.4,169.5,95.8,132.7] |
+| K6 | Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use (no new size, margin, padding or radius) | 3.85 | 3.85 | 3/3 sub-checks pass |
 | K7 | The same state looks the same: the new Single / Multi and Building / Pack controls match the Home / Commercial / Business tabs; a selected multi-family loan card matches a selected single-family card; greyed cards are visibly different but readable | 2.56 | 2.56 | 4/4 sub-checks pass |
 | K8 | No walls of text on the new screens: every note is short (<= 170 characters), the guide shows scannable rows and a short checklist, and the long explanations live in (i) buttons | 2.56 | 2.56 | 2/2 sub-checks pass |
 | K9 | First-time flow: from the Add screen a multi-family asset is 3 taps away (Multi-family, a preset, Add); from the portfolio 3 taps with the default duplex; Back returns without adding anything; presets are one tap; the unit box has the numeric keyboard settings of the other boxes; the result opens on the asset page | 3.21 | 3.21 | 6/6 sub-checks pass |
@@ -37,5 +37,4 @@ Run: 2026-11-16T11:00:29.009Z
 
 ### K failures
 
-- **K6 Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use (no new size, margin, padding or radius)** (-1.29): 2/3 sub-checks pass. FAIL: margins and paddings (1 2 4 5 6 8 10 12 14 16 20 34 34.6 37.2 79.1 79.6 80.1 83.9 94.4 95.8 98.8 102.7 116.1 121.3 132.7 138.5 140.5 141.8 152 155.2 167.9 168.4 169.5 189 212.3 212.4) are all on the existing scale [new: 102.7,212.3,168.4,140.5,98.8,116.1,37.2,83.9,167.9,79.1,79.6,121.3,141.8,80.1,212.4,152,34.6,94.4,169.5,95.8,132.7]
-  - Reproduce: collect computed font-size / margin / padding / radius on the existing screens, then on the new screens, and compare the sets
+None.

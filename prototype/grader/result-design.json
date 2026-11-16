@@ -1,6 +1,6 @@
 {
   "design": {
-    "earned": 98.72,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
@@ -23,7 +23,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme on every new screen and measure text vs its real background",
-        "seconds": 12.2
+        "seconds": 11.4
       },
       {
         "id": "K3",
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "7/7 sub-checks pass",
         "repro": "compare class names on the new screens with the classes of the existing screens",
-        "seconds": 19.1
+        "seconds": 19
       },
       {
         "id": "K4",
@@ -45,7 +45,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "measure buttons, inputs and selects and the page width on each new screen at three widths",
-        "seconds": 17.3
+        "seconds": 17.8
       },
       {
         "id": "K5",
@@ -56,18 +56,18 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "collect Range client rects of every text node and test them pairwise",
-        "seconds": 11.5
+        "seconds": 11.6
       },
       {
         "id": "K6",
         "category": "K",
         "name": "Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use (no new size, margin, padding or radius)",
         "points": 3.85,
-        "earned": 2.56,
-        "ratio": 0.6666666666666666,
-        "detail": "2/3 sub-checks pass. FAIL: margins and paddings (1 2 4 5 6 8 10 12 14 16 20 34 34.6 37.2 79.1 79.6 80.1 83.9 94.4 95.8 98.8 102.7 116.1 121.3 132.7 138.5 140.5 141.8 152 155.2 167.9 168.4 169.5 189 212.3 212.4) are all on the existing scale [new: 102.7,212.3,168.4,140.5,98.8,116.1,37.2,83.9,167.9,79.1,79.6,121.3,141.8,80.1,212.4,152,34.6,94.4,169.5,95.8,132.7]",
+        "earned": 3.85,
+        "ratio": 1,
+        "detail": "3/3 sub-checks pass",
         "repro": "collect computed font-size / margin / padding / radius on the existing screens, then on the new screens, and compare the sets",
-        "seconds": 5.8
+        "seconds": 5.9
       },
       {
         "id": "K7",
@@ -89,7 +89,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "measure every .note and the guide on the new screens",
-        "seconds": 5.6
+        "seconds": 5.5
       },
       {
         "id": "K9",
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "tap through the flow and count",
-        "seconds": 8.4
+        "seconds": 8.5
       },
       {
         "id": "K10",
@@ -111,7 +111,7 @@
         "ratio": 1,
         "detail": "1/1 sub-checks pass",
         "repro": "full-page screenshots of every new screen",
-        "seconds": 32.3
+        "seconds": 31.1
       },
       {
         "id": "K11",
@@ -133,7 +133,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme and measure text vs its real background on each example screen",
-        "seconds": 8.2
+        "seconds": 7.7
       },
       {
         "id": "K13",
@@ -144,7 +144,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "measure buttons, page width and text rectangles on each example screen at three widths",
-        "seconds": 12.4
+        "seconds": 11.9
       },
       {
         "id": "K14",
@@ -177,7 +177,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "scan the editor CSS block and template; list the classes on the editor screens against the existing screens",
-        "seconds": 3.8
+        "seconds": 3.7
       },
       {
         "id": "K17",
@@ -188,7 +188,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme and measure text vs its real background on each editor screen",
-        "seconds": 6.7
+        "seconds": 6.8
       },
       {
         "id": "K18",
@@ -199,7 +199,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "measure controls, page width and text rectangles on each editor screen at three widths",
-        "seconds": 10.1
+        "seconds": 10.2
       },
       {
         "id": "K19",
@@ -210,7 +210,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "tap through the flow, press keys, measure notes",
-        "seconds": 2.4
+        "seconds": 2.5
       },
       {
         "id": "K20",
@@ -221,7 +221,7 @@
         "ratio": 1,
         "detail": "1/1 sub-checks pass",
         "repro": "full-page screenshots of every editor screen",
-        "seconds": 16.8
+        "seconds": 17.1
       },
       {
         "id": "K21",
@@ -243,7 +243,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme on each new screen and measure text vs its real background",
-        "seconds": 9.6
+        "seconds": 10
       },
       {
         "id": "K23",
@@ -254,7 +254,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "compare class names with the baseline of existing screens",
-        "seconds": 8
+        "seconds": 8.2
       },
       {
         "id": "K24",
@@ -265,7 +265,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "measure buttons, boxes and the page width on each new screen at three widths",
-        "seconds": 14.4
+        "seconds": 14.6
       },
       {
         "id": "K25",
@@ -276,7 +276,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "collect Range client rects of every text node and test them pairwise",
-        "seconds": 9.3
+        "seconds": 10.1
       },
       {
         "id": "K26",
@@ -287,7 +287,7 @@
         "ratio": 1,
         "detail": "3/3 sub-checks pass",
         "repro": "collect computed font-size / margin / padding / radius on the existing screens, then on the new ones",
-        "seconds": 4.9
+        "seconds": 5
       },
       {
         "id": "K27",
@@ -298,7 +298,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "count taps; measure notes; open the (i) sheet",
-        "seconds": 8.5
+        "seconds": 8.6
       },
       {
         "id": "K28",
@@ -309,7 +309,7 @@
         "ratio": 1,
         "detail": "1/1 sub-checks pass",
         "repro": "full-page screenshots of every new screen",
-        "seconds": 27.7
+        "seconds": 28.1
       }
     ]
   }
