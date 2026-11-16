@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-16T19:52:24.247Z  |  1133s
+Target: `prototype/v4`  |  Run: 2026-11-16T23:47:51.078Z  |  1186s
 
 ## Automated score: **85.01 / 85.006** (a separate design review adds 15)
 
@@ -72,7 +72,7 @@ Target: `prototype/v4`  |  Run: 2026-11-16T19:52:24.247Z  |  1133s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.42 | 0.42 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.21 | 0.21 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.21 | 0.21 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 14.9ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 16.4ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.31 | 0.31 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.31 | 0.31 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.42 | 0.42 | 5/5 sub-checks pass |
@@ -94,11 +94,11 @@ Target: `prototype/v4`  |  Run: 2026-11-16T19:52:24.247Z  |  1133s
 | C01 | At 390x844: summary KPIs, plan headline and the first ledger rows are visible without scrolling | 1.33 | 1.33 | 3/3 sub-checks pass |
 | C02 | Main page keeps text inputs out of the list: no inputs until a row is selected, then exactly one extra field (none for a sold row) | 1.00 | 1.00 | 5/5 sub-checks pass |
 | C03 | No horizontal overflow at 320/390/430 on main, asset, assumptions, add, import | 1.33 | 1.33 | 15/15 sub-checks pass |
-| C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.33 | 284/284 targets >=44px. Small:  |
+| C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.33 | 285/285 targets >=44px. Small:  |
 | C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 47/47 ok  |
 | C06 | Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps | 1.33 | 1.33 | 3/3 sub-checks pass |
-| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 115px x 36, page 8385px |
-| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 2365/2365 text elements pass (light 1180/1180, dark 1185/1185).  |
+| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 115px x 36, page 8427px |
+| C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 2369/2369 text elements pass (light 1182/1182, dark 1187/1187).  |
 | C09 | Summary-first: one concise summary card (single snapshot, short text), plan card collapsible | 1.00 | 1.00 | 3/3 sub-checks pass |
 | D01 | Manifest valid; icons load with true declared dimensions | 1.14 | 1.14 | 8/8 sub-checks pass |
 | D02 | Service worker (index.html) registers, activates, controls page after reload; precache complete | 1.14 | 1.14 | 3/3 sub-checks pass |
@@ -111,7 +111,7 @@ Target: `prototype/v4`  |  Run: 2026-11-16T19:52:24.247Z  |  1133s
 | E01 | Edge inputs (59 cases + compound: zero, 100% down, blanks, garbage, negatives, 1e12, caps, sale/merge/improvement fields) leave no NaN/Infinity/undefined in any page or crash | 1.91 | 1.91 | 64/64 sub-checks pass |
 | E02 | Remove all assets (main page) -> clean empty state with add action; can add again | 0.96 | 0.96 | 3/3 sub-checks pass |
 | E03 | Deleting a funding target clears references (select, storage, plan, merge-into) | 0.96 | 0.96 | 5/5 sub-checks pass |
-| E04 | Every input/select/button has an accessible name (main, asset, assumptions, add, import) | 0.64 | 0.64 | 425/425 named. unnamed:  |
+| E04 | Every input/select/button has an accessible name (main, asset, assumptions, add, import) | 0.64 | 0.64 | 426/426 named. unnamed:  |
 | E05 | Typing 5 digits sequentially keeps focus + full value (re-render safe) on main, asset, assumptions, text field | 0.64 | 0.64 | 5/5 sub-checks pass |
 | E06 | No layout shift while navigating and editing (CLS <= 0.05) | 0.32 | 0.32 | CLS 0.0000 |
 | E07 | No console errors or page errors during all flows | 0.96 | 0.96 | 0 errors:  |
@@ -181,7 +181,7 @@ None.
 
 None.
 
-## I. Portfolio sections, gestures and funding order: **128.00 / 128** (separate scale; not included in A-E + R, F, G or H)
+## I. Portfolio sections, gestures and funding order: **144.00 / 144** (separate scale; not included in A-E + R, F, G or H)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -197,6 +197,7 @@ None.
 | I10 | Layout and hygiene: no sideways scroll at 320 / 390 / 430 with a panel open and while dragging, new buttons >= 44 px, no console errors or outside requests | 4.00 | 4.00 | 4/4 sub-checks pass |
 | I11 | Buy order screen: one flat list of all planned assets (homes, commercial, business) with number badges; Up / Down / Top / Move to # / Buy position box / drag move assets ACROSS categories, renumber at once, Undo works, targets >= 44 px, no overflow at 320 / 390 / 430 in light and dark | 14.00 | 14.00 | 13/13 sub-checks pass |
 | I12 | Shortfall panel: for a $10M business with $2.5M down and $1M to pull out the asset page shows the cash lines, down short -$1,500,000, uncovered -$9,000,000, the monthly lines and ranked changes; the row says Not possible - short $1.5M; the Finances chip and headline say Not yet with that reason; it all updates without a reload; scorecard lists every test | 14.00 | 14.00 | 11/11 sub-checks pass |
+| I13 | Reorder by hold: a main Reorder button on the Planned page opens the Buy order page; pressing and holding anywhere on a row (real touch events) lifts it, dragging moves it across categories with a drop line and edge auto-scroll, release renumbers; a quick swipe still scrolls and moves nothing; a tap or hold without moving changes nothing; 44 px, no overflow at 320 / 390 / 430 light and dark | 16.00 | 16.00 | 14/14 sub-checks pass |
 
 ### I failures
 

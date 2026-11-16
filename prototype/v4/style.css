@@ -1,4 +1,4 @@
-/*STAMP*/html{--build:"12837862"}/*ENDSTAMP*/
+/*STAMP*/html{--build:"4cc16e3a"}/*ENDSTAMP*/
 :root{--bg:#f2f2f7;--card:#fff;--ink:#111;--mut:#6b6b72;--line:#e5e5ea;--acc:#0a5fd6;--ok:#167a41;--warn:#965600;--bad:#c4271f;--flash:#fff0a0;--bar:#dfe6f5;--field:#f2f2f7}
 :root[data-theme=dark]{color-scheme:dark;--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mut:#a0a0a8;--line:#2c2c2e;--acc:#5aa2ff;--ok:#32d27a;--warn:#ffb340;--bad:#ff7a72;--flash:#5a4a00;--bar:#2a3550;--field:#2c2c2e}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mut:#a0a0a8;--line:#2c2c2e;--acc:#5aa2ff;--ok:#32d27a;--warn:#ffb340;--bad:#ff7a72;--flash:#5a4a00;--bar:#2a3550;--field:#2c2c2e}}
@@ -443,12 +443,20 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 .sfp .sfwhy{font-weight:600;color:var(--ink);margin:4px 0 0;font-size:14px}.sfp.bad .sfwhy{color:var(--bad)}.sfp.warn .sfwhy{color:var(--warn)}
 .sfch{margin:4px 0 6px;padding-left:20px;font-size:14px}.sfch li{margin:5px 0}
 .ordlist{padding:0 14px 4px}.row.ord{padding-top:8px}
-.draghandle{flex:none;min-width:44px;min-height:44px;margin:-8px 0 -8px -8px;border:0;background:none;color:var(--mut);font-size:20px;line-height:1;touch-action:none;cursor:grab}
+.draghandle{flex:none;min-width:44px;min-height:44px;margin:-8px 0 -8px -8px;border:0;background:none;color:var(--mut);font-size:20px;line-height:1;touch-action:pan-y;cursor:grab}
 .row.ord .r1 .nm{display:flex;align-items:center;gap:6px;min-width:0}.row.ord .r1 .pay{display:block}
 .ordact{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center}.ordact .pbtn{flex:1 1 64px;min-width:64px}
 .ordto{display:flex;align-items:center;gap:6px;flex:1 1 130px;min-height:44px}.ordto .lb{font-size:13px;color:var(--mut);white-space:nowrap}.ordto input{width:64px;min-height:44px;text-align:center;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font-size:16px}
 .checks[data-testid=scorecard] .chk .ct{justify-content:space-between}.checks[data-testid=scorecard] .chk .cv{margin-left:0}
 /* end can-I-buy-this */
+/* reorder by press-and-hold: the main button, the hold tint, the drop line */
+.reorderbtn{display:block;width:100%;min-height:44px;margin:-6px 0 4px;font-size:16px}
+.ordhint{margin:0 4px 8px;text-align:center;font-weight:600}
+.ordlist{position:relative}
+.ordlist .row.ord{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:grab}.ordlist .row.ord input{-webkit-user-select:text;user-select:text}
+.rw.pressing .row.ord{background:var(--field);border-radius:12px;transition:background .35s ease}
+.dropline{position:absolute;left:8px;right:8px;height:4px;margin-top:-2px;border-radius:2px;background:var(--acc);z-index:7;pointer-events:none}
+/* end reorder by hold */
 /* asset-page batch: the Bought on date box and the Impact lines */
 .iw input[type=date]{width:auto;min-width:150px;text-align:right;color:var(--ink);font:inherit;background:transparent;border:0}
 .imp .f{border-top:0}.imp-eq{margin:0 0 8px;line-height:1.35}.imp+.imp .f{border-top:1px solid var(--line)}

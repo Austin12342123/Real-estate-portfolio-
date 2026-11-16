@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'12837862'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'4cc16e3a'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
@@ -417,6 +417,7 @@
     const dueTot = ownedAll.reduce((a2, h) => a2 + pl.V[h.id].B0, 0), lineTot = ownedAll.reduce((a2, h) => a2 + pl.V[h.id].head0, 0);
     const lastPayoff = Math.max(0, ...ownedAll.filter((h) => pl.V[h.id].B0 > 0.5).map((h) => pl.loanEnd[h.id]));
     const head = `<h1>Portfolio <span class="hb">${page === 'planned' ? '<button class="txtbtn dng" data-clear-ask data-testid="clear-plan-btn">Remove</button>' : ''}<button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>
+        ${page === 'planned' && S.houses.filter((x) => x.status !== 'owned').length > 1 ? '<button type="button" class="btn reorderbtn" data-go="order" data-testid="reorder-main-btn">Reorder buy order</button>' : ''}
         ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
     <div class="seg pagetabs" role="tablist" aria-label="Portfolio pages" data-testid="page-tabs">${[['planned', 'Planned'], ['real', 'Real'], ['saved', 'Saved']].map(([k, l]) => `<button type="button" role="tab" id="tab-${k}" data-page="${k}" class="${page === k ? 'on' : ''}" aria-selected="${page === k}" data-testid="tab-${k}">${l}</button>`).join('')}</div>${page === 'planned' ? notesHtml() : ''}${page === 'planned' && ask === 'clearplan' ? clearBox() : ''}${page === 'planned' && UI.migNote ? `<div class="migrate" role="status" data-testid="migrate-note"><span>Your earlier portfolio is saved in Saved as “${esc(UI.migNote)}”.</span><button type="button" class="chip link" data-mig-dismiss data-testid="migrate-dismiss" aria-label="Dismiss this note">Dismiss</button></div>` : ''}`;
     const tail = `${page === 'planned' && S.houses.filter((x) => x.status !== 'owned').length > 1 ? '<button type="button" class="linkbtn leftbtn" data-go="order" data-testid="buy-order-link">Buy order: change which asset is bought first ›</button>' : ''}<button class="linkbtn" data-go="import/new" data-testid="import-link">Import from a listing</button>`; /* the headline numbers and the asset list come first; the secondary actions (buy order, import) follow */
@@ -498,12 +499,13 @@
     const pl = PLAN(S), list = S.houses.filter((h) => h.status !== 'owned'), n = list.length;
     const rows = list.map((h, i) => { const vd = verdictFor(pl, h), tr = pl.trust[h.id], type = h.type || 'house', P = 'h.' + h.id + '.', sold = !!(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM);
       const when = !tr || !tr.ok ? 'never funded in the plan' : 'funded ' + mond(tr.month), why = vd.why ? ' · ' + esc(vd.why) : '';
-      return `<div class="rw" data-rw="${h.id}"><div class="row ord" data-row="${h.id}" data-handle="1" data-testid="order-row" data-pos="${i + 1}"><div class="r1"><span class="nm"><button type="button" class="draghandle" data-testid="order-handle" aria-label="Hold and drag to move ${esc(h.addr)}" title="Hold and drag">⋮⋮</button><span class="addr" data-go="h/${h.id}" data-testid="order-name"><b class="bn" data-testid="order-no" aria-label="Buy number ${i + 1}">${i + 1}</b>${addrNb(h.addr, '')}</span><span class="pay"><span class="tag">${TL[type]}</span> price ${$c(h.price)}${sold ? ' · sold in the plan' : ''}</span></span></div>
+      return `<div class="rw" data-rw="${h.id}"><div class="row ord" data-row="${h.id}" data-testid="order-row" data-pos="${i + 1}"><div class="r1"><span class="nm"><button type="button" class="draghandle" data-testid="order-handle" aria-label="Hold and drag to move ${esc(h.addr)}" title="Hold and drag">⋮⋮</button><span class="addr" data-go="h/${h.id}" data-testid="order-name"><b class="bn" data-testid="order-no" aria-label="Buy number ${i + 1}">${i + 1}</b>${addrNb(h.addr, '')}</span><span class="pay"><span class="tag">${TL[type]}</span> price ${$c(h.price)}${sold ? ' · sold in the plan' : ''}</span></span></div>
         <div class="r2"><div class="fcol"><span class="locline" data-testid="order-status"><span class="vchip sm ${vd.cls}">${vd.word}</span><span class="vsep" aria-hidden="true"> · </span>${when}${why}</span></div></div>
         <div class="ordact"><button type="button" class="pbtn" data-ordmove="${h.id}:-1" data-testid="order-up" aria-label="Move ${esc(h.addr)} up" ${i === 0 ? 'disabled' : ''}>↑ Up</button><button type="button" class="pbtn" data-ordmove="${h.id}:1" data-testid="order-down" aria-label="Move ${esc(h.addr)} down" ${i === n - 1 ? 'disabled' : ''}>↓ Down</button><button type="button" class="pbtn" data-ordtop="${h.id}" data-testid="order-top" aria-label="Move ${esc(h.addr)} to the top" ${i === 0 ? 'disabled' : ''}>⤒ Top</button>
         <label class="ordto"><span class="lb">Move to #</span><input inputmode="text" data-num="1" data-pre="" data-suf="" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" data-testid="order-pos" data-p="${P}pos" data-k="ord-${h.id}" aria-label="Buy position for ${esc(h.addr)}" value="${i + 1}"></label></div></div></div>`; }).join('');
     return `<div class="top"><button class="ic" data-go="" aria-label="Back" data-testid="order-back">‹</button><h2>Buy order</h2></div>
-    <section class="card" data-testid="order-intro"><p class="note" style="margin:0">The first asset is bought first. The trust funds each one from everything above it, so nothing is bought before the assets above it. Move an asset with the buttons, type its number, or hold ⋮⋮ and drag. Homes, commercial properties and businesses share this one list. Assets you already own are not part of it.</p></section>
+    <section class="card" data-testid="order-intro"><p class="note" style="margin:0">The first asset is bought first. The trust funds each one from everything above it, so nothing is bought before the assets above it. Press and hold a row, then drag it. Or use the buttons or type its number. Homes, commercial properties and businesses share this one list. Assets you already own are not part of it.</p></section>
+    ${n > 1 ? '<p class="note hold ordhint" data-testid="order-hint">Press and hold a row, then drag</p>' : ''}
     ${n ? `<section class="card ordlist" data-testid="order-list">${rows}</section>` : '<section class="card"><p class="note" style="margin:0" data-testid="order-empty">Nothing is planned yet.</p></section>'}`;
   }
 
@@ -1299,20 +1301,23 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const before = JSON.stringify(S); [vis[i], vis[j]] = [vis[j], vis[i]]; E.reorder(S, vis); setUndo({ text: 'Moved ' + h.addr + ' ' + (d < 0 ? 'up' : 'down') + '. Every number below it is updated.', label: h.addr, snap: before, order: true }); save(); render();
     const nb = app.querySelector(`[data-move="${id}:${d}"]`) || app.querySelector(`[data-move="${id}:${-d}"]`); if (nb && !nb.disabled) nb.focus();
   }
-  const LONG = 450;
+  const LONG = 400;
+  const clearPress = () => { document.querySelectorAll('.rw.pressing').forEach((el) => el.classList.remove('pressing')); }; /* the 'about to lift' tint */
   function startDrag() {
     if (!press) return; const row = press.el, wrap = row.closest('.rw'), body = wrap && wrap.parentElement; if (!body) { press = null; return; }
     app.classList.add('dragmode'); /* open panels fold away so every row is the same size while it moves */
     const items = [...body.children].filter((c) => c.classList && c.classList.contains('rw')), sy = window.scrollY;
     const rects = items.map((el) => ({ el, top: el.getBoundingClientRect().top + sy, h: el.offsetHeight })), idx = items.indexOf(wrap);
     drag = { id: press.id, items, rects, idx, to: idx, h: rects[idx].h, off: press.y + sy - rects[idx].top, y: press.y, wrap };
-    wrap.classList.add('lift'); try { row.setPointerCapture(press.pid); } catch (e) {}
+    clearPress(); wrap.classList.add('lift'); try { row.setPointerCapture(press.pid); } catch (e) {}
+    if (body.classList.contains('ordlist')) { drag.line = document.createElement('div'); drag.line.className = 'dropline'; drag.line.setAttribute('data-testid', 'drop-line'); drag.bodyTop = body.getBoundingClientRect().top + sy; body.appendChild(drag.line); } /* the drop indicator: a line where the row will land */
     selId = null; ask = null; press = null; dragLoop();
   }
   function dragUpdate() {
     const d = drag; if (!d) return; const sy = window.scrollY, first = d.rects[0].top, last = d.rects[d.rects.length - 1].top + d.rects[d.rects.length - 1].h - d.h;
     const top = Math.min(last, Math.max(first, d.y + sy - d.off)); d.wrap.style.transform = `translateY(${top - d.rects[d.idx].top}px)`;
     const c = d.y + sy; let to = 0; /* where the finger is, not the dragged row's centre: rows differ in height, so a taller row could never pass a shorter one above it */ d.rects.forEach((r, j) => { if (j !== d.idx && r.top + r.h / 2 < c) to++; }); d.to = to;
+    if (d.line) d.line.style.top = ((to > d.idx ? d.rects[to].top + d.rects[to].h : d.rects[to].top) - d.bodyTop) + 'px';
     d.rects.forEach((r, j) => { if (j === d.idx) return; const sh = d.idx < to && j > d.idx && j <= to ? -d.h : d.idx > to && j >= to && j < d.idx ? d.h : 0; r.el.style.transform = sh ? `translateY(${sh}px)` : ''; });
   }
   function dragLoop() {
@@ -1328,14 +1333,14 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   }
   app.addEventListener('pointerdown', (e) => {
     if (drag) return; if (e.pointerType === 'mouse' && e.button !== 0) return;
-    const row = e.target.closest && e.target.closest('.row[data-row]'); if (!row || row.hasAttribute('data-nodrag') || e.target.closest('select,input,textarea,a,[data-info]')) return; if (row.hasAttribute('data-handle') && !e.target.closest('.draghandle')) return;
-    clearTimeout(press && press.timer); press = { id: row.dataset.row, el: row, x: e.clientX, y: e.clientY, pid: e.pointerId }; press.timer = setTimeout(startDrag, LONG);
+    const row = e.target.closest && e.target.closest('.row[data-row]'); if (!row || row.hasAttribute('data-nodrag') || e.target.closest('select,input,textarea,a,[data-info]')) return; if (row.hasAttribute('data-handle') && !e.target.closest('.draghandle')) return; if (row.classList.contains('ord') && e.target.closest('button:not(.draghandle),label')) return; /* Buy order rows: hold anywhere on the row, except on its own buttons and box */
+    clearTimeout(press && press.timer); clearPress(); press = { id: row.dataset.row, el: row, x: e.clientX, y: e.clientY, pid: e.pointerId }; press.timer = setTimeout(startDrag, LONG); if (row.classList.contains('ord')) row.closest('.rw').classList.add('pressing');
   });
   document.addEventListener('pointermove', (e) => {
     if (drag) { drag.y = e.clientY; dragUpdate(); return; }
-    if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) { clearTimeout(press.timer); press = null; }
+    if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) { clearTimeout(press.timer); press = null; clearPress(); }
   });
-  const pend = (commit) => (e) => { if (drag) { if (e.type === 'pointerup') { drag.y = e.clientY; dragUpdate(); } endDrag(commit); } else if (press) { clearTimeout(press.timer); press = null; } };
+  const pend = (commit) => (e) => { if (drag) { if (e.type === 'pointerup') { drag.y = e.clientY; dragUpdate(); } endDrag(commit); } else if (press) { clearTimeout(press.timer); press = null; clearPress(); } };
   document.addEventListener('pointerup', pend(true)); document.addEventListener('pointercancel', pend(false));
   document.addEventListener('touchmove', (e) => { if (drag && e.cancelable) e.preventDefault(); }, { passive: false }); /* iOS: stop the page scrolling under the dragged row */
   app.addEventListener('contextmenu', (e) => { if (e.target.closest && e.target.closest('.row[data-row]')) e.preventDefault(); });
