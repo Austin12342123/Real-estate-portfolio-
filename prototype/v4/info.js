@@ -1,3 +1,4 @@
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'bc8af777'});/*ENDSTAMP*/
 /* Plain-language definitions shown by the "i" buttons. t = title, b = what it means, e = a short example (optional).
    Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
 (function (root) {

@@ -1,8 +1,48 @@
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'bc8af777'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
+  const D = E.Diag || null; /* safety copies, checks and the bug report live in engine.js (E.Diag); an old cached engine without it just means those parts stay quiet */
+  /* ---------- diagnostics core. Everything stays on this device (rep-v4-diag, rep-v4-safety); nothing is ever sent. Written to work even when engine.js is an old file. ---------- */
+  const DGKEY = 'rep-v4-diag', NOW = () => Date.now(), t0boot = performance.now();
+  let DG = { v: 1, ev: [], act: [], fp: null, flags: {} }, ERRN = 0, STARTED = false;
+  try { const j = JSON.parse(localStorage.getItem(DGKEY)); if (j && j.v === 1) DG = { v: 1, ev: (Array.isArray(j.ev) ? j.ev : []).filter((x) => x && isFinite(+x.t) && typeof x.k === 'string').slice(-60), act: (Array.isArray(j.act) ? j.act : []).filter((x) => x && isFinite(+x.t) && typeof x.a === 'string').slice(-10), fp: j.fp && typeof j.fp === 'object' && j.fp.ids ? j.fp : null, flags: j.flags && typeof j.flags === 'object' ? j.flags : {} }; } catch (e) {}
+  const dgSave = () => { try { let t = JSON.stringify(DG); while (t.length > 30000 && (DG.ev.length > 5 || DG.act.length > 3)) { if (DG.ev.length > 5) DG.ev.shift(); else DG.act.shift(); t = JSON.stringify(DG); } localStorage.setItem(DGKEY, t); } catch (e) {} };
+  const trimStack = (s) => String(s || '').split('\n').slice(0, 5).map((l) => l.split(location.origin).join('').trim().slice(0, 160)).join('\n');
+  function logEv(k, m, s) { /* the event ring: last 60 { t, k (kind), m (short message), s (stack, trimmed) } */
+    try { m = String(m == null ? '' : m).slice(0, 200); const last = DG.ev[DG.ev.length - 1]; if (/^(error|unhandledrejection|sw|storage)$/.test(k)) ERRN++;
+      if (last && last.k === k && last.m === m && NOW() - last.t < 30000) { last.n = (last.n || 1) + 1; last.t = NOW(); } else { DG.ev.push({ t: NOW(), k, m, s: s ? trimStack(s) : undefined }); if (DG.ev.length > 60) DG.ev.splice(0, DG.ev.length - 60); }
+      dgSave(); if (STARTED && /^(error|unhandledrejection|sw|storage)$/.test(k)) scheduleMonitor(); } catch (e) {}
+  }
+  window.addEventListener('error', (e) => { const m = String((e && e.message) || ''); if (/ResizeObserver loop/.test(m)) return; logEv('error', m + (e && e.filename ? ' @ ' + String(e.filename).split('/').pop() + ':' + e.lineno : ''), e && e.error && e.error.stack); });
+  window.addEventListener('unhandledrejection', (e) => { const r = e && e.reason; logEv('unhandledrejection', r && r.message ? r.message : String(r), r && r.stack); });
+  let USED = false; ['pointerdown', 'keydown', 'input', 'touchstart'].forEach((n) => document.addEventListener(n, () => { USED = true; }, true)); /* the person has touched the page: from then on the app never reloads itself */
+  /* ---------- build stamp: engine.js, info.js, app.js and style.css each carry the same short hash of all four (stamp.py). If they differ, this page is running MIXED versions
+     (for example a new app.js with an old cached engine.js): purge the caches, remove the service worker and reload ONCE, before anything is read or written. ---------- */
+  const BLD = window.__BUILD || {}, HEALKEY = 'rep-v4-heal';
+  const STAMPS = { engine: BLD.engine || '', info: BLD.info || '', app: BLD.app || '', css: (() => { try { return String(getComputedStyle(document.documentElement).getPropertyValue('--build') || '').replace(/["'\s]/g, ''); } catch (e) { return ''; } })() };
+  const STAMP_OK = !!STAMPS.app && STAMPS.engine === STAMPS.app && STAMPS.info === STAMPS.app && STAMPS.css === STAMPS.app;
+  const healTried = () => { try { const t = +sessionStorage.getItem(HEALKEY); return !!t && NOW() - t < 600000; } catch (e) { return true; } }; /* one automatic reload per 10 minutes per tab: never a loop */
+  let reloading = false;
+  function healReload() {
+    try { sessionStorage.setItem(HEALKEY, String(NOW())); } catch (e) {}
+    try { const a = document.getElementById('app'); if (a) a.textContent = 'Updating the app…'; } catch (e) {}
+    const done = () => { if (reloading) return; reloading = true; try { location.reload(); } catch (e) {} };
+    const p1 = window.caches && caches.keys ? caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k)))) : Promise.resolve();
+    const p2 = navigator.serviceWorker && navigator.serviceWorker.getRegistrations ? navigator.serviceWorker.getRegistrations().then((rs) => Promise.all(rs.map((r) => r.unregister()))) : Promise.resolve();
+    Promise.all([p1.catch(() => {}), p2.catch(() => {})]).then(done, done); setTimeout(done, 2500);
+  }
+  let MIXED = false;
+  if (!STAMP_OK) {
+    const why = 'engine ' + (STAMPS.engine || 'none') + ', info ' + (STAMPS.info || 'none') + ', app ' + (STAMPS.app || 'none') + ', css ' + (STAMPS.css || 'none');
+    if (!healTried()) { logEv('heal', 'mixed versions (' + why + '): purging caches, removing the service worker, reloading once'); healReload(); return; }
+    MIXED = true; logEv('heal', 'still mixed after one reload (' + why + '): not reloading again');
+  }
   let S, UI = { unit: 'today', tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', addKind: 'single', addUnits: 2, addPack: false, addEx: '', view: 'plan', openOn: 'planned', addOwned: false };
-  try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+  let RAW0 = null; try { RAW0 = localStorage.getItem(KEY); } catch (e) {}
+  const HAD0 = RAW0 != null && RAW0 !== '';
+  try { S = JSON.parse(RAW0); } catch (e) { S = null; }
+  const V0 = S && typeof S === 'object' ? S.v : null, VALID0 = !!(S && Array.isArray(S.houses) && S.g);
   let exStoreOK = true, exMsg = '', exEdit = null; /* editable examples: the user's overrides live in their own key (rep-v4-examples), never in a portfolio; exEdit = the open editor { id, draft, base } */
   try { exStoreOK = typeof E.exLoad === 'function' ? E.exLoad(localStorage) : true; } catch (e) { exStoreOK = false; }
   const EXED = typeof E.exCheck === 'function' && typeof E.exEff === 'function'; /* an old cached engine without the editor still works: no Edit buttons */
@@ -16,14 +56,20 @@
     else if (!(S.v >= 20)) S = null; /* unknown or very old: start from the default plan */
   }
   if (!S || !Array.isArray(S.houses) || !S.g) S = E.seedPlan();
-  E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V; E.applyAdditions(S);
+  E.normalize(S); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V;
+  const nAdd0 = Array.isArray(S.added) ? S.added.length : 0, nHouses0 = S.houses.length; E.applyAdditions(S);
+  const ADDED_NOW = (Array.isArray(S.added) ? S.added.length : 0) > nAdd0 || S.houses.length > nHouses0;
+  /* safety copy of what was stored BEFORE a migration or an additions append changes it (or before an unreadable save is replaced by the default plan) */
+  let STARTSNAP = false;
+  if (HAD0) { const why = !VALID0 ? 'unreadable save' : V0 !== DATA_V ? 'migration from v' + V0 : ADDED_NOW ? 'additions added' : '';
+    if (why && D) { let old = null; try { old = JSON.parse(RAW0); } catch (e) {} STARTSNAP = true; const ok = D.safeAdd(localStorage, old, why, STAMPS.app, NOW(), RAW0); logEv(!VALID0 || V0 !== DATA_V ? 'migration' : 'additions', why + (ok ? ': safety copy filed' : ': safety copy could not be stored')); } }
   /* the next planned asset below h in the list (the trust buys in list order), and the month it is bought if h's extra payment were x instead */
   const nextPlanned = (h) => { const i = S.houses.indexOf(h); for (let k = i + 1; k < S.houses.length; k++) if (S.houses[k].status === 'planned') return S.houses[k]; return null; };
   const planWith = (h, x) => { const c = JSON.parse(JSON.stringify(S)), q = c.houses.find((y) => y.id === h.id); q.extra = x; q.driver = 'extra'; return E.plan(c); };
   const monthWith = (h, x, id) => planWith(h, x).purchase[id];
   /* how long this asset's loan lasts in the plan (months from today when owned, months after it is bought when planned); it includes the automatic extra from its own profit and from your job */
   const lifeOf = (pl2, h) => { const e = pl2.loanEnd[h.id], b = h.status === 'owned' ? 0 : pl2.purchase[h.id]; return isFinite(e) && isFinite(b) ? Math.max(0, e - b) : Infinity; };
-  const buyKey = (h, pl) => (h.status === 'owned' ? -(+h.paid || 0) : isFinite(pl.purchase[h.id]) ? pl.purchase[h.id] : 1e9); const buyOrder = (pl) => { const no = {}; S.houses.map((h, i) => [h, i]).sort((a, b) => buyKey(a[0], pl) - buyKey(b[0], pl) || a[1] - b[1]).forEach(([h], k) => { no[h.id] = k + 1; }); return no; };
+  const buyOrder = (pl) => E.numbering(S, pl).num; /* one numbering function (engine.numbering): contiguous 1..n in purchase order inside the view the asset belongs to */
   const fixOrder = (s) => { s.seq = +s.seq || 0; s.houses.forEach((h) => { if (!h.created) h.created = Date.now(); }); if (s.orderV !== 2) E.orderByBuy(s); return s; }; /* list order = buy order, sorted once; after that the saved order is the truth */
   fixOrder(S);
   try { UI = Object.assign(UI, JSON.parse(localStorage.getItem(UIKEY)) || {}); } catch (e) {}
@@ -40,8 +86,13 @@
   let saveName = '', renameName = '', savedMsg = '';
   let undoTimer = null, storageOK = true, impName = '', imp = null, ask = null, notice = '', pendingImport = null, exportOpen = false, undo = null, selId = null;
   /* no popup: an older save moves to the current plan silently; the previous portfolio is kept in Saved so nothing is lost (it is filed once SAVED is loaded, below) */
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; } catch (e) { storageOK = false; } };
-  const saveSaved = () => { try { localStorage.setItem(SKEY, JSON.stringify(SAVED)); return true; } catch (e) { return false; } };
+  const RW = { ok: null, chars: 0, err: '' }; /* did the last save read back exactly as written? (an invariant the anomaly monitor checks) */
+  const save = () => { try { const js = JSON.stringify(S); localStorage.setItem(KEY, js); localStorage.setItem(UIKEY, JSON.stringify(UI)); storageOK = true; RW.ok = localStorage.getItem(KEY) === js; RW.chars = js.length; RW.err = ''; if (!RW.ok) logEv('storage', 'read-back differs from what was written'); } catch (e) { storageOK = false; RW.ok = false; RW.err = String(e && e.message || e).slice(0, 80); logEv('storage', 'save failed: ' + RW.err); } };
+  const saveSaved = () => { try { localStorage.setItem(SKEY, JSON.stringify(SAVED)); return true; } catch (e) { logEv('storage', 'saved list not stored: ' + String(e && e.message || e).slice(0, 80)); return false; } };
+  /* safety copies: a snapshot of the working portfolio in the ring (rep-v4-safety) taken BEFORE anything that could replace it */
+  let SAFE_CACHE = null;
+  const safeList = () => (SAFE_CACHE || (SAFE_CACHE = D ? D.safeRead(localStorage) : []));
+  function safeCopy(reason, st) { SAFE_CACHE = null; if (!D) return false; const r = D.safeAdd(localStorage, st || S, reason, STAMPS.app, NOW()); logEv('safety', reason + (r ? ': copy filed' : ': copy could not be stored')); return !!r; }
   const backupJson = () => JSON.stringify(Object.assign({}, S, { saved: SAVED, openOn: UI.openOn }, EXED ? { exOv: E.exExport() } : {})); /* the backup is the working portfolio plus the saved list and the start-page choice */
   const stamp = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const H = (id) => E.H(S, id);
@@ -321,10 +372,10 @@
       CDEF[id] = id === 'cat-house' || id === 'cat-owned-house' || empty ? false : true; const open = !(UI.coll[id] === undefined ? CDEF[id] : UI.coll[id]), tid = (pre || '') + (tp || 'sold'), lt = E.latestOf(list);
       const nn = tp ? NOUN[tp] : ['sold', 'sold'], sub = list.length ? statStrip(tp, list, tid) : 'None yet';
       return `<section class="card cat${open ? ' open' : ''}${tp ? '' : ' soldcat'}" data-testid="cat-${tid}"><div class="cathw"><div class="cath" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}" data-testid="cat-header-${tid}"><span class="catt"><b>${title}</b></span><span class="chev" aria-hidden="true">›</span></div><div class="cats" data-testid="cat-sub-${tid}" aria-label="Latest added, for information only">${sub}</div></div>
-        ${open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp && !pre ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length && tp ? costBreakdown(list, tid) : ''}${!tp && list.length ? '<p class="note" data-testid="sold-note">Numbers follow purchase order. Sold assets keep theirs, so a number can be missing from the other lists. Cash profit is after selling costs, the loan, tax and the cash you put in.</p>' : ''}${list.length > 1 && tp && !pre ? '<p class="note hold">Hold and drag ⋮⋮ to reorder. An asset is never bought before the ones above it, and they fund it.</p>' : ''}</div>` : ''}</section>`; };
+        ${open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp && !pre ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length && tp ? costBreakdown(list, tid) : ''}${!tp && list.length ? '<p class="note" data-testid="sold-note">Numbers follow purchase order, counted from 1 on this page only (Planned and Real number their own assets). A sold asset keeps its place in that order, so its number is missing from the other lists here. Cash profit is after selling costs, the loan, tax and the cash you put in.</p>' : ''}${list.length > 1 && tp && !pre ? '<p class="note hold">Hold and drag ⋮⋮ to reorder. An asset is never bought before the ones above it, and they fund it.</p>' : ''}</div>` : ''}</section>`; };
     const CATS = [['house', 'Homes'], ['commercial', 'Commercial'], ['business', 'Businesses']];
-    const soldAll = S.houses.filter(isSold), soldOwned = soldAll.filter((h) => h.status === 'owned'), soldPlanned = soldAll.filter((h) => h.status !== 'owned');
-    const typeList = (tp, own) => S.houses.filter((h) => (h.type || 'house') === tp && (h.status === 'owned') === own && !isSold(h));
+    const soldAll = S.houses.filter(isSold), soldOwned = soldAll.filter((h) => h.status === 'owned').sort((a, b) => bno[a.id] - bno[b.id]), soldPlanned = soldAll.filter((h) => h.status !== 'owned').sort((a, b) => bno[a.id] - bno[b.id]);
+    const typeList = (tp, own) => S.houses.filter((h) => (h.type || 'house') === tp && (h.status === 'owned') === own && !isSold(h)).sort(own ? (a, b) => bno[a.id] - bno[b.id] : () => 0); /* bought rows are shown oldest first = by their number; planned rows stay in list order (stable sort) */
     const ownedAll = S.houses.filter((h) => h.status === 'owned' && !isSold(h)), plannedAll = S.houses.filter((h) => h.status !== 'owned');
     const ownedSecs = CATS.filter(([tp]) => typeList(tp, true).length).map(([tp, title]) => secOf('cat-owned-' + tp, title, typeList(tp, true), tp, 'owned-')).join('');
     const plannedSecs = CATS.map(([tp, title]) => secOf('cat-' + tp, title, typeList(tp, false), tp, '')).join('');
@@ -512,7 +563,8 @@
       return `<div class="sec" data-testid="sale-heading">Sale</div><section class="card" data-testid="sale-profit" data-profit="${sF}"><div class="f"><span class="lb">Sold for<small class="dh">${mond(pl.sellAt[h.id])}</small></span><b>${$f(sP)}</b></div>
       <div class="f"><span class="lb">Selling costs (${r(h.sellCost, 1)}%)</span><b>−${$f(sC)}</b></div><div class="f"><span class="lb">Loan and liens paid off</span><b>−${$f(sL)}</b></div><div class="f"><span class="lb">Net proceeds before tax</span><b>${$f(sN)}</b></div><div class="f"><span class="lb">Tax on the sale</span><b>−${$f(sT)}</b></div><div class="f"><span class="lb">Cash you put in${infoBtn('cashin')}</span><b>−${$f(sI)}</b></div>
       <div class="f totl"><span class="lb">Cash profit after tax${infoBtn('cashprofit')}</span><b class="sold-profit${exS.profit < 0 ? ' neg' : ''}" data-testid="sale-cash-profit">${$s(sF)}</b></div><p class="note">Cash profit = net proceeds before tax (price − selling costs − the loan and liens paid off), minus the tax on the sale, minus the cash you put in (down payment, closing costs and improvements paid in cash).</p></section>`; })() : '';
-    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Name or address" title="${esc(h.addr)}"></h2><span class="tag" style="margin:0" data-testid="asset-buy-no">#${buyOrder(pl)[h.id]} · ${TL[type]}${multi ? ' · ' + (h.pack ? 'pack of ' + mf.units : mf.units + ' units') : ''}</span></div>${String(h.addr).length > 19 ? `<p class="fulladdr" data-testid="full-addr">${esc(h.addr)}</p>` : ''}
+    const NUMB = E.numbering(S, pl);
+    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" value="${esc(h.addr)}" aria-label="Name or address" title="${esc(h.addr)}"></h2><span class="tag" style="margin:0" data-testid="asset-buy-no" data-no="${NUMB.num[h.id]}" data-view="${NUMB.view[h.id]}" aria-label="${NUMB.view[h.id] === 'owned' ? 'Bought' : 'Planned'} asset number ${NUMB.num[h.id]}">#${NUMB.num[h.id]} ${NUMB.view[h.id] === 'owned' ? 'bought' : 'planned'} · ${TL[type]}${multi ? ' · ' + (h.pack ? 'pack of ' + mf.units : mf.units + ' units') : ''}</span></div>${String(h.addr).length > 19 ? `<p class="fulladdr" data-testid="full-addr">${esc(h.addr)}</p>` : ''}
     ${homeLoses}
     ${h.fresh && type === 'house' && !multi ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
     <section class="card"><div class="kg">${kpi('h-payment', exS ? 'Payment while held' : 'Payment now', $f(v.payment), (() => { const parts = []; if (v.P > 0) parts.push((h.io ? 'interest ' : 'P&amp;I ') + $f(v.P)); if (v.X > 0.5) parts.push('extra ' + $f(v.X)); if (v.escrow > 0) parts.push('costs ' + $f(v.escrow)); if (v.mip > 0) parts.push('insurance ' + $f(v.mip)); return parts.length > 1 ? parts.join(' + ') : ''; })())}${kpi('h-cf', exS ? 'Cash flow while held' : 'Cash flow now', $s(v.cf), v.X > 0.5 ? `${$s(v.cf - v.X)} after extra` : '', v.cf < 0 ? 'bad' : '')}
@@ -699,13 +751,14 @@
   const clearBox = () => { const n = planCount(); return n ? confirmBox('Remove all ' + n + ' planned asset' + (n === 1 ? '' : 's') + '? ' + (S.houses.length > n ? 'Assets you have already bought stay. ' : '') + 'Your current portfolio is kept in Saved first, and Undo brings it back.', 'data-clear-yes data-testid="clear-plan-confirm"', 'Yes, remove all') : '<div class="confirm" role="status"><p>There are no planned assets to remove.</p><button class="btn plain" data-ask-cancel>OK</button></div>'; };
   function clearPlanned() {
     ask = null; const n = planCount(); if (!n) { render(); return; }
+    safeCopy('before removing all planned assets'); logEv('clear-planned', 'removed ' + n + ' planned assets');
     const snap = JSON.stringify(S); let sid = null;
     if (SAVED.length < MAXSAVED) { const rec = { id: newSid(), name: ('Portfolio ' + portNo() + ' (before removing planned assets)').slice(0, 60), ts: Date.now(), state: JSON.parse(snap) }; SAVED.unshift(rec); if (saveSaved()) sid = rec.id; else SAVED.shift(); }
     setUndo({ text: 'Removed ' + n + ' planned asset' + (n === 1 ? '' : 's') + '. ' + (sid ? 'The earlier portfolio is kept in Saved.' : 'It could not be filed in Saved, but Undo brings it back.'), label: 'planned assets', snap, sid });
     S.houses.filter((h) => h.status !== 'owned').forEach((h) => { S = E.without(S, h.id); }); E.relink(S); selId = null; prev = {}; save(); goto(''); render();
   }
   function loadScenario(sc) {
-    ask = null; const snap = JSON.stringify(S); let sid = null;
+    ask = null; safeCopy('before loading a sample portfolio'); logEv('scenario', 'loaded the ' + sc.k + ' sample'); const snap = JSON.stringify(S); let sid = null;
     if (S.houses.length && SAVED.length < MAXSAVED) { const rec = { id: newSid(), name: ('Portfolio ' + portNo() + ' (before ' + sc.title + ')').slice(0, 60), ts: Date.now(), state: JSON.parse(snap) }; SAVED.unshift(rec); if (saveSaved()) sid = rec.id; else SAVED.shift(); }
     setUndo({ text: 'Loaded the ' + sc.name + '. ' + (sid ? 'Your previous plan is kept in Saved.' : 'Your previous plan could not be filed in Saved, but Undo brings it back.'), label: 'previous plan', snap, sid });
     S = sc.seed(); S.v = DATA_V; fixOrder(S); selId = null; page = 'planned'; prev = {}; savedMsg = ''; save(); goto(''); render(); window.scrollTo(0, 0);
@@ -878,7 +931,11 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   const uniqueName = (nm) => { let out = nm, k = 2; while (SAVED.some((x) => x.name === out)) out = (nm + ' (' + k++ + ')').slice(0, 60); return out; };
   const newSid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   if (switched) { try { const old = JSON.parse(switched); if (old && Array.isArray(old.houses) && old.houses.length && SAVED.length < MAXSAVED) { SAVED.unshift({ id: newSid(), name: 'Portfolio ' + portNo() + ' (before the update)', ts: Date.now(), state: old }); if (saveSaved()) UI.migNote = SAVED[0].name; } } catch (e) {} switched = null; }
+  /* 'portfolio replaced' detection: before anything is saved, compare this start with the last known fingerprint (rep-v4-diag). Never automatic: it only raises a banner. */
+  if (D && !DG.flags.replaced && D.replacedCheck(S, DG.fp, DG.ev)) { DG.flags.replaced = { ts: NOW(), prev: DG.fp }; logEv('anomaly', 'state-replaced: the portfolio is now the default plan with different assets than the last known portfolio (' + DG.fp.n + ' assets before)'); dgSave(); }
+  if (D && !STARTSNAP && !DG.flags.replaced) { const r = D.safeDaily(localStorage, S, STAMPS.app, NOW()); if (r) { SAFE_CACHE = null; logEv('safety', 'daily copy: copy filed'); } }
   save(); /* persist the migrated state (S.v, S.added) so it is stored right after load */
+  const BOOT_MS = performance.now() - t0boot;
   function showPage(k) { if (PAGES.indexOf(k) < 0 || k === page) return; page = k; selId = null; ask = null; savedMsg = ''; prev = {}; render(); }
   function doSave(name) {
     const nm = uniqueName(String(name || '').trim().slice(0, 60) || 'Portfolio ' + portNo());
@@ -890,6 +947,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   /* opening a saved portfolio replaces the working one; the old one comes back with Undo */
   function loadSaved(id) {
     const x = SAVED.find((q) => q.id === id); ask = null; if (!x) { render(); return; }
+    safeCopy('before opening a saved portfolio'); logEv('open-saved', 'opened a saved portfolio');
     setUndo({ text: 'Opened “' + x.name + '”. Your previous portfolio is kept: tap Undo to bring it back.', label: 'previous portfolio', snap: JSON.stringify(S) });
     S = E.normalize(JSON.parse(JSON.stringify(x.state))); if (!S.p) S.p = E.samplePersonal(); S.p = E.normalizePersonal(S.p); S.v = DATA_V; E.applyAdditions(S); S.seq = +S.seq || 0; selId = null; page = 'planned'; prev = {}; savedMsg = ''; save(); render();
   }
@@ -1013,7 +1071,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.del) { ask = 'del:' + t.dataset.del; render(); return; }
     if (t.dataset.clearAsk !== undefined) { ask = 'clearplan'; render(); return; }
     if (t.dataset.clearYes !== undefined) { clearPlanned(); return; }
-    if (t.dataset.delYes) { const gone = H(t.dataset.delYes); setUndo(gone ? { label: gone.addr, snap: JSON.stringify(S) } : null); S = E.without(S, t.dataset.delYes); E.relink(S); if (selId === t.dataset.delYes) selId = null; ask = null; save(); goto(''); render(); return; }
+    if (t.dataset.delYes) { const gone = H(t.dataset.delYes); safeCopy('before removing an asset'); logEv('removed', 'removed one asset'); setUndo(gone ? { label: gone.addr, snap: JSON.stringify(S) } : null); S = E.without(S, t.dataset.delYes); E.relink(S); if (selId === t.dataset.delYes) selId = null; ask = null; save(); goto(''); render(); return; }
     if (t.dataset.undo !== undefined) { if (undo) { S = E.normalize(JSON.parse(undo.snap)); S.v = DATA_V; E.applyAdditions(S); if (undo.sid) { SAVED = SAVED.filter((q) => q.id !== undo.sid); saveSaved(); } setUndo(null); page = 'planned'; selId = null; save(); render(); } return; }
     if (t.dataset.migDismiss !== undefined) { UI.migNote = null; save(); render(); return; }
     if (t.dataset.undoDismiss !== undefined) { setUndo(null); render(); return; }
@@ -1026,7 +1084,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (t.dataset.copybackup !== undefined) { const m = document.getElementById('cbm'), ta = document.getElementById('bkout'); const fail = () => { ta.focus(); ta.select(); m.textContent = 'Select the text above and copy it by hand.'; };
       try { navigator.clipboard.writeText(ta.value).then(() => { m.textContent = 'Copied.'; }, fail); } catch (x) { fail(); } return; }
     if (t.dataset.restoreText !== undefined) { const ta = document.getElementById('bkin'); stageBackup(ta ? ta.value : ''); return; }
-    if (t.dataset.importYes !== undefined) { const bk = { saved: pendingImport.saved, openOn: pendingImport.openOn, exOv: pendingImport.exOv }; S = E.normalize(pendingImport); delete S.saved; delete S.openOn; delete S.exOv; if (EXED && bk.exOv && typeof bk.exOv === 'object') { try { exStoreOK = E.exImport(bk.exOv, localStorage); } catch (e2) { exStoreOK = false; } } /* an old backup without example edits leaves the ones on this device alone */ if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; E.applyAdditions(S); fixOrder(S); if (Array.isArray(bk.saved)) { SAVED = cleanSaved(bk.saved); saveSaved(); } if (PAGES.indexOf(bk.openOn) >= 0) UI.openOn = bk.openOn; page = UI.openOn; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
+    if (t.dataset.importYes !== undefined) { safeCopy('before restoring a backup'); logEv('import', 'backup restored'); const bk = { saved: pendingImport.saved, openOn: pendingImport.openOn, exOv: pendingImport.exOv }; S = E.normalize(pendingImport); delete S.saved; delete S.openOn; delete S.exOv; if (EXED && bk.exOv && typeof bk.exOv === 'object') { try { exStoreOK = E.exImport(bk.exOv, localStorage); } catch (e2) { exStoreOK = false; } } /* an old backup without example edits leaves the ones on this device alone */ if (!S.p) S.p = E.samplePersonal(); S.v = DATA_V; E.applyAdditions(S); fixOrder(S); if (Array.isArray(bk.saved)) { SAVED = cleanSaved(bk.saved); saveSaved(); } if (PAGES.indexOf(bk.openOn) >= 0) UI.openOn = bk.openOn; page = UI.openOn; pendingImport = null; notice = ''; save(); goto(''); render(); return; }
     { const bt = t.closest('button') || t, sc = SCN.find((x) => bt.dataset[x.k] !== undefined || bt.dataset[x.k + 'Yes'] !== undefined); if (sc) { if (bt.dataset[sc.k + 'Yes'] !== undefined) loadScenario(sc); else { ask = sc.k; render(); } return; } }
     const mvb = t.closest('[data-move]'); if (mvb) { const [id, d] = mvb.dataset.move.split(':'); moveBy(id, +d); return; }
     const dpb = t.closest('[data-dup]'); if (dpb) { const c = E.duplicate(S, dpb.dataset.dup); if (c) { ask = null; UI.coll['cat-' + (c.type || 'house')] = false; save(); if (routeOf().startsWith('h/')) { selId = null; goto('h/' + c.id); } else { selId = c.id; page = 'planned'; /* the copy is always planned */ render(); } } return; }

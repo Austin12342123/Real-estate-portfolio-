@@ -1,4 +1,5 @@
-import re
+import re, stamp
+stamp.restamp()  # one build stamp in app.js, engine.js, info.js, style.css and the service worker cache name
 c=open("style.css").read(); eng=open("engine.js").read(); inf=open("info.js").read()
 app=re.sub(r"/\*SW\*/.*?/\*ENDSW\*/","",open("app.js").read(),flags=re.S)
 assert "</script" not in eng+app+inf
