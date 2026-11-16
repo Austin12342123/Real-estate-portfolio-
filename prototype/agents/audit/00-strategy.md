@@ -24,3 +24,10 @@ Grade: A>=90 B>=80 C>=70 D>=60 F<60. Escaped defects (user-reported later) apply
 7. Sampling: exhaustive on metadata (all files, scripted); deep reading only of final messages, prompts, user messages, and targeted windows around errors.
 8. Scripts (agents/audit/scripts): inventory.py (classify+metrics), extract_main.py (user msgs, launches), claims.py, overlap.py (grader windows), gitmap.py. Output audit.json.
 9. Missing data is stated explicitly; substitutes named.
+
+## As executed (appended after the work; the plan above was written first and not changed)
+- Scripts actually written (scripts/): extract_main.py, inventory.py, overlap.py, activity.py, metrics.py, tasklogs.py, generate.py, notes.py (hand judgments with evidence), run_all.sh. claims.py/gitmap.py were folded into manual targeted reads of final messages and `git log --stat`.
+- Deviation 1: raw token sums overstated usage ~2x (usage repeated per content block); inventory.py now de-duplicates by message id. Costs are calibrated to the session cost-state total.
+- Deviation 2: collision detection uses agent active windows (gaps >12 min split) and orchestrator grader commands, because background runs hide true duration.
+- Deviation 3: sampling was exhaustive on metadata (all 44 agents, 241 task files, 129 commits, 121 user messages) and deep on prompts/finals/user complaints/collision windows; individual tool results were not read except in targeted windows.
+- Scoring uses the same anchors for every agent: 90+ = prompt fully met, claims verified, no waste; judgments with evidence are in scripts/notes.py and each agent file.
