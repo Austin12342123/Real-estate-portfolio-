@@ -1,29 +1,18 @@
 {
   "sync": {
-    "earned": 22.56,
-    "max": 26,
+    "earned": 12,
+    "max": 12,
     "checks": [
-      {
-        "id": "G2",
-        "category": "G",
-        "name": "Asset page <-> Portfolio sync (share line, hero, impact, edits propagate)",
-        "points": 14,
-        "earned": 14,
-        "ratio": 1,
-        "detail": "74/74 sub-checks pass",
-        "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
-        "seconds": 15.6
-      },
       {
         "id": "G6",
         "category": "G",
         "name": "Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light)",
         "points": 12,
-        "earned": 8.56,
-        "ratio": 0.7133757961783439,
-        "detail": "10/12 sub-checks pass. FAIL: backup restore brings every number back exactly (0/1 ok) [changed after restore: #assumptions]; second tab shows identical numbers (0/1 ok) [tab 2 changed: #assumptions]",
+        "earned": 12,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 16
+        "seconds": 16.7
       }
     ]
   }
