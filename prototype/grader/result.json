@@ -240,12 +240,12 @@
     {
       "id": "A27",
       "category": "A",
-      "name": "Default plan on screen: in TODAY'S dollars net worth at least $125.0M (up to about $135M) and cash flow at least $1.3M a month at year 28 (the future-dollar amounts, at the cost-increase rate, shown smaller), in one clear plan line and in the KPIs",
+      "name": "Default plan on screen: in TODAY'S dollars net worth at least $125.0M (up to about $135M) and cash flow at least $1.3M a month at year 28 and AFTER-TAX cash flow at least $1.3M a month at plan end (the future-dollar amounts, at the cost-increase rate, shown smaller), in one clear plan line and in the KPIs",
       "points": 0.308,
       "rawPoints": 2,
       "earned": 0.308,
       "ratio": 1,
-      "detail": "4/4 sub-checks pass",
+      "detail": "5/5 sub-checks pass",
       "repro": "Fresh load: read the plan line and KPIs"
     },
     {
@@ -641,7 +641,7 @@
       "rawPoints": 0.5,
       "earned": 0.104,
       "ratio": 1,
-      "detail": "median 25.2ms",
+      "detail": "median 14.9ms",
       "repro": "node timing"
     },
     {
@@ -916,7 +916,7 @@
       "rawPoints": 1,
       "earned": 0.667,
       "ratio": 1,
-      "detail": "avg row 115px x 36, page 8344px",
+      "detail": "avg row 115px x 36, page 8385px",
       "repro": "Measure ledger rows"
     },
     {
@@ -927,7 +927,7 @@
       "rawPoints": 2,
       "earned": 1.333,
       "ratio": 1,
-      "detail": "2369/2369 text elements pass (light 1182/1182, dark 1187/1187). ",
+      "detail": "2365/2365 text elements pass (light 1180/1180, dark 1185/1185). ",
       "repro": "emulate prefers-color-scheme; compute WCAG ratio for every text element"
     },
     {
@@ -1241,7 +1241,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "node: simulate from the definitions, compare E.finance on 80 random states; hand-calculated cases; NaN scan",
-        "seconds": 1.1
+        "seconds": 0.8
       },
       {
         "id": "F2",
@@ -1252,7 +1252,7 @@
         "ratio": 1,
         "detail": "17/17 sub-checks pass",
         "repro": "node: constructed states for yes / tight (5 causes) / no; fix amounts; apply the fix; monotonicity; stretch",
-        "seconds": 3.3
+        "seconds": 2
       },
       {
         "id": "F3",
@@ -1263,7 +1263,7 @@
         "ratio": 1,
         "detail": "89/89 sub-checks pass",
         "repro": "Playwright 390px: finances link, chip, jobs/expenses/capital editing, tooltip, persistence, backup, v8 migration, shared field, empty states",
-        "seconds": 17.9
+        "seconds": 15.9
       },
       {
         "id": "F4",
@@ -1274,7 +1274,7 @@
         "ratio": 1,
         "detail": "24/24 sub-checks pass",
         "repro": "node: perturb one factor at a time on the sample",
-        "seconds": 1.1
+        "seconds": 0.6
       },
       {
         "id": "F5",
@@ -1285,7 +1285,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Playwright: edge inputs, names, tap targets, font size, overflow 320/390/430, chip contrast light+dark, typing, render storm, console errors",
-        "seconds": 25.7
+        "seconds": 24.3
       }
     ]
   },
@@ -1313,7 +1313,7 @@
         "ratio": 1,
         "detail": "70/70 sub-checks pass",
         "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
-        "seconds": 18.9
+        "seconds": 16.6
       },
       {
         "id": "G3",
@@ -1324,7 +1324,7 @@
         "ratio": 1,
         "detail": "34/34 sub-checks pass",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 8.2
+        "seconds": 7.3
       },
       {
         "id": "G4",
@@ -1335,7 +1335,7 @@
         "ratio": 1,
         "detail": "34/34 sub-checks pass",
         "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit",
-        "seconds": 83
+        "seconds": 73.5
       },
       {
         "id": "G5",
@@ -1346,7 +1346,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
-        "seconds": 7.3
+        "seconds": 6.3
       },
       {
         "id": "G6",
@@ -1357,7 +1357,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 21.3
+        "seconds": 18.2
       },
       {
         "id": "G7",
@@ -1368,7 +1368,7 @@
         "ratio": 1,
         "detail": "146/146 sub-checks pass",
         "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
-        "seconds": 12
+        "seconds": 11.4
       },
       {
         "id": "G8",
@@ -1407,7 +1407,7 @@
         "ratio": 1,
         "detail": "112/112 sub-checks pass",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 11.5
+        "seconds": 10.5
       },
       {
         "id": "H3",
@@ -1418,7 +1418,7 @@
         "ratio": 1,
         "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 22.8
+        "seconds": 21.6
       },
       {
         "id": "H4",
@@ -1440,7 +1440,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 3.5
+        "seconds": 3.2
       },
       {
         "id": "H6",
@@ -1451,7 +1451,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 6.3
+        "seconds": 5.7
       },
       {
         "id": "H7",
@@ -1462,7 +1462,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Load crafted localStorage states; pasted old backup restore",
-        "seconds": 1.4
+        "seconds": 1.3
       },
       {
         "id": "H8",
@@ -1484,7 +1484,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 3
+        "seconds": 2.7
       },
       {
         "id": "H10",
@@ -1512,7 +1512,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
-        "seconds": 6
+        "seconds": 5.8
       },
       {
         "id": "I2",
@@ -1523,7 +1523,7 @@
         "ratio": 1,
         "detail": "14/14 sub-checks pass",
         "repro": "Hold 600 ms, drag, release; check saved order",
-        "seconds": 7.2
+        "seconds": 7.1
       },
       {
         "id": "I3",
@@ -1545,7 +1545,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Reorder with Move buttons; read wait lines + saved state + plan",
-        "seconds": 3.8
+        "seconds": 3.7
       },
       {
         "id": "I5",
@@ -1567,7 +1567,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Headers, subtitles, collapse state, empty portfolio",
-        "seconds": 2.2
+        "seconds": 2.1
       },
       {
         "id": "I7",
@@ -1578,7 +1578,7 @@
         "ratio": 1,
         "detail": "25/25 sub-checks pass",
         "repro": "Panel on maple, type extra, compare with engine + asset page",
-        "seconds": 2.4
+        "seconds": 2.3
       },
       {
         "id": "I8",
@@ -1589,7 +1589,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Asset page > Rent & expenses",
-        "seconds": 1.7
+        "seconds": 1.6
       },
       {
         "id": "I9",
@@ -1611,7 +1611,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "Resize, measure, collected errors",
-        "seconds": 2.4
+        "seconds": 2.5
       },
       {
         "id": "I11",
@@ -1622,7 +1622,7 @@
         "ratio": 1,
         "detail": "13/13 sub-checks pass",
         "repro": "Playwright: #order, buttons, boxes, mouse long-press drag, Undo, screenshots",
-        "seconds": 11.6
+        "seconds": 11.5
       },
       {
         "id": "I12",
@@ -1633,7 +1633,7 @@
         "ratio": 1,
         "detail": "11/11 sub-checks pass",
         "repro": "Playwright",
-        "seconds": 4.4
+        "seconds": 4.3
       }
     ]
   },
@@ -1661,7 +1661,7 @@
         "ratio": 1,
         "detail": "37/37 sub-checks pass",
         "repro": "type expressions into the rent field on an asset page; read state, hint, row and engine",
-        "seconds": 18.3
+        "seconds": 17.5
       },
       {
         "id": "J3",
@@ -1672,7 +1672,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "load the default plan and tighter states at 320/390/430; inspect [data-testid=checks]",
-        "seconds": 8.9
+        "seconds": 8.7
       },
       {
         "id": "J4",
@@ -1683,7 +1683,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "load the default plan (birch is sold) and read the row, category strip and asset page",
-        "seconds": 1.9
+        "seconds": 1.7
       },
       {
         "id": "J5",
@@ -1694,7 +1694,7 @@
         "ratio": 1,
         "detail": "5/5 sub-checks pass",
         "repro": "load a v17 save with a tight profile and open the app",
-        "seconds": 1.4
+        "seconds": 1.1
       },
       {
         "id": "J6",
@@ -1705,7 +1705,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Assumptions > Sample portfolios > stretch",
-        "seconds": 1.5
+        "seconds": 1.2
       },
       {
         "id": "J7",
@@ -1716,7 +1716,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "measure [data-info], [data-coll] links and tabs",
-        "seconds": 4.8
+        "seconds": 4.4
       },
       {
         "id": "J8",
@@ -1727,7 +1727,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Assumptions > Sample portfolios > each button, then Undo",
-        "seconds": 1.5
+        "seconds": 1.4
       },
       {
         "id": "J9",
@@ -1738,7 +1738,7 @@
         "ratio": 1,
         "detail": "5/5 sub-checks pass",
         "repro": "asset page rent field at 320px",
-        "seconds": 2.9
+        "seconds": 2.8
       },
       {
         "id": "J10",
@@ -1749,7 +1749,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "default plan and a tight DTI limit",
-        "seconds": 1.5
+        "seconds": 1.7
       },
       {
         "id": "J11",
@@ -1760,7 +1760,7 @@
         "ratio": 1,
         "detail": "8/8 sub-checks pass",
         "repro": "asset page of the sold house at 6 / 5.5 / 6.25 / 7.1 % selling costs",
-        "seconds": 5.1
+        "seconds": 4.8
       },
       {
         "id": "J12",
@@ -1793,7 +1793,7 @@
         "ratio": 1,
         "detail": "8/8 sub-checks pass",
         "repro": "type 5/0, 650*, -5, 10% into the rent box one key at a time",
-        "seconds": 6.4
+        "seconds": 6.3
       },
       {
         "id": "J15",
@@ -1815,7 +1815,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "load a v17 save",
-        "seconds": 2
+        "seconds": 1.8
       },
       {
         "id": "J17",
@@ -1826,7 +1826,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "remove a planned asset, then wait",
-        "seconds": 12.9
+        "seconds": 13
       },
       {
         "id": "J18",
@@ -1837,7 +1837,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "save three, delete the first, save again",
-        "seconds": 3.1
+        "seconds": 3.2
       },
       {
         "id": "J19",
@@ -1859,7 +1859,7 @@
         "ratio": 1,
         "detail": "7/7 sub-checks pass",
         "repro": "#finances: Living costs, Cash interest, typed key by key",
-        "seconds": 6.7
+        "seconds": 6.5
       },
       {
         "id": "J21",
@@ -1870,7 +1870,7 @@
         "ratio": 1,
         "detail": "3/3 sub-checks pass",
         "repro": "load stretch, breakdown + row at 320",
-        "seconds": 1.9
+        "seconds": 1.8
       },
       {
         "id": "J22",
@@ -1881,7 +1881,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "savings 0; #house-birch",
-        "seconds": 3
+        "seconds": 2.6
       },
       {
         "id": "J23",
@@ -1892,7 +1892,7 @@
         "ratio": 1,
         "detail": "5/5 sub-checks pass",
         "repro": "asset page price box, keyboard.type with pauses",
-        "seconds": 3.7
+        "seconds": 3.9
       },
       {
         "id": "J24",
@@ -1903,7 +1903,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "default Planned page with lists open; assumptions page",
-        "seconds": 4.1
+        "seconds": 4.3
       },
       {
         "id": "J25",
@@ -1925,7 +1925,7 @@
         "ratio": 1,
         "detail": "5/5 sub-checks pass",
         "repro": "Not before (months), job Ends in (months)",
-        "seconds": 8
+        "seconds": 8.2
       },
       {
         "id": "J27",
@@ -1936,7 +1936,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "rent box, vacancy box, target toggle, stat grid labels",
-        "seconds": 5.5
+        "seconds": 6.1
       },
       {
         "id": "J28",
@@ -1958,7 +1958,7 @@
         "ratio": 1,
         "detail": "3/3 sub-checks pass",
         "repro": "Planned and Real pages",
-        "seconds": 1.6
+        "seconds": 1.5
       },
       {
         "id": "J30",
@@ -1969,7 +1969,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "asset page of a planned business",
-        "seconds": 4.6
+        "seconds": 4.5
       },
       {
         "id": "J31",
@@ -1980,7 +1980,7 @@
         "ratio": 1,
         "detail": "29/29 sub-checks pass",
         "repro": "new business asset page, Total revenue box",
-        "seconds": 10.8
+        "seconds": 10.1
       },
       {
         "id": "J32",
@@ -1991,7 +1991,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "new business asset page",
-        "seconds": 3.6
+        "seconds": 3.3
       },
       {
         "id": "J33",
@@ -2013,7 +2013,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "new business asset page at 320 and 390",
-        "seconds": 3.7
+        "seconds": 3.5
       },
       {
         "id": "J35",
@@ -2024,7 +2024,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "open Add, tap Multi-family, tap each preset",
-        "seconds": 1.1
+        "seconds": 1.3
       },
       {
         "id": "J36",
@@ -2035,7 +2035,7 @@
         "ratio": 1,
         "detail": "13/13 sub-checks pass",
         "repro": "type into the Number of units box",
-        "seconds": 5
+        "seconds": 4.9
       },
       {
         "id": "J37",
@@ -2046,7 +2046,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "compare the add screen with Engine.mfLoans for 2 / 4 / 5 pack / 20 / 50 / 51 units",
-        "seconds": 2.3
+        "seconds": 2.2
       },
       {
         "id": "J38",
@@ -2057,7 +2057,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "add a 50-unit building and a pack of 5; read the asset page, the row and the Monthly income and expenses list",
-        "seconds": 6.2
+        "seconds": 5.4
       },
       {
         "id": "J39",
@@ -2068,7 +2068,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "add, reload, remove + Undo, Save + open, export + restore",
-        "seconds": 5.5
+        "seconds": 4.6
       },
       {
         "id": "J40",
@@ -2079,18 +2079,18 @@
         "ratio": 1,
         "detail": "26/26 sub-checks pass",
         "repro": "on #add for each category: toggle, rows, pick, chip, Add; compare the stored asset with the engine example",
-        "seconds": 7.2
+        "seconds": 5.8
       },
       {
         "id": "J41",
         "category": "J",
-        "name": "Examples persist like any asset: reload, Undo after Remove, Saved, backup and restore keep every field; the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes)",
+        "name": "Examples persist like any asset: reload, Undo after Remove, Saved, backup and restore keep every field; the default plan is untouched (36 assets, nothing owned, real NW >= $125M, after-tax cash flow >= $1.3M/mo, verdict Yes)",
         "points": 1.17,
         "earned": 1.17,
         "ratio": 1,
         "detail": "8/8 sub-checks pass",
         "repro": "add one example per category, then reload / remove + Undo / Save / backup",
-        "seconds": 7.5
+        "seconds": 6.9
       },
       {
         "id": "J42",
@@ -2112,7 +2112,7 @@
         "ratio": 1,
         "detail": "26/26 sub-checks pass",
         "repro": "units, loan, revenue, unit toggle, backup, saved, storage stub, second tab, old engine",
-        "seconds": 19.1
+        "seconds": 18.5
       },
       {
         "id": "J44",
@@ -2123,7 +2123,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "node: grader/stamp-check.js on v4/ and on a temp copy that is edited, restamped and bundled; browser: window.__app.stamps and the --build property",
-        "seconds": 0.5
+        "seconds": 0.6
       },
       {
         "id": "J45",
@@ -2145,7 +2145,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "inject states / click through each action and read rep-v4-safety",
-        "seconds": 8.7
+        "seconds": 8.3
       },
       {
         "id": "J47",
@@ -2156,7 +2156,7 @@
         "ratio": 1,
         "detail": "5/5 sub-checks pass",
         "repro": "node: Engine.Diag with a stub storage; browser: setItem throws for rep-v4-safety",
-        "seconds": 1.7
+        "seconds": 1.3
       },
       {
         "id": "J48",
@@ -2178,7 +2178,7 @@
         "ratio": 1,
         "detail": "15/15 sub-checks pass",
         "repro": "inject NaN into a KPI, stub the clipboard, fire errors; node: Engine.Diag.checks with faked inputs",
-        "seconds": 4
+        "seconds": 3.8
       },
       {
         "id": "J50",
@@ -2189,7 +2189,7 @@
         "ratio": 1,
         "detail": "13/13 sub-checks pass",
         "repro": "sentinel address 7731 Zebra Quartz Ln / $7,777,777; stub window.open and the clipboard; log page requests",
-        "seconds": 2.5
+        "seconds": 2.4
       },
       {
         "id": "J51",
@@ -2200,18 +2200,18 @@
         "ratio": 1,
         "detail": "3/3 sub-checks pass",
         "repro": "window.__app.bootMs + monMs over 5 loads; node timing of Engine.Diag.checks",
-        "seconds": 5.5
+        "seconds": 5.4
       },
       {
         "id": "J52",
         "category": "J",
-        "name": "Nothing else changed: backup export excludes safety and diagnostic keys, backup import still restores, Saved portfolios do not hold safety copies, and the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes)",
+        "name": "Nothing else changed: backup export excludes safety and diagnostic keys, backup import still restores, Saved portfolios do not hold safety copies, and the default plan is untouched (36 assets, nothing owned, real NW >= $125M, after-tax cash flow >= $1.3M/mo, verdict Yes)",
         "points": 0.98,
         "earned": 0.98,
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "export backup text, restore it, read all rep-v4* keys",
-        "seconds": 2.5
+        "seconds": 2.4
       },
       {
         "id": "J53",
@@ -2222,7 +2222,7 @@
         "ratio": 1,
         "detail": "8/8 sub-checks pass",
         "repro": "asset page name box typed with a 20 ms key delay; renders counted with window.__app.renders; Back tapped mid-typing; Escape; attributes of every text box",
-        "seconds": 8.6
+        "seconds": 8.3
       },
       {
         "id": "J54",
@@ -2233,7 +2233,7 @@
         "ratio": 1,
         "detail": "8/8 sub-checks pass",
         "repro": "E.duplicate x4, copy of a copy, remove a middle copy, 80-character and unicode names; asset page button twice",
-        "seconds": 1
+        "seconds": 1.1
       }
     ]
   },
@@ -2261,7 +2261,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme on every new screen and measure text vs its real background",
-        "seconds": 10.7
+        "seconds": 10
       },
       {
         "id": "K3",
@@ -2272,7 +2272,7 @@
         "ratio": 1,
         "detail": "7/7 sub-checks pass",
         "repro": "compare class names on the new screens with the classes of the existing screens",
-        "seconds": 18.9
+        "seconds": 17.9
       },
       {
         "id": "K4",
@@ -2283,7 +2283,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "measure buttons, inputs and selects and the page width on each new screen at three widths",
-        "seconds": 16.8
+        "seconds": 14.3
       },
       {
         "id": "K5",
@@ -2294,7 +2294,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "collect Range client rects of every text node and test them pairwise",
-        "seconds": 10.8
+        "seconds": 9.2
       },
       {
         "id": "K6",
@@ -2305,7 +2305,7 @@
         "ratio": 1,
         "detail": "3/3 sub-checks pass",
         "repro": "collect computed font-size / margin / padding / radius on the existing screens, then on the new screens, and compare the sets",
-        "seconds": 5.7
+        "seconds": 4.7
       },
       {
         "id": "K7",
@@ -2327,7 +2327,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "measure every .note and the guide on the new screens",
-        "seconds": 5.2
+        "seconds": 4.6
       },
       {
         "id": "K9",
@@ -2338,7 +2338,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "tap through the flow and count",
-        "seconds": 8.6
+        "seconds": 7.7
       },
       {
         "id": "K10",
@@ -2349,7 +2349,7 @@
         "ratio": 1,
         "detail": "1/1 sub-checks pass",
         "repro": "full-page screenshots of every new screen",
-        "seconds": 31.6
+        "seconds": 27.9
       },
       {
         "id": "K11",
@@ -2360,7 +2360,7 @@
         "ratio": 1,
         "detail": "5/5 sub-checks pass",
         "repro": "scan the examples CSS block and the addPage template; list the classes used by the control",
-        "seconds": 0.5
+        "seconds": 0.4
       },
       {
         "id": "K12",
@@ -2371,7 +2371,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme and measure text vs its real background on each example screen",
-        "seconds": 8.3
+        "seconds": 6.8
       },
       {
         "id": "K13",
@@ -2382,7 +2382,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "measure buttons, page width and text rectangles on each example screen at three widths",
-        "seconds": 11.9
+        "seconds": 10.5
       },
       {
         "id": "K14",
@@ -2393,7 +2393,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "measure the closed line, the Add button position with and without the line, and compare style sets with the existing screens",
-        "seconds": 5.8
+        "seconds": 4.9
       },
       {
         "id": "K15",
@@ -2404,7 +2404,7 @@
         "ratio": 1,
         "detail": "1/1 sub-checks pass",
         "repro": "full-page screenshots of every example screen",
-        "seconds": 24.6
+        "seconds": 22.8
       },
       {
         "id": "K16",
@@ -2415,7 +2415,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "scan the editor CSS block and template; list the classes on the editor screens against the existing screens",
-        "seconds": 3.9
+        "seconds": 3.3
       },
       {
         "id": "K17",
@@ -2426,7 +2426,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme and measure text vs its real background on each editor screen",
-        "seconds": 6.4
+        "seconds": 5.7
       },
       {
         "id": "K18",
@@ -2437,7 +2437,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "measure controls, page width and text rectangles on each editor screen at three widths",
-        "seconds": 9.9
+        "seconds": 8.6
       },
       {
         "id": "K19",
@@ -2448,7 +2448,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "tap through the flow, press keys, measure notes",
-        "seconds": 2.3
+        "seconds": 2.2
       },
       {
         "id": "K20",
@@ -2459,7 +2459,7 @@
         "ratio": 1,
         "detail": "1/1 sub-checks pass",
         "repro": "full-page screenshots of every editor screen",
-        "seconds": 15.9
+        "seconds": 14.4
       },
       {
         "id": "K21",
@@ -2481,7 +2481,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme on each new screen and measure text vs its real background",
-        "seconds": 9.3
+        "seconds": 8.3
       },
       {
         "id": "K23",
@@ -2492,7 +2492,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "compare class names with the baseline of existing screens",
-        "seconds": 7.4
+        "seconds": 6.8
       },
       {
         "id": "K24",
@@ -2503,7 +2503,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "measure buttons, boxes and the page width on each new screen at three widths",
-        "seconds": 13.4
+        "seconds": 12.4
       },
       {
         "id": "K25",
@@ -2514,7 +2514,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "collect Range client rects of every text node and test them pairwise",
-        "seconds": 9.3
+        "seconds": 8.4
       },
       {
         "id": "K26",
@@ -2525,7 +2525,7 @@
         "ratio": 1,
         "detail": "3/3 sub-checks pass",
         "repro": "collect computed font-size / margin / padding / radius on the existing screens, then on the new ones",
-        "seconds": 4.4
+        "seconds": 4.2
       },
       {
         "id": "K27",
@@ -2536,7 +2536,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "count taps; measure notes; open the (i) sheet",
-        "seconds": 7.9
+        "seconds": 7.3
       },
       {
         "id": "K28",
@@ -2547,7 +2547,7 @@
         "ratio": 1,
         "detail": "1/1 sub-checks pass",
         "repro": "full-page screenshots of every new screen",
-        "seconds": 25.5
+        "seconds": 23.8
       }
     ]
   },
@@ -2564,7 +2564,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "node -e \"E=require('./v4/engine.js'); E.numbering(S, E.plan(S))\"",
-        "seconds": 2.4
+        "seconds": 2.3
       },
       {
         "id": "N2",
@@ -2586,7 +2586,7 @@
         "ratio": 1,
         "detail": "30/30 sub-checks pass",
         "repro": "state with owned house + owned business + owned commercial + planned mix + a plan-sold asset",
-        "seconds": 2.3
+        "seconds": 2.1
       },
       {
         "id": "N4",
@@ -2597,7 +2597,7 @@
         "ratio": 1,
         "detail": "14/14 sub-checks pass",
         "repro": "select row > Remove > Yes; read the badges immediately",
-        "seconds": 4.4
+        "seconds": 4.1
       },
       {
         "id": "N5",
@@ -2608,7 +2608,7 @@
         "ratio": 1,
         "detail": "11/11 sub-checks pass",
         "repro": "Planned > Remove > Yes, remove all; Undo; add a home",
-        "seconds": 1.7
+        "seconds": 1.6
       },
       {
         "id": "N6",
@@ -2619,7 +2619,7 @@
         "ratio": 1,
         "detail": "30/30 sub-checks pass",
         "repro": "row panel buttons: Remove+Undo, Duplicate, Move down, asset page Owned/Planned",
-        "seconds": 5.1
+        "seconds": 4.9
       },
       {
         "id": "N7",
@@ -2630,7 +2630,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Planned > + Add home > Add; + Add a bought asset; an example",
-        "seconds": 1.9
+        "seconds": 1.8
       },
       {
         "id": "N8",
@@ -2641,7 +2641,7 @@
         "ratio": 1,
         "detail": "53/53 sub-checks pass",
         "repro": "Assumptions > sample > Yes; Saved > Open; Restore backup; state without the lost-creek-704 key; v8 save with shuffled assets",
-        "seconds": 10.5
+        "seconds": 10.2
       },
       {
         "id": "N9",
@@ -2652,7 +2652,7 @@
         "ratio": 1,
         "detail": "135/135 sub-checks pass",
         "repro": "9 random states loaded in the app; sweep rows, headers, then remove one",
-        "seconds": 15.9
+        "seconds": 14.8
       },
       {
         "id": "N10",
@@ -2663,7 +2663,7 @@
         "ratio": 1,
         "detail": "15/15 sub-checks pass",
         "repro": "scan the text of Planned, Real, Finances, Assumptions and an asset page; default plan numbers",
-        "seconds": 2.5
+        "seconds": 2.4
       }
     ]
   }

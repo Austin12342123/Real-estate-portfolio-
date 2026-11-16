@@ -1,67 +1,67 @@
 {
- "run": "2026-11-16T18:15:29.524Z",
+ "run": "2026-11-16T19:52:37.771Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 9.41,
-   "max": 9.41
+   "earned": 9.3,
+   "max": 9.3
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 5.88,
-   "max": 5.88
+   "earned": 5.81,
+   "max": 5.81
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 11.47,
-   "max": 11.47
+   "earned": 11.33,
+   "max": 11.33
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 6.47,
-   "max": 6.47
+   "earned": 6.39,
+   "max": 6.39
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 5.04,
-   "max": 5.04
+   "earned": 4.98,
+   "max": 4.98
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 8.82,
-   "max": 8.82
+   "earned": 8.72,
+   "max": 8.72
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 8.53,
-   "max": 8.53
+   "earned": 8.43,
+   "max": 8.43
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 8.23,
-   "max": 8.23
+   "earned": 9.3,
+   "max": 9.3
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 12.05,
-   "max": 12.05
+   "earned": 11.91,
+   "max": 11.91
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 3.53,
-   "max": 3.53
+   "earned": 3.49,
+   "max": 3.49
   },
   "L12": {
    "name": "Can-I-buy-this feasibility, shortfall and buy order (engine)",
-   "earned": 10.58,
-   "max": 10.58
+   "earned": 10.46,
+   "max": 10.46
   },
   "L11": {
    "name": "Purchase examples (16 typical purchases)",
-   "earned": 10,
-   "max": 10
+   "earned": 9.88,
+   "max": 9.88
   }
  },
  "checks": [
@@ -424,7 +424,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "peak DTI 20.3% at month 299 vs limit 43",
+   "detail": "peak DTI 9.9% at month 118 vs limit 43",
    "source": "",
    "disclosedOnly": false
   },
@@ -435,7 +435,7 @@
    "pts": 0.5,
    "earned": 0.5,
    "pass": true,
-   "detail": "ok; peak 7(a) outstanding $4430657 at month 148",
+   "detail": "ok; peak 7(a) outstanding $3917343 at month 133",
    "source": "S2,S3,S4,S5",
    "disclosedOnly": false
   },
@@ -798,7 +798,18 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "NW (today's dollars) 25y $71.1M, 28y $132.8M (future $303.9M); step ratios 1.26,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25,1.25; assets 36; business growth 4",
+   "detail": "NW (today's dollars) 25y $85.1M, 28y $131.7M (future $301.2M); step ratios 1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23; assets 36; business growth 4",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L8",
+   "id": "L8.4c",
+   "name": "Default plan reaches the user's target AFTER TAX: cash flow after tax at the 28-year plan end is at least $1,300,000 a month in TODAY'S dollars (E.finance(S, planR(S)).kpis.planEnd.cfAfter = cash flow before tax minus the portfolio tax), with net worth still at least $125M in today's dollars, verdict Yes, nothing owned, and the target constant E.CF_TARGET is 1,300,000",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "after-tax cash flow today's dollars $1380287/mo (before tax $1951091, tax $570804), NW $131.7M, verdict yes",
    "source": "",
    "disclosedOnly": false
   },
@@ -809,7 +820,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "today's dollars NW $132.81M, cash flow $1.506M/mo; future dollars NW $303.86M, cash flow $3.446M/mo (rows $3.446M), income before loans $5.649M, loan payments $2.203M",
+   "detail": "today's dollars NW $131.65M, cash flow $1.951M/mo; future dollars NW $301.21M, cash flow $4.464M/mo (rows $4.464M), income before loans $4.464M, loan payments $0.000M",
    "source": "",
    "disclosedOnly": false
   },
@@ -831,7 +842,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "6,13,17,21,21,24,26,33,44,51,57,77,93,102,111,127,127,128,148,148,154,176,176,187,205,206,219,234,238,250,265,268,281,295,299,299; verdict yes, lowest liquid cash $26820",
+   "detail": "6,13,17,21,21,24,24,31,41,48,56,66,86,95,103,118,127,127,128,133,149,151,162,173,190,191,200,209,223,226,236,246,257,261,271,271; verdict yes, lowest liquid cash $26820",
    "source": "",
    "disclosedOnly": false
   },
@@ -952,7 +963,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "owned false first pooled false no-job unfunded 36 NW on/off 303.9/48.1",
+   "detail": "owned false first pooled false no-job unfunded 36 NW on/off 301.2/58.1",
    "source": "",
    "disclosedOnly": false
   },
@@ -1029,7 +1040,7 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "default NW $303.9M, cf $3.45M, DTI 20%, last buy month 299; weak profile (job money $580/mo): NW $31.3M, verdict no, last buy month 407",
+   "detail": "default NW $301.2M, cf $4.46M, DTI 10%, last buy month 271; weak profile (job money $580/mo): NW $35.1M, verdict no, last buy month 378",
    "source": "",
    "disclosedOnly": false
   },
@@ -1260,7 +1271,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "yes  132808837",
+   "detail": "yes  131653652",
    "source": "",
    "disclosedOnly": false
   }

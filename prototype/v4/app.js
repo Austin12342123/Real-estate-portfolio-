@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'b5dcc094'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'12837862'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
@@ -473,7 +473,8 @@
     const bar = `<div class="bar"><i class="${sn.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (sn.cltv / g.cap) * 100)}%"></i></div><div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>`;
     const plSn = pl.snap.filter((x) => x.type !== 'cash'), isOwnSn = (x) => S.houses.some((h) => h.id === x.id && h.status === 'owned'), bCf = plSn.filter(isOwnSn).reduce((a, x) => a + x.cf, 0), bN = plSn.filter(isOwnSn).length;
     return head + `
-    <section class="card" data-testid="summary"><p class="plantarget" data-testid="plan-target"><b data-testid="unit-label">${isToday() ? '2026*' : 'Future dollars'}</b>${infoBtn('units')}<span class="note" data-testid="unit-foot"> ${isToday() ? '* today\'s dollars, no inflation' : 'each figure in the dollars of its own year'}</span></p><div class="kg">
+    <section class="card" data-testid="summary"><p class="plantarget" data-testid="plan-target"><b data-testid="unit-label">${isToday() ? '2026*' : 'Future dollars'}</b>${infoBtn('units')}<span class="note" data-testid="unit-foot"> ${isToday() ? '* today\'s dollars, no inflation' : 'each figure in the dollars of its own year'}</span></p>
+      ${(() => { const pe = fin && fin.kpis && fin.kpis.planEnd, v = pe ? (isToday() ? pe.cfAfter : pe.cfAfter / E.dfac(S, pe.month)) : null; /* progress = the AFTER-TAX cash flow at plan end, always in today's dollars (2026*) */ return `<p class="plantarget" data-testid="cf-target"><b data-testid="cf-target-label">After-tax cash flow target $1.3M/mo (2026*)</b>${v === null || !isFinite(v) ? '' : `<span class="note" data-testid="cf-progress" data-pct="${Math.round(v / E.CF_TARGET * 100)}"> Plan end, after tax: ${$f(v)}/mo, ${Math.round(v / E.CF_TARGET * 100)}% of the target</span>`}</p>`; })()}<div class="kg">
       ${kpi('kpi-networth', 'Net worth', $f(sn.nw), `${nPl} planned asset${nPl === 1 ? '' : 's'}`, '', 0, `${$f(snAlt.nw)} at year ${yrs} (${altLbl()})`)}
       ${kpi('kpi-monthly', 'Total monthly payments', $f(td.payment), td.cf < -0.5 ? 'Negative income' : 'Positive total income', '', 0, '')}
       ${kpi('kpi-cashflow', 'Cash flow / mo', $s(td.cf), td.cf < -0.5 ? 'Negative income' : 'Positive total income', td.cf < -0.5 ? 'bad' : '', 1, '')}

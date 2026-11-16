@@ -1,6 +1,6 @@
 # UX grader (UX_ONLY)
 
-Run: 2026-11-16T17:42:43.805Z
+Run: 2026-11-16T18:59:02.129Z
 
 ## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **100.00 / 100** (separate scale)
 
@@ -46,7 +46,7 @@ Run: 2026-11-16T17:42:43.805Z
 | J38 | Multi-family asset page: N units in the header and row ("Pack of 5 houses"), rent per unit and total rent (auto), per-unit costs table, reserve and other costs with (i), the expense ratio check, the collapsible guide; the breakdown adds up | 1.96 | 1.96 | 12/12 sub-checks pass |
 | J39 | Multi-family persistence: kind / units / pack survive a reload, Undo after Remove, Saved, backup export and restore; the default plan is untouched and nothing else changes | 1.57 | 1.57 | 10/10 sub-checks pass |
 | J40 | Start from an example: a quiet collapsed line near the bottom; open, pick, Add = 3 taps for Home, Multi-family, Commercial and Business; the asset equals the example; (i), clear, Back, keyboard and Escape work | 2.74 | 2.74 | 26/26 sub-checks pass |
-| J41 | Examples persist like any asset: reload, Undo after Remove, Saved, backup and restore keep every field; the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes) | 1.17 | 1.17 | 8/8 sub-checks pass |
+| J41 | Examples persist like any asset: reload, Undo after Remove, Saved, backup and restore keep every field; the default plan is untouched (36 assets, nothing owned, real NW >= $125M, after-tax cash flow >= $1.3M/mo, verdict Yes) | 1.17 | 1.17 | 8/8 sub-checks pass |
 | J42 | Edit an example: Edit beside the (i) opens the editor; calculator math, /yr revenue and units math work; the live line and warnings follow; Save keeps it across reload and shows Edited; the added asset equals the edited example; Reset returns only that example; Back asks before discarding | 3.13 | 3.13 | 20/20 sub-checks pass |
 | J43 | Editing and the rest of the app: multi-family units re-check the loan and per-unit costs, the loan picker updates down payment and cash, revenue per year keeps profit = revenue x margin, future dollars and tight widths work, backup / Saved / Undo / examples already owned behave, storage unavailable and two tabs and an old cached engine do not break it | 3.52 | 3.52 | 26/26 sub-checks pass |
 | J44 | Build stamp: app.js, engine.js, info.js, style.css (as --build) and the service worker cache name carry one hash of the four files; editing a file without restamping is caught; stamp.py and build-artifact.py write it | 1.76 | 1.76 | 6/6 sub-checks pass |
@@ -57,7 +57,7 @@ Run: 2026-11-16T17:42:43.805Z
 | J49 | Anomaly monitor: NaN in a KPI, a changed total, a failed read-back, mismatched stamps and a wrong state version are each flagged with their code; the Planned page shows "Something looked wrong. Tap to copy a bug report" (one tap copies, dismiss works); errors, rejections and storage failures land in a 60-entry, size-capped event ring | 2.74 | 2.74 | 15/15 sub-checks pass |
 | J50 | Bug report: 8 sections, parseable, <= 8,000 characters; with "Include my numbers" off no street names, addresses or dollar amounts (sentinel address and price), with it on prices and rents but still no address; Copy uses the clipboard with the select-by-hand fallback; the GitHub link is valid, <= 7,500 characters and says the full report was copied; the app makes no network request | 3.13 | 3.13 | 13/13 sub-checks pass |
 | J51 | No slowdown: the safety / monitor start-up work costs under 50 ms on the default 36-asset plan (median of 5 starts), the monitor under 50 ms, and the invariants run in node in under 20 ms | 0.78 | 0.78 | 3/3 sub-checks pass |
-| J52 | Nothing else changed: backup export excludes safety and diagnostic keys, backup import still restores, Saved portfolios do not hold safety copies, and the default plan is untouched (36 assets, nothing owned, real NW >= $125M, cash flow >= $1.3M/mo, verdict Yes) | 0.98 | 0.98 | 4/4 sub-checks pass |
+| J52 | Nothing else changed: backup export excludes safety and diagnostic keys, backup import still restores, Saved portfolios do not hold safety copies, and the default plan is untouched (36 assets, nothing owned, real NW >= $125M, after-tax cash flow >= $1.3M/mo, verdict Yes) | 0.98 | 0.98 | 4/4 sub-checks pass |
 | J53 | Typing a name: the box is never replaced or re-rendered per key (30 keys, same element, 0 renders, fast), the name lands after a pause / leaving the box / tapping Back mid-typing, Escape reverts, and every free-text box asks for autocorrect | 2.74 | 2.74 | 8/8 sub-checks pass |
 | J54 | Duplicate names: "<name> (copy)", "(copy1)", "(copy2)" ...; a copy of a copy counts as a copy of the base; the first unused number is taken; names never repeat; long names keep the suffix; numbering, Undo and the default plan are unaffected | 1.96 | 1.96 | 8/8 sub-checks pass |
 
