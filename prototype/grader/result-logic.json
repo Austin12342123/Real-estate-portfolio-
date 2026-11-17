@@ -1,67 +1,67 @@
 {
- "run": "2026-11-16T23:48:07.291Z",
+ "run": "2026-11-17T01:34:40.557Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 9.3,
-   "max": 9.3
+   "earned": 9.19,
+   "max": 9.19
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 5.81,
-   "max": 5.81
+   "earned": 5.74,
+   "max": 5.74
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 11.33,
-   "max": 11.33
+   "earned": 11.2,
+   "max": 11.2
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 6.39,
-   "max": 6.39
+   "earned": 6.32,
+   "max": 6.32
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 4.98,
-   "max": 4.98
+   "earned": 4.92,
+   "max": 4.92
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 8.72,
-   "max": 8.72
+   "earned": 8.62,
+   "max": 8.62
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 8.43,
-   "max": 8.43
+   "earned": 8.33,
+   "max": 8.33
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 9.3,
-   "max": 9.3
+   "earned": 9.19,
+   "max": 9.19
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 11.91,
-   "max": 11.91
+   "earned": 11.78,
+   "max": 11.78
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 3.49,
-   "max": 3.49
+   "earned": 3.45,
+   "max": 3.45
   },
   "L12": {
    "name": "Can-I-buy-this feasibility, shortfall and buy order (engine)",
-   "earned": 10.46,
-   "max": 10.46
+   "earned": 11.49,
+   "max": 11.49
   },
   "L11": {
    "name": "Purchase examples (16 typical purchases)",
-   "earned": 9.88,
-   "max": 9.88
+   "earned": 9.77,
+   "max": 9.77
   }
  },
  "checks": [
@@ -1272,6 +1272,28 @@
    "earned": 1,
    "pass": true,
    "detail": "yes  131653652",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.11",
+   "name": "Nothing planned: one bought asset at 98% debt and no planned asset gives no plan-only rows (no 'last 0 mo', no check-buy, no outside-cash), verdict is never 'no', feasible.none is set; the default plan and an owned + planned plan keep their rows and verdicts",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.12",
+   "name": "Changing the loan type re-derives an AUTO appraisal (203(k) = (price+rehab) x 1.15 to $1,000; any other loan = price + 1.4 x budget, both directions) and never touches an appraisal the user typed (E25)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "",
    "source": "",
    "disclosedOnly": false
   }

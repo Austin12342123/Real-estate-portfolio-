@@ -734,6 +734,23 @@ chk('L11', 'L11.9', 'Loading is defensive and storage failure is survivable: gar
   chk('L12', 'L12.10', "The default plan stays green: 36 assets, nothing owned, verdict yes, every asset and portfolio test ok, real net worth >= $125M", 1, () => {
     const S = E.seedPlan(), pl = E.plan(S), f = E.finance(S, pl), F = f.feas, bad = F.criteria.filter((c) => c.status !== 'ok').map((c) => c.id).concat(...Object.values(F.assets).map((a) => a.criteria.filter((c) => c.status !== 'ok').map((c) => a.addr + ':' + c.id)));
     const nw = E.planR(S).horizon.nw; return { pass: S.houses.length === 36 && !S.houses.some((h) => h.status === 'owned') && f.status === 'yes' && F.verdict === 'yes' && !bad.length && nw >= 125e6, detail: f.status + ' ' + bad.slice(0, 4) + ' ' + Math.round(nw) }; });
+  chk('L12', 'L12.11', "Nothing planned: one bought asset at 98% debt and no planned asset gives no plan-only rows (no 'last 0 mo', no check-buy, no outside-cash), verdict is never 'no', feasible.none is set; the default plan and an owned + planned plan keep their rows and verdicts", 1, () => {
+    const own = A('house', 'conv30', { id: 'o1', status: 'owned', price: 175000, dp: 2, rent: 1500, tax: 100, ins: 50, paid: 12, capex: 8000 }), bad = [];
+    const S = mkF([own], { cash: 20000 }), pl = E.plan(S), f = E.finance(S, pl), F = f.feas, cl = E.checkList(S, pl, f);
+    if (F.verdict === 'no' || !F.none || F.reasons.length) bad.push('verdict ' + F.verdict + ' none=' + F.none + ' reasons=' + F.reasons.length);
+    if (cl.some((c) => c.key === 'p-funding' || c.key === 'buy' || c.id === 'check-buy' || c.id === 'check-pace' || c.id === 'outside-cash' || /last 0 mo/.test(c.value))) bad.push('plan-only rows ' + cl.map((c) => c.id + ':' + c.value).join(','));
+    const D = E.seedPlan(), fd = E.finance(D, E.plan(D)), cd = E.checkList(D, E.plan(D), fd); if (fd.feas.verdict !== 'yes' || fd.feas.none || !cd.some((c) => c.id === 'check-pace') || !cd.some((c) => c.id === 'check-buy')) bad.push('default changed');
+    const M = mkF([own, A('house', 'conv30', { id: 'p1', price: 100000, rent: 1500, tax: 100, ins: 50 })], { cash: 20000 }), fm2 = E.finance(M, E.plan(M)), cm = E.checkList(M, E.plan(M), fm2);
+    if (fm2.feas.none || !cm.some((c) => c.id === 'check-buy') || !cm.some((c) => c.id === 'check-pace') || !fm2.feas.criteria.some((c) => c.id === 'p-cltv')) bad.push('owned+planned lost rows');
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.12', "Changing the loan type re-derives an AUTO appraisal (203(k) = (price+rehab) x 1.15 to $1,000; any other loan = price + 1.4 x budget, both directions) and never touches an appraisal the user typed (E25)", 1, () => {
+    const bad = [], h = A('house', 'k203', { id: 'k1', price: 92000, capex: 32000 }); /* auto: price + rehab financed, arvAuto */
+    if (!h.arvAuto || h.arv !== Math.round((92000 + 32000) * 1.15 / 1000) * 1000) bad.push('start ' + h.arv + ' ' + h.arvAuto);
+    E.applyLoan(h, 'conv30'); if (h.arv !== Math.round(92000 + 1.4 * 32000) || !h.arvAuto) bad.push('k203->conv30 arv ' + h.arv + ' auto ' + h.arvAuto + ' (want 136800)');
+    E.applyLoan(h, 'k203'); if (h.arv !== Math.round((92000 + 32000) * 1.15 / 1000) * 1000) bad.push('conv30->k203 arv ' + h.arv);
+    const o = A('house', 'k203', { id: 'k2', price: 92000, capex: 32000 }); o.arv = 150000; o.arvAuto = false; o.gain = null; /* typed by the user */
+    E.applyLoan(o, 'conv30'); if (o.arv !== 150000 || o.arvAuto) bad.push('override touched ' + o.arv + ' ' + o.arvAuto);
+    return { pass: !bad.length, detail: bad.join('; ') }; });
 }
 
 /* ---------------- score ---------------- */

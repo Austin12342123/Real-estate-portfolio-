@@ -146,6 +146,7 @@ exports.run = async function run(X) {
       if (rnd() < 0.35) { o.capex = ri(5, 80) * 1000; o.capexMonths = ri(2, 10); o.arv = rnd() < 0.6 ? Math.round(price * 1.2) : 0; o.liftIncome = ri(0, 12); }
       const na = E.newAsset(type, lo.id, o); if (na.arvAuto) na.arv = Math.round((na.price + (na.capex || 0)) * 1.15 / 1000) * 1000; hs.push(na);
     }
+    if (hs.every((h) => h.status === 'owned')) hs[hs.length - 1].status = 'planned'; /* E24: a portfolio with only bought assets has no Planned plan (neutral card, checked in ux J55); these sync checks compare the Planned page with the engine, so every random state keeps at least one planned asset */
     const S = mkS({ cap: ri(60, 90), haircut: ri(0, 15), closing: ri(0, 6), appr: ri(0, 5), planYears: ri(5, 40), otherDebt: ri(0, 1500), dti: ri(30, 50) }, hs);
     const p = E.samplePersonal(); p.cash = ri(0, 150) * 1000; p.living = ri(1500, 7000); p.jobs[0].gross = ri(30, 200) * 1000;
     return withP(S, p);
@@ -364,7 +365,7 @@ exports.run = async function run(X) {
   function chkFinances(mg, fg, A, tag) {
     const S = fg.state, pl = planOf(fg), f = E.finance(clone(S), pl), k = f.kpis, T = (key, ok, w, info) => A.t(key, ok, w, tag + ': ' + info);
     const picture = fg.tables['monthly-picture'] || [], row = (re) => (picture.find((r) => re.test(r[0])) || [])[1];
-    const kc = mg.kpis.find((x) => x.id === 'kpi-cashflow').v, sync = fg.t['sync-cf'], card = fg.t['finances-sync'] || '';
+    const noPlan = !mg.kpis.length && /Nothing planned yet/.test(mg.text), /* E24: only bought assets = the Planned page is the neutral card: planned totals are $0, no chip, no extra header; Finances says Nothing planned */ kc = (mg.kpis.find((x) => x.id === 'kpi-cashflow') || { v: '+$0' }).v, sync = fg.t['sync-cf'], card = fg.t['finances-sync'] || '';
     /* Finances covers the whole plan: the Planned page cash flow plus the Real page cash flow (the bought assets) */
     const HZf = PLH(E), rcf = mg.real && mg.real.kpis ? 'real' : null, kcAll = HZf.plannedHz(S, pl).y28.cf + (rcf ? HZf.realHz(S, pl).y28.cf : 0), tolAll = 1; /* the Finances card is the plan end (year 28); the main-page KPIs are today's terms, so the Finances figure is checked against the year-28 amounts of the Planned and Real pages (planned + bought) */
     T('Finances sync-cf = the plan-end cash flow of the Planned assets + the Real assets (the whole plan)', Math.abs(money(sync) - kcAll) <= tolAll + dispTol(sync), 2, sync + ' vs ' + Math.round(kcAll));
@@ -377,7 +378,7 @@ exports.run = async function run(X) {
     T('funding-line amount = engine outside total', !!fm && eq(fm[1], pl.outsideTotal), 0.5, (fm && fm[1]) + ' vs ' + $f(pl.outsideTotal));
     const cov = /cover (\$[\d,.]+[MB]?);/.exec(fl); T('funding-line "partners cover" = min(outside, capital lined up) when capital is listed; otherwise it says all of it comes from your savings and income', k.capitalTotal > 0 ? !!cov && eq(cov[1], Math.min(k.totalOutside, k.capitalTotal)) : /All of it comes out of your savings/.test(fl), 0.5, fl);
     /* extra now scope */
-    const X0 = pl.extraNow, te = mg.t['total-extra'] || '', mx = /(\$[\d,.]+[MB]?)\/mo extra now/.exec(te), ex = row(/^Extra payments/);
+    const X0 = pl.extraNow, te = mg.t['total-extra'] || '', mx = noPlan ? [te, '$0'] : /(\$[\d,.]+[MB]?)\/mo extra now/.exec(te), ex = row(/^Extra payments/);
     /* Finances covers the whole plan: the Planned header's extra now plus the Real page's (the bought assets) */
     const rx = mg.real && mg.real.t ? /(\$[\d,.]+[MB]?)\/mo extra now/.exec(mg.real.t['total-extra'] || '') : null, xAll = mx ? money(mx[1]) + (rx ? money(rx[1]) : pl.extraNow - PLH(E).plannedExtraNow(S, pl)) : NaN; /* the Real page has no extra header: the bought assets' extra now comes from the engine */
     T('Finances "Extra payments" (now) = Planned "extra now" + Real "extra now"', !!mx && (Math.abs(Math.abs(money(ex)) - xAll) <= 1 || eq(ex && ex.replace('−', '-').replace('+', ''), -xAll)), 2, 'Finances ' + ex + ' vs Planned header ' + te + ' + bought ' + (xAll - (mx ? money(mx[1]) : 0)).toFixed(0) + ' [engine extraNow ' + Math.round(pl.extraNow) + ', planned ' + Math.round(PLH(E).plannedExtraNow(S, pl)) + ', rx ' + (rx ? rx[1] : '-') + '] (assets with an extra but no loan to pay down are counted in one but not the other)');
@@ -391,13 +392,14 @@ exports.run = async function run(X) {
     T('portfolio "after tax" now = engine cash flow now - tax', Math.abs(k.portfolioAfterTax - (pl.series.cf[0] - E.portTaxAt(S, 0, pl.series.txRE[0], pl.series.txBiz[0]))) < 1, 0.5, 'engine');
     /* verdict */
     const VL = { yes: 'Yes', tight: 'Tight', no: 'Not yet' };
-    T('Finances verdict chip = engine status', fg.t['verdict-chip'] === VL[pl.worst.dti > S.g.dti && f.status === 'tight' ? 'no' : f.status], 1, fg.t['verdict-chip'] + ' vs ' + VL[f.status]);
-    T('Finances verdict headline = engine', (fg.t['verdict-headline'] === f.headline || (pl.worst.dti > S.g.dti && f.status === 'tight' && /^Not yet\. Lenders may decline/.test(fg.t['verdict-headline']))), 1, fg.t['verdict-headline'] + ' vs ' + f.headline);
-    T('Portfolio afford chip = Finances verdict chip', mg.t['afford-chip'] === fg.t['verdict-chip'], 2, mg.t['afford-chip'] + ' vs ' + fg.t['verdict-chip']);
-    T('Portfolio afford note = Finances headline (minus the Yes/Tight prefix)', ((mg.t['afford-line'] || '').includes(f.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, '')) || (pl.worst.dti > S.g.dti && f.status === 'tight' && /Lenders may decline a loan around/.test(mg.t['afford-line'] || ''))), 1, mg.t['afford-line'] + ' vs ' + f.headline);
+    const none = !!(f.feas && f.feas.none); /* E24: nothing planned = the neutral chip, derived from the engine's feas.none */
+    T('Finances verdict chip = engine status (or "Nothing planned" when the engine says feas.none)', none ? fg.t['verdict-chip'] === 'Nothing planned' : fg.t['verdict-chip'] === VL[pl.worst.dti > S.g.dti && f.status === 'tight' ? 'no' : f.status], 1, fg.t['verdict-chip'] + ' vs ' + VL[f.status]);
+    T('Finances verdict headline = engine (feas.none: the neutral engine headline, then the add-an-asset hint)', ((none ? (fg.t['verdict-headline'] || '').indexOf(f.feas.headline) === 0 : fg.t['verdict-headline'] === f.headline) || (pl.worst.dti > S.g.dti && f.status === 'tight' && /^Not yet\. Lenders may decline/.test(fg.t['verdict-headline']))), 1, fg.t['verdict-headline'] + ' vs ' + f.headline);
+    T('Portfolio afford chip = Finances verdict chip', noPlan ? mg.t['afford-chip'] === undefined && fg.t['verdict-chip'] === 'Nothing planned' : mg.t['afford-chip'] === fg.t['verdict-chip'], 2, mg.t['afford-chip'] + ' vs ' + fg.t['verdict-chip']);
+    T('Portfolio afford note = Finances headline (minus the Yes/Tight prefix)', noPlan || ((mg.t['afford-line'] || '').includes(f.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, '')) || (pl.worst.dti > S.g.dti && f.status === 'tight' && /Lenders may decline a loan around/.test(mg.t['afford-line'] || ''))), 1, mg.t['afford-line'] + ' vs ' + f.headline);
     const dti = /debt payments (?:peak at|reach) (\d+)% of qualifying income/.exec(fg.text), hw = mg.warns.find((w) => /Debt-to-income peaks/.test(w.t));
     if (pl.worst.dti > S.g.dti) T('DTI percentage: Finances reason = engine worst DTI', !!dti && +dti[1] === Math.round(pl.worst.dti), 1, (dti && dti[1]) + ' vs ' + pl.worst.dti);
-    else T('DTI within the limit: Finances shows the short "lenders should approve" note (no percentage is shown for passing reasons) and no Portfolio DTI warning', /lenders should approve/.test(fg.t['reasons-ok'] || '') && !hw, 1, (fg.t['reasons-ok'] || '').slice(0, 120) + ' vs worst ' + pl.worst.dti);
+    else T('DTI within the limit: Finances shows the short "lenders should approve" note (no percentage is shown for passing reasons) and no Portfolio DTI warning (feas.none: nothing planned shows no reasons at all)', (none ? !fg.t['reasons-ok'] : /lenders should approve/.test(fg.t['reasons-ok'] || '')) && !hw, 1, (fg.t['reasons-ok'] || '').slice(0, 120) + ' vs worst ' + pl.worst.dti);
     if (hw) T('DTI percentage: Portfolio warning = Finances reason', !!dti && Math.abs(+(/peaks at (\d+(?:\.\d+)?)%/.exec(hw.t) || [])[1] - +dti[1]) <= 0.5, 0.5, hw.t + ' vs ' + (dti && dti[0]));
     const lc = fg.t['lowest-cash'] || '', lm = /(−?\$[\d,.]+[MB]?) · (?:(\d+) months? from today|(today))/.exec(lc); if (lm && lm[3]) lm[2] = '0';
     T('lowest cash and month = engine', !!lm && eq(lm[1], k.minLiquid) && +lm[2] === k.minLiquidMonth, 1, lc + ' vs ' + $f(k.minLiquid) + ' month ' + k.minLiquidMonth);

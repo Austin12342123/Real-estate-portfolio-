@@ -1062,6 +1062,38 @@ exports.run = async function run(X) {
     P.t(nn.length === 2 && nn.indexOf(S0.houses[0].addr + ' (copy)') >= 0 && nn.indexOf(S0.houses[0].addr + ' (copy1)') >= 0, 'the asset page Duplicate button numbers its copies (original, then a copy of the copy)', 1, nn.join('|'));
     return P; });
 
+  /* ---------- J55 empty plan with a bought asset (user bug E24: Remove all planned left 'Not yet', Checks and a target line) ---------- */
+  await jcheck('J55', 'Nothing planned but one bought asset (98% debt): the Planned page is the neutral card with a Real link (no KPIs, "Can I afford this?", Checks, target line, "Not yet"); Real still shows the asset; Finances says "Nothing planned"; no assets = old note; default plan unchanged; Remove on bought + planned says "1 bought asset stays", ends neutral, Undo restores; fits 320/430 light and dark', 8, 'Planned page, Real, Finances', async () => {
+    const P = new Parts(), base0 = withV(E.seedPlan());
+    const own = (S) => { const h = S.houses[0]; Object.assign(h, { status: 'owned', price: 175000, dp: 2, rent: 1500, paid: 12 }); return h; };
+    const SB = clone(base0); const h0 = own(SB); SB.houses = [h0]; SB.p = Object.assign({}, SB.p, { cash: 20000 });
+    await loadX(SB, '#'); await page.waitForSelector('[data-testid=summary],[data-testid=empty-note]');
+    const cnt = async (q) => page.locator(q).count();
+    const tx = async () => page.evaluate(() => document.getElementById('app').innerText);
+    let t = await tx();
+    P.t((await cnt('[data-testid=afford-chip]')) + (await cnt('[data-testid=afford-line]')) + (await cnt('[data-testid=checks]')) + (await cnt('[data-testid=cf-progress]')) + (await cnt('[data-testid=plan-target]')) + (await cnt('[data-testid=summary]')) + (await cnt('[data-testid=breakdown]')) === 0 && !/Not yet|of 9 to look at|Plan end, after tax|Can I afford|last 0 mo/.test(t), 'state B (1 bought, 0 planned): no chip, verdict line, Checks, target line, summary or breakdown, no "Not yet"', 3, t.slice(0, 200).replace(/\n/g, ' | '));
+    const note = (await cnt('[data-testid=empty-bought-note]')) ? await page.locator('[data-testid=empty-bought-note]').innerText() : '';
+    P.t(/Nothing planned yet/.test((await cnt('[data-testid=empty-note]')) ? await page.locator('[data-testid=empty-note]').innerText() : '') && /1 bought asset is counted on Real/.test(note) && (await cnt('[data-testid=empty-real-link]')) === 1, 'the neutral card says nothing is planned and "1 bought asset is counted on Real" with a link', 1.5, note);
+    const hb = await page.evaluate(() => { const e = document.querySelector('[data-testid=empty-real-link]'); return e ? e.getBoundingClientRect().height : 0; });
+    if (!(await cnt('[data-testid=empty-real-link]'))) return P; await page.click('[data-testid=empty-real-link]'); await page.waitForTimeout(80);
+    const rt = await tx(); P.t((await cnt('[data-testid=ledger-row]')) === 1 && /Bought/.test(rt) && !/Bought\s*0 assets/.test(rt), 'the link opens Real, which still lists the bought asset', 1, rt.slice(0, 120).replace(/\n/g, ' | '));
+    for (const w of [320, 430]) for (const cs of ['light', 'dark']) { await page.setViewportSize({ width: w, height: 844 }); await page.emulateMedia({ colorScheme: cs }); await page.click('[data-testid=tab-planned]'); await page.waitForTimeout(40); const ov = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth); if (ov) P.t(false, 'overflow at ' + w + ' ' + cs, 1, ''); }
+    await page.setViewportSize({ width: 390, height: 844 }); await page.emulateMedia({ colorScheme: 'light' });
+    P.t(hb >= 44, 'the Open Real link is a 44px target', 0.5, String(hb));
+    await page.goto(base() + '/index.html#finances'); await page.waitForSelector('[data-testid=verdict-chip]'); const vc = await page.locator('[data-testid=verdict-chip]').innerText(), vh = await page.locator('[data-testid=verdict-headline]').innerText();
+    P.t(/Nothing planned/.test(vc) && !/Not yet|Tight/.test(vc + ' ' + vh) && (await cnt('.rsn.bad')) === 0, 'Finances shows "Nothing planned", not "Not yet"', 1, vc + ' / ' + vh);
+    const SA = clone(base0); SA.houses = []; await loadX(SA, '#'); await page.waitForSelector('[data-testid=empty-note]'); t = await tx();
+    P.t(/Nothing added yet/.test(t) && (await cnt('[data-testid=empty-bought-note]')) === 0 && (await cnt('[data-testid=checks]')) === 0 && (await cnt('[data-testid=afford-chip]')) === 0, 'state A (no assets at all) is unchanged: old note, no bought-asset note, no verdict, no Checks', 1, t.slice(0, 80));
+    await loadX(base0, '#'); await page.waitForSelector('[data-testid=summary]'); const chip = await page.locator('[data-testid=afford-chip]').innerText().catch(() => ''); const ck = await page.locator('[data-testid=checks]').evaluate((e) => e.textContent); /* the list is folded: textContent, not innerText */
+    P.t(/Yes/.test(chip) && /All 10 checks are in the safe range/.test(ck) && (await cnt('[data-testid=cf-progress]')) === 1, 'state C (default 36 planned) unchanged: Yes, All 10 checks in the safe range, target line shown (the rows themselves are checked in L12.11)', 1.5, chip + ' | ' + ck.slice(0, 60));
+    const SM = clone(base0); own(SM); SM.houses = SM.houses.slice(0, 4); SM.p = Object.assign({}, SM.p, { cash: 20000 }); await loadX(SM, '#'); await page.waitForSelector('[data-testid=clear-plan-btn]'); await page.click('[data-testid=clear-plan-btn]');
+    const ct = await page.locator('[data-testid=clear-plan-confirm]').evaluate((e) => e.closest('.confirm').innerText);
+    P.t(/1 bought asset stays/.test(ct), 'the Remove confirm says "1 bought asset stays"', 1, ct.slice(0, 100));
+    await page.click('[data-testid=clear-plan-confirm]'); await page.waitForTimeout(100); t = await tx();
+    P.t((await cnt('[data-testid=afford-chip]')) === 0 && (await cnt('[data-testid=checks]')) === 0 && !/Not yet|Plan end, after tax/.test(t) && /1 bought asset is counted on Real/.test(t), 'after Remove (1 bought + 3 planned) the page is the neutral card with the Real note', 1, t.slice(0, 120).replace(/\n/g, ' | '));
+    await page.click('[data-testid=undo-banner] [data-undo]'); await page.waitForTimeout(100); P.t((await store()).houses.length === 4 && (await cnt('[data-testid=checks]')) === 1, 'Undo brings the planned assets and the plan page back', 1, String((await store()).houses.length));
+    return P; });
+
   await ctx.close();
   const earned = checks.reduce((a, c) => a + c.earned, 0), max = checks.reduce((a, c) => a + c.points, 0);
   return { earned: Math.round(earned / max * 10000) / 100, max: 100, checks: checks.map((c) => Object.assign({}, c, { points: Math.round(c.points / max * 10000) / 100, earned: Math.round(c.earned / max * 10000) / 100 })) };

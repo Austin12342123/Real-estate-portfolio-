@@ -1,23 +1,23 @@
 # Logic and math grader (LOGIC_ONLY)
 
-Run: 2026-11-16T23:48:07.291Z
+Run: 2026-11-17T01:34:40.557Z
 
 **TOTAL 100 / 100**
 
 | Cat | Area | Earned | Max |
 |---|---|---|---|
-| L1 | Loan / amortization / payoff math | 9.3 | 9.3 |
-| L2 | Income, expense and NOI model | 5.81 | 5.81 |
-| L3 | Leverage, LTV/CLTV and credit-line rules | 11.33 | 11.33 |
-| L4 | Lender qualification (DTI / DSCR / rental haircut) | 6.39 | 6.39 |
-| L5 | Loan-product terms vs sources (every LOANS preset) | 4.98 | 4.98 |
-| L6 | Appreciation, rent growth, inflation and time basis | 8.72 | 8.72 |
-| L7 | Taxes, selling costs and depreciation | 8.43 | 8.43 |
-| L8 | Business valuation, growth and operating model | 9.3 | 9.3 |
-| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 11.91 | 11.91 |
-| L10 | Disclosure, labels, units and glossary accuracy | 3.49 | 3.49 |
-| L12 | Can-I-buy-this feasibility, shortfall and buy order (engine) | 10.46 | 10.46 |
-| L11 | Purchase examples (16 typical purchases) | 9.88 | 9.88 |
+| L1 | Loan / amortization / payoff math | 9.19 | 9.19 |
+| L2 | Income, expense and NOI model | 5.74 | 5.74 |
+| L3 | Leverage, LTV/CLTV and credit-line rules | 11.2 | 11.2 |
+| L4 | Lender qualification (DTI / DSCR / rental haircut) | 6.32 | 6.32 |
+| L5 | Loan-product terms vs sources (every LOANS preset) | 4.92 | 4.92 |
+| L6 | Appreciation, rent growth, inflation and time basis | 8.62 | 8.62 |
+| L7 | Taxes, selling costs and depreciation | 8.33 | 8.33 |
+| L8 | Business valuation, growth and operating model | 9.19 | 9.19 |
+| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 11.78 | 11.78 |
+| L10 | Disclosure, labels, units and glossary accuracy | 3.45 | 3.45 |
+| L12 | Can-I-buy-this feasibility, shortfall and buy order (engine) | 11.49 | 11.49 |
+| L11 | Purchase examples (16 typical purchases) | 9.77 | 9.77 |
 
 ## Checks
 
@@ -133,5 +133,7 @@ Run: 2026-11-16T23:48:07.291Z
 | L12.8 | Live updates: the same asset is no, then yes with more cash, then no again; the asset list follows an added, removed or moved asset (nothing is cached) | 1 | 1 | PASS  |  |
 | L12.9 | Buy order engine: moveTo puts an asset at position N across categories, clamps to 1..n, keeps owned assets where they are, numbering is 1..n, nothing is bought before the assets above it | 2 | 2 | PASS  |  |
 | L12.10 | The default plan stays green: 36 assets, nothing owned, verdict yes, every asset and portfolio test ok, real net worth >= $125M | 1 | 1 | PASS yes  131653652 |  |
+| L12.11 | Nothing planned: one bought asset at 98% debt and no planned asset gives no plan-only rows (no 'last 0 mo', no check-buy, no outside-cash), verdict is never 'no', feasible.none is set; the default plan and an owned + planned plan keep their rows and verdicts | 1 | 1 | PASS  |  |
+| L12.12 | Changing the loan type re-derives an AUTO appraisal (203(k) = (price+rehab) x 1.15 to $1,000; any other loan = price + 1.4 x budget, both directions) and never touches an appraisal the user typed (E25) | 1 | 1 | PASS  |  |
 
 Checks marked "disclosed, not source-verified" pass on disclosure or a benchmark file whose sources could not be fetched; see sources.md.
