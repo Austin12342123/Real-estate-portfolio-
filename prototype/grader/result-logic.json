@@ -1,67 +1,67 @@
 {
- "run": "2026-11-17T05:14:59.454Z",
+ "run": "2026-11-17T19:15:40.141Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 9.19,
-   "max": 9.19
+   "earned": 8.99,
+   "max": 8.99
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 5.74,
-   "max": 5.74
+   "earned": 5.62,
+   "max": 5.62
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 11.2,
-   "max": 11.2
+   "earned": 10.95,
+   "max": 10.95
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 6.32,
-   "max": 6.32
+   "earned": 6.18,
+   "max": 6.18
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 4.92,
-   "max": 4.92
+   "earned": 4.81,
+   "max": 4.81
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 8.62,
-   "max": 8.62
+   "earned": 8.42,
+   "max": 8.42
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 8.33,
-   "max": 8.33
+   "earned": 8.14,
+   "max": 8.14
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 9.19,
-   "max": 9.19
+   "earned": 8.99,
+   "max": 8.99
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 11.78,
-   "max": 11.78
+   "earned": 13.76,
+   "max": 13.76
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 3.45,
-   "max": 3.45
+   "earned": 3.37,
+   "max": 3.37
   },
   "L12": {
    "name": "Can-I-buy-this feasibility, shortfall and buy order (engine)",
-   "earned": 11.49,
-   "max": 11.49
+   "earned": 11.23,
+   "max": 11.23
   },
   "L11": {
    "name": "Purchase examples (16 typical purchases)",
-   "earned": 9.77,
-   "max": 9.77
+   "earned": 9.55,
+   "max": 9.55
   }
  },
  "checks": [
@@ -1294,6 +1294,50 @@
    "earned": 1,
    "pass": true,
    "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.J1",
+   "name": "Job money per home: with no amount set (the default) the three default plans give exactly the numbers they gave before the feature (loan payoffs, job money used, equity, after-tax cash flow, last purchase)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "[[1436,200796,21555991,234677,100],[10913,1056844,301214033,3157996,271],[3257,18336,542250657,1083061,170]]",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.J2",
+   "name": "Job money per home: an amount set on a bought home goes to that home's loan every month it has a balance (500 on Maple: 500 at month 5), pays it off sooner, and the engine exposes the plan's own default amount (E.jobDefault) as a positive number",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "at5 506.1961619615092 want 506.1961619615092 end 120->91 default {\"amount\":128.69676450099058,\"from\":100}",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.J3",
+   "name": "Job money per home: amounts above the job pay left after living costs are reported (E.jobMoney.over, shortMonths) and never create money (the job money that reaches the loans never exceeds the plan's job surplus, month by month)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "{\"surplus0\":1030,\"assigned\":15000,\"count\":3,\"over\":true,\"shortMonths\":95,\"firstShort\":2,\"short0\":0} worst 7.275957614183426e-12",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L9",
+   "id": "L9.J4",
+   "name": "Job money per home: the amount survives normalize (blank or junk = null = the plan's split, negative = 0, a number stays) and a home with its own amount is taken out of the equal split",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "[null,0,250,null] maple 0",
    "source": "",
    "disclosedOnly": false
   }

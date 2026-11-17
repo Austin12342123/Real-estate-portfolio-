@@ -753,6 +753,9 @@ chk('L11', 'L11.9', 'Loading is defensive and storage failure is survivable: gar
     return { pass: !bad.length, detail: bad.join('; ') }; });
 }
 
+/* ---------------- L9.J: your job money in the trust, per home (grader/logic/jobmoney.js) ---------------- */
+{ const JM = require('./logic/jobmoney.js').checks(E); Object.keys(JM).forEach((id) => chk('L9', id, JM[id].name, 1, JM[id].fn)); }
+
 /* ---------------- score ---------------- */
 const score = {}; let total = 0;
 Object.keys(CATS).forEach((c) => { const mine = checks.filter((x) => x.cat === c); const max = CATS[c][1]; const got = mine.reduce((a, x) => a + x.earned, 0), pts = mine.reduce((a, x) => a + x.pts, 0);

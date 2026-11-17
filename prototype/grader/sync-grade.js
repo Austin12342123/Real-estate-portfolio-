@@ -82,6 +82,8 @@ exports.run = async function run(X) {
 
   /* ---------- page plumbing ---------- */
   let seq = 0;
+/* design v5: the loan options are behind the Loan row on Add; open the list */
+  const openLoansS = async (pg) => { if (!(await pg.$('[data-testid=loan-options]'))) await pg.click('[data-testid=loan-row]'); await pg.waitForSelector('[data-testid=loan-options]'); };
   async function load(page, S, hash, ui) {
     const u = Object.assign({ tab: 'nw', open: true, coll: { drivers: false }, hideLegend: true }, ui || {});
     await BOOT.boot(page, { base: base(), tag: 'g', S, DATA_V, hash, write: [([k, s, uk, uu]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); localStorage.setItem(uk, JSON.stringify(uu)); } catch (e) {} }, [KEY, S, UIKEY, u]] });
@@ -541,7 +543,7 @@ exports.run = async function run(X) {
       for (const tp of ['house', 'commercial', 'business']) {
         const list = E.loansFor(tp);
         for (const lo of list) {
-          await nav(page, '#add'); await clickSel(page, `[data-addtype="${tp}"]`);
+          await nav(page, '#add'); await clickSel(page, `[data-addtype="${tp}"]`); await openLoansS(page);
           const card = await page.evaluate((id) => { const b = document.querySelector(`[data-pickloan="${id}"]`); return b ? b.textContent.replace(/\s+/g, ' ') : null; }, lo.id);
           const m = lo.dp >= 100 ? (card && /No loan · pay the full price/.test(card) ? [null, String(lo.dp), String(lo.rate), '', String(lo.term / 12)] : null) /* cash card: no loan terms to show */ : card && /(\d+(?:\.\d+)?)% down · (\d+(?:\.\d+)?)% · (interest-only, )?(\d+(?:\.\d+)?) yr/.exec(card);
           A.t('add-page card shows down / rate / term of the option', !!m && +m[1] === lo.dp && +m[2] === lo.rate && Math.abs(+m[4] - lo.term / 12) <= 0.051 && !!m[3] === !!lo.io, 1, lo.id + ': ' + card);
@@ -558,7 +560,7 @@ exports.run = async function run(X) {
         }
       }
       /* 203(k) defaults */
-      await nav(page, '#add'); await clickSel(page, '[data-addtype="house"]'); await clickSel(page, '[data-pickloan="k203"]'); await clickSel(page, '[data-testid=confirm-add]'); await page.waitForTimeout(40);
+      await nav(page, '#add'); await clickSel(page, '[data-addtype="house"]'); await openLoansS(page); await clickSel(page, '[data-pickloan="k203"]'); await clickSel(page, '[data-testid=confirm-add]'); await page.waitForTimeout(40);
       let g = await page.evaluate(GRAB), h = g.state.houses[g.state.houses.length - 1]; const id = h.id, auto = (x) => Math.round((x.price + x.capex) * 1.15 / 1000) * 1000;
       A.t('203(k): rehab default is set and appraisal = (price + rehab) x 1.15', h.capex > 0 && h.arv === auto(h) && h.finCapex, 1.5, 'capex ' + h.capex + ' arv ' + h.arv);
       A.t('203(k): down$ and loan include the financed rehab', close(fnum(fld(g, 'h.' + id + '.down')), (h.price + h.capex) * h.dp / 100) && close(fnum(fld(g, 'h.' + id + '.loan')), (h.price + h.capex) * (1 - h.dp / 100) * (1 + h.mipUp / 100)), 1, fld(g, 'h.' + id + '.down') + ' / ' + fld(g, 'h.' + id + '.loan'));

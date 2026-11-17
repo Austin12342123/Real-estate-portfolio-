@@ -1,10 +1,10 @@
 <title>Real Estate Portfolio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/*STAMP*/html{--build:"b136bf0b"}/*ENDSTAMP*/
-:root{--bg:#f2f2f7;--card:#fff;--ink:#111;--mut:#6b6b72;--line:#e5e5ea;--acc:#0a5fd6;--ok:#167a41;--warn:#965600;--bad:#c4271f;--flash:#fff0a0;--bar:#dfe6f5;--field:#f2f2f7}
-:root[data-theme=dark]{color-scheme:dark;--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mut:#a0a0a8;--line:#2c2c2e;--acc:#5aa2ff;--ok:#32d27a;--warn:#ffb340;--bad:#ff7a72;--flash:#5a4a00;--bar:#2a3550;--field:#2c2c2e}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mut:#a0a0a8;--line:#2c2c2e;--acc:#5aa2ff;--ok:#32d27a;--warn:#ffb340;--bad:#ff7a72;--flash:#5a4a00;--bar:#2a3550;--field:#2c2c2e}}
+/*STAMP*/html{--build:"096f5b50"}/*ENDSTAMP*/
+:root{--bg:#f4efe4;--card:#fbf8f1;--ink:#16130e;--mut:#5d584d;--line:#d8cfba;--acc:#8a2b1f;--ok:#1d6b39;--warn:#8a5000;--bad:#a3261b;--flash:#f3e6a0;--bar:#e2d9c4;--field:#ebe4d2;--shd:0 1px 2px color-mix(in srgb,var(--ink) 8%,transparent),0 10px 28px color-mix(in srgb,var(--ink) 8%,transparent);--serif:ui-serif,"New York","Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman",serif;--sans:-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--rs:12px;--rm:16px;--rl:22px;--rx:28px;--rp:999px;--gxs:4px;--gs:8px;--gm:12px;--gl:16px;--gxl:24px;--gxx:32px;--fxs:12px;--fs:14px;--fm:16px;--fl:20px;--fxl:28px;--fhero:52px}
+:root[data-theme=dark]{color-scheme:dark;--bg:#12100d;--card:#1c1a16;--ink:#f3ede0;--mut:#aaa291;--line:#38332a;--acc:#e8957f;--ok:#5fd08a;--warn:#f0b050;--bad:#ff8d80;--flash:#5a4a00;--bar:#3a352c;--field:#2a2722;--shd:0 1px 2px color-mix(in srgb,var(--ink) 6%,transparent),0 10px 28px color-mix(in srgb,var(--ink) 4%,transparent)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#12100d;--card:#1c1a16;--ink:#f3ede0;--mut:#aaa291;--line:#38332a;--acc:#e8957f;--ok:#5fd08a;--warn:#f0b050;--bad:#ff8d80;--flash:#5a4a00;--bar:#3a352c;--field:#2a2722;--shd:0 1px 2px color-mix(in srgb,var(--ink) 6%,transparent),0 10px 28px color-mix(in srgb,var(--ink) 4%,transparent)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
@@ -66,7 +66,7 @@ svg.nw .ax{stroke:var(--line);stroke-width:1}svg.nw circle{fill:var(--ok);stroke
 .empty{text-align:center;padding:28px 8px;color:var(--mut)}
 .warnbox{background:color-mix(in srgb,var(--warn) 14%,var(--card));border-radius:10px;padding:8px 10px;font-size:13px;margin:8px 0 0}
 @keyframes fl{from{background:var(--flash)}to{background:transparent}}
-.flash{animation:fl .8s ease-out;border-radius:6px}
+.flash{animation:fl .8s ease-out;border-radius:var(--rs)}
 @media(prefers-reduced-motion:reduce){.flash{animation:none}}
 
 .kpi.sm b{font-size:16px}
@@ -182,7 +182,7 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
 
 .row select[data-sel]{background:transparent;padding:0 2px;border-radius:0;font-weight:600;max-width:190px}
 .row select[data-sel].notarget{color:var(--mut);font-weight:500}
-.loanopt{position:relative;padding-right:34px}.loanopt.on::after{content:'✓';position:absolute;top:8px;right:12px;color:var(--acc);font-weight:700}
+.loanopt{position:relative;padding-right:var(--gxl)}.loanopt.on::after{content:'✓';position:absolute;top:8px;right:var(--gs);color:var(--acc);font-weight:700}
 .loanopt small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .src{font-size:12px;padding:2px 8px;font-weight:600}
 
@@ -293,8 +293,6 @@ select.notarget{color:var(--mut);font-weight:400;font-size:14px}
 .row .xtog{flex:none;margin:0}
 
 .bn{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;margin-right:6px;border-radius:11px;background:var(--acc);color:#fff;font-size:12px;font-weight:700;vertical-align:2px}
-:root[data-theme=dark] .bn{color:#06121f}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .bn{color:#06121f}}
 .tgt{margin-top:4px}.tgtb{font-size:13px;min-height:44px}.tgtf{display:grid;grid-template-columns:1fr;gap:0}.tgt .note{margin:6px 0 0;font-size:12px}
 /* Bought / Planned sections */
 .vchip.ok{background:var(--field);color:var(--ink)}
@@ -464,6 +462,157 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 .iw input[type=date]{width:auto;min-width:150px;text-align:right;color:var(--ink);font:inherit;background:transparent;border:0}
 .imp .f{border-top:0}.imp-eq{margin:0 0 8px;line-height:1.35}.imp+.imp .f{border-top:1px solid var(--line)}
 /* end asset-page batch */
+/* ===== DESIGN SYSTEM v5 "Editorial Soft": serif headlines, ivory and ink, hairline rules, generous rounded corners. Tokens only: colours, radii (--rs 12, --rm 16, --rl 22, --rx 28, --rp pill), spacing (--gxs..--gxx), type (--fxs..--fhero), shadow (--shd). ===== */
+body{font-family:var(--sans);font-size:var(--fm);background:var(--bg);color:var(--ink)}
+#app{max-width:520px;padding-block:var(--gl) 64px}
+h1,h2,h3{font-family:var(--serif);font-weight:500;letter-spacing:-.01em}
+h1.disp{display:block;font-size:var(--fxl);line-height:1.1;margin:var(--gs) 0 var(--gm)}
+.mast{display:flex;align-items:center;justify-content:space-between;gap:var(--gs);min-height:44px;border-bottom:3px double var(--ink);padding-bottom:2px;margin-bottom:var(--gm)}
+.kick{font-size:var(--fxs);font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.mast .txtbtn{font-size:var(--fxs);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);padding:0 var(--gm);border-radius:var(--rp)}
+.mast .ic{font-size:22px;color:var(--ink)}
+.dek{font-family:var(--serif);font-style:italic;font-size:var(--fm);color:var(--mut);margin:0 0 var(--gl);line-height:1.4}
+/* cards, rows, groups */
+.card{background:var(--card);border-radius:var(--rl);padding:var(--gl);margin:0 0 var(--gm);box-shadow:var(--shd)}
+.card.plain{box-shadow:none;background:transparent;padding:0;margin:0}
+.card.cat{padding:0;border-radius:var(--rl)}
+.cath{min-height:56px;padding:var(--gm) var(--gl)}
+.catt b{font-family:var(--serif);font-size:var(--fl);font-weight:500}
+.catbody{padding:0 var(--gl) var(--gs);border-top:1px solid var(--line)}
+.cathw .cats{padding:0 var(--gl) var(--gm)}
+.chev{color:var(--acc)}
+.sec{font-size:var(--fxs);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.sec.cs{border-radius:var(--rl);background:var(--card);border:0;box-shadow:var(--shd);font-family:var(--serif);font-size:var(--fl);font-weight:500;padding:var(--gm) var(--gl);margin:var(--gm) 0}
+.row{padding:var(--gm) 0}
+.row.sel{border-radius:var(--rm)}
+.panel{border-radius:var(--rl)}
+.rw.lift{border-radius:var(--rl)}
+.rowbtn{display:flex;align-items:center;justify-content:space-between;gap:var(--gm);width:100%;min-height:52px;padding:0 var(--gs);background:none;border:0;border-top:1px solid var(--line);color:var(--ink);font-family:var(--serif);font-size:var(--fl);text-align:left}
+.rowbtn:first-child{border-top:0}
+.rowbtn>span{pointer-events:none}
+.rowbtn .k{font-family:var(--sans);font-size:var(--fs);color:var(--mut)}
+.rowbtn .v{flex:1;font-family:var(--serif);font-size:var(--fm);text-align:right}
+.rowbtn:focus-visible{outline:2px solid var(--acc);outline-offset:-2px;border-radius:var(--rm)}
+.rowbtn[aria-expanded=true] .chev{transform:rotate(90deg)}
+.dngrow{color:var(--bad);font-family:var(--sans);font-size:var(--fs);font-weight:600}
+.listg .confirm{margin:var(--gs)}
+.fold[hidden]{display:none}
+.foldc{padding:var(--gs) var(--gl)}
+.foldc .fold{padding-bottom:var(--gs)}
+.subh{display:flex;align-items:center;justify-content:space-between}.subh h3{margin:0;font-size:var(--fl)}
+/* buttons, chips, inputs, segmented */
+.btn{background:var(--ink);color:var(--card);border-radius:var(--rp);min-height:52px;padding:0 var(--gxl);font-size:var(--fs);font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.btn.lgbtn{display:block;width:100%;margin:var(--gl) 0 var(--gs)}
+.btn.plain{background:var(--field);color:var(--ink);border-radius:var(--rp)}
+.btn.ghost{border-radius:var(--rp)}
+.btn.danger{border-radius:var(--rp);background:var(--bad);color:var(--bg)}
+.btn.reorderbtn{min-height:44px;min-width:44px;padding:0 var(--gm);font-size:var(--fxs);background:var(--field);color:var(--ink);letter-spacing:.1em;display:inline-flex;align-items:center;justify-content:center;gap:var(--gxs)}
+.reorderbtn>span{pointer-events:none}.reorderbtn .ri{font-size:var(--fm)}
+@media(max-width:380px){.reorderbtn .rl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.kick .kl{display:none}}
+@media(max-width:560px){.kick .kl{display:none}}
+.mast .hb{gap:var(--gxs);align-items:center}.mast .reorderbtn{align-self:center;margin:0}
+.linkbtn{font-size:var(--fs);color:var(--acc)}
+.linkbtn.quiet{color:var(--mut);font-weight:500;margin:var(--gs) 0}
+.chip{border-radius:var(--rp);padding:2px var(--gm)}
+.chip.on{box-shadow:0 0 0 2px var(--acc) inset}
+.pbtn,.rm,.loanopt{border-radius:var(--rm)}
+.xtog{border-radius:var(--rp);background:var(--field);color:var(--ink);border-color:transparent}
+.iw{border-radius:var(--rm);background:var(--field)}
+.iw:focus-within{box-shadow:0 0 0 2px var(--acc)}
+select[data-sel],.loansel{border-radius:var(--rp)}
+textarea{border-radius:var(--rm)}
+.seg{background:var(--field);border-radius:var(--rp);padding:var(--gxs)}
+.seg button{border-radius:var(--rp);font-size:var(--fs);font-weight:600}
+.seg button.on{background:var(--ink);color:var(--card);box-shadow:none}
+.seg.pill{margin:var(--gs) 0 var(--gl)}
+.warnbox,.confirm,.fixes,.okbox,.migrate{border-radius:var(--rm)}
+.vrow.big{border-radius:var(--rl);padding:var(--gm) var(--gl)}
+.vchip{border-radius:var(--rp);padding:2px var(--gm)}
+.tag{border-radius:var(--rp)}
+.bar,.bar i,.seg2{border-radius:var(--rp)}
+.sheet{border-radius:var(--rx) var(--rx) 0 0;box-shadow:var(--shd)}
+.sheet .grab{border-radius:var(--rp)}
+.tip{border-radius:var(--rm)}
+.toast{border-radius:var(--rl)}
+.info span{border-radius:var(--rp)}
+/* hero (Planned) */
+.hero{padding:var(--gxl) var(--gl) var(--gl)}
+.hero .plantarget{margin:0 0 var(--gs);font-size:var(--fxs);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+.herokg{display:grid;grid-template-columns:1fr;gap:var(--gm)}
+.herokg .kpi:first-child small{font-family:var(--serif);font-style:italic;font-size:var(--fm);color:var(--mut)}
+.herokg .kpi:first-child b{font-family:var(--serif);font-weight:400;font-size:var(--fhero);line-height:1.05;letter-spacing:-.03em;margin-top:var(--gxs)}
+.herokg .kpi:first-child .sub{display:none}
+.herokg .kpi .alt{font-family:var(--serif);font-style:italic;font-size:var(--fs);margin-top:var(--gxs)}
+.herokg .kpi.sm{border-top:1px solid var(--line);padding-top:var(--gm)}
+.herokg .kpi.sm small{font-size:var(--fxs);letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.herokg .kpi.sm b{font-family:var(--serif);font-weight:400;font-size:var(--fxl)}
+.herokg .kpi.sm .sub{display:none}
+.hero .plan-line{font-family:var(--serif);font-style:italic;font-size:var(--fm);line-height:1.4;color:var(--ink);margin:var(--gm) 0}
+.hero .vrow.big{margin-top:var(--gs)}
+.checks{padding:var(--gs) var(--gl)}
+.chkh h2.chkt{font-size:var(--fl)}
+.listh{display:flex;align-items:center;justify-content:space-between;gap:var(--gm);margin:var(--gl) 0 var(--gs);border-top:1px solid var(--ink);padding-top:var(--gs)}
+.listh h2{margin:0;font-size:var(--fl)}
+/* rows: number, name, price, cash flow */
+.bn{background:none;color:var(--acc);font-family:var(--serif);font-style:italic;font-weight:400;font-size:var(--fl);min-width:28px;height:auto;margin-right:var(--gxs)}
+.row .addrbtn .addr{font-family:var(--serif);font-size:var(--fm);font-weight:500}
+.row .pay{font-size:var(--fxs)}
+.row .cfl b{font-family:var(--serif);font-size:var(--fm);font-weight:500}
+.row .cfl small{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.row .r2{margin-top:var(--gxs)}
+.row .locline{font-size:var(--fxs)}
+.cathw .cats .cnt{font-family:var(--serif);font-weight:400}
+/* Add flow */
+.lf{min-height:56px}
+.lf .lb{font-size:var(--fxs);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--acc)}
+.card.lg .f{border-top:1px solid var(--line)}.card.lg .f:first-child{border-top:0}
+.card.lg .iw{background:transparent;border-radius:0;padding:0}
+.card.lg .iw input{font-family:var(--serif);font-size:var(--fl)!important;width:60vw;max-width:260px;text-align:right}
+.card.lg input[type=text]{width:100%}
+.lrowb{flex-wrap:nowrap;padding:0}.lrowb .chev{margin-left:var(--gs)}.lrowb .k{font-size:var(--fxs);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--acc)}
+.card.lg input[type=text]{font-size:var(--fl)!important}
+.moreb{margin:var(--gs) 0}
+.moreg .lf{flex-direction:column;align-items:stretch;gap:var(--gxs);padding:var(--gs) 0}.moreg .iw{background:var(--field);border-radius:var(--rm);padding:0 var(--gm);width:100%}.moreg .iw input{width:100%;text-align:left;font-family:var(--serif)}
+.moreg{padding:var(--gs) 0}
+[data-testid=confirm-add]{position:static;box-shadow:none}
+.top h2{font-size:var(--fl)}
+/* desktop: a left summary column and the main area; narrow pages stay narrow */
+/* compact hero: one-line unit label, tighter rows so the list starts in the first screen */
+.hero{padding:var(--gl)}
+.hero .plantarget .note{text-transform:none;letter-spacing:0;font-weight:400;color:var(--mut);font-size:var(--fxs)}
+.hero .plantarget{margin:0 0 var(--gxs);letter-spacing:.1em}
+.herokg .kpi:first-child b{font-size:var(--fhero)}
+.hero .vrow.big{padding:var(--gs) var(--gm);min-height:56px}
+.checks.safe .leftbtn{display:none}
+.checks{position:relative;padding:var(--gxs) var(--gl)}
+.checks .chkok,.checks .chkflag{margin:0 0 var(--gs);font-size:var(--fs)}
+.foldc{padding:0 var(--gl)}
+.foldc .rowbtn{padding:0}
+.rowbtn{min-height:48px}
+h1.disp.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);margin:0}
+.herokg{gap:var(--gs)}
+.herokg .kpi.sm{display:flex;align-items:baseline;justify-content:space-between;gap:var(--gm);padding-top:var(--gs)}
+.herokg .kpi.sm small{display:inline-flex;align-items:center}
+.herokg .kpi.sm b{font-size:var(--fl);display:inline}
+.hero .plan-line{margin:var(--gs) 0}
+.herokg .kpi:first-child b{font-size:46px}
+.hero .vrow.big{min-height:52px}
+.mast{margin-bottom:var(--gs)}
+.seg.pill{margin:var(--gs) 0 var(--gm)}
+@media(min-width:900px){
+  #app[data-pg=planned],#app[data-pg=real],#app[data-pg=saved],#app[data-pg=add]{max-width:1120px;padding-inline:var(--gxx)}
+  #app[data-pg=planned] .pg{display:grid;grid-template-columns:minmax(340px,5fr) 7fr;gap:var(--gxl);align-items:start}
+  #app[data-pg=planned] .side{position:sticky;top:var(--gl)}
+  #app[data-pg=add]>*:not(.mast){max-width:560px}
+  .hero .herokg .kpi:first-child b{font-size:64px}
+  .row:hover{background:var(--field);border-radius:var(--rm)}
+  .row{cursor:grab}.rowbtn:hover,.cath:hover{background:var(--field)}
+  .btn:hover{opacity:.9}
+}
+@media(max-width:360px){.card:not(.checks){padding:var(--gm)}}
+@media(prefers-reduced-motion:no-preference){.card,.rowbtn,.btn{transition:background-color .15s,opacity .15s}}
+
+/* end design system v5 */
 /* examples: the Add screen's 'Start from an example' (same tokens and tap sizes) */
 .exlink{margin:0 0 12px}
 .exuse{margin:4px 4px 16px;line-height:1.25}
@@ -485,7 +634,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 </style>
 <main id="app" aria-live="polite"></main>
 <script>
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'b136bf0b'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'096f5b50'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -575,7 +724,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     const h = Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), type, status: 'planned', extra: 0, driver: 'extra', wait: 24, liens: 0, paid: 0, buyIn: 0,
       target: '', growth: null, io: false, closingPct: null, loanId: '', dp: 20, rate: 6.75, term: 360, mat: 0, refiRate: null, refiTerm: null,
       capex: 0, capexMonths: 6, arv: 0, arvAuto: false, gain: null, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false,
-      kind: 'single', units: 1, pack: false, mfRes: 300, mfOther: 0, mgmtPct: null, maintPct: null, boughtOn: null }, DEFAULTS[type]); /* kind 'multi' = a building or pack of houses with units >= 2 (still type 'house'); mfRes = replacement reserve per unit per year, mfOther = other owner-paid costs per month, mgmtPct / maintPct = this asset's own management / repairs % (null = the Assumptions rate) */
+      kind: 'single', units: 1, pack: false, mfRes: 300, mfOther: 0, mgmtPct: null, maintPct: null, boughtOn: null, jobPay: null }, DEFAULTS[type]); /* kind 'multi' = a building or pack of houses with units >= 2 (still type 'house'); mfRes = replacement reserve per unit per year, mfOther = other owner-paid costs per month, mgmtPct / maintPct = this asset's own management / repairs % (null = the Assumptions rate) */
     applyLoan(h, loanId || (o && o.kind === 'multi' ? mfFirst(+o.units || 2, !!o.pack) : loansFor(type)[0].id));
     Object.assign(h, o || {});
     if (type === 'business' && o && o.rent !== undefined) { if (o.revenue === undefined) h.revenue = null; if (o.margin === undefined) h.margin = null; } /* a business made from its owner profit (the seeded ones) has no revenue of its own: the page shows rent / margin */
@@ -794,7 +943,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     hs.forEach((h) => (V[h.id] = view(S, h)));
     const planM = Math.round(Math.max(1, g.planYears || 20) * 12), hz = isFinite(+g.horizon) ? +g.horizon : GDEF.horizon, TS = Math.max(600, Math.min(2400, Math.round(hz)));
     const queue0 = hs.filter((h) => h.status !== 'owned'), skipped = {}, hel = isFinite(+g.hrate) ? +g.hrate : GDEF.hrate;
-    let P0, sellAt, mergeAt, dr, cur, exits, fund, readyAt, cashA, outsideA, reinv, bought, blocked, BAL, PAY, RAT, LS, AUTO, JOBX, CALLS, FUT = null, JS, JU, JLN, JC, JLO, LQ, SALET, best;
+    let P0, sellAt, mergeAt, dr, cur, exits, fund, readyAt, cashA, outsideA, reinv, bought, blocked, BAL, PAY, RAT, LS, AUTO, JOBX, CALLS, FUT = null, JS, JU, JLN, JC, JLO, JSH, LQ, SALET, best;
     const exitTimes = (h) => { const p = P0[h.id]; sellAt[h.id] = Infinity; mergeAt[h.id] = Infinity; if (!isFinite(p)) return;
       const m = Math.max(Math.round(h.exitMonth || 0), p + 1); if (h.exit === 'sell') sellAt[h.id] = m; else if (h.exit === 'merge') mergeAt[h.id] = m; };
     /* state of an asset at month t, ignoring whether it has been sold (hl = its line draw this month) */
@@ -846,7 +995,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
       P0 = {}; sellAt = {}; mergeAt = {}; dr = {}; cur = {}; exits = {}; fund = {}; readyAt = {}; bought = []; blocked = null; best = {};
       BAL = {}; PAY = {}; RAT = {}; LS = {}; AUTO = {}; JOBX = {}; CALLS = new Array(TS + 1).fill(0);
       cashA = new Array(TS + 1).fill(0); outsideA = new Array(TS + 1).fill(0); reinv = new Array(TS + 1).fill(0);
-      JS = new Array(TS + 1).fill(0); JU = new Array(TS + 1).fill(0); JLN = new Array(TS + 1).fill(0); JC = new Array(TS + 1).fill(0); JLO = new Array(TS + 1).fill(0); LQ = new Array(TS + 1).fill(0); SALET = new Array(TS + 1).fill(0);
+      JS = new Array(TS + 1).fill(0); JU = new Array(TS + 1).fill(0); JLN = new Array(TS + 1).fill(0); JC = new Array(TS + 1).fill(0); JLO = new Array(TS + 1).fill(0); JSH = new Array(TS + 1).fill(0); LQ = new Array(TS + 1).fill(0); SALET = new Array(TS + 1).fill(0);
       hs.forEach((h) => { cur[h.id] = 0; P0[h.id] = h.status === 'owned' ? 0 : Infinity; exitTimes(h); if (h.status === 'owned') { bought.push(h); dr[h.id] = new Array(TS + 1).fill(0); startLoan(h, 0); } });
       const queue = queue0.filter((h) => !skipped[h.id]); let C = 0, out = 0, qi = 0, L = pp ? +pp.cash || 0 : 0, outPrev = 0;
       const autoPay = g.autoPay !== false, infl = pp ? (pp.inflation || 0) / 100 : 0, apy = pp ? (pp.cashApy || 0) / 1200 : 0;
@@ -908,10 +1057,15 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
         if (!pending && pCand > 0.005 && scale > 0 && anyLoan) { const r = spread(pCand * scale, snap.map((x2) => ({ id: x2.h.id, w: Math.max(0, x2.inc - x2.sched - x2.hi), cap: cap[x2.h.id] || 0 }))); Object.keys(r.got).forEach((id) => { AUTO[id][t] = r.got[id]; cap[id] -= r.got[id]; pSpent += r.got[id]; }); }
         if (cf > 0) reinv[t] = cf - (x - pSpent);
         if (jCand * scale > 0.005) {
-          const J = jCand * scale; let y = payLine(J); JLN[t] = J - y;
+          const J0 = jCand * scale; let J = J0, want = 0;
+          /* your own amount for a home (jobPay, set on its page) is paid to that loan first, never more than the loan, never more than the job money there is; what it could not get is recorded (JSH) so the page can warn */
+          const jfac = Math.pow(1 + infl, t / 12); /* the amount is in today's dollars (2026*), like everything the page shows; the plan works in future dollars, so it grows with the cost increase */
+          snap.forEach((x2) => { const jp0 = x2.h.jobPay, jp = jp0 === null || jp0 === undefined ? jp0 : jp0 * jfac; if (jp === null || jp === undefined || !(cap[x2.h.id] > 0.005)) return; want += jp; const give = Math.min(jp, cap[x2.h.id], J); if (give > 0) { JOBX[x2.h.id][t] += give; cap[x2.h.id] -= give; JLO[t] += give; J -= give; } });
+          const fixedPaid = J0 - J; JSH[t] = Math.max(0, want - fixedPaid);
+          let y = payLine(J); JLN[t] = J - y;
           if (pending) { C += y; JC[t] = y; y = 0; }
-          else if (y > 0.005 && anyLoan) { const r = spread(y, snap.map((x2) => ({ id: x2.h.id, w: 1, cap: cap[x2.h.id] || 0 }))); Object.keys(r.got).forEach((id) => { JOBX[id][t] = r.got[id]; cap[id] -= r.got[id]; JLO[t] += r.got[id]; }); y = r.left; }
-          JU[t] = J - y;
+          else if (y > 0.005 && anyLoan) { const r = spread(y, snap.map((x2) => ({ id: x2.h.id, w: x2.h.jobPay === null || x2.h.jobPay === undefined ? 1 : 0, cap: cap[x2.h.id] || 0 }))); Object.keys(r.got).forEach((id) => { JOBX[id][t] += r.got[id]; cap[id] -= r.got[id]; JLO[t] += r.got[id]; }); y = r.left; }
+          JU[t] = J0 - y;
         }
         if (pp) { L += inc - liv - dbt - Xu + port - (t > 0 ? reinv[t - 1] : 0) - JU[t] + intr + cI - oT - (out - outPrev) - SALET[t]; LQ[t] = L; }
         outPrev = out;
@@ -974,7 +1128,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     hs.forEach((h) => { const p = P0[h.id]; if (!isFinite(p)) { loanEnd[h.id] = Infinity; return; } let e = Infinity; for (let t = p; t <= TS; t++) if (!(BAL[h.id][t] > 0.005)) { e = t; break; } loanEnd[h.id] = e; });
     const shareAt = (A) => (id, t) => (A[id] ? A[id][Math.max(0, Math.min(TS, Math.round(t)))] || 0 : 0);
     const firstPos = (A) => (id) => { const a = A[id]; if (!a) return -1; for (let t = 0; t <= TS; t++) if (a[t] > 0.005) return t; return -1; };
-    const jobs = { surplus: JS.slice(0, T + 1), used: JU.slice(0, T + 1), line: JLN.slice(0, T + 1), cash: JC.slice(0, T + 1), loans: JLO.slice(0, T + 1), liquid: LQ.slice(0, T + 1) };
+    const jobs = { short: JSH.slice(0, T + 1), surplus: JS.slice(0, T + 1), used: JU.slice(0, T + 1), line: JLN.slice(0, T + 1), cash: JC.slice(0, T + 1), loans: JLO.slice(0, T + 1), liquid: LQ.slice(0, T + 1) };
     const rows = queue0.map((h) => { const m = P0[h.id], r = { id: h.id, target: h.id, start: prevM, locM: isFinite(m) ? Math.max(0, m - prevM) : Infinity, end: m, ok: isFinite(m), funds: funds[h.id], ready: trust[h.id].ready }; if (isFinite(m)) prevM = Math.max(prevM, m); return r; });
     let worst = { dti: 0, month: 0 }; for (let t = 0; t <= T; t++) if (s.dti[t] > worst.dti) worst = { dti: s.dti[t], month: t };
     let extraLater = 0; hs.forEach((h) => { const v = V[h.id]; if (isFinite(P0[h.id]) && P0[h.id] > 0 && v.L > 0 && v.payoff > 0) extraLater += v.X; });
@@ -992,7 +1146,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
      realPlan() returns the plan with every dollar figure of a future month converted that way (totals and rows are converted with the same factor, so a total is still the sum of its rows). The plan itself stays in pl.raw. */
   const dfac = (S, m) => Math.pow(1 + (((S && S.p && S.p.inflation) || 0) / 100), Math.max(0, +m || 0) / 12);
   const PL_K = ['nw', 'monthly', 'extra', 'noi', 'ds', 'cf', 'cfx', 'debt', 'value', 'rent', 'dsti', 'outside', 'cash', 'intr', 'dep', 'txRE', 'txBiz'];
-  const AS_K = ['equity', 'value', 'debt', 'payment', 'cf', 'income', 'extra'], PO_K = ['room', 'drawn', 'head', 'cf', 'tax', 'gm', 'sweep', 'cash'], EX_K = ['proceeds', 'price', 'net', 'dep', 'cost', 'tax', 'cashIn', 'profit'], JB_K = ['surplus', 'used', 'line', 'cash', 'loans', 'liquid'];
+  const AS_K = ['equity', 'value', 'debt', 'payment', 'cf', 'income', 'extra'], PO_K = ['room', 'drawn', 'head', 'cf', 'tax', 'gm', 'sweep', 'cash'], EX_K = ['proceeds', 'price', 'net', 'dep', 'cost', 'tax', 'cashIn', 'profit'], JB_K = ['short', 'surplus', 'used', 'line', 'cash', 'loans', 'liquid'];
   const scaleKeys = (o, ks, f) => { const c = Object.assign({}, o); ks.forEach((k) => { if (typeof c[k] === 'number') c[k] = c[k] / f; }); return c; };
   function realPlan(S, pl) {
     if (!pl) pl = plan(S); if (pl.raw) return pl;
@@ -1325,6 +1479,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
       h.mfRes = isFinite(+h.mfRes) && h.mfRes !== null && h.mfRes !== '' ? Math.max(0, +h.mfRes) : 300; h.mfOther = isFinite(+h.mfOther) && h.mfOther !== null && h.mfOther !== '' ? Math.max(0, +h.mfOther) : 0;
       ['mgmtPct', 'maintPct'].forEach((k) => { h[k] = h[k] === null || h[k] === '' || h[k] === undefined || !isFinite(+h[k]) ? null : Math.max(0, +h[k]); });
       h.boughtOn = h.status === 'owned' && typeof h.boughtOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(h.boughtOn) && isFinite(Date.parse(h.boughtOn)) ? h.boughtOn : null; /* the day the user marked it bought (YYYY-MM-DD); old owned assets have none: the page says 'date not recorded' */
+      h.jobPay = h.jobPay === null || h.jobPay === '' || h.jobPay === undefined || !isFinite(+h.jobPay) ? null : Math.max(0, +h.jobPay); /* your job money sent to this home's loan each month; null = the plan's own split (default) */
       if (h.type === 'business') h.mgmtPct = null;
       ['mipUp', 'mipAnn'].forEach((k) => { h[k] = isFinite(+h[k]) ? Math.max(0, +h[k]) : 0; }); h.finCapex = !!h.finCapex; h.ownerOcc = !!h.ownerOcc;
       if (h.term < 12 && !h.io) h.term = 360; h.io = !!h.io;
@@ -1880,13 +2035,17 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     return { SAFEKEY, DIAGKEY, SAFE_MAX, SAFE_BYTES, EV_MAX, ACT_MAX, DIAG_BYTES, REPORT_MAX, URL_MAX, ISSUE, hash, idsHash, fingerprint, okState, safeRead, safeWrite, safeAdd, safeDaily, safeInfo, replacedCheck, restoreCandidate, EXPLAIN, checks, anomalies, plannedParts, scrub, report, parseReport, issueUrl, CODE };
   })();
   const CF_TARGET = 1300000; /* the user's cash-flow target: $1.3M a month AFTER TAX, in today's dollars (2026*), at the plan end */
-  const E = { CF_TARGET, Diag, FEAS, feasible, todayTotals, checkList, shortfall, moveTo, plannedIds, numbering, buyKey, EXAMPLES, EXKEY, EXV, EXF, exFields, exLabel, exLoanOk, exCheck, exEff, exEffective, exVal, exPrune, exClean, exOverrides, exSet, exRead, exWrite, exLoad, exCommit, exExport, exImport, exClearAll, exDraftSet, exDirty, exWarnings, exFmt, exampleShipped, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, mgmtAmt, ARV_K, autoArv, arvIsAuto, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  /* Your job money in the trust: the amounts you set per home (h.jobPay) against the job pay left after living costs. null = the plan's own split (the default). Never cuts anything silently: 'over' says the amounts add up to more than there is. */
+  const jobDefault = (S, id, pl) => { const h0 = (S.houses || []).find((q) => q.id === id); if (!h0) return { amount: 0, from: -1 }; let q = plan(S); /* the raw plan (future dollars), whatever plan the caller holds */ if ((S.houses || []).some((x) => x.jobPay !== null && x.jobPay !== undefined)) { const S2 = JSON.parse(JSON.stringify(S)); S2.houses.forEach((x) => { x.jobPay = null; }); q = plan(S2); } const f = q.jobFrom(id); return { amount: f >= 0 ? q.jobAt(id, f) / dfac(S, f) : 0, from: f }; }; /* today's dollars (2026*), the unit the box takes */
+  const jobMoney = (S, pl) => { const surplus0 = (pl.jobs && pl.jobs.surplus[0]) || 0, set = (S.houses || []).filter((h) => h.jobPay !== null && h.jobPay !== undefined), assigned = set.reduce((a, h) => a + h.jobPay, 0), sh = (pl.jobs && pl.jobs.short) || [], shortMonths = sh.filter((v) => v > 0.5).length;
+    return { surplus0, assigned, count: set.length, over: assigned > surplus0 + 0.5, shortMonths, firstShort: sh.findIndex((v) => v > 0.5), short0: sh[0] || 0 }; };
+  const E = { jobMoney, jobDefault, CF_TARGET, Diag, FEAS, feasible, todayTotals, checkList, shortfall, moveTo, plannedIds, numbering, buyKey, EXAMPLES, EXKEY, EXV, EXF, exFields, exLabel, exLoanOk, exCheck, exEff, exEffective, exVal, exPrune, exClean, exOverrides, exSet, exRead, exWrite, exLoad, exCommit, exExport, exImport, exClearAll, exDraftSet, exDirty, exWarnings, exFmt, exampleShipped, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, mgmtAmt, ARV_K, autoArv, arvIsAuto, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
 <script>
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'b136bf0b'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'096f5b50'});/*ENDSTAMP*/
 /* Plain-language definitions shown by the "i" buttons. t = title, b = what it means, e = a short example (optional).
    Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
 (function (root) {
@@ -1907,6 +2066,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     rate: { t: 'Interest rate', b: 'The yearly cost of borrowing, as a percent of what you owe. A higher rate means a bigger monthly payment. Use the rate from your loan quote.' },
     term: { t: 'Term (years)', b: 'How long you have to repay the loan. A 30-year loan has a lower monthly payment. A 15-year loan costs more each month but saves a lot of interest.' },
     closing: { t: 'Closing costs', b: 'One-time fees to finish the purchase: lender fees, title and legal work, the appraisal, and recording. Usually about 2% to 5% of the price.' },
+    jobmoney: { t: 'Your job money in the trust', b: "A monthly amount of your own pay, left after living costs, sent to this home's loan to pay it down sooner. Blank: the plan splits your spare pay across your loans itself. Type an amount to fix it for this home. All homes together cannot use more than your job leaves; the app warns you instead of cutting.", e: "Example: your job leaves $1,000 a month. Put $300 here and this loan gets $300 every month, so it can be paid off years sooner." },
     extra: { t: 'Extra payment', b: 'Money you add each month on top of the required payment. All of it goes to the loan balance, so the loan is paid off sooner and you pay less interest.' },
     payoff: { t: 'Paid off in', b: 'How many months until the loan balance reaches zero. Type a number and the app works out the extra payment needed to get there.' },
     loanoption: { t: 'Loan option', b: 'A type of loan with its own typical down payment, rate, term and rules. Picking one fills in those numbers, and you can still edit them. "Custom terms" means you set them yourself.' },
@@ -2061,7 +2221,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 
 </script>
 <script>
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'b136bf0b'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'096f5b50'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
@@ -2101,7 +2261,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     if (!healTried()) { logEv('heal', 'mixed versions (' + why + '): purging caches, removing the service worker, reloading once'); healReload(); return; }
     MIXED = true; logEv('heal', 'still mixed after one reload (' + why + '): not reloading again');
   }
-  let S, UI = { unit: 'today', tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', addKind: 'single', addUnits: 2, addPack: false, addEx: '', view: 'plan', openOn: 'planned', addOwned: false };
+  let S, UI = { unit: 'today', tab: 'timeline', open: false, coll: { drivers: true }, hideLegend: false, addType: 'house', addLoan: '', addKind: 'single', addF: {}, addLoanOpen: false, addMore: false, addUnits: 2, addPack: false, addEx: '', view: 'plan', openOn: 'planned', addOwned: false };
   let RAW0 = null; try { RAW0 = localStorage.getItem(KEY); } catch (e) {}
   const HAD0 = RAW0 != null && RAW0 !== '';
   try { S = JSON.parse(RAW0); } catch (e) { S = null; }
@@ -2481,11 +2641,11 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     const sections = plannedSecs + soldSecP;
     const dueTot = ownedAll.reduce((a2, h) => a2 + pl.V[h.id].B0, 0), lineTot = ownedAll.reduce((a2, h) => a2 + pl.V[h.id].head0, 0);
     const lastPayoff = Math.max(0, ...ownedAll.filter((h) => pl.V[h.id].B0 > 0.5).map((h) => pl.loanEnd[h.id]));
-    const head = `<h1>Portfolio <span class="hb">${page === 'planned' ? '<button class="txtbtn dng" data-clear-ask data-testid="clear-plan-btn">Remove</button>' : ''}<button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></h1>
-        ${page === 'planned' && S.houses.filter((x) => x.status !== 'owned').length > 1 ? '<button type="button" class="btn reorderbtn" data-go="order" data-testid="reorder-main-btn">Reorder buy order</button>' : ''}
+    const head = `<div class="mast"><span class="kick"><span class="kl">The </span>Portfolio<span class="kl"> Review</span></span><span class="hb">${page === 'planned' && S.houses.filter((x) => x.status !== 'owned').length > 1 ? '<button type="button" class="btn reorderbtn" data-go="order" data-testid="reorder-main-btn" aria-label="Reorder the buy order"><span class="ri" aria-hidden="true">⇅</span><span class="rl">Reorder</span></button>' : ''}<button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></div><h1 class="disp sr">Portfolio</h1>
         ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
-    <div class="seg pagetabs" role="tablist" aria-label="Portfolio pages" data-testid="page-tabs">${[['planned', 'Planned'], ['real', 'Real'], ['saved', 'Saved']].map(([k, l]) => `<button type="button" role="tab" id="tab-${k}" data-page="${k}" class="${page === k ? 'on' : ''}" aria-selected="${page === k}" data-testid="tab-${k}">${l}</button>`).join('')}</div>${page === 'planned' ? notesHtml() : ''}${page === 'planned' && ask === 'clearplan' ? clearBox() : ''}${page === 'planned' && UI.migNote ? `<div class="migrate" role="status" data-testid="migrate-note"><span>Your earlier portfolio is saved in Saved as “${esc(UI.migNote)}”.</span><button type="button" class="chip link" data-mig-dismiss data-testid="migrate-dismiss" aria-label="Dismiss this note">Dismiss</button></div>` : ''}`;
-    const tail = `${page === 'planned' && S.houses.filter((x) => x.status !== 'owned').length > 1 ? '<button type="button" class="linkbtn leftbtn" data-go="order" data-testid="buy-order-link">Buy order: change which asset is bought first ›</button>' : ''}<button class="linkbtn" data-go="import/new" data-testid="import-link">Import from a listing</button>`; /* the headline numbers and the asset list come first; the secondary actions (buy order, import) follow */
+    <div class="seg pagetabs pill" role="tablist" aria-label="Portfolio pages" data-testid="page-tabs">${[['planned', 'Planned'], ['real', 'Real'], ['saved', 'Saved']].map(([k, l]) => `<button type="button" role="tab" id="tab-${k}" data-page="${k}" class="${page === k ? 'on' : ''}" aria-selected="${page === k}" data-testid="tab-${k}">${l}</button>`).join('')}</div>${page === 'planned' ? notesHtml() : ''}${page === 'planned' && UI.migNote ? `<div class="migrate" role="status" data-testid="migrate-note"><span>Your earlier portfolio is saved in Saved as “${esc(UI.migNote)}”.</span><button type="button" class="chip link" data-mig-dismiss data-testid="migrate-dismiss" aria-label="Dismiss this note">Dismiss</button></div>` : ''}`;
+    /* the quiet group at the bottom of Planned: the actions that are not the plan itself */
+    const manage = page === 'planned' ? `<section class="card listg" data-testid="manage">${S.houses.filter((x) => x.status !== 'owned').length > 1 ? '<button type="button" class="rowbtn" data-go="order" data-testid="buy-order-link"><span>Change the buy order</span><span class="chev" aria-hidden="true">›</span></button>' : ''}<button class="rowbtn" data-go="import/new" data-testid="import-link"><span>Import from a listing</span><span class="chev" aria-hidden="true">›</span></button><button class="rowbtn dngrow" data-clear-ask data-testid="clear-plan-btn"><span>Remove all planned assets</span></button>${ask === 'clearplan' ? clearBox() : ''}</section>` : '';
     if (page === 'saved') return head + savedPage(pl);
     /* ---------- Real: only what you have bought. Its totals are the sums of the rows shown (plan-end numbers, like every row) ---------- */
     if (page === 'real') {
@@ -2509,7 +2669,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     /* ---------- Planned (the default page): the plan and its math ---------- */
     const nOwn0 = S.houses.filter((x) => x.status === 'owned').length;
     /* with nothing planned there is no plan to grade: the owned assets are shown and judged on Real, so no zero KPIs, verdict, Checks or target line here */
-    if (empty || nOwn0 === S.houses.length) return head + `<p class="note" style="margin:0 4px 8px" data-testid="empty-note">${empty ? 'Nothing added yet.' : 'Nothing planned yet.'} Add a home, a commercial property or a business to see your plan.</p>${nOwn0 ? `<p class="note" style="margin:0 4px 8px" data-testid="empty-bought-note">${nOwn0} bought asset${nOwn0 === 1 ? ' is' : 's are'} counted on Real. <button type="button" class="linkbtn" data-page="real" data-testid="empty-real-link">Open Real</button></p>` : ''}${sections}<button class="linkbtn" data-go="import/new" data-testid="import-link">Import a home from a listing</button>`;
+    if (empty || nOwn0 === S.houses.length) return head + `<p class="note" style="margin:0 4px 8px" data-testid="empty-note">${empty ? 'Nothing added yet.' : 'Nothing planned yet.'} Add a home, a commercial property or a business to see your plan.</p>${nOwn0 ? `<p class="note" style="margin:0 4px 8px" data-testid="empty-bought-note">${nOwn0} bought asset${nOwn0 === 1 ? ' is' : 's are'} counted on Real. <button type="button" class="linkbtn" data-page="real" data-testid="empty-real-link">Open Real</button></p>` : ''}${sections}${manage}`;
     const c3 = (label, a, b, c, f, cls) => `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td data-k="c-${label}-b">${f(b)}</td><td class="${cls || ''}" data-k="c-${label}-c"><b>${f(c)}</b></td></tr>`;
     const restSn = pl.snap.filter((x) => !ownSn.includes(x)), td = E.todayTotals(S, pl, restSn.map((x) => x.id)), bt = (tp) => { const rs2 = restSn.filter((x) => x.type === tp), o = rs2.reduce((a, x) => ({ n: a.n + 1, value: a.value + x.value, equity: a.equity + x.equity }), { n: 0, value: 0, equity: 0 }); o.cf = E.todayTotals(S, pl, rs2.map((x) => x.id)).cf; return o; }; /* value and equity are at the plan end (2026* dollars); cash flow is today's (2026*) */
     const bRow = (label, o, cls) => `<tr class="${cls || ''}"><td>${label}</td><td>${$c(o.value)}</td><td>${$c(o.equity)}</td><td class="${o.cf < 0 ? 'bad' : ''}">${$cs(o.cf)}</td></tr>`;
@@ -2529,7 +2689,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     CDEF.checks = chkAll; /* all safe: the rows stay folded behind Details; something to look at: they start open. The Details button is there in both states and never moves. */
     const nFlag = chkRows.filter((x) => x.lvl !== 'ok').length;
     const chkList = chkRows.map((x) => `<div class="chk lv-${x.lvl}" data-testid="${x.id}" data-lvl="${x.lvl}"><div class="ct"><b>${x.label}</b>${infoBtn(x.info)}<span class="cv lv-${x.lvl}">${x.val}</span></div><small>${x.sub}</small></div>`).join('');
-    const checks = `<section class="card checks ${chkAll ? 'safe' : chkWorst === 2 ? 'over' : 'caution'}" data-testid="checks" data-n="${chkRows.length}"><div class="chkh"><h2 class="chkt">Checks${infoBtn('checks')}</h2><button type="button" class="chip link chkbtn" data-coll="checks" aria-expanded="${chkOpen}" data-testid="checks-details">Details ${chkOpen ? '▾' : '▸'}</button></div>${chkAll ? `<p class="chkok" data-testid="checks-ok">✓ All ${chkRows.length} checks are in the safe range</p>` : `<p class="chkflag ${chkWorst === 2 ? 'bad' : 'warn'}" data-testid="checks-flag">${nFlag} of ${chkRows.length} to look at</p>`}${chkOpen ? `<div class="chklist" data-testid="checks-list">${chkList}</div>` : ''}${fin ? '<button type="button" class="linkbtn leftbtn" data-go="finances" data-testid="checks-finances">Open Finances ›</button>' : ''}</section>`;
+    const checks = `<section class="card checks ${chkAll ? 'safe' : chkWorst === 2 ? 'over' : 'caution'}" data-testid="checks" data-n="${chkRows.length}"><div class="chkh"><h2 class="chkt">Health${infoBtn('checks')}</h2><button type="button" class="chip link chkbtn" data-coll="checks" aria-expanded="${chkOpen}" data-testid="checks-details">Details ${chkOpen ? '▾' : '▸'}</button></div>${chkAll ? `<p class="chkok" data-testid="checks-ok">✓ All ${chkRows.length} checks are in the safe range</p>` : `<p class="chkflag ${chkWorst === 2 ? 'bad' : 'warn'}" data-testid="checks-flag">${nFlag} of ${chkRows.length} to look at</p>`}${chkOpen ? `<div class="chklist" data-testid="checks-list">${chkList}</div>` : ''}${fin ? '<button type="button" class="linkbtn leftbtn" data-go="finances" data-testid="checks-finances">Open Finances ›</button>' : ''}</section>`;
     const badHomes = S.houses.filter((h) => (h.type || 'house') === 'house' && pl.V[h.id].cf < 0);
     const homeWarn = badHomes.length ? `<div class="warnbox" data-testid="home-warning">⚠ Homes must cash flow positive. Losing money each month at today's terms: ${badHomes.map((h) => esc(h.addr)).join(', ')}.</div>` : '';
     const tab = UI.tab, nb = S.houses.filter((h) => h.status === 'planned' && isFinite(pl.purchase[h.id])).sort((a, b) => pl.purchase[a.id] - pl.purchase[b.id])[0];
@@ -2541,24 +2701,30 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     const bar = `<div class="bar"><i class="${sn.cltv > g.cap ? 'over' : ''}" style="width:${Math.min(100, (sn.cltv / g.cap) * 100)}%"></i></div><div class="cap"><span data-k="cltv">Debt ${r(sn.cltv)}% of value</span><span>cap ${g.cap}%</span></div>`;
     const plSn = pl.snap.filter((x) => x.type !== 'cash'), isOwnSn = (x) => S.houses.some((h) => h.id === x.id && h.status === 'owned'), bCf = plSn.filter(isOwnSn).reduce((a, x) => a + x.cf, 0), bN = plSn.filter(isOwnSn).length;
     return head + `
-    <section class="card" data-testid="summary"><p class="plantarget" data-testid="plan-target"><b data-testid="unit-label">${isToday() ? '2026*' : 'Future dollars'}</b>${infoBtn('units')}<span class="note" data-testid="unit-foot"> ${isToday() ? '* today\'s dollars, no inflation' : 'each figure in the dollars of its own year'}</span></p>
-      ${(() => { const pe = fin && fin.kpis && fin.kpis.planEnd, v = pe ? (isToday() ? pe.cfAfter : pe.cfAfter / E.dfac(S, pe.month)) : null; /* progress = the AFTER-TAX cash flow at plan end, always in today's dollars (2026*) */ return `<p class="plantarget" data-testid="cf-target"><b data-testid="cf-target-label">After-tax cash flow target $1.3M/mo (2026*)</b>${v === null || !isFinite(v) ? '' : `<span class="note" data-testid="cf-progress" data-pct="${Math.round(v / E.CF_TARGET * 100)}"> Plan end, after tax: ${$f(v)}/mo, ${Math.round(v / E.CF_TARGET * 100)}% of the target</span>`}</p>`; })()}<div class="kg">
+    <div class="pg"><aside class="side">
+    <section class="card hero" data-testid="summary"><p class="plantarget" data-testid="plan-target"><b data-testid="unit-label">${isToday() ? '2026*' : 'Future dollars'}</b>${infoBtn('units')}<span class="note" data-testid="unit-foot"> ${isToday() ? '* today\'s dollars, no inflation' : 'each figure in the dollars of its own year'}</span></p>
+      <div class="kg herokg">
       ${kpi('kpi-networth', 'Net worth', $f(sn.nw), `${nPl} planned asset${nPl === 1 ? '' : 's'}`, '', 0, `${$f(snAlt.nw)} at year ${yrs} (${altLbl()})`)}
+      ${kpi('kpi-cashflow', 'Cash flow / mo', $s(td.cf), td.cf < -0.5 ? 'Negative income' : 'Positive total income', td.cf < -0.5 ? 'bad' : '', 1, '')}</div>
+      <p class="plan-line${extraCash > 0.5 ? ' warn' : ''}" data-testid="plan-headline">${headline}</p>
+      ${fin ? `<div class="vrow big ${affS}" data-go="finances" data-testid="afford-line" role="link"><span class="vq"><b>Can I afford this?</b><span class="note">${esc(affS !== fin.status ? 'Lenders may decline a loan around ' + mond(pl.worst.month) + '.' : fin.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, ''))}</span></span><span class="vgo"><span class="vchip ${affS}" data-testid="afford-chip" data-lvl="${affS === 'yes' ? 'ok' : affS === 'tight' ? 'warn' : 'bad'}">${VL[affS]}</span> ›</span></div>` : ''}</section>
+    ${checks}
+    <section class="card foldc" data-testid="more-figures">${(() => { CDEF.more = true; const mo = !(UI.coll.more === undefined ? CDEF.more : UI.coll.more); return `<button type="button" class="rowbtn" data-coll="more" aria-expanded="${mo}" data-testid="more-toggle"><span>More figures</span><span class="chev" aria-hidden="true">›</span></button><div class="fold" data-testid="more-body"${mo ? '' : ' hidden'}>`; })()}
+      ${(() => { const pe = fin && fin.kpis && fin.kpis.planEnd, v = pe ? (isToday() ? pe.cfAfter : pe.cfAfter / E.dfac(S, pe.month)) : null; /* progress = the AFTER-TAX cash flow at plan end, always in today's dollars (2026*) */ return `<p class="plantarget" data-testid="cf-target"><b data-testid="cf-target-label">After-tax cash flow target $1.3M/mo (2026*)</b>${v === null || !isFinite(v) ? '' : `<span class="note" data-testid="cf-progress" data-pct="${Math.round(v / E.CF_TARGET * 100)}"> Plan end, after tax: ${$f(v)}/mo, ${Math.round(v / E.CF_TARGET * 100)}% of the target</span>`}</p>`; })()}<div class="kg">
       ${kpi('kpi-monthly', 'Total monthly payments', $f(td.payment), td.cf < -0.5 ? 'Negative income' : 'Positive total income', '', 0, '')}
-      ${kpi('kpi-cashflow', 'Cash flow / mo', $s(td.cf), td.cf < -0.5 ? 'Negative income' : 'Positive total income', td.cf < -0.5 ? 'bad' : '', 1, '')}
       ${kpi('kpi-dscr', 'DSCR', td.dscr !== null ? r(td.dscr, 2) : '—', td.cf < -0.5 ? 'Negative income' : 'Positive total income', td.dscr !== null && td.dscr < 1 ? 'bad' : '', 1)}</div>
       ${(() => { const pp = S.p || {}, inf = +pp.inflation || 0, open = !!UI.coll.tgt, snT = isToday() ? sn : snAlt, snF = isToday() ? snAlt : sn; return `<div class="tgt" data-testid="target-years"><button type="button" class="linkbtn leftbtn tgtb" data-coll="tgt" aria-expanded="${open}" data-testid="target-toggle">By year ${yrs}: ${$f(snAlt.nw)} ${isToday() ? 'in future' : "in today's"} <span class="nw">dollars ${open ? '▾' : '▸'}</span></button>${open ? `<div class="tgtf">${field('Years to reach this net worth', 'g.planYears', g.planYears, { info: 'projection' })}${S.p ? field('Cost increase / year', 'p.inflation', r(pp.inflation, 2), { suf: '%', info: 'inflation' }) : ''}</div><p class="note" data-testid="real-nw">${$f(snF.nw)} in ${yrs} year${+yrs === 1 ? '' : 's'} buys what ${$f(snT.nw)} buys today, at ${r(inf, 1)}% cost increase a year. Planned prices are today's; nothing is inflated. Change the years to move the target date.</p>` : ''}</div>`; })()}
-            <p class="plan-line${extraCash > 0.5 ? ' warn' : ''}" data-testid="plan-headline">${headline}</p>
-      ${fin ? `<div class="vrow big ${affS}" data-go="finances" data-testid="afford-line" role="link"><span class="vq"><b>Can I afford this?</b><span class="note">${esc(affS !== fin.status ? 'Lenders may decline a loan around ' + mond(pl.worst.month) + '.' : fin.headline.replace(/^(Yes|Tight|Not yet)\.\s*/, ''))}</span></span><span class="vgo"><span class="vchip ${affS}" data-testid="afford-chip" data-lvl="${affS === 'yes' ? 'ok' : affS === 'tight' ? 'warn' : 'bad'}">${VL[affS]}</span> ›</span></div>` : ''}</section>
-    <section class="card" id="ledger" style="margin-top:10px" data-testid="ledger"><div class="row totrow" data-testid="ledger-total"><div class="r1"><span class="nm"><span class="addr">Portfolio total</span><div class="pay">${$f(td.payment)}/mo payments<br><span data-testid="total-extra" data-k="tot">${$f(totNow)}/mo extra now${totLater > 0.5 ? ' · +' + $f(totLater) + ' later' : ''}</span></div></span><span class="cfl ${td.cf < 0 ? 'bad' : 'ok'}"><b data-testid="total-cf">${$s(td.cf)}/mo</b><small>${td.cf < -0.5 ? 'Negative income' : 'Positive income'}</small></span></div></div></section>
+    <section class="card plain" id="ledger" data-testid="ledger"><div class="row totrow" data-testid="ledger-total"><div class="r1"><span class="nm"><span class="addr">Portfolio total</span><div class="pay">${$f(td.payment)}/mo payments<br><span data-testid="total-extra" data-k="tot">${$f(totNow)}/mo extra now${totLater > 0.5 ? ' · +' + $f(totLater) + ' later' : ''}</span></div></span><span class="cfl ${td.cf < 0 ? 'bad' : 'ok'}"><b data-testid="total-cf">${$s(td.cf)}/mo</b><small>${td.cf < -0.5 ? 'Negative income' : 'Positive income'}</small></span></div></div></section>
+    </div></section></aside>
+    <div class="mainc">
+    <div class="listh"><h2>The buy order</h2></div>
     ${plannedSecs}${soldSecP}
-    ${checks}
-    ${tail}
     <section class="card" data-testid="plan-card"><b>Portfolio breakdown</b> <span class="note">${nPl} asset${nPl === 1 ? '' : 's'} · ${noStart ? 'no purchase can be funded' : 'last purchase ' + mond(pl.lastBuy)}${infoBtn('planpace')}</span>
       ${bar}<p class="note" data-testid="bd-unit">${isToday() ? '2026*' : 'Future dollars'}: value and equity at the end of the plan (${dtm(pl.planM)}); cash flow today. Planned prices are today's prices; nothing is inflated.</p>${breakdown}
       ${homeWarn}${sn.cash > 0.5 ? `<p class="note" data-testid="cash-note">Trust cash = cash the trust holds: what is kept after selling costs and the loan payoff, and pooled cash flow not yet spent${infoBtn('cashfromselling')}. It counts in net worth.</p>` : ''}${drivers}
       <div class="seg" role="tablist"><button data-tab="timeline" class="${tab === 'timeline' && UI.open ? 'on' : ''}" data-testid="timeline-toggle">Timeline</button><button data-tab="nw" class="${tab === 'nw' && UI.open ? 'on' : ''}" data-testid="networth-toggle">Net worth</button><button data-tab="hide" class="${!UI.open ? 'on' : ''}">Hide</button></div>
-      ${UI.open ? (tab === 'nw' ? nwChart(pl) : timeline(pl)) : ''}</section>`;
+      ${UI.open ? (tab === 'nw' ? nwChart(pl) : timeline(pl)) : ''}</section>
+    ${manage}</div></div>`;
   }
 
   /* ---------- Buy order: every planned asset in one list, across homes, commercial and businesses. The list order IS the buy order (E.reorder); an asset is never bought before one above it. ---------- */
@@ -2675,6 +2841,12 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
       const jobTxt = j1 > 0.5 ? '<b>+' + $f(j1) + '/mo</b> now (your pay left after living costs, split equally across the loans)' : jf >= 0 ? 'starts ' + at(jf) + ', about <b>+' + $f(pl.jobAt(h.id, jf)) + '/mo</b>, once nothing is left to buy' : S.p && S.p.jobs.length ? 'nothing yet: your job money goes to the trust for the next purchase first' : 'no job income is set';
       return `<p class="note" data-testid="h-auto" data-v="${Math.round(a1)}">Automatic extra from its own profit: ${autoTxt}.</p><p class="note" data-testid="h-job" data-v="${Math.round(j1)}">From your job: ${jobTxt}.</p>`;
     })();
+    const jmOpen = UI.coll.jobmoney === false, jmAll = E.jobMoney(S, pl), jmDef = jmOpen && v.L > 0 ? E.jobDefault(S, h.id, pl) : { amount: 0, from: -1 }, jmSet = h.jobPay !== null && h.jobPay !== undefined;
+    const jobSec = exS || v.L <= 0 ? '' : colSec('jobmoney', 'Your job money in the trust', jmSet ? $f(h.jobPay) + '/mo to this loan' : 'the plan decides', `<section class="card" data-testid="jobmoney-card"><div class="subh"><h3>Your job money in the trust</h3>${infoBtn('jobmoney')}</div>
+      ${field('Job money to this loan / month', P + 'jobPay', jmSet ? grp(h.jobPay) : '', { pre: '$', ph: jmDef.from >= 0 ? 'plan: ' + grp(Math.round(jmDef.amount)) : 'plan: 0' })}
+      <p class="note" data-testid="jobmoney-default" data-v="${Math.round(jmDef.amount)}">${jmSet ? 'You set ' + $f(h.jobPay) + ' a month' : 'Default, the plan\'s own split: ' + (jmDef.from >= 0 ? 'about <b>' + $f(jmDef.amount) + '/mo</b> from ' + at(jmDef.from) : 'none yet, your job money goes to the trust for the next purchase first')}${jmSet ? '. The plan would give about ' + $f(jmDef.amount) + '/mo' + (jmDef.from >= 0 ? ' from ' + at(jmDef.from) : '') + '.' : '.'}</p>
+      ${jmSet ? '<button type="button" class="chip link" data-jobreset="' + h.id + '" data-testid="jobmoney-reset">Use the plan\'s split</button>' : ''}
+      ${jmAll.over ? `<div class="warnbox" role="status" data-testid="jobmoney-warn">The job money you set for your homes adds up to ${$f(jmAll.assigned)} a month, more than the ${$f(jmAll.surplus0)} your job leaves after living costs. Nothing is cut silently: the part that cannot be paid is shown as a shortfall on Finances.</div>` : ''}</section>`, true);
     const statusCard = h.status === 'owned'
       ? `<section class="card" data-testid="payoff-card"><div class="f" data-testid="bought-on"><span class="lb">Bought on${infoBtn('boughton')}</span><span class="iw"><input type="date" data-bought="${h.id}" value="${h.boughtOn || ''}" max="${isoToday()}" aria-label="Bought on" data-testid="bought-on-input"></span></div><p class="note" data-testid="bought-on-note" data-date="${h.boughtOn || ''}">${h.boughtOn ? 'Bought on ' + isoLong(h.boughtOn) + '.' : 'Date not recorded. Pick the day you bought it.'}</p><div class="f"><span class="lb">Loan still due</span><b data-testid="h-loan-due" data-k="h-loan-due">${$f(v.B0)}</b></div>
         <div class="f"><span class="lb">Line of credit you can take against it</span><b data-testid="h-line" data-k="h-line">${$f(v.head0)}</b></div>
@@ -2711,6 +2883,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
       ${v.refi ? `<p class="note" data-testid="refi-note">Comes due in ${v.refi.month} month${v.refi.month === 1 ? '' : 's'} with ${$f(v.refi.balance)} left. That balance is refinanced at ${r(v.refi.rate, 2)}% over ${r(v.refi.termMonths / 12, 1)} year${r(v.refi.termMonths / 12, 1) === '1' ? '' : 's'}, so the payment becomes ${$f(v.refi.payment)}/mo (DSCR then ${r(v.noi / Math.max(1, v.refi.payment + v.mip), 2)}). Cash flow now is shown before this change.</p>` : ''}
       <p class="note">${isFinite(v.payoff) ? `Paid off in ${mo(v.payoff)} with your scheduled payment and extra` : h.io ? 'Not paid off until you refinance or sell' : 'Payment does not cover interest'}${v.L > 0 && isFinite(life) && Math.abs(life - v.payoff) > 0.5 ? `; ${ym(life)} with the automatic extra from its own profit and your job` : ''}. ${v.mip > 0 ? 'Includes ' + $f(v.mip) + '/mo mortgage insurance' + infoBtn('mip') + '. ' : ''}${h.io ? 'Interest-only' + infoBtn('interestonly') + '. ' : ''}Debt now: ${$f(debt)} (${r((debt / (v.valueNow || h.price)) * 100)}% of today's value).${tr && tr.pooled && tr.draw > 0.5 && h.status !== 'owned' ? ' Its down payment includes ' + $f(tr.draw) + ' drawn on the trust\'s line of credit; that counts in the portfolio debt, not in this loan.' : ''}</p></section>`, true)}
     ${colSec('rent', LB.sec, (type === 'business' ? 'profit ' + $f(h.rent) : 'rent ' + $f(h.rent)) + ' · loan ' + (v.P + v.mip > 0.5 ? '−' + $f(v.P + v.mip) : 'none'), `<section class="card">${income}${loanLines}</section>`, true)}
+    ${jobSec}
     ${guideSec}
     ${colSec('loc', 'Funded by the trust', h.status === 'owned' ? 'in the trust today' : isFinite(p0) ? verdictFor(pl, h).word + ' · ' + (tr && tr.pooled ? 'by ' + mond(tr.ready) : 'savings + job money ' + mond(p0)) : 'not possible', `<section class="card" data-testid="trust-section">${h.status === 'owned'
       ? `<p class="note" data-testid="trust-owned">Owned today, so it is already in the trust. Its borrowing room (${$f(v.head0)} now: ${v.cap}% of its ${$f(v.valueNow)} value less its loan and liens) and its cash flow (${$s(v.cf)}/mo) count toward paying for every planned asset below it in the list. Its cash flow first pays the trust's line of credit, then builds cash for the next purchase; once nothing is left to buy it goes to its own loan.</p>${nx ? `<p class="note" data-testid="trust-next">Next asset the trust funds: ${esc(nx.addr)}, ${isFinite(nxOpen) ? (nxOpen <= 0 ? 'now' : at(nxOpen)) : 'not reachable'}.</p>` : ''}${nxSooner > 0 ? `<span class="chip">+$100/mo extra → ${nxSooner} mo sooner</span>` : ''}`
@@ -2776,6 +2949,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
     <section class="card vcard ${f.feas && f.feas.none ? 'yes' : vS}" data-testid="verdict-card"><div class="vrow" style="cursor:default"><span class="vchip ${f.feas && f.feas.none ? 'yes' : vS}" data-testid="verdict-chip">${f.feas && f.feas.none ? 'Nothing planned' : VL[vS]}</span><b data-testid="verdict-headline">${esc(f.feas && f.feas.none ? 'Nothing planned yet. Add an asset to see whether you can afford it.' : vS !== f.status ? 'Not yet. Lenders may decline a loan around ' + mond(pl.worst.month) + '.' : f.headline)}</b></div>
       ${f.feas && f.feas.none ? '' : f.reasons.filter((x) => x.sev !== 'ok').map((x0) => { const x = vS !== f.status && /^Lenders may decline/.test(x0.text) ? Object.assign({}, x0, { sev: 'bad' }) : x0; return `<div class="rsn ${x.sev}"><span aria-hidden="true">${icon[x.sev]}</span><span>${esc(x.text)}</span></div>`; }).join('')}
       ${!(f.feas && f.feas.none) && f.reasons.some((x) => x.sev === 'ok') ? `<div class="rsn ok" data-testid="reasons-ok"><span aria-hidden="true">✓</span><span>Looks fine: ${esc(f.reasons.filter((x) => x.sev === 'ok').map((x) => x.short || x.text).join(' · '))}</span></div>` : ''}
+      ${(() => { const jm = E.jobMoney(S, pl); return jm.over || jm.shortMonths > 0 ? `<div class="rsn warn" data-testid="jobmoney-shortfall"><span aria-hidden="true">!</span><span>Job money you set for your homes: ${$f(jm.assigned)} a month, but your job leaves ${$f(jm.surplus0)} after living costs${jm.shortMonths ? ', so ' + jm.shortMonths + ' month' + (jm.shortMonths === 1 ? '' : 's') + ' of the plan cannot pay the full amount' : ''}. Lower an amount on a home page or raise your pay.</span></div>` : ''; })()}
       ${!(f.feas && f.feas.none) && f.fixes.length ? `<div class="fixes" data-testid="fixes"><b>What would fix it</b><ul>${f.fixes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}</section>
     <div class="sec">Your month: now and at plan end</div><section class="card">${picture}${jobNote}<p class="note">Cash flow the trust reinvests, and the job money above, move out of your cash into the trust or its loans each month; that is already taken out under Cash over time.</p>
     ${(() => { const later = pl.extraLater, pe = k.planEnd; return `${later > 0.5 ? `<p class="note">Plus ${$f(later)}/mo of extra payments on assets you have not bought yet.</p>` : ''}
@@ -2828,6 +3002,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
   const exCloseEditor = (msg) => { const id = exEdit && exEdit.id; exEdit = null; ask = null; exOpen = true; exMsg = msg || ''; render(); const fo = () => { const n = id && app.querySelector('[data-exedit="' + id + '"]'); if (n) n.focus(); }; fo(); setTimeout(fo, 40); /* a box removed by the render fires one more render; focus goes back to the Edit button after it */ };
   const exBack = () => { if (!exEdit) return; if (E.exDirty(E.exampleShipped(exEdit.id), exEdit.draft, exEdit.base)) { ask = 'exdiscard'; render(); const n = app.querySelector('[data-testid=ex-discard-confirm]'); if (n) { n.scrollIntoView({ block: 'center' }); n.focus(); } return; } exCloseEditor(''); };
   function exSetField(k, s) { if (!exEdit || k === 'profit') return false; const r2 = E.exDraftSet(E.exampleShipped(exEdit.id), exEdit.draft, k, String(s)); if (!r2.ok) return false; exEdit.draft = r2.draft; return true; }
+  const type_price = (tp) => (tp === 'business' ? 'Price' : 'Price');
   function addPage() {
     if (EXED && exEdit && !UI.addOwned && E.exampleShipped(exEdit.id)) return exEditor();
     const tp = E.TYPES[UI.addType] ? UI.addType : 'house', multi = tp === 'house' && UI.addKind === 'multi', un = Math.min(500, Math.max(2, Math.round(+UI.addUnits) || 2)), pack = multi && !!UI.addPack;
@@ -2855,11 +3030,22 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
       return `<div class="loanrow"><button class="loanopt ${on ? 'on' : ''}" data-expick="${x.id}" aria-pressed="${on}" data-testid="ex-${x.id}"><b>${esc(x.tierName)} · ${esc(x.name)}${ed ? ' <span class="tag" data-testid="ex-tag-' + x.id + '">Edited</span>' : ''}</b><span data-testid="ex-sum-${x.id}">${esc(exLine(x, m))}</span></button>${infoBtn('ex-' + x.id)}${EXED ? `<button type="button" class="chip link" data-exedit="${x.id}" data-testid="ex-edit-${x.id}" aria-label="Edit ${esc(x.name)}">Edit</button>` : ''}</div>`; }).join('');
     const exUse = exSel ? (() => { const m = E.exampleMetrics(S, exSel); return `<div class="emptyb exuse" data-testid="ex-using"><span><b>Using example: ${esc(exSel.name)}${EXED && exSel.edited && exSel.edited.length ? ' · Edited' : ''}</b><br><span data-testid="ex-preview">Cash needed ${$f(m.cash)} · cash flow ${$s(m.cf)}/mo</span></span><button type="button" class="chip link" data-exclear data-testid="ex-clear" aria-label="Clear the example and go back to the defaults">Clear</button></div>`; })() : '';
     const exHtml = exs.length ? `<button type="button" class="linkbtn leftbtn exlink" data-exopen aria-expanded="${exOpen}" data-testid="ex-toggle">${exSel ? 'Change example' : 'Start from an example'} ${exOpen ? '▾' : '▸'}</button>${exOpen ? `<section class="card" data-testid="ex-list"><p class="note" style="margin:0 4px 6px">Four typical purchases, cheapest first. Tap one to fill in the numbers; it is only added when you tap Add. Typical, not a quote.</p>${exMsg ? `<p class="note" role="status" data-testid="ex-msg" style="margin:0 4px 6px">${esc(exMsg)}</p>` : ''}${!exStoreOK && EXED ? '<p class="note warntxt" data-testid="ex-storage-note" style="margin:0 4px 6px">This device is not keeping example edits. They last until you close the app.</p>' : ''}${exRows}</section>` : ''}${exUse}` : '';
-    return `<div class="top"><button class="ic" data-go="" aria-label="Cancel and go back">‹</button><h2>${UI.addOwned ? 'Add something you own' : 'Add to portfolio'}</h2></div>${UI.addOwned ? '<p class="note" style="margin:0 4px 8px" data-testid="add-owned-note">It goes on the Real page. Next you set the price, loan and how many months you have already paid.</p>' : ''}
-    <section class="card"><div class="seg" role="tablist">${['house', 'commercial', 'business'].map((x) => `<button data-addtype="${x}" class="${x === tp ? 'on' : ''}">${TL[x]}</button>`).join('')}</div><p class="note">${blurb} You will set the price and income on the next screen.</p>${tp === 'house' && !multi ? '<button class="linkbtn" data-go="import/new">Have a Zillow listing? Import it</button>' : ''}${typeCard}${multiCard}</section>
-    <div class="sec">Pick a loan option</div><section class="card" data-testid="loan-options">${loanHtml}</section>
-    ${exHtml}
-    <button class="btn" style="width:100%" data-confirm-add="${tp}|${sel}" data-testid="confirm-add">Add ${multi ? esc(mfName(un, pack)) : TL[tp].toLowerCase()}</button>`;
+    UI.addF = UI.addF || {}; const AF = UI.addF, selLoan = list.find((l) => l.id === sel) || list[0], loanOpen = !!UI.addLoanOpen, moreOpen = !!UI.addMore;
+    const dfl = E.newAsset(tp, sel, multi ? Object.assign({ kind: 'multi', units: un, pack }, E.mfDefaults(un, pack)) : {}), exm = exSel ? E.exampleMetrics(S, exSel) : null; /* the typical starting numbers: shown grey inside the boxes, used when a box is left blank */
+    const phP = exm ? exm.price : dfl.price, phR = exm ? exm.rent || exm.revenue * (exm.margin || 0) / 100 : dfl.rent;
+    const ef = (lab, p, val, ph, pre, info, tid) => `<label class="f lf"><span class="lb">${lblOf(lab, info)}</span><span class="iw">${pre ? `<em>${pre}</em>` : ''}<input inputmode="text" data-num="1" data-pre="${esc(pre || '')}" data-suf="" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" data-p="${p}" data-k="${p}" data-testid="${tid}" aria-label="${esc(lab)}" placeholder="${esc(ph)}" value="${val === undefined ? '' : grp(val)}"></span></label>`;
+    const nmPh = { house: '12 Oak Street', commercial: 'Corner retail building', business: 'Laundromat on Main' }[tp];
+    const title = UI.addOwned ? 'Add something you own' : tp === 'house' ? (multi ? 'Add a multi-family' : 'Add a house') : tp === 'commercial' ? 'Add a commercial property' : 'Add a business';
+    const job = UI.addOwned ? '' : `<div class="moreb"><button type="button" class="rowbtn" data-addmore aria-expanded="${moreOpen}" data-testid="add-more-toggle"><span>More details</span><span class="chev" aria-hidden="true">›</span></button>${moreOpen ? `<div class="moreg" data-testid="add-more"><div class="subh"><h3>Your job money in the trust</h3>${infoBtn('jobmoney')}</div>${ef('Job money to this loan / month', 'a.add.job', AF.job, 'the plan decides', '$', null, 'add-job-money')}<p class="note">Leave blank and the plan decides how much of your pay left after living costs goes to this loan. Type an amount to fix it. Everything else (tax, insurance, vacancy, loan terms) is on the next screen.</p></div>` : ''}</div>`;
+    return `<div class="mast"><button class="ic back" data-go="" aria-label="Cancel and go back">‹</button><span class="kick">New entry</span></div>
+    <h1 class="disp" data-testid="add-title">${title}</h1><p class="dek">${UI.addOwned ? 'It goes on the Real page. Next you set the loan and how many months you have already paid.' : 'Four facts are enough to begin.'}</p>${UI.addOwned ? '<span data-testid="add-owned-note" hidden></span>' : ''}
+    <div class="seg pill" role="tablist">${['house', 'commercial', 'business'].map((x) => `<button data-addtype="${x}" class="${x === tp ? 'on' : ''}">${TL[x]}</button>`).join('')}</div>${typeCard}${multiCard}
+    <section class="card lg" data-testid="add-essentials">${ef(tp === 'business' ? 'Business name' : 'Address or name', 'a.add.name', undefined, nmPh, '', null, 'add-name').replace('data-num="1" ', '').replace('inputmode="text"', 'type="text" inputmode="text" autocapitalize="words"').replace(/value="[^"]*"/, 'value="' + esc(AF.addr || '') + '"')}
+      ${ef(type_price(tp), 'a.add.price', AF.price, grp(phP), '$', null, 'add-price')}${ef(tp === 'business' ? 'Owner profit / month' : 'Rent / month', 'a.add.rent', AF.rent, grp(phR), '$', null, 'add-rent')}
+      <button type="button" class="rowbtn lrowb" data-loanopen aria-expanded="${loanOpen}" data-testid="loan-row"><span class="k">Loan</span><span class="v">${esc(selLoan.name.replace(/\s*\(you live there\)/i, ''))}</span><span class="chev" aria-hidden="true">›</span></button></section>
+    ${loanOpen ? `<div class="sec">Pick a loan option</div><section class="card" data-testid="loan-options">${loanHtml}</section>` : ''}
+    ${job}${exHtml}
+    <button class="btn lgbtn" data-confirm-add="${tp}|${sel}" data-testid="confirm-add">Add ${multi ? esc(mfName(un, pack)) : TL[tp].toLowerCase()}</button>${tp === 'house' && !multi ? '<button class="linkbtn quiet" data-go="import/new">Have a Zillow listing? Import it</button>' : ''}`;
   }
 
   /* ---------- sample portfolios: loading one never loses the current plan ---------- */
@@ -3007,6 +3193,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const route = routeOf(), a = document.activeElement, app = document.getElementById('app'); if (selId && !H(selId)) selId = null;
     const sig = route + '|' + page + '|' + selId, boxFocus = !!(a && app.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && a.dataset && a.dataset.p !== undefined && !/^(file|checkbox|radio|button)$/.test(a.type)); let soft = boxFocus && sig === lastSig && !infoKey && !infoFrom; const id = !soft && a && a.dataset && a.dataset.sel;
     const host = soft ? document.createElement('div') : app;
+    app.dataset.pg = route === '' ? page : route.startsWith('h/') ? 'asset' : route.split('/')[0]; /* lets the stylesheet give Planned and Add their wide desktop layout */
     if (!soft) { RN++; app.innerHTML = ''; }
     host.innerHTML = route === 'finances' ? finances() : route === 'order' ? orderPage() : route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
     host.insertAdjacentHTML('beforeend', sheetHtml());
@@ -3144,7 +3331,10 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     if (p.charAt(0) === 'x' && p.charAt(1) === '.') return exSetField(p.slice(2), s); /* the example editor's draft */
     if (undo) setUndo(null);
     const [t, x, k] = p.split('.');
+    if (t === 'a' && k === 'name') { UI.addF = UI.addF || {}; UI.addF.addr = String(s).slice(0, 80); return true; } /* the Add screen's name / address draft */
+    if (t === 'a' && (k === 'price' || k === 'rent' || k === 'job')) { UI.addF = UI.addF || {}; if (String(s).trim() === '') { delete UI.addF[k]; return true; } const nn = parseFloat(String(s).replace(/,/g, '').replace(/[^0-9.\-eE+]/g, '')); if (isNaN(nn)) return false; UI.addF[k] = Math.max(0, nn); return true; } /* blank = the typical starting number / the plan's own split */
     if (k === 'addr') { H(x).addr = s; return true; }
+    if (t === 'h' && k === 'jobPay' && String(s).trim() === '') { const hj = H(x); if (!hj) return false; hj.jobPay = null; return true; } /* blank = back to the plan's own split of your job money */
     const list = { j: 'jobs', o: 'planned', c: 'capital' }[t];
     if (list && k === 'name') { const it = S.p[list].find((q) => q.id === x); if (it) it.name = s; return true; }
     if (t === 'j' && (k === 'end' || k === 'tax') && String(s).trim() === '') { const jb = S.p.jobs.find((q) => q.id === x); if (jb) jb[k] = null; S.p = E.normalizePersonal(S.p); return true; }
@@ -3233,7 +3423,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     return null;
   }
   /* a box where blank is a real answer (no end date, estimate the tax): everywhere else a blank box is not a value */
-  const EMPTYOK = (p) => /^j\.[^.]+\.(end|tax)$/.test(p) || /^p\.(portfolioTaxPct|salesTaxPct)$/.test(p) || /^h\.[^.]+\.(refiRate|refiTermY|mgmtPct)$/.test(p);
+  const EMPTYOK = (p) => /^j\.[^.]+\.(end|tax)$/.test(p) || /^p\.(portfolioTaxPct|salesTaxPct)$/.test(p) || /^h\.[^.]+\.(refiRate|refiTermY|mgmtPct|jobPay)$/.test(p) || /^a\.add\.(price|rent|job)$/.test(p);
   /* whole-month boxes (dates counted in months from today, months already paid, ...): rounded to a whole number and capped at 600 months (or the plan length + 10 years when that is longer), with a 'Rounded / Capped' note */
   const MONTHSBOX = (p) => /^h\.[^.]+\.(buyIn|wait|paid|mat|payoff|capexMonths|exitMonth)$/.test(p) || p === 'x.capexMonths' || /^[oc]\.[^.]+\.month$/.test(p) || /^j\.[^.]+\.(end|start)$/.test(p);
   const POSBOX = (p) => /^h\.[^.]+\.pos$/.test(p); /* the buy position: a whole number from 1 to the number of planned assets, moved on blur / Enter */
@@ -3335,6 +3525,9 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const apr = t.closest('[data-preset]'); if (apr) { const pk = /p$/.test(apr.dataset.preset); UI.addUnits = parseInt(apr.dataset.preset, 10); UI.addPack = pk; UI.addLoan = ''; UI.addEx = ''; save(); render(); return; }
     const apk = t.closest('[data-addpack]'); if (apk) { UI.addPack = apk.dataset.addpack === '1'; UI.addLoan = ''; UI.addEx = ''; save(); render(); return; }
     const hpk = t.closest('[data-pack]'); if (hpk) { const hh = H(routeOf().slice(2)); if (hh && E.isMulti(hh)) { hh.pack = hpk.dataset.pack === '1'; save(); render(); } return; }
+    const jr = t.closest('[data-jobreset]'); if (jr) { const hj = H(jr.dataset.jobreset); if (hj) { hj.jobPay = null; save(); render(); } return; }
+    const lo2 = t.closest('[data-loanopen]'); if (lo2) { UI.addLoanOpen = !UI.addLoanOpen; save(); render(); const n = app.querySelector('[data-loanopen]'); if (n) n.focus(); return; }
+    const am = t.closest('[data-addmore]'); if (am) { UI.addMore = !UI.addMore; save(); render(); const n = app.querySelector('[data-addmore]'); if (n) n.focus(); return; }
     const pk = t.closest('[data-pickloan]'); if (pk) { UI.addLoan = pk.dataset.pickloan; UI.addEx = ''; render(); return; }
     if (EXED) {
       const ee = t.closest('[data-exedit]'); if (ee) { const sx = E.exampleShipped(ee.dataset.exedit); if (sx) { const cur = Object.assign({}, E.exOverrides()[sx.id] || {}); exEdit = { id: sx.id, draft: cur, base: Object.assign({}, cur) }; ask = null; exMsg = ''; render(); window.scrollTo(0, 0); const f0 = app.querySelector('[data-testid=ex-fields] input'); if (f0) f0.focus({ preventScroll: true }); } return; }
@@ -3347,7 +3540,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const exo = t.closest('[data-exopen]'); if (exo) { exOpen = !exOpen; exMsg = ''; render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); return; }
     const exp = t.closest('[data-expick]'); if (exp) { const ex = E.exampleById(exp.dataset.expick); if (ex) { UI.addEx = ex.id; UI.addLoan = ex.loanId; if (ex.cat === 'multi') { UI.addUnits = ex.units; UI.addPack = !!ex.pack; } exOpen = false; save(); render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); } return; }
     if (t.closest('[data-exclear]')) { UI.addEx = ''; UI.addLoan = ''; save(); render(); const n = app.querySelector('[data-exopen]'); if (n) n.focus(); return; }
-    if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const own = !!UI.addOwned, mf = tp === 'house' && UI.addKind === 'multi', mu = Math.min(500, Math.max(2, Math.round(+UI.addUnits) || 2)), mp = mf && !!UI.addPack, ex = !own && UI.addEx ? E.exampleById(UI.addEx) : null, usex = ex && ex.type === tp && ex.cat === E.exCat(tp, mf), h = usex ? E.exampleAsset(ex) : E.newAsset(tp, lid, Object.assign({ fresh: true }, own ? { status: 'owned', paid: 12 } : {}, mf ? Object.assign({ kind: 'multi', units: mu, pack: mp }, E.mfDefaults(mu, mp)) : {})); UI.addEx = ''; exOpen = false; UI.addKind = 'single'; UI.addPack = false; UI.addOwned = false; E.register(S, h); S.houses.push(h); UI.coll[(own ? 'cat-owned-' : 'cat-') + tp] = false; selId = null; page = own ? 'real' : 'planned'; save(); goto('h/' + h.id); return; }
+    if (t.dataset.confirmAdd) { const [tp, lid] = t.dataset.confirmAdd.split('|'); const own = !!UI.addOwned, mf = tp === 'house' && UI.addKind === 'multi', mu = Math.min(500, Math.max(2, Math.round(+UI.addUnits) || 2)), mp = mf && !!UI.addPack, ex = !own && UI.addEx ? E.exampleById(UI.addEx) : null, usex = ex && ex.type === tp && ex.cat === E.exCat(tp, mf), h = usex ? E.exampleAsset(ex) : E.newAsset(tp, lid, Object.assign({ fresh: true }, own ? { status: 'owned', paid: 12 } : {}, mf ? Object.assign({ kind: 'multi', units: mu, pack: mp }, E.mfDefaults(mu, mp)) : {})); UI.addEx = ''; exOpen = false; UI.addKind = 'single'; UI.addPack = false; UI.addOwned = false; E.register(S, h); S.houses.push(h); { const AF = UI.addF || {}; if (AF.addr && AF.addr.trim()) h.addr = AF.addr.trim(); if (AF.price > 0) setField('h.' + h.id + '.price', String(AF.price)); if (AF.rent > 0) setField('h.' + h.id + '.' + (tp === 'business' ? 'revenue' : 'rent'), String(tp === 'business' ? Math.round(AF.rent * 100 / Math.max(1, E.marginOf(h))) : AF.rent)); if (AF.job !== undefined && !own) h.jobPay = Math.max(0, +AF.job || 0); UI.addF = {}; UI.addMore = false; UI.addLoanOpen = false; } UI.coll[(own ? 'cat-owned-' : 'cat-') + tp] = false; selId = null; page = own ? 'real' : 'planned'; save(); goto('h/' + h.id); return; }
     if (t.dataset.del) { ask = 'del:' + t.dataset.del; render(); return; }
     if (t.dataset.clearAsk !== undefined) { ask = 'clearplan'; render(); return; }
     if (t.dataset.clearYes !== undefined) { clearPlanned(); return; }

@@ -130,6 +130,8 @@ async function selRow(page, id) { await showRowPage(page, id); if (!(await page.
 async function setExtra(page, id, val) { await selRow(page, id); await setVal(page, `[data-for="${id}"] [data-testid=extra-input]`, val); }
 /* The main screen has three pages (Planned | Real | Saved). Planned is where the plan totals and the planned rows live; Real holds the bought rows. */
 async function showTab(page, k) { await page.waitForSelector('[data-testid=tab-' + k + ']'); if ((await page.getAttribute('[data-testid=tab-' + k + ']', 'aria-selected')) !== 'true') { await page.click('[data-testid=tab-' + k + ']'); await page.waitForTimeout(60); await expandAll(page); } }
+/* design v5: the loan options sit behind the Loan row on the Add screen; open the list before looking at or tapping an option */
+const openLoans = async (page) => { if (!(await page.$('[data-testid=loan-options]'))) await page.click('[data-testid=loan-row]'); await page.waitForSelector('[data-testid=loan-options]'); };
 const goMain = async (page) => { await goHash(page, '#'); await showTab(page, 'planned'); await page.waitForSelector('[data-testid=summary],[data-testid=empty-note]'); };
 /* make sure the page that holds this asset's row is showing (Real for a bought one, Planned otherwise) */
 async function showRowPage(page, id) { if (await page.$(`[data-row="${id}"]`)) return true; for (const k of ['planned', 'real']) { if ((await page.getAttribute('[data-testid=tab-' + k + ']', 'aria-selected')) === 'true') continue; await showTab(page, k); if (await page.$(`[data-row="${id}"]`)) return true; } return false; }
@@ -436,12 +438,12 @@ async function reqChecks(page) {
   await check('A01', 'A', 'Add flow: each type x each loan option auto-fills dp/rate/term/closing, opens the asset page, adds a ledger row and changes plan numbers', 4, 'Main > + Add > pick type > pick loan > Add; inspect asset page + main', async () => {
     await reset(page); const P = new Parts(); await goMain(page);
     const b0 = await snap(page); await page.click('[data-testid=add-house]'); await page.waitForTimeout(80);
-    P.t((await page.evaluate(() => location.hash)) === '#add' && (await page.locator('[data-testid=loan-options]').count()) === 1 && (await page.locator('[data-addtype]').count()) === 3, '+ Add opens #add page with type segment and loan options', 0.6);
+    P.t((await page.evaluate(() => location.hash)) === '#add' && (await page.locator('[data-testid=loan-row]').count()) === 1 && (await page.locator('[data-testid=loan-options]').count()) === 0 && (await page.locator('[data-addtype]').count()) === 3 && await (async () => { await openLoans(page); return (await page.locator('[data-testid=loan-options]').count()) === 1; })(), '+ Add opens #add page with type segment and a Loan row that opens the loan options (was: the loan options listed on arrival)', 0.6);
     let prev = b0, nOk = 0, nAll = 0, badFill = [], noChange = [];
     for (const tp of ['house', 'commercial', 'business']) {
       for (const lo of E.loansFor(tp)) {
         nAll++;
-        await goHash(page, '#add'); await page.click(`[data-addtype=${tp}]`); const cnt = await page.locator('[data-pickloan]').count();
+        await goHash(page, '#add'); await page.click(`[data-addtype=${tp}]`); await openLoans(page); const cnt = await page.locator('[data-pickloan]').count();
         if (cnt !== E.loansFor(tp).length) badFill.push(tp + ' options ' + cnt);
         await page.click(`[data-pickloan=${lo.id}]`); await page.click('[data-testid=confirm-add]'); await page.waitForTimeout(100);
         const hash = await page.evaluate(() => location.hash); const id = hash.replace('#house-', '');
@@ -475,7 +477,7 @@ async function reqChecks(page) {
     ['h.e.capex', 40000], ['h.e.capexMonths', 12], ['h.e.arv', 260000], ['h.e.liftIncome', 15], ['h.e.exitLift', 30], ['h.e.exitMonth', 120], ['h.e.buyIn', 30],
     ['g.cap', 60], ['g.vac', 20], ['g.mgmt', 20], ['g.maint', 3], ['g.closing', 10], ['g.haircut', 20], ['g.hrate', 15], ['g.appr', 3], ['g.planYears', 10], ['g.rentCount', 50], ['g.p1', 0], ['g.dti', 5], ['g.otherDebt', 20000]];
   await check('A13', 'A', 'FHA 203(k) through the UI: add flow auto-fills rehab + terms, owner-occupied notice, financed-rehab note, Limited cap warning, switching loan option resets', 2, 'Add page > Home > FHA 203(k)', async () => {
-    const P = new Parts(); await reset(page); await goHash(page, '#add'); await page.click('[data-addtype=house]'); await page.waitForTimeout(40);
+    const P = new Parts(); await reset(page); await goHash(page, '#add'); await page.click('[data-addtype=house]'); await page.waitForTimeout(40); await openLoans(page);
     P.t((await page.locator('[data-pickloan=k203]').count()) === 1, 'add page lists the 203(k) option for homes', 0.3);
     P.t((await page.locator('[data-pickloan=k203]').innerText()).toLowerCase().includes('rehab') && await page.evaluate(() => { const lo = document.querySelector('[data-testid=loan-options]'), h = [...lo.querySelectorAll('b')].find((b) => /If you will live there/i.test(b.textContent)), k = lo.querySelector('[data-pickloan=k203]'), f = lo.querySelector('[data-pickloan=fha]'); return !!h && !!(h.compareDocumentPosition(k) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(h.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(lo.querySelector('[data-pickloan=conv30]').compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING); }), 'card says rehab financed; FHA and 203(k) are grouped under "If you will live there"', 0.3);
     await page.click('[data-pickloan=k203]'); await page.click('[data-testid=confirm-add]'); await page.waitForSelector('[data-testid=h-payment]');
@@ -971,7 +973,8 @@ async function reqChecks(page) {
   await check('A73', 'A', "Page order audit applied (prototype/agents/plans/page-order-audit.md): on the Planned page the headline numbers and the asset list come before the secondary links (buy order, import); the Saved page lists the saved portfolios before the clear-the-plan card; the Assumptions page starts with the lender assumptions before the display switches and the explainer; Finances shows the verdict and the month picture before the input cards", 2, 'DOM order of each page', async () => {
     const P = new Parts(); await reset(page); await goMain(page);
     const ord = (sels) => page.evaluate((sels) => { const kids = [...document.querySelectorAll('#app > *')]; return sels.map((s) => kids.findIndex((k) => k.matches(s) || k.querySelector(s))); }, sels);
-    let o = await ord(['[data-testid=summary]', '[data-testid=ledger]', '[data-testid=buy-order-link]', '[data-testid=import-link]']); P.t(o[0] > 0 && o[0] < o[1] && o[1] < o[2] && o[2] < o[3], 'Planned: totals, then the asset list, then Buy order, then Import', 0.5, o.join(','));
+    /* design v5: Planned is a two-column layout (summary column, then the list column), so the order is read as document order of the elements, not as #app children; 'totals' is now the summary hero and 'the asset list' is the Homes section */
+    let o = await page.evaluate((sels) => { const all = [...document.querySelectorAll('#app *')]; return sels.map((q) => all.indexOf(document.querySelector(q))); }, ['[data-testid=summary]', '[data-testid=cat-house]', '[data-testid=buy-order-link]', '[data-testid=import-link]']); P.t(o[0] > 0 && o[0] < o[1] && o[1] < o[2] && o[2] < o[3], 'Planned: totals, then the asset list, then Buy order, then Import', 0.5, o.join(','));
     await showTab(page, 'saved'); await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('rep-v4')); void s; });
     await page.click('[data-testid=save-current]'); await page.waitForTimeout(60); await page.click('[data-save-yes]'); await page.waitForTimeout(80); o = await ord(['[data-testid=save-card]', '[data-testid=saved-card]', '[data-testid=clear-card]']); P.t(o[0] >= 0 && o[0] < o[1] && o[1] < o[2], 'Saved: the save card, then the saved portfolios, then the clear-the-plan card', 0.5, o.join(','));
     await goHash(page, '#assumptions'); o = await ord(['[data-testid=unit-card]', '[data-testid=autopay-card]', '[data-testid=model-notes]']); const first = await page.evaluate(() => { const s = [...document.querySelectorAll('#app > .sec')]; return s.length ? s[0].textContent.trim() : ''; });
@@ -1079,8 +1082,11 @@ async function uxChecks(page) {
   console.log('C. UX');
   await check('C01', 'C', 'At 390x844: summary KPIs, plan headline and the first ledger rows are visible without scrolling', 2, 'Open main at 390x844', async () => {
     await page.setViewportSize({ width: 390, height: 844 }); await reset(page); await goMain(page); const P = new Parts();
+    /* design v5: this check looks at the screen a person sees on first launch; the harness's auto-expander opens every fold, so put the 'More figures' and Health folds back to their default (closed) */
+    await page.evaluate(() => { window.__noExpand = true; }); /* the harness flag that stops the observer from re-opening what is closed */
+    for (const q of ['[data-coll=more][aria-expanded=true]', '[data-testid=checks-details][aria-expanded=true]']) { const bt = await page.$(q); if (bt) { await bt.click(); await page.waitForTimeout(60); } }
     const r = await page.evaluate(() => { const b = (s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect().bottom : 9999; }; return { nw: b('[data-testid=kpi-networth]'), mon: b('[data-testid=kpi-monthly]'), cf: b('[data-testid=kpi-cashflow]'), dscr: b('[data-testid=kpi-dscr]'), head: b('[data-testid=plan-headline]'), row1: b('[data-testid=ledger-row]'), row1top: (() => { const e = document.querySelector('[data-testid=ledger-row]'); return e ? e.getBoundingClientRect().top : 9999; })() }; });
-    P.t(r.nw < 844 && r.mon < 844 && r.cf < 844 && r.dscr < 844, 'four KPIs in first viewport', 0.8, JSON.stringify(r)); P.t(r.head < 844, 'plan headline visible', 0.5); P.t(r.row1top + 40 < 844, 'first ledger row visible (at least its first 40 px: the Reorder buy order button now sits under the title)', 0.7, JSON.stringify(r)); return P; });
+    P.t(r.nw < 844 && r.cf < 844 && r.mon < 9999 && r.dscr < 9999, 'the two hero figures (net worth, cash flow) in the first viewport; payments and DSCR are in the More figures fold (were: all four KPIs in the first viewport)', 0.8, JSON.stringify(r)); P.t(r.head < 844, 'plan headline visible', 0.5); P.t(r.row1top + 40 < 844, 'first ledger row visible (at least its first 40 px: the Reorder buy order button now sits under the title)', 0.7, JSON.stringify(r)); return P; });
   await check('C02', 'C', 'Main page keeps text inputs out of the list: no inputs until a row is selected, then exactly one extra field (none for a sold row)', 1.5, 'Count visible <input> on main before / after selecting a row (sample, and after adding 3)', async () => {
     const P = new Parts(); await reset(page); const cnt = () => page.evaluate(() => [...document.querySelectorAll('#app input')].filter((i) => i.type !== 'hidden' && i.offsetParent).length);
     const plS = E.planR(E.seedPlan()), sold = E.seedPlan().houses.filter((h) => plS.exits[h.id] && plS.sellAt[h.id] <= plS.planM)[0];

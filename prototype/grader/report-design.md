@@ -1,8 +1,8 @@
 # Design consistency grader (DESIGN_ONLY)
 
-Run: 2026-11-17T04:45:48.973Z
+Run: 2026-11-17T06:07:36.754Z
 
-## K. Design consistency and flow: **100.00 / 100** (separate scale; the multi-family screens against the existing design language)
+## K. Design consistency and flow: **97.44 / 100** (separate scale; the multi-family screens against the existing design language)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -12,7 +12,7 @@ Run: 2026-11-17T04:45:48.973Z
 | K4 | Tap targets are >= 44px and nothing scrolls sideways at 320, 390 and 430 on every new screen; nothing is wider than its card | 3.85 | 3.85 | 6/6 sub-checks pass |
 | K5 | No text overlaps: the bounding boxes of every line of text on the new screens (and the greyed reasons, chips, table cells, (i) buttons) never collide, at 320 and 390 | 3.85 | 3.85 | 2/2 sub-checks pass |
 | K6 | Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use (no new size, margin, padding or radius) | 3.85 | 3.85 | 3/3 sub-checks pass |
-| K7 | The same state looks the same: the new Single / Multi and Building / Pack controls match the Home / Commercial / Business tabs; a selected multi-family loan card matches a selected single-family card; greyed cards are visibly different but readable | 2.56 | 2.56 | 4/4 sub-checks pass |
+| K7 | The same state looks the same: the new Single / Multi and Building / Pack controls match the Home / Commercial / Business tabs; a selected multi-family loan card matches a selected single-family card; greyed cards are visibly different but readable | 2.56 | 0.00 | CRASH in check: page.evaluate: TypeError: Failed to execute 'getComputedStyle' on 'Window': parameter 1 is not of type 'Element'.     at ls (eval at evaluate (:311:30), <anonymous>:3:38)     at eval (eval at evaluate (:311:30), <anonymous>:4:95)     at UtilityScript.evaluate (<anonymous>:313:16)     at UtilityScript.<anonymous> (<anonymous>:1:44)     at /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:145:27     at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)     at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:143:3)     at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1310:20 |
 | K8 | No walls of text on the new screens: every note is short (<= 170 characters), the guide shows scannable rows and a short checklist, and the long explanations live in (i) buttons | 2.56 | 2.56 | 2/2 sub-checks pass |
 | K9 | First-time flow: from the Add screen a multi-family asset is 3 taps away (Multi-family, a preset, Add); from the portfolio 3 taps with the default duplex; Back returns without adding anything; presets are one tap; the unit box has the numeric keyboard settings of the other boxes; the result opens on the asset page | 3.21 | 3.21 | 6/6 sub-checks pass |
 | K10 | Screenshots (dpr 2) of the new screens at 390 and 320 in light and dark are saved to grader/screens/mf-*.png, full height, with no sideways overflow | 1.92 | 1.92 | 1/1 sub-checks pass |
@@ -37,4 +37,13 @@ Run: 2026-11-17T04:45:48.973Z
 
 ### K failures
 
-None.
+- **K7 The same state looks the same: the new Single / Multi and Building / Pack controls match the Home / Commercial / Business tabs; a selected multi-family loan card matches a selected single-family card; greyed cards are visibly different but readable** (-2.56): CRASH in check: page.evaluate: TypeError: Failed to execute 'getComputedStyle' on 'Window': parameter 1 is not of type 'Element'.
+    at ls (eval at evaluate (:311:30), <anonymous>:3:38)
+    at eval (eval at evaluate (:311:30), <anonymous>:4:95)
+    at UtilityScript.evaluate (<anonymous>:313:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:145:27
+    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)
+    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:143:3)
+    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1310:20
+  - Reproduce: compare computed styles of existing and new controls

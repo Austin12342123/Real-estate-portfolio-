@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'b136bf0b'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'096f5b50'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -88,7 +88,7 @@
     const h = Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), type, status: 'planned', extra: 0, driver: 'extra', wait: 24, liens: 0, paid: 0, buyIn: 0,
       target: '', growth: null, io: false, closingPct: null, loanId: '', dp: 20, rate: 6.75, term: 360, mat: 0, refiRate: null, refiTerm: null,
       capex: 0, capexMonths: 6, arv: 0, arvAuto: false, gain: null, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false,
-      kind: 'single', units: 1, pack: false, mfRes: 300, mfOther: 0, mgmtPct: null, maintPct: null, boughtOn: null }, DEFAULTS[type]); /* kind 'multi' = a building or pack of houses with units >= 2 (still type 'house'); mfRes = replacement reserve per unit per year, mfOther = other owner-paid costs per month, mgmtPct / maintPct = this asset's own management / repairs % (null = the Assumptions rate) */
+      kind: 'single', units: 1, pack: false, mfRes: 300, mfOther: 0, mgmtPct: null, maintPct: null, boughtOn: null, jobPay: null }, DEFAULTS[type]); /* kind 'multi' = a building or pack of houses with units >= 2 (still type 'house'); mfRes = replacement reserve per unit per year, mfOther = other owner-paid costs per month, mgmtPct / maintPct = this asset's own management / repairs % (null = the Assumptions rate) */
     applyLoan(h, loanId || (o && o.kind === 'multi' ? mfFirst(+o.units || 2, !!o.pack) : loansFor(type)[0].id));
     Object.assign(h, o || {});
     if (type === 'business' && o && o.rent !== undefined) { if (o.revenue === undefined) h.revenue = null; if (o.margin === undefined) h.margin = null; } /* a business made from its owner profit (the seeded ones) has no revenue of its own: the page shows rent / margin */
@@ -307,7 +307,7 @@
     hs.forEach((h) => (V[h.id] = view(S, h)));
     const planM = Math.round(Math.max(1, g.planYears || 20) * 12), hz = isFinite(+g.horizon) ? +g.horizon : GDEF.horizon, TS = Math.max(600, Math.min(2400, Math.round(hz)));
     const queue0 = hs.filter((h) => h.status !== 'owned'), skipped = {}, hel = isFinite(+g.hrate) ? +g.hrate : GDEF.hrate;
-    let P0, sellAt, mergeAt, dr, cur, exits, fund, readyAt, cashA, outsideA, reinv, bought, blocked, BAL, PAY, RAT, LS, AUTO, JOBX, CALLS, FUT = null, JS, JU, JLN, JC, JLO, LQ, SALET, best;
+    let P0, sellAt, mergeAt, dr, cur, exits, fund, readyAt, cashA, outsideA, reinv, bought, blocked, BAL, PAY, RAT, LS, AUTO, JOBX, CALLS, FUT = null, JS, JU, JLN, JC, JLO, JSH, LQ, SALET, best;
     const exitTimes = (h) => { const p = P0[h.id]; sellAt[h.id] = Infinity; mergeAt[h.id] = Infinity; if (!isFinite(p)) return;
       const m = Math.max(Math.round(h.exitMonth || 0), p + 1); if (h.exit === 'sell') sellAt[h.id] = m; else if (h.exit === 'merge') mergeAt[h.id] = m; };
     /* state of an asset at month t, ignoring whether it has been sold (hl = its line draw this month) */
@@ -359,7 +359,7 @@
       P0 = {}; sellAt = {}; mergeAt = {}; dr = {}; cur = {}; exits = {}; fund = {}; readyAt = {}; bought = []; blocked = null; best = {};
       BAL = {}; PAY = {}; RAT = {}; LS = {}; AUTO = {}; JOBX = {}; CALLS = new Array(TS + 1).fill(0);
       cashA = new Array(TS + 1).fill(0); outsideA = new Array(TS + 1).fill(0); reinv = new Array(TS + 1).fill(0);
-      JS = new Array(TS + 1).fill(0); JU = new Array(TS + 1).fill(0); JLN = new Array(TS + 1).fill(0); JC = new Array(TS + 1).fill(0); JLO = new Array(TS + 1).fill(0); LQ = new Array(TS + 1).fill(0); SALET = new Array(TS + 1).fill(0);
+      JS = new Array(TS + 1).fill(0); JU = new Array(TS + 1).fill(0); JLN = new Array(TS + 1).fill(0); JC = new Array(TS + 1).fill(0); JLO = new Array(TS + 1).fill(0); JSH = new Array(TS + 1).fill(0); LQ = new Array(TS + 1).fill(0); SALET = new Array(TS + 1).fill(0);
       hs.forEach((h) => { cur[h.id] = 0; P0[h.id] = h.status === 'owned' ? 0 : Infinity; exitTimes(h); if (h.status === 'owned') { bought.push(h); dr[h.id] = new Array(TS + 1).fill(0); startLoan(h, 0); } });
       const queue = queue0.filter((h) => !skipped[h.id]); let C = 0, out = 0, qi = 0, L = pp ? +pp.cash || 0 : 0, outPrev = 0;
       const autoPay = g.autoPay !== false, infl = pp ? (pp.inflation || 0) / 100 : 0, apy = pp ? (pp.cashApy || 0) / 1200 : 0;
@@ -421,10 +421,15 @@
         if (!pending && pCand > 0.005 && scale > 0 && anyLoan) { const r = spread(pCand * scale, snap.map((x2) => ({ id: x2.h.id, w: Math.max(0, x2.inc - x2.sched - x2.hi), cap: cap[x2.h.id] || 0 }))); Object.keys(r.got).forEach((id) => { AUTO[id][t] = r.got[id]; cap[id] -= r.got[id]; pSpent += r.got[id]; }); }
         if (cf > 0) reinv[t] = cf - (x - pSpent);
         if (jCand * scale > 0.005) {
-          const J = jCand * scale; let y = payLine(J); JLN[t] = J - y;
+          const J0 = jCand * scale; let J = J0, want = 0;
+          /* your own amount for a home (jobPay, set on its page) is paid to that loan first, never more than the loan, never more than the job money there is; what it could not get is recorded (JSH) so the page can warn */
+          const jfac = Math.pow(1 + infl, t / 12); /* the amount is in today's dollars (2026*), like everything the page shows; the plan works in future dollars, so it grows with the cost increase */
+          snap.forEach((x2) => { const jp0 = x2.h.jobPay, jp = jp0 === null || jp0 === undefined ? jp0 : jp0 * jfac; if (jp === null || jp === undefined || !(cap[x2.h.id] > 0.005)) return; want += jp; const give = Math.min(jp, cap[x2.h.id], J); if (give > 0) { JOBX[x2.h.id][t] += give; cap[x2.h.id] -= give; JLO[t] += give; J -= give; } });
+          const fixedPaid = J0 - J; JSH[t] = Math.max(0, want - fixedPaid);
+          let y = payLine(J); JLN[t] = J - y;
           if (pending) { C += y; JC[t] = y; y = 0; }
-          else if (y > 0.005 && anyLoan) { const r = spread(y, snap.map((x2) => ({ id: x2.h.id, w: 1, cap: cap[x2.h.id] || 0 }))); Object.keys(r.got).forEach((id) => { JOBX[id][t] = r.got[id]; cap[id] -= r.got[id]; JLO[t] += r.got[id]; }); y = r.left; }
-          JU[t] = J - y;
+          else if (y > 0.005 && anyLoan) { const r = spread(y, snap.map((x2) => ({ id: x2.h.id, w: x2.h.jobPay === null || x2.h.jobPay === undefined ? 1 : 0, cap: cap[x2.h.id] || 0 }))); Object.keys(r.got).forEach((id) => { JOBX[id][t] += r.got[id]; cap[id] -= r.got[id]; JLO[t] += r.got[id]; }); y = r.left; }
+          JU[t] = J0 - y;
         }
         if (pp) { L += inc - liv - dbt - Xu + port - (t > 0 ? reinv[t - 1] : 0) - JU[t] + intr + cI - oT - (out - outPrev) - SALET[t]; LQ[t] = L; }
         outPrev = out;
@@ -487,7 +492,7 @@
     hs.forEach((h) => { const p = P0[h.id]; if (!isFinite(p)) { loanEnd[h.id] = Infinity; return; } let e = Infinity; for (let t = p; t <= TS; t++) if (!(BAL[h.id][t] > 0.005)) { e = t; break; } loanEnd[h.id] = e; });
     const shareAt = (A) => (id, t) => (A[id] ? A[id][Math.max(0, Math.min(TS, Math.round(t)))] || 0 : 0);
     const firstPos = (A) => (id) => { const a = A[id]; if (!a) return -1; for (let t = 0; t <= TS; t++) if (a[t] > 0.005) return t; return -1; };
-    const jobs = { surplus: JS.slice(0, T + 1), used: JU.slice(0, T + 1), line: JLN.slice(0, T + 1), cash: JC.slice(0, T + 1), loans: JLO.slice(0, T + 1), liquid: LQ.slice(0, T + 1) };
+    const jobs = { short: JSH.slice(0, T + 1), surplus: JS.slice(0, T + 1), used: JU.slice(0, T + 1), line: JLN.slice(0, T + 1), cash: JC.slice(0, T + 1), loans: JLO.slice(0, T + 1), liquid: LQ.slice(0, T + 1) };
     const rows = queue0.map((h) => { const m = P0[h.id], r = { id: h.id, target: h.id, start: prevM, locM: isFinite(m) ? Math.max(0, m - prevM) : Infinity, end: m, ok: isFinite(m), funds: funds[h.id], ready: trust[h.id].ready }; if (isFinite(m)) prevM = Math.max(prevM, m); return r; });
     let worst = { dti: 0, month: 0 }; for (let t = 0; t <= T; t++) if (s.dti[t] > worst.dti) worst = { dti: s.dti[t], month: t };
     let extraLater = 0; hs.forEach((h) => { const v = V[h.id]; if (isFinite(P0[h.id]) && P0[h.id] > 0 && v.L > 0 && v.payoff > 0) extraLater += v.X; });
@@ -505,7 +510,7 @@
      realPlan() returns the plan with every dollar figure of a future month converted that way (totals and rows are converted with the same factor, so a total is still the sum of its rows). The plan itself stays in pl.raw. */
   const dfac = (S, m) => Math.pow(1 + (((S && S.p && S.p.inflation) || 0) / 100), Math.max(0, +m || 0) / 12);
   const PL_K = ['nw', 'monthly', 'extra', 'noi', 'ds', 'cf', 'cfx', 'debt', 'value', 'rent', 'dsti', 'outside', 'cash', 'intr', 'dep', 'txRE', 'txBiz'];
-  const AS_K = ['equity', 'value', 'debt', 'payment', 'cf', 'income', 'extra'], PO_K = ['room', 'drawn', 'head', 'cf', 'tax', 'gm', 'sweep', 'cash'], EX_K = ['proceeds', 'price', 'net', 'dep', 'cost', 'tax', 'cashIn', 'profit'], JB_K = ['surplus', 'used', 'line', 'cash', 'loans', 'liquid'];
+  const AS_K = ['equity', 'value', 'debt', 'payment', 'cf', 'income', 'extra'], PO_K = ['room', 'drawn', 'head', 'cf', 'tax', 'gm', 'sweep', 'cash'], EX_K = ['proceeds', 'price', 'net', 'dep', 'cost', 'tax', 'cashIn', 'profit'], JB_K = ['short', 'surplus', 'used', 'line', 'cash', 'loans', 'liquid'];
   const scaleKeys = (o, ks, f) => { const c = Object.assign({}, o); ks.forEach((k) => { if (typeof c[k] === 'number') c[k] = c[k] / f; }); return c; };
   function realPlan(S, pl) {
     if (!pl) pl = plan(S); if (pl.raw) return pl;
@@ -838,6 +843,7 @@
       h.mfRes = isFinite(+h.mfRes) && h.mfRes !== null && h.mfRes !== '' ? Math.max(0, +h.mfRes) : 300; h.mfOther = isFinite(+h.mfOther) && h.mfOther !== null && h.mfOther !== '' ? Math.max(0, +h.mfOther) : 0;
       ['mgmtPct', 'maintPct'].forEach((k) => { h[k] = h[k] === null || h[k] === '' || h[k] === undefined || !isFinite(+h[k]) ? null : Math.max(0, +h[k]); });
       h.boughtOn = h.status === 'owned' && typeof h.boughtOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(h.boughtOn) && isFinite(Date.parse(h.boughtOn)) ? h.boughtOn : null; /* the day the user marked it bought (YYYY-MM-DD); old owned assets have none: the page says 'date not recorded' */
+      h.jobPay = h.jobPay === null || h.jobPay === '' || h.jobPay === undefined || !isFinite(+h.jobPay) ? null : Math.max(0, +h.jobPay); /* your job money sent to this home's loan each month; null = the plan's own split (default) */
       if (h.type === 'business') h.mgmtPct = null;
       ['mipUp', 'mipAnn'].forEach((k) => { h[k] = isFinite(+h[k]) ? Math.max(0, +h[k]) : 0; }); h.finCapex = !!h.finCapex; h.ownerOcc = !!h.ownerOcc;
       if (h.term < 12 && !h.io) h.term = 360; h.io = !!h.io;
@@ -1393,6 +1399,10 @@
     return { SAFEKEY, DIAGKEY, SAFE_MAX, SAFE_BYTES, EV_MAX, ACT_MAX, DIAG_BYTES, REPORT_MAX, URL_MAX, ISSUE, hash, idsHash, fingerprint, okState, safeRead, safeWrite, safeAdd, safeDaily, safeInfo, replacedCheck, restoreCandidate, EXPLAIN, checks, anomalies, plannedParts, scrub, report, parseReport, issueUrl, CODE };
   })();
   const CF_TARGET = 1300000; /* the user's cash-flow target: $1.3M a month AFTER TAX, in today's dollars (2026*), at the plan end */
-  const E = { CF_TARGET, Diag, FEAS, feasible, todayTotals, checkList, shortfall, moveTo, plannedIds, numbering, buyKey, EXAMPLES, EXKEY, EXV, EXF, exFields, exLabel, exLoanOk, exCheck, exEff, exEffective, exVal, exPrune, exClean, exOverrides, exSet, exRead, exWrite, exLoad, exCommit, exExport, exImport, exClearAll, exDraftSet, exDirty, exWarnings, exFmt, exampleShipped, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, mgmtAmt, ARV_K, autoArv, arvIsAuto, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  /* Your job money in the trust: the amounts you set per home (h.jobPay) against the job pay left after living costs. null = the plan's own split (the default). Never cuts anything silently: 'over' says the amounts add up to more than there is. */
+  const jobDefault = (S, id, pl) => { const h0 = (S.houses || []).find((q) => q.id === id); if (!h0) return { amount: 0, from: -1 }; let q = plan(S); /* the raw plan (future dollars), whatever plan the caller holds */ if ((S.houses || []).some((x) => x.jobPay !== null && x.jobPay !== undefined)) { const S2 = JSON.parse(JSON.stringify(S)); S2.houses.forEach((x) => { x.jobPay = null; }); q = plan(S2); } const f = q.jobFrom(id); return { amount: f >= 0 ? q.jobAt(id, f) / dfac(S, f) : 0, from: f }; }; /* today's dollars (2026*), the unit the box takes */
+  const jobMoney = (S, pl) => { const surplus0 = (pl.jobs && pl.jobs.surplus[0]) || 0, set = (S.houses || []).filter((h) => h.jobPay !== null && h.jobPay !== undefined), assigned = set.reduce((a, h) => a + h.jobPay, 0), sh = (pl.jobs && pl.jobs.short) || [], shortMonths = sh.filter((v) => v > 0.5).length;
+    return { surplus0, assigned, count: set.length, over: assigned > surplus0 + 0.5, shortMonths, firstShort: sh.findIndex((v) => v > 0.5), short0: sh[0] || 0 }; };
+  const E = { jobMoney, jobDefault, CF_TARGET, Diag, FEAS, feasible, todayTotals, checkList, shortfall, moveTo, plannedIds, numbering, buyKey, EXAMPLES, EXKEY, EXV, EXF, exFields, exLabel, exLoanOk, exCheck, exEff, exEffective, exVal, exPrune, exClean, exOverrides, exSet, exRead, exWrite, exLoad, exCommit, exExport, exImport, exClearAll, exDraftSet, exDirty, exWarnings, exFmt, exampleShipped, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, mgmtAmt, ARV_K, autoArv, arvIsAuto, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

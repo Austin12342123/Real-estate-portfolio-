@@ -36,6 +36,9 @@ exports.run = async function run(X) {
   let seq = 0;
   async function load(pg, S, hash, ui) {
     await BOOT.boot(pg, { base: base(), tag: 'h', S, DATA_V, hash, write: [([k, s, uk, u]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); if (u) localStorage.setItem(uk, JSON.stringify(u)); } catch (e) {} }, [KEY, S || null, UIKEY, ui || null]] });
+    /* design v5: the loan options sit behind the Loan row on Add, and payments / DSCR / target years sit in the 'More figures' fold on Planned; open them so the (i) buttons inside can be reached (state is stored in the UI key, so it survives the first reload) */
+    if (hash === '#add') { if (!(await pg.$('[data-testid=loan-options]'))) { await pg.click('[data-testid=loan-row]'); await pg.waitForSelector('[data-testid=loan-options]'); } }
+    else if (!hash || hash === '#') { const bt = await pg.$('[data-coll=more][aria-expanded=false]'); if (bt) await bt.click(); }
   }
   async function nav(pg, h) {
     await pg.evaluate(async (h) => { const cur = location.hash; if (cur === h || (h === '#' && cur === '')) window.dispatchEvent(new Event('hashchange')); else location.hash = h; await new Promise((r) => setTimeout(r, 30)); }, h);
@@ -136,7 +139,7 @@ exports.run = async function run(X) {
         }
       }
       for (const [tp, ids] of addCards) {
-        await load(page, sampleS(), '#add'); await clickSel(page, `[data-addtype="${tp}"]`);
+        await load(page, sampleS(), '#add'); await clickSel(page, `[data-addtype="${tp}"]`); if (!(await page.$('[data-testid=loan-options]'))) await page.click('[data-testid=loan-row]');
         const cards = await page.evaluate(() => [...document.querySelectorAll('.loanrow')].map((r) => ({ id: (r.querySelector('[data-pickloan]') || { dataset: {} }).dataset.pickloan, info: (r.querySelector('button.info') || { dataset: {} }).dataset.info })));
         cards.forEach((c) => { if (c.info) seenKeys.add(c.info); });
         const missing = ids.filter((id) => !cards.find((c) => c.id === id && c.info === LOAN[id]));

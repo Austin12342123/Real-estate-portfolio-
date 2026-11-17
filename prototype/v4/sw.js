@@ -1,5 +1,5 @@
 /* Offline-first service worker: caches the whole app shell; no network needed after first load. */
-const CACHE = 'portfolio-v4-2026-11-16-numbering-v26-' + /*STAMP*/'b136bf0b'/*ENDSTAMP*/; /* the stamp ties this cache to one build of app.js + engine.js + info.js + style.css (stamp.py rewrites it) */
+const CACHE = 'portfolio-v4-2026-11-16-numbering-v26-' + /*STAMP*/'096f5b50'/*ENDSTAMP*/; /* the stamp ties this cache to one build of app.js + engine.js + info.js + style.css (stamp.py rewrites it) */
 const FILES = ['./', './index.html', './style.css', './engine.js', './info.js', './app.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
