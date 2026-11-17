@@ -3,6 +3,7 @@
    The app's "today" is pinned (window.REP_TODAY = 2026-11-12 in grade.js) so dates are stable. Dates are compared with an independent integer-math reference (grader/dates.js). Never modifies the app. */
 const fs = require('fs'), path = require('path'), os = require('os'), { spawnSync } = require('child_process');
 const D = require('./dates.js');
+const BOOT = require('./boot.js');
 
 exports.run = async function run(X) {
   const { E, Parts, DATA_V, KEY, mkCtx, mkPage, base } = X;
@@ -22,10 +23,7 @@ exports.run = async function run(X) {
   const ctx = await mkCtx({ autoExpand: false }); const page = await mkPage(ctx, 'ux');
   let seq = 0;
   async function load(S, hash, ui, saved) {
-    await page.goto(base() + '/index.html?j=' + seq++);
-    await page.evaluate(([k, s, uk, u, sk, sv]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); if (u) localStorage.setItem(uk, JSON.stringify(u)); if (sv) localStorage.setItem(sk, JSON.stringify(sv)); } catch (e) {} }, [KEY, S || null, UIKEY, ui || null, SKEY, saved || null]);
-    await page.goto(base() + '/index.html?j=' + seq++ + (hash || ''));
-    await page.waitForSelector('#app > *');
+    await BOOT.boot(page, { base: base(), tag: 'j', S, DATA_V, hash, write: [([k, s, uk, u, sk, sv]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); if (u) localStorage.setItem(uk, JSON.stringify(u)); if (sv) localStorage.setItem(sk, JSON.stringify(sv)); } catch (e) {} }, [KEY, S || null, UIKEY, ui || null, SKEY, saved || null]] });
   }
   const store = () => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
   const withV = (S) => Object.assign(clone(S), { v: DATA_V });
@@ -615,7 +613,7 @@ exports.run = async function run(X) {
     const P = new Parts(); await goAdd(); await page.click('[data-testid=kind-multi]'); const sel = '[data-p="a.add.units"]';
     const props = await page.evaluate((s) => { const i = document.querySelector(s), o = document.querySelector('[data-testid=multi-fields]'); const other = document.querySelector('#app'); return { im: i.inputMode, eh: i.getAttribute('enterkeyhint'), num: i.dataset.num, ac: i.getAttribute('autocapitalize'), sp: i.getAttribute('spellcheck') }; }, sel);
     const ref = await (async () => { await page.goto(base() + '/index.html?j=' + seq++ + '#house-maple'); await page.waitForSelector('#app > *'); await openAllColl(); return page.evaluate(() => { const i = document.querySelector('[data-p="h.maple.rent"]'); return { im: i.inputMode, eh: i.getAttribute('enterkeyhint'), num: i.dataset.num, ac: i.getAttribute('autocapitalize'), sp: i.getAttribute('spellcheck') }; }); })();
-    P.t(JSON.stringify(props) === JSON.stringify(ref) && props.eh === 'done', 'the units box has the same keyboard settings as every other number box ' + JSON.stringify(props), 1.5, JSON.stringify([props, ref]));
+    P.t(JSON.stringify(Object.assign({}, props, { im: '' })) === JSON.stringify(Object.assign({}, ref, { im: '' })) && props.eh === 'done' && props.im === 'numeric' && ref.im === 'text', 'the units box has the same Done / no-autocorrect / no-capitalise settings as every other number box and opens the number pad (numeric), while the dollar rent box keeps the text keyboard ' + JSON.stringify(props), 1.5, JSON.stringify([props, ref]));
     await goAdd(); await page.click('[data-testid=kind-multi]');
     await typeIn(sel, '2*3'); await page.waitForTimeout(60); const live = await page.locator('[data-testid=calc-hint]').first().textContent().catch(() => ''); await blur();
     P.t(/= 6/.test(live) && (await unitsVal()) === '6' && (await uiState()).addUnits === 6 && /Add 6-unit building/.test(await page.textContent('[data-testid=confirm-add]')), '"2*3" shows "= 6" while typing and lands as 6 units', 1.5, live + '/' + (await unitsVal()));
@@ -1092,6 +1090,116 @@ exports.run = async function run(X) {
     await page.click('[data-testid=clear-plan-confirm]'); await page.waitForTimeout(100); t = await tx();
     P.t((await cnt('[data-testid=afford-chip]')) === 0 && (await cnt('[data-testid=checks]')) === 0 && !/Not yet|Plan end, after tax/.test(t) && /1 bought asset is counted on Real/.test(t), 'after Remove (1 bought + 3 planned) the page is the neutral card with the Real note', 1, t.slice(0, 120).replace(/\n/g, ' | '));
     await page.click('[data-testid=undo-banner] [data-undo]'); await page.waitForTimeout(100); P.t((await store()).houses.length === 4 && (await cnt('[data-testid=checks]')) === 1, 'Undo brings the planned assets and the plan page back', 1, String((await store()).houses.length));
+    return P; });
+
+  /* ---------- J56-J60 number boxes keep their keyboard (user bug E26: "typing a number, the keyboard drops out and reverts to the letter keyboard") ---------- */
+  const NEGP = (p) => /\.(growth|gain|raise)$/.test(p) || p === 'g.appr';
+  const pat = (p) => p.replace(/^(h|j|o|c)\.[^.]+\./, '$1.*.');
+  const S56 = withV(E.seedPlan());
+  const firstOf = (t) => S56.houses.find((h) => (h.type || 'house') === t);
+  const ROUTES = [];
+  ['house', 'commercial', 'business'].forEach((t) => { const h = firstOf(t); if (h) ROUTES.push({ name: t + ' page', hash: '#house-' + h.id }); });
+  ROUTES.push({ name: 'finances', hash: '#finances' }, { name: 'assumptions', hash: '#settings' }, { name: 'order', hash: '#order' },
+    { name: 'add flow', hash: '#add' },
+    { name: 'add flow units', hash: '#add', pre: async () => { await page.click('[data-kind=multi]').catch(() => {}); await page.waitForTimeout(60); } },
+    { name: 'example editor', hash: '#add', pre: async () => { await page.click('[data-exopen]').catch(() => {}); await page.waitForTimeout(60); await page.locator('[data-exedit]').first().click().catch(() => {}); await page.waitForTimeout(80); } },
+    { name: 'main extra panel', hash: '', pre: async () => { await page.locator('[data-row] [data-testid=row-extra-toggle]').first().click().catch(() => {}); await page.waitForTimeout(80); } });
+  async function openRoute(r, S) { await loadX(S || S56, r.hash); await openAllColl(); if (r.pre) await r.pre(); }
+  const scanBoxes = () => page.evaluate(() => [...document.querySelectorAll('#app input, #app textarea')].filter((e) => e.type !== 'file' && e.type !== 'hidden').map((e) => ({ p: e.dataset.p || '', num: e.dataset.num !== undefined, pre: e.dataset.pre || '', suf: e.dataset.suf || '', ro: e.readOnly, type: e.type, im: e.getAttribute('inputmode'), eh: e.getAttribute('enterkeyhint'), ac: e.getAttribute('autocapitalize'), acr: e.getAttribute('autocorrect'), sp: e.getAttribute('spellcheck') })));
+  let J56 = null;
+  const allBoxes = async () => { if (J56) return J56; J56 = []; for (const r of ROUTES) { await openRoute(r); (await scanBoxes()).forEach((b) => J56.push(Object.assign({ route: r.name }, b))); } return J56; };
+
+  await jcheck('J56', 'Every number box on every screen (asset pages of all three kinds, Finances, Assumptions, Order, Add flow incl. units and the example editor, the Extra panel) asks for the right keyboard: dollar boxes keep the text keyboard (so 650*3 can be typed), boxes that can go negative keep it too, every other number box is decimal/numeric, and all have the Done key, no auto-capitalise / auto-correct / spellcheck', 10, 'scan of every #app input with every section expanded on 10 routes; rules from data-pre / data-p', async () => {
+    const P = new Parts(), all = (await allBoxes()).filter((b) => b.num);
+    const bad = []; const seen = {};
+    all.forEach((b) => { const k = pat(b.p); seen[k] = 1; const money = b.pre === '$', want = money || NEGP(b.p) ? ['text'] : ['decimal', 'numeric'];
+      const why = []; if (want.indexOf(b.im) < 0) why.push('inputmode=' + b.im + ' want ' + want.join('/')); if (b.eh !== 'done') why.push('enterkeyhint=' + b.eh); if (b.ac !== 'off') why.push('autocapitalize=' + b.ac); if (b.acr !== 'off') why.push('autocorrect=' + b.acr); if (b.sp !== 'false') why.push('spellcheck=' + b.sp);
+      if (why.length) bad.push(b.route + ' ' + pat(b.p) + ': ' + why.join(', ')); });
+    P.t(all.length >= 60 && Object.keys(seen).length >= 40, 'the scan reaches the number boxes (' + all.length + ' boxes, ' + Object.keys(seen).length + ' distinct fields on ' + ROUTES.length + ' routes)', 2, '');
+    P.t(!bad.length, 'every number box has the right keyboard attributes: ' + bad.length + ' wrong of ' + all.length, 6, [...new Set(bad)].slice(0, 12).join(' | '));
+    const dec = all.filter((b) => b.im === 'decimal' || b.im === 'numeric').length, txt = all.filter((b) => b.im === 'text').length;
+    P.t(dec >= 20 && txt >= 20, 'both groups exist: ' + dec + ' numeric-keyboard boxes and ' + txt + ' text-keyboard (money / negative-capable) boxes', 2, '');
+    return P; });
+
+  await jcheck('J57', 'Typing in ANY number box (every distinct field on every screen): after each key and after a 1000 ms pause the very same box is still in the page, still focused, with unchanged attributes, and nothing redrew the page', 22, 'per box: tap, mark the node, insert 1, 2 (60 ms apart), wait 1000 ms, insert 3; compare node, focus, attributes, window.__app.renders', async () => {
+    const P = new Parts(), all = (await allBoxes()).filter((b) => b.num && !b.ro), todo = [], seen = {};
+    all.forEach((b) => { const k = pat(b.p); if (!seen[k]) { seen[k] = 1; todo.push(b); } });
+    const bad = []; let n = 0;
+    const chk = (tag) => page.evaluate(() => { const el = window.__el; const a = {}; if (el) [...el.attributes].forEach((x) => { if (x.name !== 'value') a[x.name] = x.value; }); return { same: !!el && document.activeElement === el, inDom: !!el && document.contains(el) && el.isConnected, attrs: JSON.stringify(a) === window.__attr, rn: window.__app.renders - window.__r0 }; }).then((r) => { if (!r.same || !r.inDom || !r.attrs || r.rn) return tag + ' ' + JSON.stringify(r); return ''; });
+    let cur = null;
+    for (const b of todo) {
+      const r = ROUTES.find((x) => x.name === b.route); if (!cur || cur.name !== r.name) { await openRoute(r); cur = { name: r.name, dirty: 0 }; }
+      let loc = page.locator(`#app input[data-p="${b.p}"]`).first();
+      if (!(await loc.count())) { await openRoute(r); loc = page.locator(`#app input[data-p="${b.p}"]`).first(); if (!(await loc.count())) { bad.push(b.route + ' ' + pat(b.p) + ' not found'); continue; } }
+      await loc.scrollIntoViewIfNeeded(); await loc.click(); await page.keyboard.press('Control+A');
+      await page.evaluate((p) => { const el = document.querySelector(`#app input[data-p="${p}"]`); window.__el = el; const a = {}; [...el.attributes].forEach((x) => { if (x.name !== 'value') a[x.name] = x.value; }); window.__attr = JSON.stringify(a); window.__r0 = window.__app.renders; }, b.p);
+      let why = '';
+      for (const step of ['1', '2', 'pause', '3']) { if (step === 'pause') await page.waitForTimeout(1000); else { await page.keyboard.insertText(step); await page.waitForTimeout(60); } why = await chk('after ' + step); if (why) break; }
+      n++; if (why) bad.push(b.route + ' ' + pat(b.p) + ': ' + why);
+      await blur();
+    }
+    P.t(n >= 50, 'typed into ' + n + ' distinct number boxes', 3, '');
+    P.t(!bad.length, 'every box kept its node, focus, attributes and zero renders through keys and a 1000 ms pause: ' + bad.length + ' failures', 19, bad.slice(0, 6).join(' | '));
+    return P; });
+
+  await jcheck('J58', 'Tapping from one number box to another (price to down payment %, down payment % to down payment $, improvement budget to its months, price to growth): the box you tapped is the very same element, keeps focus and the keyboard, and the page is not redrawn around it', 14, 'type a digit in box A, tap box B (marked beforehand), compare node / focus / attributes / renders at +50 ms and +450 ms, type into B', async () => {
+    const P = new Parts(), hid = S56.houses[0].id, pairs = [['price', 'dp'], ['dp', 'down'], ['capex', 'capexMonths'], ['price', 'growth']], bad = [];
+    for (const [a, b] of pairs) {
+      await loadX(S56, '#house-' + hid); await openAllColl();
+      const A = `#app input[data-p="h.${hid}.${a}"]`, B = `#app input[data-p="h.${hid}.${b}"]`;
+      if (!(await page.locator(A).count()) || !(await page.locator(B).count())) { bad.push(a + '->' + b + ' box missing'); continue; }
+      await page.locator(A).first().click(); await page.keyboard.press('Control+A'); await page.keyboard.insertText(a === 'dp' ? '27' : a === 'capex' ? '12000' : '250000'); await page.waitForTimeout(100);
+      await page.evaluate((q) => { const el = document.querySelector(q); window.__el = el; const at = {}; [...el.attributes].forEach((x) => { if (x.name !== 'value') at[x.name] = x.value; }); window.__attr = JSON.stringify(at); window.__r0 = window.__app.renders; }, B);
+      await page.locator(B).first().click();
+      const read = () => page.evaluate(() => { const el = window.__el, at = {}; [...el.attributes].forEach((x) => { if (x.name !== 'value') at[x.name] = x.value; }); return { same: document.activeElement === el, inDom: el.isConnected && document.contains(el), attrs: JSON.stringify(at) === window.__attr, rn: window.__app.renders - window.__r0 }; });
+      await page.waitForTimeout(50); let r1 = await read(); await page.waitForTimeout(450); let r2 = await read();
+      await page.keyboard.insertText('4'); await page.waitForTimeout(80); let r3 = await read();
+      [['+50ms', r1], ['+500ms', r2], ['typing', r3]].forEach(([t, r]) => { if (!r.same || !r.inDom || !r.attrs || r.rn) bad.push(a + '->' + b + ' ' + t + ' ' + JSON.stringify(r)); });
+      await blur();
+    }
+    P.t(!bad.length, 'all ' + pairs.length + ' hops kept the tapped element, its focus, its attributes and zero redraws: ' + bad.length + ' failures', 14, bad.slice(0, 4).join(' | '));
+    return P; });
+
+  await jcheck('J59', 'After a number lands (Enter, or tapping on to another box) every calculated box, hint and total shows the committed value, and the screen equals a fresh load of the same data (price, rent, down payment %, down payment $, appraisal, manager %, interest rate)', 14, 'type into the box, press Enter (or tap the next box); snapshot every [data-k] and compare with a reload of the stored data', async () => {
+    const P = new Parts(), hid = S56.houses[0].id, bad = [];
+    const snap = () => page.evaluate(() => { const o = {}; document.querySelectorAll('#app [data-k]').forEach((el) => { o[el.dataset.k] = el.tagName === 'INPUT' ? el.value : el.textContent.replace(/\s+/g, ' ').trim(); }); return o; });
+    const diff = (a, b, skip) => Object.keys(Object.assign({}, a, b)).filter((k) => k !== skip && a[k] !== b[k]).map((k) => k + ': live "' + a[k] + '" vs fresh "' + b[k] + '"');
+    const cases = [['price', '310000'], ['rent', '2450'], ['dp', '30'], ['down', '90000'], ['arv', '400000'], ['mgmtPct', '9'], ['rate', '6.75']];
+    for (const [k, v] of cases) {
+      await loadX(S56, '#house-' + hid); await openAllColl(); const q = `#app input[data-p="h.${hid}.${k}"]`;
+      if (!(await page.locator(q).count())) { bad.push(k + ' box missing'); continue; }
+      const before = await snap(); await page.locator(q).first().click(); await page.keyboard.press('Control+A'); await page.keyboard.insertText(v); await page.keyboard.press('Enter'); await page.waitForTimeout(300);
+      const live = await snap(), st = (await store()).houses[0]; await reloadX('#house-' + hid); await openAllColl(); const fresh = await snap();
+      const d = diff(live, fresh), moved = Object.keys(live).filter((x) => live[x] !== before[x]);
+      if (d.length) bad.push(k + ' live != fresh: ' + d.slice(0, 3).join('; '));
+      if (moved.length < 2) bad.push(k + ' nothing else changed on the screen (' + moved.join(',') + ')');
+      if (k === 'price' || k === 'dp') { const dn = num(live['h.' + hid + '.down']), want = Math.round(st.price * st.dp / 100); if (!(Math.abs(dn - want) <= 1)) bad.push(k + ' down $ shows ' + dn + ' want ' + want); }
+    }
+    P.t(!bad.length, 'after Enter every box matches a fresh load and the typed number changed the boxes that depend on it: ' + bad.length + ' problems', 8, bad.slice(0, 4).join(' | '));
+    const bad2 = [];
+    for (const [a, b, v] of [['price', 'dp', '310000'], ['dp', 'down', '30'], ['rent', 'price', '2450']]) {
+      await loadX(S56, '#house-' + hid); await openAllColl(); const A = `#app input[data-p="h.${hid}.${a}"]`, B = `#app input[data-p="h.${hid}.${b}"]`;
+      await page.locator(A).first().click(); await page.keyboard.press('Control+A'); await page.keyboard.insertText(v);
+      await page.evaluate((q) => { window.__el = document.querySelector(q); }, B); await page.locator(B).first().click(); await page.waitForTimeout(500);
+      const same = await page.evaluate(() => document.activeElement === window.__el && window.__el.isConnected), live = await snap(); const st = (await store()).houses[0];
+      const keep = await page.evaluate(() => document.activeElement.dataset.k); await blur(); await reloadX('#house-' + hid); await openAllColl(); const fresh = await snap(); const d = diff(live, fresh, keep);
+      if (!same) bad2.push(a + '->' + b + ' tapped box replaced'); if (d.length) bad2.push(a + '->' + b + ' live != fresh: ' + d.slice(0, 3).join('; ')); if (a === 'price' && st.price !== 310000) bad2.push('price not stored: ' + st.price);
+    }
+    P.t(!bad2.length, 'tapping on to another box commits the number and updates the dependents in place with the tapped box untouched: ' + bad2.length + ' problems', 6, bad2.slice(0, 4).join(' | '));
+    return P; });
+
+  await jcheck('J60', 'A new service worker taking over while you are typing in a number box does not reload the page (it reloads once you leave the box)', 6, 'controllerchange dispatched on a page with a controller while a box is focused; window marker survives, then the reload follows the blur', async () => {
+    const P = new Parts(), c2 = await mkCtx({ autoExpand: false }), pg = await mkPage(c2, 'ux-sw');
+    try {
+      await pg.addInitScript(() => { try { Object.defineProperty(navigator.serviceWorker, 'controller', { configurable: true, get: () => ({}) }); } catch (e) {} });
+      await pg.goto(base() + '/index.html?j=' + seq++); await pg.waitForSelector('#app > *'); await pg.goto(base() + '/index.html?j=' + seq++ + '#house-' + S56.houses[0].id); await pg.waitForSelector('#app input[data-num]');
+      await pg.evaluate(() => { window.__alive = 1; }); const q = `#app input[data-p="h.${S56.houses[0].id}.price"]`;
+      await pg.click(q); await pg.keyboard.press('Control+A'); await pg.keyboard.insertText('2'); await pg.evaluate(() => navigator.serviceWorker.dispatchEvent(new Event('controllerchange')));
+      await pg.waitForTimeout(1200); const a1 = await pg.evaluate(() => ({ alive: window.__alive === 1, foc: document.activeElement && document.activeElement.dataset.p })).catch(() => ({ alive: false }));
+      P.t(a1.alive && /price$/.test(a1.foc || ''), 'the page was not reloaded while the number box was focused: ' + JSON.stringify(a1), 4, '');
+      await pg.evaluate(() => document.activeElement.blur()); await pg.waitForTimeout(1500);
+      const a2 = await pg.evaluate(() => window.__alive === 1).catch(() => false); P.t(a2 === false, 'after leaving the box the pending update is applied (page reloads)', 2, String(a2));
+    } finally { await c2.close(); }
     return P; });
 
   await ctx.close();

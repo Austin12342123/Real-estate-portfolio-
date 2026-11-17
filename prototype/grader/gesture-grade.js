@@ -3,9 +3,10 @@
    Standalone: GEST_ONLY=1 node grade.js   (I_ONLY=I2,I4 for single checks).  Runs with section auto-expansion OFF: collapsed defaults are part of what is tested.
    Touch gestures are sent as real touch events through the Chrome DevTools protocol (Input.dispatchTouchEvent); the long-press drag is also tried with the mouse. Never modifies the app. */
 const path = require('path');
+const BOOT = require('./boot.js');
 
 exports.run = async function run(X) {
-  const { E, Parts, mkS, KEY, money, mkCtx, mkPage, base, collect } = X;
+  const { E, Parts, mkS, DATA_V, KEY, money, mkCtx, mkPage, base, collect } = X;
   const UIKEY = 'rep-v4-ui', checks = [];
   const errStart = collect.errors.length, reqStart = collect.requests.length;
   async function icheck(id, name, points, repro, fn) {
@@ -22,10 +23,7 @@ exports.run = async function run(X) {
   const ctx = await mkCtx({ autoExpand: false }); const page = await mkPage(ctx, 'gest'); const cdp = await ctx.newCDPSession(page);
   let seq = 0;
   async function load(S, hash, ui) {
-    await page.goto(base() + '/index.html?i=' + seq++);
-    await page.evaluate(([k, s, uk, u]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); if (u) localStorage.setItem(uk, JSON.stringify(u)); } catch (e) {} }, [KEY, S || null, UIKEY, ui || null]);
-    await page.goto(base() + '/index.html?i=' + seq++ + (hash || ''));
-    await page.waitForSelector('#app > *');
+    await BOOT.boot(page, { base: base(), tag: 'i', S, DATA_V, hash, write: [([k, s, uk, u]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); if (u) localStorage.setItem(uk, JSON.stringify(u)); } catch (e) {} }, [KEY, S || null, UIKEY, ui || null]] });
   }
   const store = () => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
   const hash = () => page.evaluate(() => location.hash);

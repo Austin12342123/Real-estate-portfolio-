@@ -1,8 +1,8 @@
 # Number-sync grader (SYNC_ONLY)
 
-Run: 2026-11-17T01:15:11.908Z  |  153s
+Run: 2026-11-17T04:36:48.049Z  |  176s
 
-## G. Number sync: **100.00 / 100** (separate scale; not included in the A-E + R total or in F)
+## G. Number sync: **101.00 / 101** (separate scale; not included in the A-E + R total or in F)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -14,6 +14,7 @@ Run: 2026-11-17T01:15:11.908Z  |  153s
 | G6 | Cross-page navigation & persistence (nav, reload, backup restore, second tab, v8 migration, dark/light) | 12.00 | 12.00 | 12/12 sub-checks pass |
 | G7 | Shared settings (g.* and p.*) propagate to every dependent display | 10.00 | 10.00 | 146/146 sub-checks pass |
 | G8 | No stale / duplicate / contradictory numbers | 12.00 | 12.00 | 10/10 sub-checks pass |
+| G9 | The grader loads the intended portfolio every time (no boot race, 30 loads at 4x CPU throttle) | 1.00 | 1.00 | 0 of 30 loads started from a different portfolio  |
 
 ### G failures
 

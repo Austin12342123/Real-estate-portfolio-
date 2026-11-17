@@ -1,6 +1,6 @@
 # Asset numbering grader (NUM_ONLY)
 
-Run: 2026-11-16T04:10:09.520Z  |  48s
+Run: 2026-11-17T04:47:55.306Z  |  41s
 
 ## N. Asset numbering: **100.00 / 100** (separate scale; policy and ideation in numbering-bugs.md)
 

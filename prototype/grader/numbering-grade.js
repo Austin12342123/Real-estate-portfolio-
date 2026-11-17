@@ -5,6 +5,7 @@
    Plugged in from grade.js: require('./numbering-grade.js').run(X) -> { earned, max, checks }.   Standalone: NUM_ONLY=1 node grade.js   (N_ONLY=N2,N4 for single checks).
    Expected numbers are computed HERE from the definition (list position / oldest first), not by calling Engine.numbering, except in N1 which tests that function against the same definition. Never modifies the app. */
 const fs = require('fs'), path = require('path');
+const BOOT = require('./boot.js');
 
 exports.run = async function run(X) {
   const { E, Parts, DATA_V, KEY, mkCtx, mkPage, base, collect, EXPAND_JS } = X;
@@ -43,10 +44,7 @@ exports.run = async function run(X) {
   const ctx = await mkCtx(); const page = await mkPage(ctx, 'num');
   let seq = 0;
   async function load(S, hash, extraLS) {
-    await page.goto(base() + '/index.html?n=' + seq++);
-    await page.evaluate(([k, s, uk, ex]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); (ex || []).forEach(([a, b]) => localStorage.setItem(a, JSON.stringify(b))); } catch (e) {} }, [KEY, S || null, UIKEY, extraLS || []]);
-    await page.goto(base() + '/index.html?n=' + seq++ + (hash || ''));
-    await page.waitForSelector('#app > *'); await settle();
+    await BOOT.boot(page, { base: base(), tag: 'n', S, DATA_V, hash, write: [([k, s, uk, ex]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); (ex || []).forEach(([a, b]) => localStorage.setItem(a, JSON.stringify(b))); } catch (e) {} }, [KEY, S || null, UIKEY, extraLS || []]] }); await settle();
   }
   const settle = async () => { await page.waitForTimeout(40); for (let i = 0; i < 3; i++) { const n = await page.evaluate(EXPAND_JS).catch(() => 0); if (!n) break; await page.waitForTimeout(20); } };
   const store = () => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);

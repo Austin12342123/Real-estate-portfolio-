@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'6a0b8d46'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'b136bf0b'});/*ENDSTAMP*/
 /* Plain-language definitions shown by the "i" buttons. t = title, b = what it means, e = a short example (optional).
    Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
 (function (root) {

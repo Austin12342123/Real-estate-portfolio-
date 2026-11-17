@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'6a0b8d46'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'b136bf0b'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
@@ -195,7 +195,9 @@
 
   /* ---------- reusable bits ---------- */
   const lblOf = (label, info) => { const ib = infoBtn(info), m = /^([\s\S]*\S)\s+(\S+)$/.exec(label); return m ? m[1] + ' <span class="nw">' + m[2] + ib + '</span>' : '<span class="nw">' + label + ib + '</span>'; }; /* the last word and its (i) never split across lines */
-  const field = (label, p, val, o = {}) => `<label class="f ${o.calc ? 'calc' : ''}"><span class="lb">${lblOf(label, o.info || GL.LABEL[label])}${o.calc ? ' <i class="auto" title="calculated from your other numbers — tap to override">auto</i>' : ''}${o.date ? `<small class="dh" data-testid="date-hint" data-dh="${p}" data-m="${isFinite(+val) && String(val) !== '' ? Math.round(+val) : ''}">${isFinite(+val) && String(val) !== '' ? (+val <= 0 ? 'today (' + dt(0) + ')' : 'on ' + dt(+val)) : 'no date yet'}</small>` : ''}</span><span class="iw">${o.pre ? `<em>${o.pre}</em>` : ''}<input inputmode="${o.ro ? 'decimal' : 'text'}" ${o.ro ? '' : `data-num="1" data-pre="${esc(o.pre || '')}" data-suf="${esc(o.suf || '')}" ${o.per ? 'data-per="1"' : ''} enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false"`} data-p="${p}" data-k="${p}" aria-label="${esc(label)}" ${o.ro ? 'readonly tabindex="-1"' : ''} ${o.ph ? 'placeholder="' + esc(o.ph) + '"' : ''} value="${val}">${o.suf ? `<em>${o.suf}</em>` : ''}</span></label>`;
+  /* the keyboard a number box asks for. Dollar boxes (and boxes that can go below zero) keep the text keyboard: the number pad has no * / + - for math like 650*3 and no minus on iOS. Every other box (months, buy position, counts, percents, rates, years, hours, ratios) never needs math, so it opens the number pad: numeric (no point) for whole numbers, decimal for the rest. */
+  const imFor = (p, pre) => (pre === '$' || /\.(growth|gain|raise)$/.test(p) || p === 'g.appr' ? 'text' : /\.(buyIn|wait|paid|mat|payoff|capexMonths|exitMonth|pos|units|end|start|month|operating|rentCount)$/.test(p) ? 'numeric' : 'decimal');
+  const field = (label, p, val, o = {}) => `<label class="f ${o.calc ? 'calc' : ''}"><span class="lb">${lblOf(label, o.info || GL.LABEL[label])}${o.calc ? ' <i class="auto" title="calculated from your other numbers — tap to override">auto</i>' : ''}${o.date ? `<small class="dh" data-testid="date-hint" data-dh="${p}" data-m="${isFinite(+val) && String(val) !== '' ? Math.round(+val) : ''}">${isFinite(+val) && String(val) !== '' ? (+val <= 0 ? 'today (' + dt(0) + ')' : 'on ' + dt(+val)) : 'no date yet'}</small>` : ''}</span><span class="iw">${o.pre ? `<em>${o.pre}</em>` : ''}<input inputmode="${o.ro ? 'decimal' : imFor(p, o.pre)}" ${o.ro ? '' : `data-num="1" data-pre="${esc(o.pre || '')}" data-suf="${esc(o.suf || '')}" ${o.per ? 'data-per="1"' : ''} enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false"`} data-p="${p}" data-k="${p}" aria-label="${esc(label)}" ${o.ro ? 'readonly tabindex="-1"' : ''} ${o.ph ? 'placeholder="' + esc(o.ph) + '"' : ''} value="${val}">${o.suf ? `<em>${o.suf}</em>` : ''}</span></label>`;
   const kpiLbl = (label, ib) => { const m = /^([\s\S]*\S)\s+(\S+)$/.exec(label); return m ? m[1] + ' <span class="nw">' + m[2] + ib + '</span>' : '<span class="nw">' + label + ib + '</span>'; }; /* the last word and its (i) never split across lines */
   const kpi = (id, label, val, sub, cls, sm, alt) => `<div class="kpi ${sm ? 'sm' : ''}"><small>${kpiLbl(label, infoBtn(GL.LABEL[label]))}</small><b class="${cls || ''}" data-testid="${id}" data-k="${id}">${val}</b>${sub ? `<span class="sub">${sub}</span>` : ''}${alt ? `<span class="alt" data-testid="alt-${id}">${alt}</span>` : ''}</div>`;
   const altLbl = () => (isToday() ? 'future dollars' : "today's dollars");
@@ -504,7 +506,7 @@
       return `<div class="rw" data-rw="${h.id}"><div class="row ord" data-row="${h.id}" data-testid="order-row" data-pos="${i + 1}"><div class="r1"><span class="nm"><button type="button" class="draghandle" data-testid="order-handle" aria-label="Hold and drag to move ${esc(h.addr)}" title="Hold and drag">⋮⋮</button><span class="addr" data-go="h/${h.id}" data-testid="order-name"><b class="bn" data-testid="order-no" aria-label="Buy number ${i + 1}">${i + 1}</b>${addrNb(h.addr, '')}</span><span class="pay"><span class="tag">${TL[type]}</span> price ${$c(h.price)}${sold ? ' · sold in the plan' : ''}</span></span></div>
         <div class="r2"><div class="fcol"><span class="locline" data-testid="order-status"><span class="vchip sm ${vd.cls}">${vd.word}</span><span class="vsep" aria-hidden="true"> · </span>${when}${why}</span></div></div>
         <div class="ordact"><button type="button" class="pbtn" data-ordmove="${h.id}:-1" data-testid="order-up" aria-label="Move ${esc(h.addr)} up" ${i === 0 ? 'disabled' : ''}>↑ Up</button><button type="button" class="pbtn" data-ordmove="${h.id}:1" data-testid="order-down" aria-label="Move ${esc(h.addr)} down" ${i === n - 1 ? 'disabled' : ''}>↓ Down</button><button type="button" class="pbtn" data-ordtop="${h.id}" data-testid="order-top" aria-label="Move ${esc(h.addr)} to the top" ${i === 0 ? 'disabled' : ''}>⤒ Top</button>
-        <label class="ordto"><span class="lb">Move to #</span><input inputmode="text" data-num="1" data-pre="" data-suf="" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" data-testid="order-pos" data-p="${P}pos" data-k="ord-${h.id}" aria-label="Buy position for ${esc(h.addr)}" value="${i + 1}"></label></div></div></div>`; }).join('');
+        <label class="ordto"><span class="lb">Move to #</span><input inputmode="numeric" data-num="1" data-pre="" data-suf="" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" data-testid="order-pos" data-p="${P}pos" data-k="ord-${h.id}" aria-label="Buy position for ${esc(h.addr)}" value="${i + 1}"></label></div></div></div>`; }).join('');
     return `<div class="top"><button class="ic" data-go="" aria-label="Back" data-testid="order-back">‹</button><h2>Buy order</h2></div>
     <section class="card" data-testid="order-intro"><p class="note" style="margin:0">The first asset is bought first. The trust funds each one from everything above it, so nothing is bought before the assets above it. Press and hold a row, then drag it. Or use the buttons or type its number. Homes, commercial properties and businesses share this one list. Assets you already own are not part of it.</p></section>
     ${n > 1 ? '<p class="note hold ordhint" data-testid="order-hint">Press and hold a row, then drag</p>' : ''}
@@ -914,20 +916,46 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   let prev = {};
   let inRender = false; /* a box removed by a re-render fires focusout: that is not the user leaving it */
   function render() { inRender = true; try { render0(); } finally { inRender = false; } }
+  /* A number or text box that has the focus is NEVER replaced: replacing it dismisses the phone keyboard and brings back the letter layer, even when the new box is given the focus again. So while a box in the page is focused (typing, or tapping from one box to the next) the page is redrawn "softly": the new page is built off-screen and the live page is patched to match it, node by node, leaving the focused box (and the box you just tapped) exactly as it is. A full redraw only happens when no box is focused or when the screen itself changes. */
+  const syncAttrs = (a, b) => { [...a.attributes].forEach((x) => { if (!b.hasAttribute(x.name)) a.removeAttribute(x.name); }); [...b.attributes].forEach((x) => { if (a.getAttribute(x.name) !== x.value) a.setAttribute(x.name, x.value); }); };
+  /* patchAround: keep the focused box and the chain of elements it sits in (label, wrapper, card ...) exactly as they are, and swap everything beside them for the freshly built page. Nothing is touched unless the new page has the same box in the same nesting (returns false, and the page simply keeps what it shows). */
+  function patchAround(app, host, act) {
+    const key = act.dataset && act.dataset.p; if (key === undefined) return false;
+    const pick = (root) => [...root.querySelectorAll('input[data-p],textarea[data-p]')].filter((x) => x.dataset.p === key), idx = pick(app).indexOf(act), fa = pick(host)[idx];
+    if (!fa || fa.nodeName !== act.nodeName) return false;
+    const lp = [], fp = []; for (let e = act; e && e !== app; e = e.parentNode) lp.unshift(e); for (let e = fa; e && e !== host; e = e.parentNode) fp.unshift(e);
+    if (lp.length !== fp.length || lp.some((x, k) => x.nodeName !== fp[k].nodeName)) return false;
+    let L = app, F = host;
+    for (let k = 0; k < lp.length; k++) {
+      const lc = lp[k], fc = fp[k];
+      while (L.firstChild !== lc) L.removeChild(L.firstChild);
+      while (lc.nextSibling) L.removeChild(lc.nextSibling);
+      while (F.firstChild !== fc) L.insertBefore(F.firstChild, lc);
+      while (fc.nextSibling) L.appendChild(fc.nextSibling);
+      if (lc !== act) syncAttrs(lc, fc);
+      L = lc; F = fc;
+    }
+    if (act.dataset.num !== undefined && editGood && editGood.p === key && act.value === editGood.text && fa.value !== act.value) { act.value = fa.value; editGood.text = fa.value; } /* the box you are in, still untouched: if the number it shows changed because of the box you just left (down payment $ after a % edit), show the new number so leaving it never writes the old one back */
+    return true;
+  }
+  let SRN = 0, lastSig = null;
   function render0() {
     if (txt) flushText(false); /* a pending name always lands before anything is redrawn (route change, Back, another control) */
-    RN++; const route = routeOf(), a = document.activeElement, id = a && a.dataset && (a.dataset.p || a.dataset.sel), typed = a && a.value, pos = a && a.selectionStart;
-    const app = document.getElementById('app'); if (selId && !H(selId)) selId = null;
-    app.innerHTML = '';
-    app.innerHTML = route === 'finances' ? finances() : route === 'order' ? orderPage() : route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
-    app.insertAdjacentHTML('beforeend', sheetHtml());
-    if (undo && (route === '' || (undo.order && (route === 'order' || route.startsWith('h/'))))) app.insertAdjacentHTML('beforeend', `<div class="toast" role="status" aria-live="polite" data-testid="undo-banner"><span class="tmsg">${undo.text ? esc(undo.text) : 'Removed ' + esc(undo.label) + '.'}</span><button class="chip link" data-undo>Undo</button><button class="tx" data-undo-dismiss aria-label="Dismiss this message">×</button></div>`); /* a floating note that never moves the page; it goes away by itself after 10 seconds */
+    const route = routeOf(), a = document.activeElement, app = document.getElementById('app'); if (selId && !H(selId)) selId = null;
+    const sig = route + '|' + page + '|' + selId, boxFocus = !!(a && app.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && a.dataset && a.dataset.p !== undefined && !/^(file|checkbox|radio|button)$/.test(a.type)); let soft = boxFocus && sig === lastSig && !infoKey && !infoFrom; const id = !soft && a && a.dataset && a.dataset.sel;
+    const host = soft ? document.createElement('div') : app;
+    if (!soft) { RN++; app.innerHTML = ''; }
+    host.innerHTML = route === 'finances' ? finances() : route === 'order' ? orderPage() : route === 'add' ? addPage() : route.startsWith('import/') ? importPage(route.slice(7)) : route === 'settings' ? settings() : route.startsWith('h/') && H(route.slice(2)) ? house(H(route.slice(2))) : main();
+    host.insertAdjacentHTML('beforeend', sheetHtml());
+    if (undo && (route === '' || (undo.order && (route === 'order' || route.startsWith('h/'))))) host.insertAdjacentHTML('beforeend', `<div class="toast" role="status" aria-live="polite" data-testid="undo-banner"><span class="tmsg">${undo.text ? esc(undo.text) : 'Removed ' + esc(undo.label) + '.'}</span><button class="chip link" data-undo>Undo</button><button class="tx" data-undo-dismiss aria-label="Dismiss this message">×</button></div>`); /* a floating note that never moves the page; it goes away by itself after 10 seconds */
     if (route.startsWith('h/') && !UI.seenLegend) { UI.seenLegend = true; save(); }
     /* aria-modal: while the sheet is open nothing behind it can be reached with the keyboard or a screen reader */
-    [...app.children].forEach((el) => { if (infoKey && !el.matches('.sheet-bg,.sheet')) el.setAttribute('inert', ''); });
-    if (infoKey) { const cb = app.querySelector('[data-info-close].btn'); if (cb) cb.focus(); }
+    [...host.children].forEach((el) => { if (infoKey && !el.matches('.sheet-bg,.sheet')) el.setAttribute('inert', ''); });
+    if (soft) { app.querySelectorAll('.chint').forEach((n) => n.remove()); if (patchAround(app, host, a)) SRN++; else { RN++; soft = false; app.innerHTML = ''; while (host.firstChild) app.appendChild(host.firstChild); } } /* the new screen has no such box (the editor closed, a section went away): a full redraw, as before */
+    else if (infoKey) { const cb = app.querySelector('[data-info-close].btn'); if (cb) cb.focus(); }
     else if (infoFrom) { const back = app.querySelectorAll(`[data-info="${infoFrom.key}"]`)[infoFrom.idx]; infoFrom = null; if (back) back.focus(); }
-    if (id) { const el = app.querySelector(`[data-p="${id}"],[data-sel="${id}"]`); if (el) { el.focus(); if (a.dataset.p && !el.readOnly && document.hasFocus()) { el.value = typed; try { el.setSelectionRange(pos, pos); } catch (e) {} } } }
+    if (id) { const el = app.querySelector(`[data-sel="${id}"]`); if (el) el.focus(); }
+    lastSig = sig;
     placeHint();
     const cur = {};
     app.querySelectorAll('[data-k]').forEach((el) => { const k = el.dataset.k, v = el.tagName === 'INPUT' ? el.value : el.textContent; cur[k] = v;
@@ -1376,6 +1404,6 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   render(); STARTED = true; act('route ' + routeSafe());
   /* local-first plumbing: ask the browser to keep our data, and cache the app for offline use */
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
-  /*SW*/if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { const had = !!navigator.serviceWorker.controller; let rl = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !rl) { rl = true; logEv('swupdate', 'a new service worker took over: reloading'); location.reload(); } }); navigator.serviceWorker.register('sw.js').catch((e) => logEv('sw', 'register failed: ' + (e && e.message))); }/*ENDSW*/
-  window.__app = { get state() { return S; }, get renders() { return RN; }, stamps: STAMPS, get bootMs() { return DIAG_MS; }, get monMs() { return MON_MS; }, get mixed() { return MIXED; }, check: () => { runMonitor(); return ANOM.slice(); }, report: (nums) => makeReport(!!nums).text, get diag() { return DG; } }; /* read-only handles for the graders */
+  /*SW*/if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { const had = !!navigator.serviceWorker.controller; let rl = false, wait = false; const typing = () => { const a = document.activeElement; return !!(a && a.matches && a.matches('input:not([type=file]):not([type=checkbox]):not([type=radio]),textarea,[contenteditable]')); }; /* a new service worker taking over reloads the page, but never while you are typing (a reload would drop the keyboard and the half-typed number): it waits until you leave the box */ const go = () => { if (rl) return; rl = true; location.reload(); }; navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !rl) { logEv('swupdate', 'a new service worker took over: ' + (typing() ? 'reloading when you leave the box' : 'reloading')); if (typing()) wait = true; else go(); } }); document.addEventListener('focusout', () => { if (wait) setTimeout(() => { if (wait && !typing()) go(); }, 400); }); navigator.serviceWorker.register('sw.js').catch((e) => logEv('sw', 'register failed: ' + (e && e.message))); }/*ENDSW*/
+  window.__app = { get state() { return S; }, get renders() { return RN; }, get softRenders() { return SRN; }, stamps: STAMPS, get bootMs() { return DIAG_MS; }, get monMs() { return MON_MS; }, get mixed() { return MIXED; }, check: () => { runMonitor(); return ANOM.slice(); }, report: (nums) => makeReport(!!nums).text, get diag() { return DG; } }; /* read-only handles for the graders */
 })();

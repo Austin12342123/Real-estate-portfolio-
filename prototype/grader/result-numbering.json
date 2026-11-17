@@ -12,7 +12,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "node -e \"E=require('./v4/engine.js'); E.numbering(S, E.plan(S))\"",
-        "seconds": 2.5
+        "seconds": 1.8
       },
       {
         "id": "N2",
@@ -23,7 +23,7 @@
         "ratio": 1,
         "detail": "11/11 sub-checks pass",
         "repro": "state: [owned house, planned commercial, planned home] and the same without the owned one; read the Planned badges",
-        "seconds": 2.2
+        "seconds": 1.4
       },
       {
         "id": "N3",
@@ -45,7 +45,7 @@
         "ratio": 1,
         "detail": "14/14 sub-checks pass",
         "repro": "select row > Remove > Yes; read the badges immediately",
-        "seconds": 4.3
+        "seconds": 3.7
       },
       {
         "id": "N5",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "11/11 sub-checks pass",
         "repro": "Planned > Remove > Yes, remove all; Undo; add a home",
-        "seconds": 1.7
+        "seconds": 1.5
       },
       {
         "id": "N6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "30/30 sub-checks pass",
         "repro": "row panel buttons: Remove+Undo, Duplicate, Move down, asset page Owned/Planned",
-        "seconds": 4.9
+        "seconds": 4.4
       },
       {
         "id": "N7",
@@ -78,7 +78,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Planned > + Add home > Add; + Add a bought asset; an example",
-        "seconds": 1.8
+        "seconds": 1.7
       },
       {
         "id": "N8",
@@ -89,7 +89,7 @@
         "ratio": 1,
         "detail": "53/53 sub-checks pass",
         "repro": "Assumptions > sample > Yes; Saved > Open; Restore backup; state without the lost-creek-704 key; v8 save with shuffled assets",
-        "seconds": 10.3
+        "seconds": 9.1
       },
       {
         "id": "N9",
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "135/135 sub-checks pass",
         "repro": "9 random states loaded in the app; sweep rows, headers, then remove one",
-        "seconds": 15.6
+        "seconds": 13
       },
       {
         "id": "N10",
@@ -111,7 +111,7 @@
         "ratio": 1,
         "detail": "15/15 sub-checks pass",
         "repro": "scan the text of Planned, Real, Finances, Assumptions and an asset page; default plan numbers",
-        "seconds": 2.4
+        "seconds": 2.1
       }
     ]
   }

@@ -8,6 +8,7 @@
 const http = require('http'), fs = require('fs'), path = require('path'), os = require('os');
 const { spawnSync } = require('child_process');
 const { chromium } = require('playwright');
+const BOOT = require('./boot.js');
 if (process.env.LOGIC_ONLY) { require('./logic-grade.js'); return; } /* L1-L10 logic and math grader (node only): LOGIC_ONLY=1 node grade.js */
 
 const V4 = path.resolve(__dirname, '../v4');
@@ -110,19 +111,13 @@ let rn = 0;
 const EXPAND_JS = () => { let n = 0; for (let i = 0; i < 30; i++) { const b = [...document.querySelectorAll('#app [data-coll][aria-expanded=false]')].filter((e) => e.dataset.coll !== 'drivers' && e.dataset.coll !== 'tgt')[0]; if (!b) break; b.click(); n++; } return n; };
 async function expandAll(page) { try { await page.evaluate(EXPAND_JS); } catch (e) {} }
 async function reset(page, hash) {
-  await page.goto(BASE + '/index.html?r=' + rn++);
-  /* wipe the storage, then stop the old page from writing anything back (its self-diagnosis timer / pagehide would refile a diag record of the OLD portfolio and the fresh default plan would show a false 'portfolio replaced' note) */
-  await page.evaluate(() => { try { localStorage.clear(); Storage.prototype.setItem = function () {}; } catch (e) {} });
-  await page.goto(BASE + '/index.html?r=' + rn++ + (hash || ''));
-  await page.waitForSelector('#app > *');
+  /* wipe the storage from a page that does not run the app (see boot.js: an old app instance could refile its own records and the fresh default plan would show a false 'portfolio replaced' note) */
+  await BOOT.boot(page, { base: BASE, tag: 'r', hash, write: [() => { try { localStorage.clear(); } catch (e) {} }, null] });
   await expandAll(page);
 }
 /* Load the app with a custom saved state (state must be normalized, v:7). */
 async function loadState(page, S, hash) {
-  await page.goto(BASE + '/index.html?r=' + rn++);
-  await page.evaluate(([k, s]) => { try { localStorage.clear(); localStorage.setItem(k, JSON.stringify(s)); Storage.prototype.setItem = function () {}; /* the old page must not refile its own records */ } catch (e) {} }, [KEY, S]);
-  await page.goto(BASE + '/index.html?r=' + rn++ + (hash || ''));
-  await page.waitForSelector('#app > *');
+  await BOOT.boot(page, { base: BASE, tag: 'r', S, DATA_V, hash, write: [([k, s]) => { try { localStorage.clear(); localStorage.setItem(k, JSON.stringify(s)); } catch (e) {} }, [KEY, S]] });
   await expandAll(page);
 }
 async function goHash(page, h) {

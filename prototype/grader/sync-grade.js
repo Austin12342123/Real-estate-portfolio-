@@ -3,6 +3,7 @@
    G1 Portfolio internal sync, G2 asset <-> portfolio, G3 portfolio <-> finances, G4 asset-page field dependencies (property-based),
    G5 add page <-> asset, G6 navigation / persistence, G7 shared settings, G8 stale / duplicate / contradictory numbers. Never modifies the app. */
 const fs = require('fs');
+const BOOT = require('./boot.js');
 const PLH = (E) => require('./plannedhz.js')(E);
 
 exports.run = async function run(X) {
@@ -83,10 +84,7 @@ exports.run = async function run(X) {
   let seq = 0;
   async function load(page, S, hash, ui) {
     const u = Object.assign({ tab: 'nw', open: true, coll: { drivers: false }, hideLegend: true }, ui || {});
-    await page.goto(base() + '/index.html?g=' + seq++);
-    await page.evaluate(([k, s, uk, uu]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); localStorage.setItem(uk, JSON.stringify(uu)); } catch (e) {} }, [KEY, S, UIKEY, u]);
-    await page.goto(base() + '/index.html?g=' + seq++ + (hash || ''));
-    await page.waitForSelector('#app > *');
+    await BOOT.boot(page, { base: base(), tag: 'g', S, DATA_V, hash, write: [([k, s, uk, uu]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); localStorage.setItem(uk, JSON.stringify(uu)); } catch (e) {} }, [KEY, S, UIKEY, u]] });
     await page.evaluate(EXPAND_JS);
   }
   async function nav(page, h) {
@@ -689,8 +687,16 @@ exports.run = async function run(X) {
       return A.parts(P);
     });
 
+  /* G9: regression for the load race (agents/plans/diag-g6.md): load the sample 30 times under a 4x CPU throttle, in a context WITH the auto-expand observer; the app must start from the sample every time */
+  await gcheck('G9', 'The grader loads the intended portfolio every time (no boot race, 30 loads at 4x CPU throttle)', 1,
+    'node -e "require(\'./boot.js\')" (BOOT.raceSelfTest with BOOT.boot)', async () => {
+      const S = Object.assign(sampleS(), { v: DATA_V });
+      const r = await BOOT.raceSelfTest(async () => { const ctx = await mkCtx(); return { ctx, page: await mkPage(ctx, 'g9') }; }, { base: base(), tag: 'g9', S, DATA_V, write: [BOOT.writeS, [KEY, S]] }, BOOT.boot, 30, 4);
+      return { ratio: r.mismatches === 0 ? 1 : 0, detail: r.mismatches + ' of ' + r.runs + ' loads started from a different portfolio ' + r.detail };
+    });
+
   if (process.env.G_ONLY && !checks.length) { /* subset run */ }
-  const order = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8']; checks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+  const order = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'G9']; checks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   try { await mainCtx.close(); } catch (e) {}
   const earned = checks.reduce((s, c) => s + c.earned, 0), max = checks.reduce((s, c) => s + c.points, 0);
   return { earned: Math.round(earned * 100) / 100, max, checks };

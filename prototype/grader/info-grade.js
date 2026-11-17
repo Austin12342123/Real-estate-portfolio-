@@ -4,6 +4,7 @@
    H5 hourly job flows, H6 optional fields left blank, H7 old saves / migration, H8 automatic tax estimate, H9 collapsed-by-default sections + renamed labels, H10 clean run.
    Runs with section auto-expansion OFF (collapsed defaults are part of what is tested). Never modifies the app. Run one check: H_ONLY=H3,H5 */
 const fs = require('fs'), path = require('path');
+const BOOT = require('./boot.js');
 
 exports.run = async function run(X) {
   const { E, Parts, mkS, DATA_V, KEY, money, mkCtx, mkPage, base, collect, setVal, EXPAND_JS } = X;
@@ -34,10 +35,7 @@ exports.run = async function run(X) {
   const ctx = await mkCtx({ autoExpand: false }); const page = await mkPage(ctx, 'info');
   let seq = 0;
   async function load(pg, S, hash, ui) {
-    await pg.goto(base() + '/index.html?h=' + seq++);
-    await pg.evaluate(([k, s, uk, u]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); if (u) localStorage.setItem(uk, JSON.stringify(u)); } catch (e) {} }, [KEY, S || null, UIKEY, ui || null]);
-    await pg.goto(base() + '/index.html?h=' + seq++ + (hash || ''));
-    await pg.waitForSelector('#app > *');
+    await BOOT.boot(pg, { base: base(), tag: 'h', S, DATA_V, hash, write: [([k, s, uk, u]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); if (u) localStorage.setItem(uk, JSON.stringify(u)); } catch (e) {} }, [KEY, S || null, UIKEY, ui || null]] });
   }
   async function nav(pg, h) {
     await pg.evaluate(async (h) => { const cur = location.hash; if (cur === h || (h === '#' && cur === '')) window.dispatchEvent(new Event('hashchange')); else location.hash = h; await new Promise((r) => setTimeout(r, 30)); }, h);

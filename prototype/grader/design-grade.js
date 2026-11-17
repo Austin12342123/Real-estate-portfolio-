@@ -4,6 +4,7 @@
    short on-screen text, a short first-time flow, and it saves dpr-2 screenshots of the new screens (grader/screens/mf-*.png) to look at.
    100 points on their own scale. Plugged in from grade.js: require('./design-grade.js').run(X) -> { earned, max, checks }.  Standalone: DESIGN_ONLY=1 node grade.js  (K_ONLY=K1,K3 for single checks). Never modifies the app. */
 const fs = require('fs'), path = require('path');
+const BOOT = require('./boot.js');
 const V4 = path.resolve(__dirname, '../v4'), SHOTS = path.join(__dirname, 'screens');
 
 exports.run = async function run(X) {
@@ -20,9 +21,7 @@ exports.run = async function run(X) {
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const ctx = await mkCtx({ autoExpand: false }); const page = await mkPage(ctx, 'design'); let seq = 0;
   async function load(S, hash, ui) {
-    await page.goto(base() + '/index.html?k=' + seq++);
-    await page.evaluate(([k, s, uk, u]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); if (u) localStorage.setItem(uk, JSON.stringify(u)); } catch (e) {} }, [KEY, S || null, UIKEY, ui || null]);
-    await page.goto(base() + '/index.html?k=' + seq++ + (hash || '')); await page.waitForSelector('#app > *');
+    await BOOT.boot(page, { base: base(), tag: 'k', S, DATA_V, hash, write: [([k, s, uk, u]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); if (u) localStorage.setItem(uk, JSON.stringify(u)); } catch (e) {} }, [KEY, S || null, UIKEY, ui || null]] });
   }
   const openAllColl = async () => { for (let i = 0; i < 30; i++) { const b = await page.$('#app [data-coll][aria-expanded=false]'); if (!b) break; await b.click(); await page.waitForTimeout(30); } };
   const withV = (S) => Object.assign(clone(S), { v: DATA_V });
@@ -172,8 +171,8 @@ exports.run = async function run(X) {
     P.t(st3 === 36 && !/add/.test(await page.evaluate(() => location.hash)) && (await page.locator('[data-testid=summary]').count()) === 1, 'Back (‹) leaves the Add screen without adding anything', 1.5);
     await page.goBack().catch(() => {}); await load(withV(E.seedPlan()), ''); await page.click('[data-testid=add-house]'); P.t((await page.textContent('[data-testid=kind-single]')) === 'Single family' && (await page.locator('[data-testid=kind-single].on').count()) === 1, 'a new Add screen always starts on Single family, so today\'s flow (Add home + Add = 2 taps) is unchanged', 1.5);
     await page.click('[data-testid=kind-multi]'); await page.click('[data-testid=add-house]').catch(() => {}); P.t((await page.locator('[data-testid=confirm-add]').count()) === 1, 'the Add button is on the screen with the choices', 0.5);
-    const kb = await page.evaluate(() => { const g = (i) => [i.inputMode, i.getAttribute('enterkeyhint'), i.getAttribute('autocapitalize'), i.getAttribute('spellcheck'), i.dataset.num].join(); return g(document.querySelector('[data-p="a.add.units"]')); }); await load(withV(E.seedPlan()), '#house-maple'); await openAllColl(); const kb2 = await page.evaluate(() => { const i = document.querySelector('[data-p="h.maple.rent"]'); return [i.inputMode, i.getAttribute('enterkeyhint'), i.getAttribute('autocapitalize'), i.getAttribute('spellcheck'), i.dataset.num].join(); });
-    P.t(kb === kb2 && /done/.test(kb), 'the unit box has the same keyboard settings as the rent box (' + kb + ')', 1); return P; });
+    const kb = await page.evaluate(() => { const g = (i) => [i.getAttribute('enterkeyhint'), i.getAttribute('autocapitalize'), i.getAttribute('spellcheck'), i.dataset.num].join(); return document.querySelector('[data-p="a.add.units"]').inputMode + '|' + g(document.querySelector('[data-p="a.add.units"]')); }); await load(withV(E.seedPlan()), '#house-maple'); await openAllColl(); const kb2 = await page.evaluate(() => { const i = document.querySelector('[data-p="h.maple.rent"]'); return i.inputMode + '|' + [i.getAttribute('enterkeyhint'), i.getAttribute('autocapitalize'), i.getAttribute('spellcheck'), i.dataset.num].join(); });
+    P.t(kb.replace(/^[^|]*/, '') === kb2.replace(/^[^|]*/, '') && /done/.test(kb) && /^numeric\|/.test(kb) && /^text\|/.test(kb2), 'the unit box has the same Done / autocapitalize / spellcheck settings as the rent box and opens the number pad, the dollar rent box keeps the text keyboard (' + kb + ' vs ' + kb2 + ')', 1); return P; });
 
   /* ---------- K10 screenshots ---------- */
   await kcheck('K10', 'Screenshots (dpr 2) of the new screens at 390 and 320 in light and dark are saved to grader/screens/mf-*.png, full height, with no sideways overflow', 6, 'full-page screenshots of every new screen', async () => {
