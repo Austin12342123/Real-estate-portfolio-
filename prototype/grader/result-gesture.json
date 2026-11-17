@@ -1,6 +1,6 @@
 {
   "gest": {
-    "earned": 141.71,
+    "earned": 144,
     "max": 144,
     "checks": [
       {
@@ -12,7 +12,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "CDP touch swipes on asset page, deep link, portfolio, inputs",
-        "seconds": 5.8
+        "seconds": 5.7
       },
       {
         "id": "I2",
@@ -23,7 +23,7 @@
         "ratio": 1,
         "detail": "14/14 sub-checks pass",
         "repro": "Hold 600 ms, drag, release; check saved order",
-        "seconds": 7
+        "seconds": 7.1
       },
       {
         "id": "I3",
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "8/8 sub-checks pass",
         "repro": "Select row, press Move",
-        "seconds": 3.1
+        "seconds": 2.9
       },
       {
         "id": "I4",
@@ -45,7 +45,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Reorder with Move buttons; read wait lines + saved state + plan",
-        "seconds": 3
+        "seconds": 3.1
       },
       {
         "id": "I5",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "Panel > Duplicate; asset page > Duplicate",
-        "seconds": 2.5
+        "seconds": 2.4
       },
       {
         "id": "I6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Headers, subtitles, collapse state, empty portfolio",
-        "seconds": 1.7
+        "seconds": 1.6
       },
       {
         "id": "I7",
@@ -78,7 +78,7 @@
         "ratio": 1,
         "detail": "25/25 sub-checks pass",
         "repro": "Panel on maple, type extra, compare with engine + asset page",
-        "seconds": 2.2
+        "seconds": 2.3
       },
       {
         "id": "I8",
@@ -111,7 +111,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "Resize, measure, collected errors",
-        "seconds": 2.3
+        "seconds": 2.4
       },
       {
         "id": "I11",
@@ -122,7 +122,7 @@
         "ratio": 1,
         "detail": "13/13 sub-checks pass",
         "repro": "Playwright: #order, buttons, boxes, mouse long-press drag, Undo, screenshots",
-        "seconds": 9.9
+        "seconds": 9.8
       },
       {
         "id": "I12",
@@ -133,18 +133,18 @@
         "ratio": 1,
         "detail": "11/11 sub-checks pass",
         "repro": "Playwright",
-        "seconds": 4.5
+        "seconds": 4.9
       },
       {
         "id": "I13",
         "category": "I",
         "name": "Reorder by hold: a main Reorder button on the Planned page opens the Buy order page; pressing and holding anywhere on a row (real touch events) lifts it, dragging moves it across categories with a drop line and edge auto-scroll, release renumbers; a quick swipe still scrolls and moves nothing; a tap or hold without moving changes nothing; 44 px, no overflow at 320 / 390 / 430 light and dark",
         "points": 16,
-        "earned": 13.71,
-        "ratio": 0.8571428571428571,
-        "detail": "12/14 sub-checks pass. FAIL: the main Reorder button is visible in the header, above the page tabs and inside the first screen, and at least 44 px tall [{\"x\":277.453125,\"y\":1559.34375,\"width\":96.546875,\"height\":44}]; main button and hint show, nothing overflows and every target >= 44 px at 320 / 390 / 430 in light and dark [light320 {\"ok\":false,\"sw\":320,\"W\":320} | light390 {\"ok\":false,\"sw\":390,\"W\":390} | light430 {\"ok\":false,\"sw\":430,\"W\":430} | dark320 {\"ok\":false,\"sw\":320,\"W\":320} | dark390 {\"ok\":false,\"sw\":390,\"W\":390} | dark430 {\"ok\":false,\"sw\":430,\"W\":430}]",
+        "earned": 16,
+        "ratio": 1,
+        "detail": "14/14 sub-checks pass",
         "repro": "Playwright + CDP Input.dispatchTouchEvent on #order",
-        "seconds": 9.1
+        "seconds": 9.2
       }
     ]
   }

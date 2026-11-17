@@ -1,6 +1,6 @@
 {
   "info": {
-    "earned": 74.51,
+    "earned": 100,
     "max": 100,
     "checks": [
       {
@@ -19,22 +19,22 @@
         "category": "H",
         "name": "Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries",
         "points": 16,
-        "earned": 14.51,
-        "ratio": 0.9067796610169492,
-        "detail": "107/112 sub-checks pass. FAIL: Add house: every loan card (conv30, conv15, fha, k203, dscr, cashh) has an (i) beside it with its own definition [missing/wrong: conv30,conv15,fha,k203,dscr,cashh]; Add commercial: every loan card (comm25, sba504, bridge, sellerc) has an (i) beside it with its own definition [missing/wrong: comm25,sba504,bridge,sellerc]; Add business: every loan card (sba7a, bankbiz, sellerb, cashb) has an (i) beside it with its own definition [missing/wrong: sba7a,bankbiz,sellerb,cashb]; Add multi-family: Home type, Number of units, Building or pack and every one of the 22 loan cards have an (i) with their own definition [missing: mfFha,mfVa,mfConvOO,mfK203,mfConvInv,mfBlanket,mfDscr,mfSbl,mfAgency,mfHud,mfBank5,mfBank10,mfCmbs,mfSba504,mfBridge,mfSeller,mfSellerIO,mfAssume,mfLease,mfSubTo,mfJv,mfCash]; no orphan glossary entries: every definition can be opened from some page (146 entries) [30 never shown: dscrloan, fha, k203, bridge, sba, sellerfin, conv, cashbuy, bankloan, mfFha, mfVa, mfConvOO, mfK203, mfConvInv, mfBlanket, mfDscr, mfSbl, mfAgency, mfHud, mfBank5, mfBank10, mfCmbs, mfSba504, mfBridge, mfSeller, mfSellerIO, mfAssume, mfLease, mfSubTo, mfJv]",
+        "earned": 16,
+        "ratio": 1,
+        "detail": "112/112 sub-checks pass",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 9
+        "seconds": 12.2
       },
       {
         "id": "H3",
         "category": "H",
         "name": "Info sheet: opens with the right content, closes by button / Escape / backdrop / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data",
         "points": 16,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.click: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-info=dscr]')\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"info\" type=\"button\" data-info=\"dscr\" aria-label=\"What does DSCR mean?\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled ",
+        "earned": 16,
+        "ratio": 1,
+        "detail": "22/22 sub-checks pass",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 4.2
+        "seconds": 24.4
       },
       {
         "id": "H4",
@@ -45,7 +45,7 @@
         "ratio": 1,
         "detail": "42/42 sub-checks pass",
         "repro": "node: parse numbers out of v4/info.js and compare with engine.js constants and engine calculations",
-        "seconds": 0
+        "seconds": 0.1
       },
       {
         "id": "H5",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 3.3
+        "seconds": 3.8
       },
       {
         "id": "H6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 5.4
+        "seconds": 7
       },
       {
         "id": "H7",
@@ -78,7 +78,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Load crafted localStorage states; pasted old backup restore",
-        "seconds": 1
+        "seconds": 2.3
       },
       {
         "id": "H8",
@@ -96,11 +96,11 @@
         "category": "H",
         "name": "Disclosure defaults and new wording: collapsed sections open on tap (and stay open), renamed labels, Hold/Sell/Merge + Status, loan grouping, import preview title",
         "points": 8,
-        "earned": 0,
-        "ratio": 0,
-        "detail": "CRASH in check: page.evaluate: TypeError: Cannot read properties of null (reading 'querySelectorAll')\n    at eval (eval at evaluate (:311:30), <anonymous>:1:85)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at /home/user/Real-estate-portfolio-/prototype/grader/info-grade.js:492:67\n    at async hcheck (/home/user/Real-estate-portfolio-/prototype/grader/info-grade.js:20:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/info",
+        "earned": 8,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 1.9
+        "seconds": 3.2
       },
       {
         "id": "H10",

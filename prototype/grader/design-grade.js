@@ -314,7 +314,7 @@ exports.run = async function run(X) {
   await kcheck('K21', 'The safety and report UI adds no CSS of its own: style.css equals the shipped file apart from the build stamp line; no colour, hex or rgb in its templates; every inline style it uses is already used elsewhere in the app', 10, 'diff style.css with git HEAD (minus the stamp line); scan the new templates in app.js', async () => {
     const P = new Parts(), css = fs.readFileSync(path.join(V4, 'style.css'), 'utf8').replace(/\/\*STAMP\*\/[\s\S]*?\/\*ENDSTAMP\*\/\n?/, '').replace(/\/\* can-I-buy-this panel[\s\S]*?\/\* end can-I-buy-this \*\/\n?/, '').replace(/\/\* asset-page batch[\s\S]*?\/\* end asset-page batch \*\/\n?/, '').replace(/\/\* reorder by press-and-hold[\s\S]*?\/\* end reorder by hold \*\/\n?/, ''); /* the can-I-buy-this panel / Buy order CSS block is a separate feature: it is left out of this safety-UI comparison */
     const head = require('child_process').spawnSync('git', ['show', 'HEAD:prototype/v4/style.css'], { cwd: path.resolve(__dirname, '..'), maxBuffer: 1e8 }).stdout.toString().replace(/\/\*STAMP\*\/[\s\S]*?\/\*ENDSTAMP\*\/\n?/, '').replace(/\/\* can-I-buy-this panel[\s\S]*?\/\* end can-I-buy-this \*\/\n?/, '').replace(/\/\* asset-page batch[\s\S]*?\/\* end asset-page batch \*\/\n?/, '').replace(/\/\* reorder by press-and-hold[\s\S]*?\/\* end reorder by hold \*\/\n?/, ''); /* the asset-page block is committed now, so it is left out of the committed side too (it was already left out of the working side) */
-    const strip = (c) => c.replace(/\/\* ===== DESIGN SYSTEM v5[\s\S]*?\/\* end design system v5 \*\/\n?/, ''), cls = (c) => new Set((strip(c).match(/\.[a-zA-Z][\w-]*/g) || [])), hc = cls(head), newCls = [...cls(css)].filter((x) => !hc.has(x));
+    const strip = (c) => c.replace(/\/\* ===== DESIGN SYSTEM v5[\s\S]*?\/\* end design system v5 \*\/\n?/, '').replace(/\/\* ===== DESIGN SYSTEM v6[\s\S]*?\/\* end design system v6 \*\/\n?/, '').replace(/\/\* Manrope \(SIL[\s\S]*?\/\* end Manrope \*\/\n?/, '') /* EXPECTATION CHANGE (design v6): the v6 block and the bundled-font block are design-system blocks too */, cls = (c) => new Set((strip(c).match(/\.[a-zA-Z][\w-]*/g) || [])), hc = cls(head), newCls = [...cls(css)].filter((x) => !hc.has(x));
     /* EXPECTATION CHANGE (design v5): the whole stylesheet was re-themed, so byte equality with the committed file can no longer hold. The intent (the safety and report UI invents no style of its own) is kept as: outside the design-system block no CSS class exists that the committed file did not have. */
     P.t(head.length > 1000 && newCls.length === 0, 'style.css outside the design-system block adds no new class selector vs the committed file (' + newCls.slice(0, 8).join(' ') + ')', 4, css.length + ' vs ' + head.length);
     const { app, seg } = DIAGSEG(); P.t(seg.length > 2000, 'the new templates were found in app.js (' + seg.length + ' characters)', 1);
@@ -394,6 +394,126 @@ exports.run = async function run(X) {
     const P = new Parts(); fs.mkdirSync(SHOTK, { recursive: true }); let n = 0; const bad = [];
     for (const scheme of ['light', 'dark']) { await page.emulateMedia({ colorScheme: scheme }); for (const w of [390, 320]) { await page.setViewportSize({ width: w, height: 844 }); for (const [name, go] of NEWSCREENS) { await go(); await page.waitForTimeout(60); const f = path.join(SHOTK, `${name}-${w}-${scheme}.png`); await page.screenshot({ path: f, fullPage: true }); if (fs.existsSync(f) && fs.statSync(f).size > 2000) n++; else bad.push(f); const ov = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); if (ov) bad.push(name + ' ' + w + ' overflows'); } } }
     await page.emulateMedia({ colorScheme: 'light' }); await page.setViewportSize({ width: 390, height: 844 }); P.t(n === NEWSCREENS.length * 4 && !bad.length, n + ' screenshots saved: ' + (bad.join('; ') || 'ok'), 6); return P; });
+
+
+  /* ================= STAGE 2 (design v6): every page is graded, K29-K37 =================
+     One sweep visits EVERY page (Planned closed and open, Real, Saved, Health sheet, asset planned / owned / selling, shortfall panel, Finances, Assumptions, Buy order,
+     Add, Add with its loan list open, Add owned, Import) at 320, 390, 430 and 1280 px in light and dark and records overflow, clipped text, tap sizes, contrast, fonts, radii and primary buttons.
+     K29-K34 read the sweep; K35 tests the desktop behaviour (asset beside the list, tooltips, mouse drag, shortcuts, focus rings, Tab order); K36 the offline font bundle; K37 saves v6-*.png. */
+  const ownedS = () => { const S = withV(E.seedPlan()); S.houses.slice(0, 2).forEach((h, i) => { h.status = 'owned'; h.boughtOn = '2025-0' + (i + 3) + '-15'; }); return S; };
+  const seedS = () => withV(E.seedPlan());
+  const loadOn = async (pg, S, hash) => BOOT.boot(pg, { base: base(), tag: 'k6', S, DATA_V, hash, write: [([k, s]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); } catch (e) {} }, [KEY, S || null]] });
+  const openAllOn = async (pg) => { for (let i = 0; i < 40; i++) { const b = await pg.$('#app [data-coll][aria-expanded=false]'); if (!b) break; await b.click(); await pg.waitForTimeout(25); } };
+  const ALLP = [
+    ['planned', seedS, '#'], ['planned-open', seedS, '#', openAllOn],
+    ['real', ownedS, '#', (pg) => pg.click('[data-testid=tab-real]')], ['saved', seedS, '#', (pg) => pg.click('[data-testid=tab-saved]')],
+    ['health', seedS, '#', (pg) => pg.click('[data-testid=checks-details]')],
+    ['asset', seedS, '#house-maple', openAllOn], ['asset-owned', ownedS, '#house-' + E.seedPlan().houses[0].id, openAllOn], ['asset-sell', seedS, '#house-birch', openAllOn],
+    ['shortfall', feasS, '#house-g', openAllOn], ['finances', seedS, '#finances', openAllOn], ['assumptions', seedS, '#assumptions', openAllOn],
+    ['order', seedS, '#order'], ['add', seedS, '#add'], ['add-open', seedS, '#add', async (pg) => { await pg.click('[data-testid=add-more-toggle]'); await pg.click('[data-testid=loan-row]'); }],
+    ['add-owned', seedS, '#', async (pg) => { await pg.click('[data-testid=tab-real]'); await pg.click('[data-testid=add-owned]'); }], ['import', seedS, '#import-new']];
+  const goAll = async (pg, p) => { await loadOn(pg, p[1](), p[2]); if (p[3]) await p[3](pg); await pg.waitForTimeout(60); };
+  const SWEEP_JS = () => {
+    const R = { ov: false, wide: [], small: [], low: [], fonts: [], radii: [], clipped: [], prim: 0, n: 0 };
+    const cv = document.createElement('canvas'); cv.width = cv.height = 1; const cx = cv.getContext('2d', { willReadFrequently: true });
+    const px = (c) => { cx.clearRect(0, 0, 1, 1); cx.fillStyle = '#000'; cx.fillStyle = c; cx.fillRect(0, 0, 1, 1); const d = cx.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2], d[3] / 255]; };
+    const over = (f, b) => [0, 1, 2].map((i) => f[i] * f[3] + b[i] * (1 - f[3]));
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const bgOf = (el) => { const L = []; for (let e = el; e; e = e.parentElement) { const c = px(getComputedStyle(e).backgroundColor); if (c[3] > 0) { L.push(c); if (c[3] >= 0.999) break; } } let bg = dark ? [0, 0, 0] : [255, 255, 255]; if (L.length && L[L.length - 1][3] >= 0.999) bg = L.pop().slice(0, 3); while (L.length) bg = over(L.pop(), bg); return bg; };
+    const lum = (c) => { const f = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2]; };
+    const de = document.documentElement; R.ov = de.scrollWidth > innerWidth + 1 || document.body.scrollWidth > innerWidth + 1;
+    const seen = new Set(), seenF = new Set(), seenR = new Set(), mc = cv.getContext('2d'), name = (e) => (e.dataset && (e.dataset.testid || e.dataset.p) || (e.className && e.className.baseVal === undefined ? String(e.className).split(' ')[0] : '') || e.tagName);
+    document.querySelectorAll('#app *').forEach((el) => {
+      const r = el.getBoundingClientRect(), cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden') return;
+      const inSvg = !!el.closest('svg'); if (r.right > innerWidth + 1 && cs.position !== 'fixed' && !inSvg && r.width > 0) R.wide.push(name(el));
+      if (r.width < 1 || r.height < 1) return; R.n++;
+      const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()), isIn = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA';
+      if (/^(BUTTON|SELECT|SUMMARY)$/.test(el.tagName) || (isIn && !/^(hidden|checkbox|radio|file|range)$/.test(el.type) && !el.readOnly) || el.getAttribute('role') === 'button') { if (r.height < 43.5 && !el.disabled && !el.hidden) R.small.push(name(el) + ':' + Math.round(r.height)); }
+      if (own || (isIn && (el.value || el.placeholder))) {
+        const fg = px(cs.color), bg = bgOf(el), f = fg[3] < 1 ? over(fg, bg) : fg.slice(0, 3), L1 = lum(f), L2 = lum(bg), cr = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05), key = el.tagName + String(el.className) + (el.textContent || el.value).trim().slice(0, 14);
+        if (!seen.has(key)) { seen.add(key); if (cr < 4.5 && !(isIn && !el.value)) R.low.push(key + ' ' + cr.toFixed(2)); }
+        const fam = cs.fontFamily.split(',')[0].replace(/["']/g, '').trim(); if (fam !== 'Manrope' && !seenF.has(fam + name(el))) { seenF.add(fam + name(el)); R.fonts.push(name(el) + '=' + fam); }
+      }
+      if (!inSvg && r.width > 2 && r.height > 2) { const ellip = (own || isIn); if (isIn && !/^(hidden|checkbox|radio|file|range|date)$/.test(el.type)) { const t = el.value || el.placeholder || ''; if (t && el.type !== 'date') { mc.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily; const w = mc.measureText(t).width, av = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight); if (w > av + 1 && !(el.matches('.top input.t') && document.querySelector('[data-testid=full-addr]'))) R.clipped.push(name(el) + ' "' + t.slice(0, 18) + '" ' + Math.round(w) + '>' + Math.round(av)); } }
+        else if (ellip && (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') && el.id !== 'app') { if ((el.scrollWidth > el.clientWidth + 1 && !el.matches('.addr')) || el.scrollHeight > el.clientHeight + 1) R.clipped.push(name(el) + ' "' + (el.textContent || '').trim().slice(0, 18) + '"'); } }
+      if (!inSvg) { ['TopLeft', 'TopRight', 'BottomLeft', 'BottomRight'].forEach((c) => { const raw = cs['border' + c + 'Radius'], v = parseFloat(raw); if (v > 0 && !/%/.test(raw) && v < 99 && ![12, 16, 22, 28].includes(v)) { const k = name(el) + v; if (!seenR.has(k)) { seenR.add(k); R.radii.push(name(el) + '=' + v); } } }); }
+      if (el.classList.contains('btn') && !el.classList.contains('plain') && !el.classList.contains('ghost') && !el.classList.contains('danger') && !el.classList.contains('danger-o') && !el.classList.contains('reorderbtn') && !el.classList.contains('chip')) R.prim++;
+    });
+    return R;
+  };
+  let SW = null;
+  const sweep = async () => { if (SW) return SW; SW = []; const DC = await mkCtx({ autoExpand: false, isMobile: false, hasTouch: false, viewport: { width: 1280, height: 900 } }); const dp = await mkPage(DC, 'design-desktop'); SWP = dp;
+    for (const scheme of ['light', 'dark']) for (const w of [320, 390, 430, 1280]) { const pg = w === 1280 ? dp : page; await pg.emulateMedia({ colorScheme: scheme }); await pg.setViewportSize({ width: w, height: w === 1280 ? 900 : 844 });
+      for (const p of ALLP) { try { await goAll(pg, p); const r = await pg.evaluate(SWEEP_JS); SW.push(Object.assign({ page: p[0], w, scheme }, r)); } catch (e) { SW.push({ page: p[0], w, scheme, crash: String(e.message || e).slice(0, 160), ov: false, wide: [], small: [], low: [], fonts: [], radii: [], clipped: [], prim: 0 }); } } }
+    await page.emulateMedia({ colorScheme: 'light' }); await page.setViewportSize({ width: 390, height: 844 }); await dp.emulateMedia({ colorScheme: 'light' }); return SW; };
+  let SWP = null;
+  const fmt = (rs, f) => rs.filter((r) => f(r).length).slice(0, 6).map((r) => r.page + '@' + r.w + r.scheme[0] + ': ' + f(r).slice(0, 3).join(', ')).join(' | ');
+  const clean = (SWr) => SWr.filter((r) => !r.crash); const crashes = (SWr) => SWr.filter((r) => r.crash).map((r) => r.page + '@' + r.w + ' ' + r.crash).slice(0, 3).join(' | ');
+
+  await kcheck('K29', 'Font: Manrope loads offline (document.fonts.check for 400 and 700), every face used is loaded, and no text on any page falls back to another family', 12, 'sweep every page at 4 widths in light and dark; computed font-family of every text element must start with Manrope; document.fonts.check', async () => {
+    const P = new Parts(), S = await sweep();
+    await loadOn(page, seedS(), '#'); const ff = await page.evaluate(async () => { await document.fonts.ready; const faces = [...document.fonts].filter((f) => /Manrope/.test(f.family)); return { c4: document.fonts.check('400 16px Manrope'), c7: document.fonts.check('700 16px Manrope'), n: faces.length, loaded: faces.filter((f) => f.status === 'loaded').map((f) => f.weight), body: getComputedStyle(document.body).fontFamily.split(',')[0], serif: getComputedStyle(document.documentElement).getPropertyValue('--serif').split(',')[0].trim(), sans: getComputedStyle(document.documentElement).getPropertyValue('--sans').split(',')[0].trim() }; });
+    P.t(ff.c4 && ff.c7, 'document.fonts.check passes for Manrope 400 and 700', 3, JSON.stringify(ff)); P.t(ff.n === 5 && ff.loaded.includes('400') && ff.loaded.includes('700'), '5 Manrope faces declared; 400 and 700 are loaded on Planned', 2, JSON.stringify(ff));
+    P.t(ff.serif === 'Manrope' && ff.sans === 'Manrope' && ff.body === 'Manrope', '--serif, --sans and body all start with Manrope (all-sans)', 2, JSON.stringify(ff));
+    const css = fs.readFileSync(path.join(V4, 'style.css'), 'utf8'); P.t(!/font-style:\s*italic/.test(css.replace(/\/\*[\s\S]*?\*\//g, '')), 'no italic style anywhere in style.css (an all-sans face has no real italic)', 1);
+    P.t(/font-variant-numeric:\s*tabular-nums/.test(css), 'numerals are tabular (font-variant-numeric: tabular-nums)', 1);
+    P.t(!clean(S).some((r) => r.fonts.length), 'no text falls back to another family on any of ' + ALLP.length + ' pages x 4 widths x 2 schemes', 3, fmt(clean(S), (r) => r.fonts) + crashes(S)); return P; });
+
+  await kcheck('K30', 'Every page at 320, 390, 430 and 1280 (light and dark): no sideways scroll, nothing past the edge, and no clipped text (cut-off input values and placeholders, ellipsised or overflowing text)', 14, 'sweep: scrollWidth, element rects, canvas-measured text width against each box, scrollWidth vs clientWidth of overflow:hidden text', async () => {
+    const P = new Parts(), S = clean(await sweep());
+    for (const w of [320, 390, 430, 1280]) { const R = S.filter((r) => r.w === w);
+      P.t(!R.some((r) => r.ov || r.wide.length), w + 'px: no sideways scroll and nothing past the edge on ' + ALLP.length + ' pages', 1, fmt(R, (r) => (r.ov ? ['page scrolls sideways'] : []).concat(r.wide)));
+      P.t(!R.some((r) => r.clipped.length), w + 'px: no clipped text on any page', 2.5, fmt(R, (r) => r.clipped)); }
+    P.t(S.length === ALLP.length * 8, 'all ' + ALLP.length * 8 + ' page visits worked', 1, crashes(SW)); return P; });
+
+  await kcheck('K31', 'Tap targets: every button, box, select and summary on every page is >= 44px tall at 320, 390, 430 and 1280', 10, 'sweep', async () => {
+    const P = new Parts(), S = clean(await sweep()); for (const w of [320, 390, 430, 1280]) P.t(!S.filter((r) => r.w === w).some((r) => r.small.length), w + 'px: all targets >= 44px', 1, fmt(S.filter((r) => r.w === w), (r) => r.small)); return P; });
+
+  await kcheck('K32', 'Contrast: every piece of text on every page has contrast >= 4.5:1 in light and in dark (4 widths)', 14, 'sweep: text colour against the real composited background', async () => {
+    const P = new Parts(), S = clean(await sweep()); for (const sc of ['light', 'dark']) { const R = S.filter((r) => r.scheme === sc); P.t(!R.some((r) => r.low.length), sc + ': ' + R.reduce((a, r) => a + r.n, 0) + ' elements on ' + ALLP.length + ' pages x 4 widths all >= 4.5:1', 6, fmt(R, (r) => r.low)); } return P; });
+
+  await kcheck('K33', 'Tokens only and rounded: no hard-coded colour in style.css or in the page templates (inline), and every corner radius on every page is a token (12, 16, 22, 28, pill or circle)', 12, 'scan style.css outside :root for hex / rgb() / named colours and app.js templates for inline colours; sweep computed radii', async () => {
+    const P = new Parts(), S = clean(await sweep()), css = fs.readFileSync(path.join(V4, 'style.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/:root[^{]*\{[^}]*\}/g, '').replace(/@font-face\{[^}]*\}/g, '');
+    const hard = (css.match(/#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|hsla?\(|\b(red|blue|green|gray|grey|black|white|orange|yellow)\b\s*[;}]/g) || []);
+    P.t(!hard.length, 'style.css has no hex / rgb() / named colour outside the :root tokens', 5, hard.slice(0, 6).join(' '));
+    const app = fs.readFileSync(path.join(V4, 'app.js'), 'utf8'), inl = (app.match(/style="[^"]*(#[0-9a-fA-F]{3,8}\b|rgb|color\s*:|background)[^"]*"/g) || []);
+    P.t(!inl.length, 'no inline colour or background in any page template', 2, inl.slice(0, 3).join(' '));
+    P.t(!S.some((r) => r.radii.length), 'every corner radius on every page is 12, 16, 22, 28, a pill or a circle', 5, fmt(S, (r) => r.radii)); return P; });
+
+  await kcheck('K34', 'Hierarchy: at most one primary (filled ink) action on any page, and the main screens that need one have it (Add: the Add button)', 6, 'sweep: count visible .btn that are not plain / ghost / danger / reorder', async () => {
+    const P = new Parts(), S = clean(await sweep()); P.t(!S.some((r) => r.prim > 1), 'no page shows two primary buttons', 4, S.filter((r) => r.prim > 1).slice(0, 4).map((r) => r.page + '@' + r.w + '=' + r.prim).join(', '));
+    P.t(S.filter((r) => r.page === 'add').every((r) => r.prim === 1), 'the Add screen has exactly one primary action (Add)', 2, S.filter((r) => r.page === 'add').map((r) => r.prim).join(',')); return P; });
+
+  await kcheck('K35', 'Desktop: the asset page opens beside the list (master-detail, 1280) and is a single column on a phone; (i) shows a hover tooltip; a mouse drags a Buy order row with no hold; shortcuts work and are documented in an (i); focus rings are visible and Tab follows the visual order', 16, 'desktop context 1280x900 (mouse, hover): open an asset, hover (i), drag row 2 above row 1, press o / ? / Esc, Tab through Planned', async () => {
+    const P = new Parts(); await sweep(); const dp = SWP; await dp.emulateMedia({ colorScheme: 'light' }); await dp.setViewportSize({ width: 1280, height: 900 });
+    await loadOn(dp, seedS(), '#house-maple'); const md = await dp.evaluate(() => { const l = document.querySelector('.mdl'), d = document.querySelector('.mdd'); if (!l || !d) return null; const a = l.getBoundingClientRect(), b = d.getBoundingClientRect(); return { lx: a.x, lr: a.right, dx: b.x, dr: b.right, rows: l.querySelectorAll('[data-testid=ledger-row]').length, hdr: !!d.querySelector('[data-testid=asset-buy-no]'), vis: b.width > 400 && a.width > 300 && b.x >= a.right - 1 && b.right <= innerWidth + 1 }; });
+    P.t(md && md.vis && md.rows > 5 && md.hdr, 'at 1280 the list (' + (md && md.rows) + ' rows) and the asset page sit side by side', 3, JSON.stringify(md));
+    await loadOn(page, seedS(), '#house-maple'); P.t((await page.locator('.mdw').count()) === 0, 'on a phone the asset page is its own single column (no master-detail)', 1);
+    await loadOn(dp, seedS(), '#'); const ib = dp.locator('.info[data-tip]').first(); await ib.hover(); await dp.waitForTimeout(80);
+    const tip = await dp.evaluate(() => { const e = document.querySelector('.info[data-tip]:hover'); if (!e) return null; const c = getComputedStyle(e, '::after').content; return { c, t: e.dataset.tip }; });
+    P.t(tip && tip.c && tip.c !== 'none' && tip.c !== 'normal' && tip.t.length > 8, 'hovering an (i) shows its one-sentence tooltip', 2, JSON.stringify(tip));
+    await loadOn(dp, seedS(), '#order'); const ids0 = await dp.evaluate(() => [...document.querySelectorAll('[data-testid=order-row]')].map((e) => e.dataset.row)); const h = await dp.locator('[data-testid=order-handle]').nth(1).boundingBox(), r0 = await dp.locator('[data-testid=order-row]').first().boundingBox();
+    await dp.mouse.move(h.x + h.width / 2, h.y + h.height / 2); await dp.mouse.down(); for (let i = 1; i <= 12; i++) await dp.mouse.move(h.x + h.width / 2, h.y + h.height / 2 - (h.y - r0.y + 6) * i / 12); await dp.mouse.up(); await dp.waitForTimeout(200);
+    const ids1 = await dp.evaluate(() => [...document.querySelectorAll('[data-testid=order-row]')].map((e) => e.dataset.row));
+    P.t(ids1[0] === ids0[1] && ids1[1] === ids0[0], 'a mouse drag (no hold) moves row 2 above row 1 on the Buy order page', 3, ids0.slice(0, 3) + ' -> ' + ids1.slice(0, 3));
+    await loadOn(dp, seedS(), '#'); await dp.keyboard.press('o'); await dp.waitForTimeout(80); const h1 = await dp.evaluate(() => location.hash); await dp.keyboard.press('?'); await dp.waitForTimeout(80); const sh = await dp.evaluate(() => { const s = document.querySelector('[data-testid=info-sheet]'); return s ? s.textContent : ''; }); await dp.keyboard.press('Escape'); await dp.waitForTimeout(80); const gone = (await dp.locator('[data-testid=info-sheet]').count()) === 0;
+    P.t(h1 === '#order', 'the O key opens the Buy order', 1, h1); P.t(/Keyboard shortcuts/.test(sh) && /1, 2, 3/.test(sh) && gone, '? opens the shortcut list (an (i) text), Esc closes it', 2, sh.slice(0, 60));
+    await loadOn(dp, seedS(), '#'); const stops = []; for (let i = 0; i < 14; i++) { await dp.keyboard.press('Tab'); stops.push(await dp.evaluate(() => { const e = document.activeElement; if (!e || e === document.body) return null; const r = e.getBoundingClientRect(), cs = getComputedStyle(e), pc = e.closest('.iw') ? getComputedStyle(e.closest('.iw')) : null; return { x: r.left, top: r.top + scrollY, ring: (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 2) || (cs.boxShadow !== 'none') || !!(pc && pc.boxShadow !== 'none'), t: (e.dataset.testid || e.className || e.tagName).toString().slice(0, 20) }; })); }
+    const ok = stops.filter(Boolean); P.t(ok.length >= 10 && ok.every((s) => s.ring), 'every Tab stop shows a visible focus ring (' + ok.length + ' stops)', 2, ok.filter((s) => !s.ring).map((s) => s.t).join(','));
+    const col = (s) => (s.x < 520 ? 0 : 1), hd = ok.filter((s) => s.top < 110).length, body = ok.slice(hd); P.t(ok.slice(0, hd).every((s) => s.top < 110) && body.every((s) => s.top >= 110) && body.every((s, i) => i === 0 || col(s) > col(body[i - 1]) || (col(s) === col(body[i - 1]) && s.top >= body[i - 1].top - 4)), 'Tab follows the visual order (header, then left column, then right column, top to bottom within each)', 2, ok.map((s) => col(s) + ':' + Math.round(s.top)).join(',')); return P; });
+
+  await kcheck('K36', 'Offline font bundle: five Manrope woff2 files and the OFL licence ship in v4/fonts, the service worker precaches them, and the single-file artifact inlines them as data URIs (self-contained, under 16 MB)', 6, 'read fonts/, sw.js and artifact.html', async () => {
+    const P = new Parts(), F = path.join(V4, 'fonts'); const want = [400, 500, 600, 700, 800].map((w) => `manrope-latin-${w}-normal.woff2`);
+    P.t(want.every((f) => fs.existsSync(path.join(F, f)) && fs.statSync(path.join(F, f)).size > 5000), 'five woff2 files (400-800) exist', 1.5); P.t(fs.existsSync(path.join(F, 'OFL.txt')) && /SIL OPEN FONT LICENSE/i.test(fs.readFileSync(path.join(F, 'OFL.txt'), 'utf8')), 'OFL.txt licence text is included', 1);
+    const sw = fs.readFileSync(path.join(V4, 'sw.js'), 'utf8'); P.t(want.every((f) => sw.includes('./fonts/' + f)), 'sw.js precaches all five fonts', 1.5);
+    const ah = path.join(V4, 'artifact.html'); const art = fs.existsSync(ah) ? fs.readFileSync(ah, 'utf8') : ''; P.t((art.match(/data:font\/woff2;base64,/g) || []).length === 5 && !/url\(fonts\//.test(art) && fs.statSync(ah).size < 16 * 1024 * 1024, 'artifact.html inlines 5 fonts, references no external file, is < 16 MB (' + Math.round(art.length / 1024) + ' KB)', 2); return P; });
+
+  await kcheck('K37', 'Screenshots (light and dark, 390 and 1280) of every page are saved to grader/screens/v6-*.png', 6, 'full-page screenshots of every page', async () => {
+    const P = new Parts(); await sweep(); const dp = SWP; let n = 0, bad = [];
+    for (const sc of ['light', 'dark']) for (const w of [390, 1280]) { const pg = w === 1280 ? dp : page; await pg.emulateMedia({ colorScheme: sc }); await pg.setViewportSize({ width: w, height: w === 1280 ? 900 : 844 });
+      for (const p of ALLP) { try { await goAll(pg, p); await pg.screenshot({ path: path.join(SHOTS, `v6-${p[0]}-${w}-${sc}.png`), fullPage: true }); n++; } catch (e) { bad.push(p[0] + '@' + w); } } }
+    await page.emulateMedia({ colorScheme: 'light' }); await page.setViewportSize({ width: 390, height: 844 }); await dp.emulateMedia({ colorScheme: 'light' });
+    P.t(n === ALLP.length * 4 && !bad.length, n + ' screenshots saved' + (bad.length ? ' (failed ' + bad.join(',') + ')' : ''), 6); return P; });
 
   await ctx.close();
   const earned = checks.reduce((a, c) => a + c.earned, 0), max = checks.reduce((a, c) => a + c.points, 0);

@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'096f5b50'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'34825674'});/*ENDSTAMP*/
 /* Plain-language definitions shown by the "i" buttons. t = title, b = what it means, e = a short example (optional).
    Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
 (function (root) {
@@ -19,6 +19,7 @@
     rate: { t: 'Interest rate', b: 'The yearly cost of borrowing, as a percent of what you owe. A higher rate means a bigger monthly payment. Use the rate from your loan quote.' },
     term: { t: 'Term (years)', b: 'How long you have to repay the loan. A 30-year loan has a lower monthly payment. A 15-year loan costs more each month but saves a lot of interest.' },
     closing: { t: 'Closing costs', b: 'One-time fees to finish the purchase: lender fees, title and legal work, the appraisal, and recording. Usually about 2% to 5% of the price.' },
+    shortcuts: { t: 'Keyboard shortcuts', b: 'On a computer: 1, 2, 3 open Planned, Real and Saved. N adds an asset, O opens the buy order, F opens Finances, comma opens Assumptions, ? opens this list and Esc closes it. Tab moves through the buttons, Enter or Space presses one. On the Buy order page you can drag a row with the mouse.', e: 'Press O, then drag the second row above the first.' },
     jobmoney: { t: 'Your job money in the trust', b: "A monthly amount of your own pay, left after living costs, sent to this home's loan to pay it down sooner. Blank: the plan splits your spare pay across your loans itself. Type an amount to fix it for this home. All homes together cannot use more than your job leaves; the app warns you instead of cutting.", e: "Example: your job leaves $1,000 a month. Put $300 here and this loan gets $300 every month, so it can be paid off years sooner." },
     extra: { t: 'Extra payment', b: 'Money you add each month on top of the required payment. All of it goes to the loan balance, so the loan is paid off sooner and you pay less interest.' },
     payoff: { t: 'Paid off in', b: 'How many months until the loan balance reaches zero. Type a number and the app works out the extra payment needed to get there.' },

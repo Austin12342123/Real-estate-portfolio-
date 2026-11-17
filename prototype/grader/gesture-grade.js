@@ -328,7 +328,7 @@ exports.run = async function run(X) {
     await page.emulateMedia({ colorScheme: 'light' }); await page.setViewportSize({ width: 390, height: 844 }); P.t(bad.length === 0, 'the panel has no sideways scroll or overflow at 320 / 390 / 430 in light and dark', 1.5, bad.join(' | ')); return P;
     async function goBack() { await page.evaluate(() => { location.hash = '#'; }); await page.waitForTimeout(100); }
     async function goHashI(h) { await page.evaluate((h) => { location.hash = h; }, h); await page.waitForTimeout(100); }
-    async function setCash(n) { await goHashI('#finances'); await page.waitForSelector('[data-p="p.cash"]'); await page.fill('[data-p="p.cash"]', String(n)); await page.keyboard.press('Enter'); await page.waitForTimeout(150); } });
+    async function setCash(n) { await goHashI('#finances'); if (!(await page.$('[data-p="p.cash"]'))) await page.click('[data-coll=fin-cash]'); /* design v6: Your cash and expenses is a collapsed group, opened like a user would */ await page.waitForSelector('[data-p="p.cash"]'); await page.fill('[data-p="p.cash"]', String(n)); await page.keyboard.press('Enter'); await page.waitForTimeout(150); } });
 
   try { await ctx.close(); } catch (e) {}
   const order = ['I1', 'I2', 'I3', 'I4', 'I5', 'I6', 'I7', 'I8', 'I9', 'I10', 'I11', 'I12', 'I13']; checks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));

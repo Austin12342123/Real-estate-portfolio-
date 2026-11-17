@@ -819,7 +819,7 @@ exports.run = async function run(X) {
     const P = new Parts(), SC = require('./stamp-check.js'), r = SC.check(V4DIR);
     P.t(r.ok && r.agree && /^[0-9a-f]{8}$/.test(r.want), 'all four files and sw.js carry the stamp ' + r.want, 2.5, JSON.stringify(r.got) + ' sw ' + r.sw);
     P.t(!!r.swName && r.swName.endsWith(r.want) && /^portfolio-v4-/.test(r.swName), 'the service worker cache name ends with the stamp (' + r.swName + ')', 1);
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'stamp-')); ['app.js', 'engine.js', 'info.js', 'style.css', 'sw.js', 'stamp.py', 'build-artifact.py', 'index.html'].forEach((f) => fs.copyFileSync(path.join(V4DIR, f), path.join(tmp, f)));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'stamp-')); ['app.js', 'engine.js', 'info.js', 'style.css', 'sw.js', 'stamp.py', 'build-artifact.py', 'index.html'].forEach((f) => fs.copyFileSync(path.join(V4DIR, f), path.join(tmp, f))); fs.cpSync(path.join(V4DIR, 'fonts'), path.join(tmp, 'fonts'), { recursive: true }); /* design v6: build-artifact.py inlines the bundled fonts, so the temp copy needs them */
     const ok0 = SC.check(tmp).ok; fs.appendFileSync(path.join(tmp, 'info.js'), '\n/* an edit */\n'); const bad = SC.check(tmp), py0 = spawnSync('python3', ['stamp.py', '--check'], { cwd: tmp });
     P.t(ok0 && !bad.ok && bad.stale.length >= 3 && py0.status === 1, 'a file edited without restamping fails the check (node and python3 stamp.py --check)', 2.5, bad.stale.join());
     spawnSync('python3', ['stamp.py'], { cwd: tmp }); const fixed = SC.check(tmp), py1 = spawnSync('python3', ['stamp.py', '--check'], { cwd: tmp });
