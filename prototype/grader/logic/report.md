@@ -1,23 +1,23 @@
 # Logic and math grader (LOGIC_ONLY)
 
-Run: 2026-11-17T22:30:08.348Z
+Run: 2026-11-18T16:28:04.868Z
 
 **TOTAL 100 / 100**
 
 | Cat | Area | Earned | Max |
 |---|---|---|---|
-| L1 | Loan / amortization / payoff math | 8.99 | 8.99 |
-| L2 | Income, expense and NOI model | 5.62 | 5.62 |
-| L3 | Leverage, LTV/CLTV and credit-line rules | 10.95 | 10.95 |
-| L4 | Lender qualification (DTI / DSCR / rental haircut) | 6.18 | 6.18 |
-| L5 | Loan-product terms vs sources (every LOANS preset) | 4.81 | 4.81 |
-| L6 | Appreciation, rent growth, inflation and time basis | 8.42 | 8.42 |
-| L7 | Taxes, selling costs and depreciation | 8.14 | 8.14 |
-| L8 | Business valuation, growth and operating model | 8.99 | 8.99 |
-| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 13.76 | 13.76 |
-| L10 | Disclosure, labels, units and glossary accuracy | 3.37 | 3.37 |
-| L12 | Can-I-buy-this feasibility, shortfall and buy order (engine) | 11.23 | 11.23 |
-| L11 | Purchase examples (16 typical purchases) | 9.55 | 9.55 |
+| L1 | Loan / amortization / payoff math | 8.93 | 8.93 |
+| L2 | Income, expense and NOI model | 5.58 | 5.58 |
+| L3 | Leverage, LTV/CLTV and credit-line rules | 10.89 | 10.89 |
+| L4 | Lender qualification (DTI / DSCR / rental haircut) | 6.14 | 6.14 |
+| L5 | Loan-product terms vs sources (every LOANS preset) | 4.79 | 4.79 |
+| L6 | Appreciation, rent growth, inflation and time basis | 8.38 | 8.38 |
+| L7 | Taxes, selling costs and depreciation | 8.1 | 8.1 |
+| L8 | Business valuation, growth and operating model | 8.93 | 8.93 |
+| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 13.68 | 13.68 |
+| L10 | Disclosure, labels, units and glossary accuracy | 3.35 | 3.35 |
+| L12 | Can-I-buy-this feasibility, shortfall and buy order (engine) | 11.73 | 11.73 |
+| L11 | Purchase examples (16 typical purchases) | 9.49 | 9.49 |
 
 ## Checks
 
@@ -135,6 +135,7 @@ Run: 2026-11-17T22:30:08.348Z
 | L12.10 | The default plan stays green: 36 assets, nothing owned, verdict yes, every asset and portfolio test ok, real net worth >= $125M | 1 | 1 | PASS yes  131653652 |  |
 | L12.11 | Nothing planned: one bought asset at 98% debt and no planned asset gives no plan-only rows (no 'last 0 mo', no check-buy, no outside-cash), verdict is never 'no', feasible.none is set; the default plan and an owned + planned plan keep their rows and verdicts | 1 | 1 | PASS  |  |
 | L12.12 | Changing the loan type re-derives an AUTO appraisal (203(k) = (price+rehab) x 1.15 to $1,000; any other loan = price + 1.4 x budget, both directions) and never touches an appraisal the user typed (E25) | 1 | 1 | PASS  |  |
+| L12.13 | Cap rate verdict: one table E.CAP_RANGES (house, multi, commercial, business) and a pure E.capVerdict(kind, cap) = good at or above the good line, low below the low line, ok in between; unknown kind or NaN gives null; the (i) text quotes the same numbers | 1 | 1 | PASS  |  |
 | L9.J1 | Job money per home: with no amount set (the default) the three default plans give exactly the numbers they gave before the feature (loan payoffs, job money used, equity, after-tax cash flow, last purchase) | 1 | 1 | PASS [[1436,200796,21555991,234677,100],[10913,1056844,301214033,3157996,271],[3257,18336,542250657,1083061,170]] |  |
 | L9.J2 | Job money per home: an amount set on a bought home goes to that home's loan every month it has a balance (500 on Maple: 500 at month 5), pays it off sooner, and the engine exposes the plan's own default amount (E.jobDefault) as a positive number | 1 | 1 | PASS at5 506.1961619615092 want 506.1961619615092 end 120->91 default {"amount":128.69676450099058,"from":100} |  |
 | L9.J3 | Job money per home: amounts above the job pay left after living costs are reported (E.jobMoney.over, shortMonths) and never create money (the job money that reaches the loans never exceeds the plan's job surplus, month by month) | 1 | 1 | PASS {"surplus0":1030,"assigned":15000,"count":3,"over":true,"shortMonths":95,"firstShort":2,"short0":0} worst 7.275957614183426e-12 |  |

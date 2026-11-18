@@ -1,67 +1,67 @@
 {
- "run": "2026-11-17T22:30:08.348Z",
+ "run": "2026-11-18T16:28:04.868Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 8.99,
-   "max": 8.99
+   "earned": 8.93,
+   "max": 8.93
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 5.62,
-   "max": 5.62
+   "earned": 5.58,
+   "max": 5.58
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 10.95,
-   "max": 10.95
+   "earned": 10.89,
+   "max": 10.89
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 6.18,
-   "max": 6.18
+   "earned": 6.14,
+   "max": 6.14
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 4.81,
-   "max": 4.81
+   "earned": 4.79,
+   "max": 4.79
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 8.42,
-   "max": 8.42
+   "earned": 8.38,
+   "max": 8.38
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 8.14,
-   "max": 8.14
+   "earned": 8.1,
+   "max": 8.1
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 8.99,
-   "max": 8.99
+   "earned": 8.93,
+   "max": 8.93
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 13.76,
-   "max": 13.76
+   "earned": 13.68,
+   "max": 13.68
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 3.37,
-   "max": 3.37
+   "earned": 3.35,
+   "max": 3.35
   },
   "L12": {
    "name": "Can-I-buy-this feasibility, shortfall and buy order (engine)",
-   "earned": 11.23,
-   "max": 11.23
+   "earned": 11.73,
+   "max": 11.73
   },
   "L11": {
    "name": "Purchase examples (16 typical purchases)",
-   "earned": 9.55,
-   "max": 9.55
+   "earned": 9.49,
+   "max": 9.49
   }
  },
  "checks": [
@@ -1290,6 +1290,17 @@
    "cat": "L12",
    "id": "L12.12",
    "name": "Changing the loan type re-derives an AUTO appraisal (203(k) = (price+rehab) x 1.15 to $1,000; any other loan = price + 1.4 x budget, both directions) and never touches an appraisal the user typed (E25)",
+   "pts": 1,
+   "earned": 1,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.13",
+   "name": "Cap rate verdict: one table E.CAP_RANGES (house, multi, commercial, business) and a pure E.capVerdict(kind, cap) = good at or above the good line, low below the low line, ok in between; unknown kind or NaN gives null; the (i) text quotes the same numbers",
    "pts": 1,
    "earned": 1,
    "pass": true,

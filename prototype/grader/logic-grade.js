@@ -751,6 +751,16 @@ chk('L11', 'L11.9', 'Loading is defensive and storage failure is survivable: gar
     const o = A('house', 'k203', { id: 'k2', price: 92000, capex: 32000 }); o.arv = 150000; o.arvAuto = false; o.gain = null; /* typed by the user */
     E.applyLoan(o, 'conv30'); if (o.arv !== 150000 || o.arvAuto) bad.push('override touched ' + o.arv + ' ' + o.arvAuto);
     return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.13', 'Cap rate verdict: one table E.CAP_RANGES (house, multi, commercial, business) and a pure E.capVerdict(kind, cap) = good at or above the good line, low below the low line, ok in between; unknown kind or NaN gives null; the (i) text quotes the same numbers', 1, () => {
+    const bad = [], R = E.CAP_RANGES; if (!R || typeof E.capVerdict !== 'function') return { pass: false, detail: 'E.CAP_RANGES / E.capVerdict missing' };
+    const want = { house: [5, 7], multi: [5.5, 7], commercial: [6, 8], business: [15, 25] };
+    Object.keys(want).forEach((k) => { const r = R[k]; if (!r || r.low !== want[k][0] || r.good !== want[k][1]) { bad.push(k + ' range ' + JSON.stringify(r)); return; }
+      const t = [[r.low - 0.01, 'low'], [r.low, 'ok'], [(r.low + r.good) / 2, 'ok'], [r.good - 0.01, 'ok'], [r.good, 'good'], [r.good + 20, 'good'], [-3, 'low'], [0, 'low']];
+      t.forEach(([c, w]) => { const g = E.capVerdict(k, c); if (g !== w) bad.push(k + ' ' + c + ' -> ' + g + ' want ' + w); }); });
+    if (E.capVerdict('nope', 8) !== null || E.capVerdict('house', NaN) !== null || E.capVerdict('house', undefined) !== null) bad.push('unknown kind or NaN must be null');
+    const info = (typeof Info !== 'undefined' ? Info : (global.Info || null)); const src = require('fs').readFileSync(require('path').resolve(__dirname, '../v4/info.js'), 'utf8'), m = /caprate:\s*\{[^}]*?b:\s*'((?:[^'\\]|\\.)*)'[^}]*?e:\s*'((?:[^'\\]|\\.)*)'/.exec(src); void info;
+    if (!m) bad.push('caprate entry not found in info.js'); else { const t = m[1] + ' ' + m[2]; if (m[1].length > 450 || m[2].length > 220) bad.push('caprate text too long ' + m[1].length + '/' + m[2].length); Object.keys(want).forEach((k) => want[k].forEach((n) => { if (t.indexOf(String(n)) < 0) bad.push('(i) text lacks ' + n + ' for ' + k); })); if (!/rule of thumb|rules of thumb/i.test(t) || !/not advice/i.test(t)) bad.push('(i) text must say rough rule of thumb, not advice'); }
+    return { pass: !bad.length, detail: bad.join('; ') }; });
 }
 
 /* ---------------- L9.J: your job money in the trust, per home (grader/logic/jobmoney.js) ---------------- */

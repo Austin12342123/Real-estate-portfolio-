@@ -1,6 +1,6 @@
 # Prototype grader report
 
-Target: `prototype/v4`  |  Run: 2026-11-17T22:29:51.495Z  |  1676s
+Target: `prototype/v4`  |  Run: 2026-11-18T16:27:43.642Z  |  2333s
 
 ## Automated score: **85.01 / 85.006** (a separate design review adds 15)
 
@@ -72,7 +72,7 @@ Target: `prototype/v4`  |  Run: 2026-11-17T22:29:51.495Z  |  1676s
 | B10 | No NaN/Infinity leaks in plan series & KPIs (23 edge scenarios) | 0.42 | 0.42 | 23/23 sub-checks pass |
 | B11 | Funding cycles (A<->B, A->A, 3-cycle) do not hang or throw | 0.21 | 0.21 | ok 0,49/0/0,49,72/49,0 |
 | B12 | Net worth at t=0 = sum(value - balance - liens) of assets held at t=0 | 0.21 | 0.21 | 2/2 sub-checks pass |
-| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 17.2ms |
+| B13 | plan() under 100ms for the sample and 10-asset chain (median of 7) | 0.10 | 0.10 | median 33.1ms |
 | B14 | locMonths matches independent month-by-month simulation (60 random scenarios incl. liens/haircut/appr/paid) | 0.31 | 0.31 | exact 60/60, within1 60/60  |
 | B15 | Debt cap: the trust never draws more than its pool room (cap% of each asset's value less its loan and liens), at every purchase and every month | 0.31 | 0.31 | 4/4 sub-checks pass |
 | B16 | Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows | 0.42 | 0.42 | 5/5 sub-checks pass |
@@ -97,7 +97,7 @@ Target: `prototype/v4`  |  Run: 2026-11-17T22:29:51.495Z  |  1676s
 | C04 | Tap targets >= 44x44 (buttons, selects, inputs; label counts for inputs) | 1.33 | 1.33 | 285/285 targets >=44px. Small:  |
 | C05 | All inputs/selects use font-size >= 16px (no iOS zoom) | 0.67 | 0.67 | 51/51 ok  |
 | C06 | Asset page reachable in 1 tap, back in 1 tap; adding an asset takes <= 3 taps | 1.33 | 1.33 | 3/3 sub-checks pass |
-| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 135px x 36, page 9456px |
+| C07 | Main page stays compact: <= 150px per ledger row (sample), plan below the ledger | 0.67 | 0.67 | avg row 127px x 36, page 9134px |
 | C08 | Text contrast >= 4.5:1 in light and dark mode (main, chart, asset, assumptions, add) | 1.33 | 1.33 | 2369/2369 text elements pass (light 1182/1182, dark 1187/1187).  |
 | C09 | Summary-first: one concise summary card (single snapshot, short text), plan card collapsible | 1.00 | 1.00 | 3/3 sub-checks pass |
 | D01 | Manifest valid; icons load with true declared dimensions | 1.14 | 1.14 | 8/8 sub-checks pass |
@@ -278,43 +278,54 @@ None.
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
-| K1 | Colours come only from the existing CSS variables: no hard-coded colour in the new CSS rules or in the new screens' inline styles, and every var() used is a defined token | 2.94 | 2.94 | 5/5 sub-checks pass |
-| K2 | Every piece of text on the new screens has contrast >= 4.5:1 in light and dark mode (greyed options, chips, hints, tables, the guide) | 3.43 | 3.43 | 2/2 sub-checks pass |
-| K3 | The new UI is built from the existing components: field rows (label + (i) + box), .card sections with the same collapsible header, segmented controls like Home / Commercial / Business, chips, loan cards with an (i), the cmp table, the warning box; at most a handful of new classes, all defined with tokens | 3.92 | 3.92 | 7/7 sub-checks pass |
-| K4 | Tap targets are >= 44px and nothing scrolls sideways at 320, 390 and 430 on every new screen; nothing is wider than its card | 2.94 | 2.94 | 6/6 sub-checks pass |
-| K5 | No text overlaps: the bounding boxes of every line of text on the new screens (and the greyed reasons, chips, table cells, (i) buttons) never collide, at 320 and 390 | 2.94 | 2.94 | 2/2 sub-checks pass |
-| K6 | Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use (no new size, margin, padding or radius) | 2.94 | 2.94 | 3/3 sub-checks pass |
-| K7 | The same state looks the same: the new Single / Multi and Building / Pack controls match the Home / Commercial / Business tabs; a selected multi-family loan card matches a selected single-family card; greyed cards are visibly different but readable | 1.96 | 1.96 | 4/4 sub-checks pass |
-| K8 | No walls of text on the new screens: every note is short (<= 170 characters), the guide shows scannable rows and a short checklist, and the long explanations live in (i) buttons | 1.96 | 1.96 | 2/2 sub-checks pass |
-| K9 | First-time flow: from the Add screen a multi-family asset is 3 taps away (Multi-family, a preset, Add); from the portfolio 3 taps with the default duplex; Back returns without adding anything; presets are one tap; the unit box has the numeric keyboard settings of the other boxes; the result opens on the asset page | 2.45 | 2.45 | 6/6 sub-checks pass |
-| K10 | Screenshots (dpr 2) of the new screens at 390 and 320 in light and dark are saved to grader/screens/mf-*.png, full height, with no sideways overflow | 1.47 | 1.47 | 1/1 sub-checks pass |
-| K11 | Examples control: colours come only from tokens (no hard-coded colour in its CSS or its inline styles), it reuses the loan card, (i), chip, link-button and empty-line components, and adds at most 2 new classes | 2.94 | 2.94 | 5/5 sub-checks pass |
-| K12 | Every piece of text on the example screens (closed line, 4 rows for each category, the chosen line) has contrast >= 4.5:1 in light and dark | 3.43 | 3.43 | 2/2 sub-checks pass |
-| K13 | Example screens: every button is >= 44px tall, nothing scrolls sideways or passes the edge, and no two lines of text overlap, at 320, 390 and 430 | 3.43 | 3.43 | 9/9 sub-checks pass |
-| K14 | Discreet and short flow: closed by default as one quiet 44px line (the same size and weight as the other link buttons) that adds at most 56px to the Add screen; the Add button stays in the first screen (390x844) wherever it was before; spacing, fonts and radii come from the existing sets; 3 taps to add; Back adds nothing | 3.43 | 3.43 | 9/9 sub-checks pass |
-| K15 | Screenshots (dpr 2) of the example screens at 390 and 320 in light and dark are saved to grader/screens/ex-*.png | 1.47 | 1.47 | 1/1 sub-checks pass |
-| K16 | Editor reuses the app: colours only from tokens (CSS and inline styles), no new class (only existing card, field, loan select, warning box, tag, chip, button, (i), confirm and live-line components), the loan picker is the same select as the asset page, fields use the same label + (i) + box | 3.43 | 3.43 | 4/4 sub-checks pass |
-| K17 | Every piece of text on the editor screens (fields, live line, warnings, tags, confirm, list with Edit and Edited) has contrast >= 4.5:1 in light and dark | 3.43 | 3.43 | 2/2 sub-checks pass |
-| K18 | Editor screens: every button, select and box is >= 44px tall, nothing scrolls sideways or passes the edge, no two lines of text overlap, at 320, 390 and 430 (also the list with the Edit buttons) | 3.43 | 3.43 | 9/9 sub-checks pass |
-| K19 | Flow and keyboard: first time = open the list, Edit, change a field, Save (4 taps) and the Add button is still there; Back asks before dropping changes and not otherwise; Escape closes; Tab reaches Edit and Enter opens the editor with focus on the first field; Escape returns focus to Edit; short on-screen text (notes <= 170 characters); the long text is in the (i) | 2.94 | 2.94 | 6/6 sub-checks pass |
-| K20 | Screenshots (dpr 2) of the editor screens at 390 and 320 in light and dark are saved to grader/screens/ex-edit-*.png | 1.47 | 1.47 | 1/1 sub-checks pass |
-| K21 | The safety and report UI adds no CSS of its own: style.css equals the shipped file apart from the build stamp line; no colour, hex or rgb in its templates; every inline style it uses is already used elsewhere in the app | 2.45 | 2.45 | 4/4 sub-checks pass |
-| K22 | Every piece of text on the new screens (copies list, confirm, report card, text box, both notices) has contrast >= 4.5:1 in light and dark mode | 3.43 | 3.43 | 2/2 sub-checks pass |
-| K23 | Built only from existing components: every class on the new screens is already used by the old screens (card, scard, sname, smeta, sstat, sact, btn, pbtn, plain, chip, link, migrate, warnbox, chips, seg, f, lb, note, confirm, info); no new class; the sections use the same collapsible header | 2.45 | 2.45 | 6/6 sub-checks pass |
-| K24 | Tap targets are >= 44px and nothing scrolls sideways or passes the edge at 320, 390 and 430 on every new screen | 2.94 | 2.94 | 6/6 sub-checks pass |
-| K25 | No text overlaps on the new screens (copies, confirm, report box, both notices), at 320 and 390 | 2.45 | 2.45 | 2/2 sub-checks pass |
-| K26 | Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use | 1.96 | 1.96 | 3/3 sub-checks pass |
-| K27 | Short first-time flow and short text: Assumptions to a copied bug report is 2 taps (open the section, Copy), the Planned notice copies in 1 tap, Restore is 3 taps (open, Restore, confirm); every note on the new screens is <= 170 characters and the long explanations are in the (i) entries | 2.94 | 2.94 | 6/6 sub-checks pass |
-| K28 | Screenshots (dpr 2) of the new screens at 390 and 320 in light and dark are saved to grader/screens/diag-*.png | 1.47 | 1.47 | 1/1 sub-checks pass |
-| K29 | Font: Manrope loads offline (document.fonts.check for 400 and 700), every face used is loaded, and no text on any page falls back to another family | 2.94 | 2.94 | 6/6 sub-checks pass |
-| K30 | Every page at 320, 390, 430 and 1280 (light and dark): no sideways scroll, nothing past the edge, and no clipped text (cut-off input values and placeholders, ellipsised or overflowing text) | 3.43 | 3.43 | 9/9 sub-checks pass |
-| K31 | Tap targets: every button, box, select and summary on every page is >= 44px tall at 320, 390, 430 and 1280 | 2.45 | 2.45 | 4/4 sub-checks pass |
-| K32 | Contrast: every piece of text on every page has contrast >= 4.5:1 in light and in dark (4 widths) | 3.43 | 3.43 | 2/2 sub-checks pass |
-| K33 | Tokens only and rounded: no hard-coded colour in style.css or in the page templates (inline), and every corner radius on every page is a token (12, 16, 22, 28, pill or circle) | 2.94 | 2.94 | 3/3 sub-checks pass |
-| K34 | Hierarchy: at most one primary (filled ink) action on any page, and the main screens that need one have it (Add: the Add button) | 1.47 | 1.47 | 2/2 sub-checks pass |
-| K35 | Desktop: the asset page opens beside the list (master-detail, 1280) and is a single column on a phone; (i) shows a hover tooltip; a mouse drags a Buy order row with no hold; shortcuts work and are documented in an (i); focus rings are visible and Tab follows the visual order | 3.92 | 3.92 | 8/8 sub-checks pass |
-| K36 | Offline font bundle: five Manrope woff2 files and the OFL licence ship in v4/fonts, the service worker precaches them, and the single-file artifact inlines them as data URIs (self-contained, under 16 MB) | 1.47 | 1.47 | 4/4 sub-checks pass |
-| K37 | Screenshots (light and dark, 390 and 1280) of every page are saved to grader/screens/v6-*.png | 1.47 | 1.47 | 1/1 sub-checks pass |
+| K1 | Colours come only from the existing CSS variables: no hard-coded colour in the new CSS rules or in the new screens' inline styles, and every var() used is a defined token | 2.21 | 2.21 | 5/5 sub-checks pass |
+| K2 | Every piece of text on the new screens has contrast >= 4.5:1 in light and dark mode (greyed options, chips, hints, tables, the guide) | 2.58 | 2.58 | 2/2 sub-checks pass |
+| K3 | The new UI is built from the existing components: field rows (label + (i) + box), .card sections with the same collapsible header, segmented controls like Home / Commercial / Business, chips, loan cards with an (i), the cmp table, the warning box; at most a handful of new classes, all defined with tokens | 2.95 | 2.95 | 7/7 sub-checks pass |
+| K4 | Tap targets are >= 44px and nothing scrolls sideways at 320, 390 and 430 on every new screen; nothing is wider than its card | 2.21 | 2.21 | 6/6 sub-checks pass |
+| K5 | No text overlaps: the bounding boxes of every line of text on the new screens (and the greyed reasons, chips, table cells, (i) buttons) never collide, at 320 and 390 | 2.21 | 2.21 | 2/2 sub-checks pass |
+| K6 | Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use (no new size, margin, padding or radius) | 2.21 | 2.21 | 3/3 sub-checks pass |
+| K7 | The same state looks the same: the new Single / Multi and Building / Pack controls match the Home / Commercial / Business tabs; a selected multi-family loan card matches a selected single-family card; greyed cards are visibly different but readable | 1.48 | 1.48 | 4/4 sub-checks pass |
+| K8 | No walls of text on the new screens: every note is short (<= 170 characters), the guide shows scannable rows and a short checklist, and the long explanations live in (i) buttons | 1.48 | 1.48 | 2/2 sub-checks pass |
+| K9 | First-time flow: from the Add screen a multi-family asset is 3 taps away (Multi-family, a preset, Add); from the portfolio 3 taps with the default duplex; Back returns without adding anything; presets are one tap; the unit box has the numeric keyboard settings of the other boxes; the result opens on the asset page | 1.85 | 1.85 | 6/6 sub-checks pass |
+| K10 | Screenshots (dpr 2) of the new screens at 390 and 320 in light and dark are saved to grader/screens/mf-*.png, full height, with no sideways overflow | 1.11 | 1.11 | 1/1 sub-checks pass |
+| K11 | Examples control: colours come only from tokens (no hard-coded colour in its CSS or its inline styles), it reuses the loan card, (i), chip, link-button and empty-line components, and adds at most 2 new classes | 2.21 | 2.21 | 5/5 sub-checks pass |
+| K12 | Every piece of text on the example screens (closed line, 4 rows for each category, the chosen line) has contrast >= 4.5:1 in light and dark | 2.58 | 2.58 | 2/2 sub-checks pass |
+| K13 | Example screens: every button is >= 44px tall, nothing scrolls sideways or passes the edge, and no two lines of text overlap, at 320, 390 and 430 | 2.58 | 2.58 | 9/9 sub-checks pass |
+| K14 | Discreet and short flow: closed by default as one quiet 44px line (the same size and weight as the other link buttons) that adds at most 56px to the Add screen; the Add button stays in the first screen (390x844) wherever it was before; spacing, fonts and radii come from the existing sets; 3 taps to add; Back adds nothing | 2.58 | 2.58 | 9/9 sub-checks pass |
+| K15 | Screenshots (dpr 2) of the example screens at 390 and 320 in light and dark are saved to grader/screens/ex-*.png | 1.11 | 1.11 | 1/1 sub-checks pass |
+| K16 | Editor reuses the app: colours only from tokens (CSS and inline styles), no new class (only existing card, field, loan select, warning box, tag, chip, button, (i), confirm and live-line components), the loan picker is the same select as the asset page, fields use the same label + (i) + box | 2.58 | 2.58 | 4/4 sub-checks pass |
+| K17 | Every piece of text on the editor screens (fields, live line, warnings, tags, confirm, list with Edit and Edited) has contrast >= 4.5:1 in light and dark | 2.58 | 2.58 | 2/2 sub-checks pass |
+| K18 | Editor screens: every button, select and box is >= 44px tall, nothing scrolls sideways or passes the edge, no two lines of text overlap, at 320, 390 and 430 (also the list with the Edit buttons) | 2.58 | 2.58 | 9/9 sub-checks pass |
+| K19 | Flow and keyboard: first time = open the list, Edit, change a field, Save (4 taps) and the Add button is still there; Back asks before dropping changes and not otherwise; Escape closes; Tab reaches Edit and Enter opens the editor with focus on the first field; Escape returns focus to Edit; short on-screen text (notes <= 170 characters); the long text is in the (i) | 2.21 | 2.21 | 6/6 sub-checks pass |
+| K20 | Screenshots (dpr 2) of the editor screens at 390 and 320 in light and dark are saved to grader/screens/ex-edit-*.png | 1.11 | 1.11 | 1/1 sub-checks pass |
+| K21 | The safety and report UI adds no CSS of its own: style.css equals the shipped file apart from the build stamp line; no colour, hex or rgb in its templates; every inline style it uses is already used elsewhere in the app | 1.85 | 1.85 | 4/4 sub-checks pass |
+| K22 | Every piece of text on the new screens (copies list, confirm, report card, text box, both notices) has contrast >= 4.5:1 in light and dark mode | 2.58 | 2.58 | 2/2 sub-checks pass |
+| K23 | Built only from existing components: every class on the new screens is already used by the old screens (card, scard, sname, smeta, sstat, sact, btn, pbtn, plain, chip, link, migrate, warnbox, chips, seg, f, lb, note, confirm, info); no new class; the sections use the same collapsible header | 1.85 | 1.85 | 6/6 sub-checks pass |
+| K24 | Tap targets are >= 44px and nothing scrolls sideways or passes the edge at 320, 390 and 430 on every new screen | 2.21 | 2.21 | 6/6 sub-checks pass |
+| K25 | No text overlaps on the new screens (copies, confirm, report box, both notices), at 320 and 390 | 1.85 | 1.85 | 2/2 sub-checks pass |
+| K26 | Spacing, font sizes and corner radii on the new screens come from the sets the existing screens already use | 1.48 | 1.48 | 3/3 sub-checks pass |
+| K27 | Short first-time flow and short text: Assumptions to a copied bug report is 2 taps (open the section, Copy), the Planned notice copies in 1 tap, Restore is 3 taps (open, Restore, confirm); every note on the new screens is <= 170 characters and the long explanations are in the (i) entries | 2.21 | 2.21 | 6/6 sub-checks pass |
+| K28 | Screenshots (dpr 2) of the new screens at 390 and 320 in light and dark are saved to grader/screens/diag-*.png | 1.11 | 1.11 | 1/1 sub-checks pass |
+| K29 | Font: Manrope loads offline (document.fonts.check for 400 and 700), every face used is loaded, and no text on any page falls back to another family | 2.21 | 2.21 | 6/6 sub-checks pass |
+| K30 | Every page at 320, 390, 430 and 1280 (light and dark): no sideways scroll, nothing past the edge, and no clipped text (cut-off input values and placeholders, ellipsised or overflowing text) | 2.58 | 2.58 | 9/9 sub-checks pass |
+| K31 | Tap targets: every button, box, select and summary on every page is >= 44px tall at 320, 390, 430 and 1280 | 1.85 | 1.85 | 4/4 sub-checks pass |
+| K32 | Contrast: every piece of text on every page has contrast >= 4.5:1 in light and in dark (4 widths) | 2.58 | 2.58 | 2/2 sub-checks pass |
+| K33 | Tokens only and rounded: no hard-coded colour in style.css or in the page templates (inline), and every corner radius on every page is a token (12, 16, 22, 28, pill or circle) | 2.21 | 2.21 | 3/3 sub-checks pass |
+| K34 | Hierarchy: at most one primary (filled ink) action on any page, and the main screens that need one have it (Add: the Add button) | 1.11 | 1.11 | 2/2 sub-checks pass |
+| K35 | Desktop: the asset page opens beside the list (master-detail, 1280) and is a single column on a phone; (i) shows a hover tooltip; a mouse drags a Buy order row with no hold; shortcuts work and are documented in an (i); focus rings are visible and Tab follows the visual order | 2.95 | 2.95 | 8/8 sub-checks pass |
+| K36 | Offline font bundle: five Manrope woff2 files and the OFL licence ship in v4/fonts, the service worker precaches them, and the single-file artifact inlines them as data URIs (self-contained, under 16 MB) | 1.11 | 1.11 | 4/4 sub-checks pass |
+| K37 | Screenshots (light and dark, 390 and 1280) of every page are saved to grader/screens/v6-*.png | 1.11 | 1.11 | 1/1 sub-checks pass |
+| K38 | iPad layout mode follows the width: phone column under 600, one wide tablet column 600-899 (portrait iPad, split view 678), master-detail from 900 (landscape iPad: Planned in two columns, the asset opens beside the list); turning the iPad changes the layout live | 2.58 | 2.58 | 9/9 sub-checks pass |
+| K39 | iPad: every page at the 10 viewports (light and dark) has no sideways scroll, nothing past the edge, and no clipped text | 2.58 | 2.58 | 20/20 sub-checks pass |
+| K40 | iPad: every button, box, select and summary on every page is at least 44px tall at the 10 viewports, and the page tabs are at least 48px | 2.21 | 2.21 | 11/11 sub-checks pass |
+| K41 | iPad: every piece of text on every page has contrast >= 4.5:1 in light and in dark at the 10 viewports | 2.21 | 2.21 | 2/2 sub-checks pass |
+| K42 | iPad: tokens only (the v7 CSS has no hard-coded colour, every var() is a token, every radius is a token), Manrope everywhere, text of at least 12px (14px for the grey lines under figures on a tablet), boxes of 16px so iPadOS does not zoom on focus | 2.21 | 2.21 | 8/8 sub-checks pass |
+| K43 | iPad thumb navigation, safe area and touch: the page tabs float at the bottom on a tablet (inside the safe area, not covering content, a tap switches page), (i) opens its sheet by tap with no hover tooltip, no hover-only rule, safe-area insets on every edge | 2.58 | 2.58 | 16/16 sub-checks pass |
+| K44 | iPad touch drag and keyboard: pressing and holding a Buy order row with a finger lifts it and a drag reorders it (portrait 820 and landscape 1180); a quick swipe scrolls and moves nothing; keyboard shortcuts do nothing on a touch screen (fine pointer only) | 2.21 | 2.21 | 6/6 sub-checks pass |
+| K45 | Screenshots (light and dark) of every page at iPad portrait 820x1180 and iPad landscape 1180x820 are saved to grader/screens/v7-<page>-<ipad-portrait|ipad-landscape>-<light|dark>.png | 1.11 | 1.11 | 1/1 sub-checks pass |
+| K46 | Page margin: on every page at the 10 viewports (light and dark) no content touches the screen edge: at least 20px of side gutter on a phone (under 600) and 32px on a tablet or desktop, the floating tabs and the open info sheet are inset too, and the gutter comes from one token (--gpage) that respects the safe-area inset | 2.58 | 2.58 | 15/15 sub-checks pass |
+| K47 | Planned page order and desktop margins: the Sold card sits directly under the More figures card (order Health, More figures, Sold) on phone, iPad and desktop, even while More figures is collapsed; and on a desktop from 900 to 1920 px wide nothing in the left column is clipped or touches its card edge (at least 8px inside, card at least 32px from the screen edge) | 2.21 | 2.21 | 5/5 sub-checks pass |
+| K48 | Cap rate chip: the asset page shows a Good / Okay / Low chip with its word (never colour alone) next to the cap rate for a home, multi-family, commercial and business asset, the word matches E.capVerdict for that asset type, and at 320, 390, 820 and 1180 (light and dark) nothing is clipped, low contrast or past the edge | 2.21 | 2.21 | 3/3 sub-checks pass |
 
 ### K failures
 

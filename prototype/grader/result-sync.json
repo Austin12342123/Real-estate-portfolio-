@@ -1,6 +1,6 @@
 {
   "sync": {
-    "earned": 97.89,
+    "earned": 101,
     "max": 101,
     "checks": [
       {
@@ -23,7 +23,7 @@
         "ratio": 1,
         "detail": "70/70 sub-checks pass",
         "repro": "For several assets per state: asset-share line == Portfolio row; impact \"with\" == KPIs; then edit asset inputs and re-check every Portfolio number",
-        "seconds": 19.8
+        "seconds": 18.8
       },
       {
         "id": "G3",
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "34/34 sub-checks pass",
         "repro": "Compare #finances with the Portfolio page and E.finance for the sample, 25 random states, 4 planned-extra edge cases and after editing job / cash / expense",
-        "seconds": 6.4
+        "seconds": 5.8
       },
       {
         "id": "G4",
@@ -45,18 +45,18 @@
         "ratio": 1,
         "detail": "34/34 sub-checks pass",
         "repro": "Random edit sequences on asset pages (price, down, rate, term, extra, payoff, liens, paid, rent, costs, growth, capex, appraisal, gain, exit, loan option, status); every dependent field is re-derived independently after each edit",
-        "seconds": 61.3
+        "seconds": 55.3
       },
       {
         "id": "G5",
         "category": "G",
         "name": "Add page <-> created asset (loan option cards, option switching, 203(k) defaults)",
         "points": 6,
-        "earned": 2.89,
-        "ratio": 0.48148148148148145,
-        "detail": "5/11 sub-checks pass. FAIL: add-page card shows down / rate / term of the option (0/14 ok) [conv30: null || conv15: null || fha: null]; created asset stores the option (closing %, interest-only, insurance, loan id) (3/14 ok) [conv15: {\"l\":\"conv30\",\"c\":3,\"io\":false,\"mu\":0,\"ma\":0} || fha: {\"l\":\"conv30\",\"c\":3,\"io\":false,\"mu\":0,\"ma\":0} || k203: {\"l\":\"conv30\",\"c\":3,\"io\":false,\"mu\":0,\"ma\":0}]; created asset: closing field and payment follow the option (5/14 ok) [fha: payment $2,088 vs $2,088 || k203: payment $2,088 vs $2,088 || dscr: payment $2,088 vs $2,088]; 203(k): rehab default is set and appraisal = (price + rehab) x 1.15 (0/1 ok) [capex 0 arv 0]; 203(k): appraisal follows a new price until typed over (0/1 ok) [price 275000 arv 0 want 316000]; 203(k): appraisal follows a new rehab budget until typed over (0/1 ok) [capex 60000 arv 359000 want 385000]",
+        "earned": 6,
+        "ratio": 1,
+        "detail": "12/12 sub-checks pass",
         "repro": "Open #add, pick every loan option for every type, add it, compare card numbers with the asset fields; switch options on the asset page; 203(k) rehab/appraisal follow price+rehab until typed over",
-        "seconds": 5.7
+        "seconds": 6.7
       },
       {
         "id": "G6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Digest every page; navigate around, reload, export a backup, edit, restore, open a second tab, load a v8 save, toggle dark mode; numbers must be identical / correct",
-        "seconds": 16.3
+        "seconds": 14.7
       },
       {
         "id": "G7",
@@ -78,7 +78,7 @@
         "ratio": 1,
         "detail": "146/146 sub-checks pass",
         "repro": "Edit each Assumptions / Finances setting through the UI; Portfolio, asset pages and Finances must re-derive (cap, DTI, closing, growth default, projection length, other debts, vacancy / mgmt / repairs, ...)",
-        "seconds": 10.5
+        "seconds": 9.9
       },
       {
         "id": "G8",
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "0 of 30 loads started from a different portfolio ",
         "repro": "node -e \"require('./boot.js')\" (BOOT.raceSelfTest with BOOT.boot)",
-        "seconds": 53
+        "seconds": 43.4
       }
     ]
   }
