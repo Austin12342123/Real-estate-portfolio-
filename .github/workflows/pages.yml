@@ -24,6 +24,7 @@ jobs:
           mkdir _site
           cd prototype/v4
           cp index.html app.js engine.js info.js style.css sw.js manifest.webmanifest icon-*.png ../../_site/
+          cp -r fonts ../../_site/fonts
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
