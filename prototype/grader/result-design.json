@@ -4,15 +4,26 @@
     "max": 100,
     "checks": [
       {
-        "id": "K48",
+        "id": "K56",
         "category": "K",
-        "name": "Cap rate chip: the asset page shows a Good / Okay / Low chip with its word (never colour alone) next to the cap rate for a home, multi-family, commercial and business asset, the word matches E.capVerdict for that asset type, and at 320, 390, 820 and 1180 (light and dark) nothing is clipped, low contrast or past the edge",
-        "points": 100,
-        "earned": 100,
+        "name": "Extra / month breakdown: one muted line directly under Extra / month on the asset page: \"Total paying this loan down: $T/mo = your extra $E + from this asset's own profit $A (automatic) + from your job $J\"; the amounts are the same values as the plan box (h-auto, h-job; a per-home job money amount included), T = E + A + J, zero parts are hidden, a planned asset says \"Once bought\", no clipping at 320 / 390 / 820",
+        "points": 50,
+        "earned": 50,
         "ratio": 1,
-        "detail": "3/3 sub-checks pass",
-        "repro": "asset pages of every kind and several cap rates; read the chip, compare with E.capVerdict, run the sweep",
-        "seconds": 38.4
+        "detail": "2/2 sub-checks pass",
+        "repro": "owned and planned assets with and without an own extra and a job amount",
+        "seconds": 13.9
+      },
+      {
+        "id": "K58",
+        "category": "K",
+        "name": "Funded by the trust: the paragraph is a short list of computed rows (borrowing room, cash the trust holds, pool total, cash flow reinvested) plus the four borrowing rules as editable boxes that are the SAME fields as Assumptions (typing on the asset page shows on Assumptions and back), the pool total equals room + cash and the engine, no giant paragraph, no clipping at 320 / 390 / 820",
+        "points": 50,
+        "earned": 50,
+        "ratio": 1,
+        "detail": "4/4 sub-checks pass",
+        "repro": "cedar asset page, type the line of credit rate, read Assumptions",
+        "seconds": 7.9
       }
     ]
   }

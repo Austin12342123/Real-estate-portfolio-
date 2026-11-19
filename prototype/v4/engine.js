@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'a9cae995'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'7f300e82'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -75,7 +75,7 @@
   function applyLoan(h, id) {
     const lo = loanById(id);
     if (!lo) { h.loanId = 'custom'; return h; }
-    const wasAuto = +h.capex > 0 && arvIsAuto(h); /* E25: an auto appraisal depends on the loan type (203(k): +15% of price + rehab; others: price + 1.4 x budget), so it is re-derived below; a typed appraisal is never touched */
+    const wasAuto = (+h.capex > 0 || +h.comp > 0) && arvIsAuto(h); /* E25: an auto appraisal depends on the loan type (203(k): +15% of price + rehab; others: price + 1.4 x budget), so it is re-derived below; a typed appraisal is never touched */
     if (lo.multi) h.mat = lo.mat || 0; /* a multi-family loan sets its own balloon month (0 = none; an interest-only loan is due at its term anyway) */
     h.dp = lo.dp; h.rate = lo.rate; h.term = lo.term; h.io = !!lo.io; h.closingPct = lo.closing; h.loanId = lo.id;
     h.finCapex = !!lo.finRehab; h.mipUp = lo.upfrontMip || 0; h.mipAnn = lo.annualMip || 0; h.ownerOcc = !!lo.ownerOcc;
@@ -88,7 +88,7 @@
     const h = Object.assign({ id: 'h' + Date.now().toString(36) + (uid++), type, status: 'planned', extra: 0, driver: 'extra', wait: 24, liens: 0, paid: 0, buyIn: 0,
       target: '', growth: null, io: false, closingPct: null, loanId: '', dp: 20, rate: 6.75, term: 360, mat: 0, refiRate: null, refiTerm: null,
       capex: 0, capexMonths: 6, arv: 0, arvAuto: false, gain: null, liftIncome: 0, exit: 'hold', exitMonth: 60, exitLift: 0, mergeInto: '', finCapex: false, mipUp: 0, mipAnn: 0, ownerOcc: false,
-      kind: 'single', units: 1, pack: false, mfRes: 300, mfOther: 0, mgmtPct: null, maintPct: null, boughtOn: null, jobPay: null }, DEFAULTS[type]); /* kind 'multi' = a building or pack of houses with units >= 2 (still type 'house'); mfRes = replacement reserve per unit per year, mfOther = other owner-paid costs per month, mgmtPct / maintPct = this asset's own management / repairs % (null = the Assumptions rate) */
+      kind: 'single', units: 1, pack: false, mfRes: 300, mfOther: 0, mgmtPct: null, maintPct: null, boughtOn: null, jobPay: null, jobSavedOverride: null, comp: null }, DEFAULTS[type]); /* kind 'multi' = a building or pack of houses with units >= 2 (still type 'house'); mfRes = replacement reserve per unit per year, mfOther = other owner-paid costs per month, mgmtPct / maintPct = this asset's own management / repairs % (null = the Assumptions rate) */
     applyLoan(h, loanId || (o && o.kind === 'multi' ? mfFirst(+o.units || 2, !!o.pack) : loansFor(type)[0].id));
     Object.assign(h, o || {});
     if (type === 'business' && o && o.rent !== undefined) { if (o.revenue === undefined) h.revenue = null; if (o.margin === undefined) h.margin = null; } /* a business made from its owner profit (the seeded ones) has no revenue of its own: the page shows rent / margin */
@@ -100,7 +100,10 @@
   const revOf = (h) => { if (isFinite(+h.revenue) && h.revenue !== null && h.revenue !== '') return +h.revenue; const m = marginOf(h); return m > 0 ? (+h.rent || 0) / (m / 100) : 0; };
   /* the new appraised value that follows the improvement budget: price + 1.4 x budget (the app's own convention: the first four homes are built on it). A 203(k) loan keeps its own older rule (15% above price + rehab). No budget = no new appraisal (0: the value does not change). */
   const ARV_K = 1.4;
-  const autoArv = (h) => { const c = Math.max(0, +h.capex || 0); if (!(c > 0)) return 0; return h.finCapex ? Math.round(((h.price + c) * 1.15) / 1000) * 1000 : Math.round(h.price + ARV_K * c); };
+  const costBasisArv = (h) => { const c = Math.max(0, +h.capex || 0); if (!(c > 0)) return 0; return h.finCapex ? Math.round(((h.price + c) * 1.15) / 1000) * 1000 : Math.round(h.price + ARV_K * c); };
+  /* E.appraisalAuto: the ONE function for the automatic new appraised value. Without an average comp value it is the cost basis (price + rehab rule, above). With one it is the middle of what was paid in and what the neighbours sell for: round((cost basis + comp) / 2), where the cost basis is the price when there is no budget. No budget and no comp = no appraisal. */
+  const appraisalAuto = (h) => { const cb = costBasisArv(h), cp = +h.comp; return cp > 0 ? Math.round(((cb > 0 ? cb : Math.max(0, +h.price || 0)) + cp) / 2) : cb; };
+  const autoArv = appraisalAuto;
   /* is the appraisal 'auto' (follows the budget) rather than typed by the user? true when the flag says so, when there is no appraisal and no budget, or when it is exactly what the rule gives (so the seeded homes, built on 1.4x, follow too). */
   const arvIsAuto = (h) => !!h.arvAuto || (!(+h.arv > 0) && !(+h.capex > 0)) || (+h.arv > 0 && +h.arv === autoArv(h) && !(h.gain !== null && h.gain !== undefined && isFinite(+h.gain)));
   const newHouse = (o) => newAsset((o && o.type) || 'house', o && o.loanId, o);
@@ -383,7 +386,7 @@
         while (qi < queue.length) {
           const N = queue[qi], pool = bought.length > 0, bi = Math.max(0, Math.round(N.buyIn || 0)), base = downAmt(N) + (N.price * clPct(S, N)) / 100;
           const cap0 = N.finCapex ? 0 : Math.max(0, N.capex || 0), needAmt = base + cap0, sm = sumSnap(snap, t), avail = Math.max(0, sm.head) + C;
-          const own = pp ? Math.max(0, L - rsv0) : Infinity; /* nothing is owned yet: the first purchase is paid from your savings above the cushion plus the job money saved since */
+          const jso = N.jobSavedOverride, own = pp ? (jso !== null && jso !== undefined && !pool ? Math.max(0, (+pp.cash || 0) - rsv0) + jso : Math.max(0, L - rsv0)) : Infinity; /* jso: the job money saved up is typed in (Auto = null) and replaces the accrued amount for a first purchase */ /* nothing is owned yet: the first purchase is paid from your savings above the cushion plus the job money saved since */
           if (pool && (!best[N.id] || avail > best[N.id].avail)) best[N.id] = { avail, month: t };
           if (!pool && pp && (!best[N.id] || own > best[N.id].avail)) best[N.id] = { avail: own, month: t };
           if (pool && readyAt[N.id] === undefined && avail >= needAmt - 1e-6) readyAt[N.id] = t;
@@ -756,6 +759,10 @@
     if (pl && pl.raw) pl = pl.raw; pl = pl || plan(S);
     const o = { n: 0, cf: 0, payment: 0, noi: 0, ds: 0, price: 0, rent: 0, dscr: null };
     (ids || S.houses.map((h) => h.id)).forEach((id) => { const v = pl.V[id], h = H(S, id); if (!v || !h) return; o.n++; o.cf += v.cf; o.payment += v.payment; o.noi += v.noi; o.ds += v.P + v.mip; o.price += +h.price || 0; o.rent += +h.rent || 0; });
+    /* net worth NOW (this month, today's dollars): for the BOUGHT assets among ids, value - loan - liens - credit line drawn (engine month 0, the same terms as series.nw), plus the savings you hold today. Planned assets are not owned yet, so they add nothing. */
+    const ask = {}; (ids || S.houses.map((h) => h.id)).forEach((id) => { const h = H(S, id); if (h && h.status === 'owned') ask[id] = 1; });
+    o.eq = 0; if (pl.assetsAt) pl.assetsAt(0).forEach((x) => { if (ask[x.id]) o.eq += x.equity; });
+    o.cash = S.p ? Math.max(0, +S.p.cash || 0) : 0; o.nw = o.eq + o.cash;
     o.dscr = o.ds > 0.5 ? o.noi / o.ds : null; /* DSCR = income before the loan / loan payment (principal + interest + mortgage insurance), the same ratio the asset page shows */
     return o;
   }
@@ -847,6 +854,8 @@
       h.mfRes = isFinite(+h.mfRes) && h.mfRes !== null && h.mfRes !== '' ? Math.max(0, +h.mfRes) : 300; h.mfOther = isFinite(+h.mfOther) && h.mfOther !== null && h.mfOther !== '' ? Math.max(0, +h.mfOther) : 0;
       ['mgmtPct', 'maintPct'].forEach((k) => { h[k] = h[k] === null || h[k] === '' || h[k] === undefined || !isFinite(+h[k]) ? null : Math.max(0, +h[k]); });
       h.boughtOn = h.status === 'owned' && typeof h.boughtOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(h.boughtOn) && isFinite(Date.parse(h.boughtOn)) ? h.boughtOn : null; /* the day the user marked it bought (YYYY-MM-DD); old owned assets have none: the page says 'date not recorded' */
+      h.jobSavedOverride = h.jobSavedOverride === null || h.jobSavedOverride === '' || h.jobSavedOverride === undefined || !isFinite(+h.jobSavedOverride) ? null : Math.max(0, +h.jobSavedOverride); /* job money saved up counted for this asset's first purchase; null = Auto (the plan's own number) */
+      h.comp = h.comp === null || h.comp === '' || h.comp === undefined || !isFinite(+h.comp) || +h.comp <= 0 ? null : +h.comp; /* average value of nearby comparable homes; null = not used */
       h.jobPay = h.jobPay === null || h.jobPay === '' || h.jobPay === undefined || !isFinite(+h.jobPay) ? null : Math.max(0, +h.jobPay); /* your job money sent to this home's loan each month; null = the plan's own split (default) */
       if (h.type === 'business') h.mgmtPct = null;
       ['mipUp', 'mipAnn'].forEach((k) => { h[k] = isFinite(+h[k]) ? Math.max(0, +h[k]) : 0; }); h.finCapex = !!h.finCapex; h.ownerOcc = !!h.ownerOcc;
@@ -1407,6 +1416,6 @@
   const jobDefault = (S, id, pl) => { const h0 = (S.houses || []).find((q) => q.id === id); if (!h0) return { amount: 0, from: -1 }; let q = plan(S); /* the raw plan (future dollars), whatever plan the caller holds */ if ((S.houses || []).some((x) => x.jobPay !== null && x.jobPay !== undefined)) { const S2 = JSON.parse(JSON.stringify(S)); S2.houses.forEach((x) => { x.jobPay = null; }); q = plan(S2); } const f = q.jobFrom(id); return { amount: f >= 0 ? q.jobAt(id, f) / dfac(S, f) : 0, from: f }; }; /* today's dollars (2026*), the unit the box takes */
   const jobMoney = (S, pl) => { const surplus0 = (pl.jobs && pl.jobs.surplus[0]) || 0, set = (S.houses || []).filter((h) => h.jobPay !== null && h.jobPay !== undefined), assigned = set.reduce((a, h) => a + h.jobPay, 0), sh = (pl.jobs && pl.jobs.short) || [], shortMonths = sh.filter((v) => v > 0.5).length;
     return { surplus0, assigned, count: set.length, over: assigned > surplus0 + 0.5, shortMonths, firstShort: sh.findIndex((v) => v > 0.5), short0: sh[0] || 0 }; };
-  const E = { CAP_RANGES, capVerdict, capKind, jobMoney, jobDefault, CF_TARGET, Diag, FEAS, feasible, todayTotals, checkList, shortfall, moveTo, plannedIds, numbering, buyKey, EXAMPLES, EXKEY, EXV, EXF, exFields, exLabel, exLoanOk, exCheck, exEff, exEffective, exVal, exPrune, exClean, exOverrides, exSet, exRead, exWrite, exLoad, exCommit, exExport, exImport, exClearAll, exDraftSet, exDirty, exWarnings, exFmt, exampleShipped, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, mgmtAmt, ARV_K, autoArv, arvIsAuto, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
+  const E = { appraisalAuto, costBasisArv, CAP_RANGES, capVerdict, capKind, jobMoney, jobDefault, CF_TARGET, Diag, FEAS, feasible, todayTotals, checkList, shortfall, moveTo, plannedIds, numbering, buyKey, EXAMPLES, EXKEY, EXV, EXF, exFields, exLabel, exLoanOk, exCheck, exEff, exEffective, exVal, exPrune, exClean, exOverrides, exSet, exRead, exWrite, exLoad, exCommit, exExport, exImport, exClearAll, exDraftSet, exDirty, exWarnings, exFmt, exampleShipped, MINDSCR, minDscrOf, exCat, examplesFor, exampleById, exampleOpts, exampleAsset, exampleMetrics, exampleInfo, ADDITIONS, applyAdditions, dfac, realPlan, planR, planIn, depCum, costBasis, saleTax, portTaxAt, bracketTax, TAXY, loanPath, capOf, revOf, marginOf, reimbOf, matOf, savedBy, needFor, housingAt, stress, seedPlan, seedStradella, seedBig, orderByBuy, relink, register, latestOf, duplicate, reorder, catOf, noiOf, cfSaved, estTaxPct, taxPctFor, finance, samplePersonal, normalizePersonal, jobsGross, jobsNet, jobMonthly, GDEF, TYPES, LOANS, MFLOANS, loanById, mfCat, mfFit, mfLoans, mfFirst, mfDefaults, mfInfo, unitsOf, isMulti, mgmtOf, mgmtAmt, ARV_K, autoArv, arvIsAuto, maintOf, mfReserve, mfOther, downAmt, mipMonthly, loansFor, applyLoan, newAsset, newHouse, normalize, fromListing, seed, seedStretch, view, plan, afford, without, extraFor, locMonths, payoffN, pmt, payment, loan, balToday, need, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.Engine = E;
 })(typeof window !== 'undefined' ? window : globalThis);

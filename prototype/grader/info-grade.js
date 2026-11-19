@@ -159,65 +159,64 @@ exports.run = async function run(X) {
       }
       /* extra states: FHA / 203(k) / bridge / cash / seller assets */
       for (const id of ['fh', 'k2', 'br', 'cs', 'sb']) await visit(page, mixedS(), '#house-' + id);
+      { const S1 = E.normalize(JSON.parse(JSON.stringify(E.seedPlan()))); S1.v = DATA_V; await visit(page, S1, '#house-' + S1.houses.find((h) => h.status !== 'owned').id); } /* the first planned asset: its job-money-saved-up box and the comp value box */
       await visit(page, mixedS(), '#'); await visit(page, sampleS(), '#import-new');
       const never = Object.keys(INFO).filter((k) => !seenKeys.has(k));
       P.t(never.length === 0, 'no orphan glossary entries: every definition can be opened from some page (' + Object.keys(INFO).length + ' entries)', 3, never.length + ' never shown: ' + never.join(', '));
       return P; });
 
   /* ================================================================ H3 sheet behaviour and accessibility */
-  const SHEET = () => { const s = document.querySelector('[data-testid=info-sheet]'); if (!s) return null; const r = s.getBoundingClientRect(), h = s.querySelector('h3'), bg = document.querySelector('.sheet-bg');
+  const SHEET = () => { const s = document.querySelector('[data-testid=info-pop]'); if (!s) return null; const r = s.getBoundingClientRect(), h = s.querySelector('h3'), bg = document.querySelector('.sheet-bg');
     return { role: s.getAttribute('role'), modal: s.getAttribute('aria-modal'), lb: s.getAttribute('aria-labelledby'), lbText: s.getAttribute('aria-labelledby') && document.getElementById(s.getAttribute('aria-labelledby')) ? document.getElementById(s.getAttribute('aria-labelledby')).textContent : null, h: h ? h.textContent : '', ps: [...s.querySelectorAll('p')].map((p) => p.textContent),
-      btn: !!s.querySelector('[data-testid=info-close]'), btnName: (s.querySelector('[data-testid=info-close]') || {}).textContent, focus: document.activeElement === s.querySelector('[data-testid=info-close]'), inSheet: s.contains(document.activeElement),
+      btn: !!s.querySelector('button') || !!document.querySelector('[data-testid=info-close]'), inSheet: s.contains(document.activeElement), expanded: !!document.querySelector('[data-info][aria-expanded=true][aria-describedby=infopop]'), inert: document.querySelectorAll('[inert]').length,
       rect: { t: r.top, b: r.bottom, l: r.left, r: r.right, w: r.width, h: r.height }, vw: innerWidth, vh: innerHeight, bg: !!bg, scrollH: s.scrollHeight, clientH: s.clientHeight, ov: getComputedStyle(s).overflowY, hash: location.hash, active: document.activeElement && (document.activeElement.dataset.info || document.activeElement.tagName) }; };
   const CONTRAST = () => { const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
     const parse = (s) => { const m = s.match(/rgba?\(([^)]+)\)/); if (!m) return [255, 255, 255, 1]; const p = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1]; };
     const eff = (el) => { for (let e = el; e; e = e.parentElement) { const c = parse(getComputedStyle(e).backgroundColor); if (c[3] > 0.95) return c; } return [255, 255, 255, 1]; };
-    const out = []; document.querySelectorAll('[data-testid=info-sheet] h3, [data-testid=info-sheet] p, [data-testid=info-sheet] .btn').forEach((el) => { const fg = parse(getComputedStyle(el).color), bg = eff(el), a = lum(fg), b = lum(bg); out.push({ t: el.tagName + ':' + el.textContent.slice(0, 12), cr: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) }); }); return out; };
+    const out = []; document.querySelectorAll('[data-testid=info-pop] h3, [data-testid=info-pop] p').forEach((el) => { const fg = parse(getComputedStyle(el).color), bg = eff(el), a = lum(fg), b = lum(bg); out.push({ t: el.tagName + ':' + el.textContent.slice(0, 12), cr: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) }); }); return out; };
 
-  await hcheck('H3', 'Info sheet: opens with the right content, closes by button / Escape / backdrop / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data', 16,
+  await hcheck('H3', 'Info popover: opens with the right content on click / tap only, closes by a second click / Escape / an outside click / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data', 16,
     'Playwright 390x844 and 320x568: open (i), inspect dialog, close every way', async () => {
       const P = new Parts(); await load(page, sampleS(), '#'); await page.setViewportSize({ width: 390, height: 844 });
-      P.t((await page.locator('[data-testid=info-sheet]').count()) === 0, 'no sheet is open on load', 0.3);
+      P.t((await page.locator('[data-testid=info-pop]').count()) === 0, 'no sheet is open on load', 0.3);
       const st0 = await page.evaluate(() => localStorage.getItem('rep-v4'));
       await page.click('[data-info=dscr]'); await page.waitForTimeout(50); let sh = await page.evaluate(SHEET), d = INFO.dscr;
       P.t(!!sh && sh.h === d.t && sh.ps[0] === d.b && (!d.e || sh.ps[1] === 'Example: ' + d.e), 'opens with the title, meaning and example of that term (DSCR)', 1.2, sh && sh.h + ' / ' + (sh && sh.ps.join(' | ').slice(0, 80)));
-      P.t(!!sh && sh.role === 'dialog' && sh.modal === 'true' && sh.lb && sh.lbText === d.t, 'sheet is role=dialog, aria-modal=true and labelled by its heading', 1, JSON.stringify(sh && [sh.role, sh.modal, sh.lb]));
-      P.t(!!sh && sh.btn && /got it/i.test(sh.btnName) && sh.focus, 'has a "Got it" button (info-close) and keyboard focus moves into the sheet onto it', 1, sh && [sh.btnName, sh.focus]);
-      P.t(!!sh && sh.rect.t >= 0 && sh.rect.b <= sh.vh + 0.5 && sh.rect.l >= 0 && sh.rect.r <= sh.vw + 0.5 && sh.bg, 'sheet and its backdrop sit inside the viewport', 0.5, JSON.stringify(sh && sh.rect));
-      const sheetClick = await page.evaluate(() => { document.querySelector('[data-testid=info-sheet] p').click(); return !!document.querySelector('[data-testid=info-sheet]'); });
-      P.t(sheetClick, 'tapping the text inside the sheet does not close it', 0.4);
-      await page.click('[data-testid=info-close]'); await page.waitForTimeout(40);
-      P.t((await page.locator('[data-testid=info-sheet]').count()) === 0 && (await page.evaluate(() => location.hash)) === '' || (await page.evaluate(() => location.hash)) === '#', 'the button closes it and the page stays where it was (same route)', 0.8);
+      P.t(!!sh && sh.role === 'note' && sh.modal === null && sh.lb && sh.lbText === d.t, 'the popover is a non-modal role=note labelled by its heading (no dialog, no aria-modal)', 1, JSON.stringify(sh && [sh.role, sh.modal, sh.lb]));
+      P.t(!!sh && !sh.btn && !sh.bg && sh.expanded && !sh.inert, 'no "Got it" button, no dimmed backdrop, nothing inert; the (i) says aria-expanded=true and aria-describedby the popover', 1, sh && [sh.btn, sh.bg, sh.expanded, sh.inert]);
+      P.t(!!sh && sh.rect.t >= 15.5 && sh.rect.b <= sh.vh - 15.5 && sh.rect.l >= 15.5 && sh.rect.r <= sh.vw - 15.5, 'the popover sits inside the viewport with the page gutter', 0.5, JSON.stringify(sh && sh.rect));
+      const sheetClick = await page.evaluate(() => { document.querySelector('[data-testid=info-pop] p').click(); return !!document.querySelector('[data-testid=info-pop]'); });
+      P.t(sheetClick, 'tapping the text inside the popover does not close it', 0.4);
+      await page.click('[data-info=dscr]'); await page.waitForTimeout(40);
+      P.t((await page.locator('[data-testid=info-pop]').count()) === 0 && (await page.evaluate(() => location.hash)) === '' || (await page.evaluate(() => location.hash)) === '#', 'a second click on the (i) closes it and the page stays where it was (same route)', 0.8);
       P.t((await page.evaluate(() => localStorage.getItem('rep-v4'))) === st0, 'opening and closing help never changes saved data', 0.6);
       /* focus goes back where the person was */
       const back = await page.evaluate(() => { const a = document.activeElement; return a && a.dataset && a.dataset.info; });
       P.t(back === 'dscr', 'after closing, keyboard focus returns to the (i) that opened it', 1.2, 'focus is on ' + (await page.evaluate(() => { const a = document.activeElement; return a ? a.tagName + '.' + (a.className || '') : 'none'; })));
       /* escape + backdrop */
       await page.click('[data-info=networth]'); await page.waitForTimeout(40); await page.keyboard.press('Escape'); await page.waitForTimeout(40);
-      P.t((await page.locator('[data-testid=info-sheet]').count()) === 0, 'Escape closes it', 1);
-      await page.keyboard.press('Escape'); await page.waitForTimeout(30); P.t((await text(page)).length > 100 && (await page.locator('[data-testid=info-sheet]').count()) === 0, 'Escape with nothing open does nothing', 0.2);
+      P.t((await page.locator('[data-testid=info-pop]').count()) === 0, 'Escape closes it', 1);
+      await page.keyboard.press('Escape'); await page.waitForTimeout(30); P.t((await text(page)).length > 100 && (await page.locator('[data-testid=info-pop]').count()) === 0, 'Escape with nothing open does nothing', 0.2);
       await page.click('[data-info=cashflow]'); await page.waitForTimeout(40);
-      const hitBg = await page.evaluate(() => { const e = document.elementFromPoint(195, 60); return !!(e && e.matches('.sheet-bg,[data-info-close]')); });
-      await page.mouse.click(195, 60); await page.waitForTimeout(40);
-      P.t(hitBg && (await page.locator('[data-testid=info-sheet]').count()) === 0, 'tapping the dim backdrop closes it', 1, 'backdrop hit ' + hitBg);
+      const noBg = await page.evaluate(() => !document.querySelector('.sheet-bg'));
+      await page.mouse.click(3, 400); await page.waitForTimeout(40);
+      P.t(noBg && (await page.locator('[data-testid=info-pop]').count()) === 0, 'an outside click closes it (there is no dimmed backdrop)', 1, 'no backdrop ' + noBg);
       /* keyboard open */
-      await page.focus('[data-info=dscr]'); await page.keyboard.press('Enter'); await page.waitForTimeout(40); const k1 = (await page.locator('[data-testid=info-sheet]').count()) === 1; await page.keyboard.press('Escape'); await page.waitForTimeout(30);
-      await page.focus('[data-info=dscr]'); await page.keyboard.press('Space'); await page.waitForTimeout(40); const k2 = (await page.locator('[data-testid=info-sheet]').count()) === 1; await page.keyboard.press('Escape'); await page.waitForTimeout(30);
+      await page.focus('[data-info=dscr]'); await page.keyboard.press('Enter'); await page.waitForTimeout(40); const k1 = (await page.locator('[data-testid=info-pop]').count()) === 1; await page.keyboard.press('Escape'); await page.waitForTimeout(30);
+      await page.focus('[data-info=dscr]'); await page.keyboard.press('Space'); await page.waitForTimeout(40); const k2 = (await page.locator('[data-testid=info-pop]').count()) === 1; await page.keyboard.press('Escape'); await page.waitForTimeout(30);
       P.t(k1 && k2, 'the (i) opens with Enter and with Space (it is a real button)', 0.8, [k1, k2]);
-      await page.click('[data-info=dscr]'); await page.waitForTimeout(30); await page.click('[data-testid=info-close]'); await page.click('[data-info=cashflow]'); await page.waitForTimeout(30); sh = await page.evaluate(SHEET);
-      P.t(!!sh && sh.h === INFO.cashflow.t, 'a second (i) opened after closing the first shows its own definition', 0.5, sh && sh.h);
+      await page.click('[data-info=dscr]'); await page.waitForTimeout(30); await page.click('[data-info=cashflow]'); await page.waitForTimeout(30); sh = await page.evaluate(SHEET);
+      P.t(!!sh && sh.h === INFO.cashflow.t, 'a second (i) opened while the first is open replaces it: one popover at a time, with its own definition', 0.5, sh && sh.h);
       await page.keyboard.press('Tab'); await page.keyboard.press('Tab'); await page.waitForTimeout(30);
-      const trapped = await page.evaluate(() => { const s = document.querySelector('[data-testid=info-sheet]'); return !!s && (s.contains(document.activeElement) || document.activeElement === document.body); });
-      await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Shift+Tab'); await page.waitForTimeout(30);
-      const trapped2 = await page.evaluate(() => { const s = document.querySelector('[data-testid=info-sheet]'); return !!s && (s.contains(document.activeElement) || document.activeElement === document.body); });
-      P.t(trapped && trapped2, 'aria-modal is honoured: Tab and Shift+Tab never land on controls behind the sheet', 0.8, 'forward ' + trapped + ' back ' + trapped2 + ' active=' + (await page.evaluate(() => { const a = document.activeElement; return a ? a.tagName + (a.dataset.info ? '[' + a.dataset.info + ']' : '') : ''; })));
+      const free = await page.evaluate(() => { const a = document.activeElement; return { open: !!document.querySelector('[data-testid=info-pop]'), inPop: !!(a && a.closest && a.closest('#infopop')), tag: a ? a.tagName : '', inert: document.querySelectorAll('[inert]').length }; });
+      P.t(free.open && !free.inPop && free.tag !== 'BODY' && !free.inert, 'non-modal: there is no focus trap and nothing is inert; Tab moves on to the controls of the page while the popover stays', 0.8, JSON.stringify(free));
       await page.keyboard.press('Escape');
-      await page.click('[data-info=dscr]'); await page.waitForTimeout(30); await nav(page, '#assumptions'); P.t((await page.locator('[data-testid=info-sheet]').count()) === 0, 'changing page (hash) closes an open sheet', 0.4);
+      await page.click('[data-info=dscr]'); await page.waitForTimeout(30); await nav(page, '#assumptions'); P.t((await page.locator('[data-testid=info-pop]').count()) === 0, 'changing page (hash) closes an open popover', 0.4);
       /* content + accessible names for EVERY (i) on every page */
       const bad = [], names = []; let nBtn = 0;
       const sweep = async (S, hash, pre) => { await load(page, S, hash); if (pre) await pre(page); await openAll(page);
-        const res = await page.evaluate(async () => { const out = []; const nb = document.querySelectorAll('#app button.info').length; for (let bi = 0; bi < nb; bi++) { const b = document.querySelectorAll('#app button.info')[bi]; /* re-query: opening the sheet re-renders the page */ const key = b.dataset.info, al = b.getAttribute('aria-label') || '', typ = b.getAttribute('type'), glyph = b.querySelector('[aria-hidden=true]'); b.click(); await new Promise((r) => setTimeout(r, 5));
-            const s = document.querySelector('[data-testid=info-sheet]'); out.push({ key, al, typ, glyph: !!glyph, h: s ? s.querySelector('h3').textContent : null, ps: s ? [...s.querySelectorAll('p')].map((p) => p.textContent) : [] }); document.querySelector('[data-testid=info-close]') && document.querySelector('[data-testid=info-close]').click(); await new Promise((r) => setTimeout(r, 5)); } return out; });
+        const res = await page.evaluate(async () => { const out = []; const nb = document.querySelectorAll('#app button.info').length; for (let bi = 0; bi < nb; bi++) { const b = document.querySelectorAll('#app button.info')[bi]; /* re-query */ const key = b.dataset.info, al = b.getAttribute('aria-label') || '', typ = b.getAttribute('type'), glyph = b.querySelector('[aria-hidden=true]'); b.click(); await new Promise((r) => setTimeout(r, 5));
+            const s = document.querySelector('[data-testid=info-pop]'); out.push({ key, al, typ, glyph: !!glyph, h: s ? s.querySelector('h3').textContent : null, ps: s ? [...s.querySelectorAll('p')].map((p) => p.textContent) : [] }); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); await new Promise((r) => setTimeout(r, 5)); } return out; });
         res.forEach((r) => { nBtn++; const d = INFO[r.key]; if (!d || r.h !== d.t || r.ps[0] !== d.b || (d.e ? r.ps[1] !== 'Example: ' + d.e : r.ps.length !== 1)) bad.push(hash + ':' + r.key + ' -> ' + r.h); if (!r.al || !/^What does .+ mean\?$/.test(r.al) || !r.al.includes(d ? d.t : '\u0000') || r.typ !== 'button' || !r.glyph) names.push(hash + ':' + r.key + ' "' + r.al + '"'); }); };
       await sweep(sampleS(), '#'); await sweep(sampleS(), '#house-maple'); await sweep(sampleS(), '#house-north'); await sweep(sampleS(), '#house-keystone'); await sweep(sampleS(), '#assumptions'); await sweep(sampleS(), '#finances', async (pg) => { await clickSel(pg, '[data-addjob=hourly]'); }); await sweep(sampleS(), '#add');
       P.t(bad.length === 0 && nBtn > 80, 'every one of the ' + nBtn + ' (i) buttons on 7 pages opens exactly its own title, meaning and example', 2, bad.slice(0, 3).join(' | '));
@@ -225,22 +224,20 @@ exports.run = async function run(X) {
       /* (i) does not trigger the control around it */
       await load(page, sampleS(), '#house-maple'); await openAll(page); const before = await page.evaluate(() => document.querySelector('[data-p="h.maple.rate"]').value);
       const hasRate = !!(await page.$('[data-info=rate]')); if (hasRate) { await page.click('[data-info=rate]'); await page.waitForTimeout(40); }
-      const aft = await page.evaluate(() => ({ v: document.querySelector('[data-p="h.maple.rate"]').value, act: document.activeElement.dataset.p || '', open: !!document.querySelector('[data-testid=info-sheet]') }));
-      if (hasRate) await page.click('[data-testid=info-close]');
+      const aft = await page.evaluate(() => ({ v: document.querySelector('[data-p="h.maple.rate"]').value, act: document.activeElement.dataset.p || '', open: !!document.querySelector('[data-testid=info-pop]') }));
+      if (hasRate) await page.keyboard.press('Escape');
       await load(page, sampleS(), '#add'); const n0 = (await stateOf(page)).houses.length, sel0 = await page.evaluate(() => document.querySelector('.loanopt.on') && document.querySelector('.loanopt.on').dataset.pickloan);
-      const hasCard = !!(await page.$('[data-info=conv]')); if (hasCard) { await page.click('[data-info=conv]'); await page.waitForTimeout(40); await page.click('[data-testid=info-close]'); } const sel1 = await page.evaluate(() => document.querySelector('.loanopt.on') && document.querySelector('.loanopt.on').dataset.pickloan); const n1 = (await stateOf(page)).houses.length;
+      const hasCard = !!(await page.$('[data-info=conv]')); if (hasCard) { await page.click('[data-info=conv]'); await page.waitForTimeout(40); await page.keyboard.press('Escape'); } const sel1 = await page.evaluate(() => document.querySelector('.loanopt.on') && document.querySelector('.loanopt.on').dataset.pickloan); const n1 = (await stateOf(page)).houses.length;
       P.t(hasRate && hasCard && aft.open && before === aft.v && aft.act !== 'h.maple.rate' && sel0 === sel1 && n0 === n1 && (await page.evaluate(() => location.hash)) === '#add', 'tapping an (i) inside a field or loan card does not edit the field, pick the loan, add anything or navigate', 1, JSON.stringify([before, aft, sel0, sel1, n0, n1]));
       /* small phone: the longest definitions fit and stay reachable */
       await page.setViewportSize({ width: 320, height: 568 }); await load(page, sampleS(), '#add'); await page.click('[data-info=k203]'); await page.waitForTimeout(40); sh = await page.evaluate(SHEET);
-      const reach = !!sh && sh.rect.t >= 0 && sh.rect.b <= sh.vh + 0.5 && sh.rect.l >= 0 && sh.rect.r <= sh.vw + 0.5;
-      P.t(reach || (sh && sh.ov !== 'visible' && sh.rect.h <= sh.vh), 'at 320x568 the longest definition (FHA 203(k)) fits on screen or scrolls inside the sheet', 1.2, JSON.stringify(sh && [sh.rect, sh.scrollH, sh.clientH, sh.ov]));
-      const btnBox = await page.evaluate(() => { const b = document.querySelector('[data-testid=info-close]').getBoundingClientRect(); return { t: b.top, b: b.bottom, h: b.height }; });
-      P.t(btnBox.t >= 0 && btnBox.b <= 568.5 && btnBox.h >= 44, '"Got it" stays on screen at 320x568 and is at least 44px tall', 0.6, JSON.stringify(btnBox));
-      await page.click('[data-testid=info-close]'); await page.setViewportSize({ width: 390, height: 844 });
+      const reach = !!sh && sh.rect.t >= 15.5 && sh.rect.b <= sh.vh - 15.5 && sh.rect.l >= 15.5 && sh.rect.r <= sh.vw - 15.5;
+      P.t(reach || (sh && sh.ov !== 'visible' && sh.rect.h <= sh.vh), 'at 320x568 the longest definition (FHA 203(k)) fits on screen inside the gutter or scrolls inside the popover', 1.2, JSON.stringify(sh && [sh.rect, sh.scrollH, sh.clientH, sh.ov]));
+      P.t(!(await page.evaluate(() => !!document.querySelector('[data-testid=info-close],.sheet,.sheet-bg'))), 'at 320x568 there is no "Got it" button, sheet or backdrop', 0.6); await page.keyboard.press('Escape'); await page.setViewportSize({ width: 390, height: 844 });
       /* contrast in both colour schemes */
       const lowC = []; for (const scheme of ['light', 'dark']) { await page.emulateMedia({ colorScheme: scheme }); await load(page, sampleS(), '#'); await page.click('[data-info=dscr]'); await page.waitForTimeout(40); (await page.evaluate(CONTRAST)).forEach((c) => { if (c.cr < 4.5) lowC.push(scheme + ' ' + c.t + ' ' + c.cr.toFixed(2)); }); }
       await page.emulateMedia({ colorScheme: 'light' });
-      P.t(lowC.length === 0, 'sheet text and button contrast >= 4.5:1 in light and dark mode', 0.8, lowC.join('; '));
+      P.t(lowC.length === 0, 'popover text contrast >= 4.5:1 in light and dark mode', 0.8, lowC.join('; '));
       return P; });
 
   /* ================================================================ H4 content accuracy */
@@ -407,9 +404,9 @@ exports.run = async function run(X) {
       await load(page, sampleS(), '#house-maple'); await openAll(page);
       for (const f of ['capex', 'capexMonths', 'arv', 'liftIncome', 'liens']) { await setVal(page, `[data-p="h.maple.${f}"]`, '40000'); }
       for (const f of ['capex', 'capexMonths', 'arv', 'liftIncome', 'liens']) { await setVal(page, `[data-p="h.maple.${f}"]`, ''); }
-      let SA = await stateOf(page), h = SA.houses.find((x) => x.id === 'maple'), pl = E.planR(clone(SA)), shown = await page.evaluate(() => ({ nw: (document.querySelector('[data-testid=kpi-networth]') || {}).textContent }));
+      let SA = await stateOf(page), h = SA.houses.find((x) => x.id === 'maple'), pl = E.planR(clone(SA)), shown = await page.evaluate(() => ({ nw: (document.querySelector('[data-testid=kpi-networth]') || { dataset: {} }).dataset.planEnd }));
       P.t(['capex', 'capexMonths', 'arv', 'liftIncome', 'liens'].every((f) => typeof h[f] === 'number' && isFinite(h[f])) && !(await scanBad(page)) && isFinite(pl.horizon.nw), 'improvement budget / months / appraisal / income lift / liens left blank leave finite values and a valid asset page', 0.8, JSON.stringify(['capex', 'capexMonths', 'arv', 'liftIncome', 'liens'].map((f) => h[f])) + ' ' + (await scanBad(page)));
-      await nav(page, '#'); const k = await page.evaluate(() => (document.querySelector('[data-testid=kpi-networth]') || {}).textContent); const hh = (await stateOf(page));
+      await nav(page, '#'); const k = await page.evaluate(() => (document.querySelector('[data-testid=kpi-networth]') || { dataset: {} }).dataset.planEnd); const hh = (await stateOf(page));
       P.t(Math.abs(money(k) - PHZ(hh).nw) <= 0.003 * Math.abs(PHZ(hh).nw) + 1000 && !(await scanBad(page)), 'Portfolio net worth still equals the engine after those fields were blanked', 0.6, k + ' vs ' + Math.round(PHZ(hh).nw));
       await load(page, sampleS(), '#house-ridge'); await openAll(page);
       for (const f of ['exitMonth', 'sellCost']) await setVal(page, `[data-p="h.ridge.${f}"]`, '');

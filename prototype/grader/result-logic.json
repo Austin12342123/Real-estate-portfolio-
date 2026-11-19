@@ -1,67 +1,67 @@
 {
- "run": "2026-11-18T16:28:04.868Z",
+ "run": "2026-11-19T00:11:59.247Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 8.93,
-   "max": 8.93
+   "earned": 8.37,
+   "max": 8.37
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 5.58,
-   "max": 5.58
+   "earned": 5.23,
+   "max": 5.23
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 10.89,
-   "max": 10.89
+   "earned": 10.21,
+   "max": 10.21
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 6.14,
-   "max": 6.14
+   "earned": 5.76,
+   "max": 5.76
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 4.79,
-   "max": 4.79
+   "earned": 4.49,
+   "max": 4.49
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 8.38,
-   "max": 8.38
+   "earned": 7.85,
+   "max": 7.85
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 8.1,
-   "max": 8.1
+   "earned": 7.59,
+   "max": 7.59
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 8.93,
-   "max": 8.93
+   "earned": 8.37,
+   "max": 8.37
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 13.68,
-   "max": 13.68
+   "earned": 12.82,
+   "max": 12.82
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 3.35,
-   "max": 3.35
+   "earned": 3.14,
+   "max": 3.14
   },
   "L12": {
    "name": "Can-I-buy-this feasibility, shortfall and buy order (engine)",
-   "earned": 11.73,
-   "max": 11.73
+   "earned": 17.27,
+   "max": 17.27
   },
   "L11": {
    "name": "Purchase examples (16 typical purchases)",
-   "earned": 9.49,
-   "max": 9.49
+   "earned": 8.9,
+   "max": 8.9
   }
  },
  "checks": [
@@ -992,7 +992,7 @@
   {
    "cat": "L10",
    "id": "L10.3",
-   "name": "Units and bases are stated (net worth definition says it is before selling costs/taxes and excludes personal savings): yearly inputs say \"/ yr\", monthly say \"/ mo\"; DTI limit, vacancy, management are percentages of the right base (vacancy and management of rent; repairs of value per year)",
+   "name": "Units and bases are stated (net worth definition says it is before selling costs/taxes; the plan-end figure excludes personal savings while the big today figure adds them): yearly inputs say \"/ yr\", monthly say \"/ mo\"; DTI limit, vacancy, management are percentages of the right base (vacancy and management of rent; repairs of value per year)",
    "pts": 1,
    "earned": 1,
    "pass": true,
@@ -1303,6 +1303,61 @@
    "name": "Cap rate verdict: one table E.CAP_RANGES (house, multi, commercial, business) and a pure E.capVerdict(kind, cap) = good at or above the good line, low below the low line, ok in between; unknown kind or NaN gives null; the (i) text quotes the same numbers",
    "pts": 1,
    "earned": 1,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.14",
+   "name": "Hero net worth is TODAY: E.todayTotals(S, pl, ownedIds).nw = the bought assets (value - loan - liens - credit line, engine month 0) + savings today; nothing owned = savings only; after Remove all = savings only; a sold or planned asset adds nothing; the plan-end horizon figure is untouched",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.15",
+   "name": "Job money saved up override (h.jobSavedOverride, null = Auto): empty is byte-identical to the baseline plan; a larger amount buys the first planned asset no later (and sooner here), a zero amount no sooner; the counted cash = savings above the cushion + the typed amount; normalize keeps it through export / import and defaults old assets to null",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.16",
+   "name": "Job money saved up override reaches the verdict, shortfall and totals: a typed amount reaches feasibility (month and the funding line); a big amount buys sooner, a zero amount not sooner; the plan totals still equal the sum of the rows",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.18",
+   "name": "Borrowing rules edited on the asset page are the SAME global fields as Assumptions (g.hrate, g.cap, g.capBiz, g.haircut): untouched = byte-identical plan; changing each one moves the dependent trust numbers (borrowing room, ready month, plan-end net worth, feasibility month); the values survive a save / load round trip; pool total = room + cash for every pooled asset",
+   "pts": 3,
+   "earned": 3,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.17",
+   "name": "Comp value (h.comp, null = unused): empty = every seeded asset byte-identical (arv, plan, totals); filled = E.appraisalAuto = round((cost basis + comp) / 2), cost basis = price + 1.4 x budget (203(k): (price + budget) x 1.15 to the 1000); a typed appraisal still wins; a loan-type change re-derives it; no budget uses the price; persistence; totals = sum of rows",
+   "pts": 3,
+   "earned": 3,
    "pass": true,
    "detail": "",
    "source": "",

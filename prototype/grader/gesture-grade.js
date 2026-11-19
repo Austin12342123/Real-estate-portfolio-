@@ -61,7 +61,7 @@ exports.run = async function run(X) {
     await page.evaluate(() => { location.hash = '#assumptions'; }); await page.waitForTimeout(100); await page.evaluate(() => { location.hash = '#add'; }); await page.waitForTimeout(100);
     await touch(line(10, 500, 180, 505)); await page.waitForTimeout(150); P.t((await hash()) === '#assumptions', 'back goes one step in history (Add -> Assumptions)', 1.5, await hash());
     await load(sample(), '#house-cedar'); await touch(line(5, 350, 150, 350, 6)); await page.waitForTimeout(150); P.t(/^#?$/.test(await hash()), 'a page opened from a link (no earlier page) goes to the Portfolio', 2, await hash());
-    await load(sample(), '#house-maple'); await page.click('[data-info]'); await page.waitForTimeout(80); await touch(line(8, 300, 170, 305)); await page.waitForTimeout(100); P.t((await page.locator('[data-testid=info-sheet]').count()) === 0 && (await hash()) === '#house-maple', 'with an info sheet open, swipe back closes the sheet first', 0.5);
+    await load(sample(), '#house-maple'); await page.click('[data-info]'); await page.waitForTimeout(80); await touch(line(8, 300, 170, 305)); await page.waitForTimeout(100); P.t((await page.locator('[data-testid=info-pop]').count()) === 0 && (await hash()) === '#house-maple', 'with an info popover open, swipe back closes the popover first', 0.5);
     return P; });
 
   /* ---------------------------------------------------------------- I2 long-press drag */

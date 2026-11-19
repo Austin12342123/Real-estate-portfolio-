@@ -1,4 +1,4 @@
-/*STAMP*/html{--build:"a9cae995"}/*ENDSTAMP*/
+/*STAMP*/html{--build:"7f300e82"}/*ENDSTAMP*/
 /* Manrope (SIL OFL 1.1, fonts/OFL.txt), latin subset, bundled offline */
 @font-face{font-family:Manrope;font-style:normal;font-weight:400;font-display:swap;src:local("Manrope Regular"),url(fonts/manrope-latin-400-normal.woff2) format("woff2")}
 @font-face{font-family:Manrope;font-style:normal;font-weight:500;font-display:swap;src:local("Manrope Medium"),url(fonts/manrope-latin-500-normal.woff2) format("woff2")}
@@ -6,9 +6,9 @@
 @font-face{font-family:Manrope;font-style:normal;font-weight:700;font-display:swap;src:local("Manrope Bold"),url(fonts/manrope-latin-700-normal.woff2) format("woff2")}
 @font-face{font-family:Manrope;font-style:normal;font-weight:800;font-display:swap;src:local("Manrope ExtraBold"),url(fonts/manrope-latin-800-normal.woff2) format("woff2")}
 /* end Manrope */
-:root{--bg:#f4efe4;--card:#fbf8f1;--ink:#16130e;--mut:#5d584d;--line:#d8cfba;--acc:#8a2b1f;--ok:#1d6b39;--warn:#8a5000;--bad:#a3261b;--flash:#f3e6a0;--bar:#e2d9c4;--field:#ebe4d2;--shd:0 1px 2px color-mix(in srgb,var(--ink) 8%,transparent),0 10px 28px color-mix(in srgb,var(--ink) 8%,transparent);--serif:Manrope,-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--sans:Manrope,-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--rs:12px;--rm:16px;--rl:22px;--rx:28px;--rp:999px;--gxs:4px;--gs:7px;--gm:10px;--gl:14px;--gxl:21px;--gxx:28px;--gsec:18px;--gpage:20px;--fxs:12px;--fs:13px;--fm:15px;--fl:18px;--fxl:25px;--fhero:46px}
-:root[data-theme=dark]{color-scheme:dark;--bg:#12100d;--card:#1c1a16;--ink:#f3ede0;--mut:#aaa291;--line:#38332a;--acc:#e8957f;--ok:#5fd08a;--warn:#f0b050;--bad:#ff8d80;--flash:#5a4a00;--bar:#3a352c;--field:#2a2722;--shd:0 1px 2px color-mix(in srgb,var(--ink) 6%,transparent),0 10px 28px color-mix(in srgb,var(--ink) 4%,transparent)}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#12100d;--card:#1c1a16;--ink:#f3ede0;--mut:#aaa291;--line:#38332a;--acc:#e8957f;--ok:#5fd08a;--warn:#f0b050;--bad:#ff8d80;--flash:#5a4a00;--bar:#3a352c;--field:#2a2722;--shd:0 1px 2px color-mix(in srgb,var(--ink) 6%,transparent),0 10px 28px color-mix(in srgb,var(--ink) 4%,transparent)}}
+:root{--bg:#f4efe4;--card:#fbf8f1;--ink:#16130e;--mut:#5d584d;--line:#d8cfba;--acc:#2d4a86;--ok:#1d6b39;--warn:#8a5000;--bad:#a3261b;--flash:#f3e6a0;--bar:#e2d9c4;--field:#ebe4d2;--shd:0 1px 2px color-mix(in srgb,var(--ink) 8%,transparent),0 10px 28px color-mix(in srgb,var(--ink) 8%,transparent);--serif:Manrope,-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--sans:Manrope,-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--rs:12px;--rm:16px;--rl:22px;--rx:28px;--rp:999px;--gxs:4px;--gs:7px;--gm:10px;--gl:14px;--gxl:21px;--gxx:28px;--gsec:18px;--gpage:20px;--fxs:12px;--fs:13px;--fm:15px;--fl:18px;--fxl:25px;--fhero:46px}
+:root[data-theme=dark]{color-scheme:dark;--bg:#12100d;--card:#1c1a16;--ink:#f3ede0;--mut:#aaa291;--line:#38332a;--acc:#9cb6ee;--ok:#5fd08a;--warn:#f0b050;--bad:#ff8d80;--flash:#5a4a00;--bar:#3a352c;--field:#2a2722;--shd:0 1px 2px color-mix(in srgb,var(--ink) 6%,transparent),0 10px 28px color-mix(in srgb,var(--ink) 4%,transparent)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#12100d;--card:#1c1a16;--ink:#f3ede0;--mut:#aaa291;--line:#38332a;--acc:#9cb6ee;--ok:#5fd08a;--warn:#f0b050;--bad:#ff8d80;--flash:#5a4a00;--bar:#3a352c;--field:#2a2722;--shd:0 1px 2px color-mix(in srgb,var(--ink) 6%,transparent),0 10px 28px color-mix(in srgb,var(--ink) 4%,transparent)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 var(--sans);font-variant-numeric:tabular-nums}
@@ -176,9 +176,6 @@ table.cmp tr.tot td{border-top:2px solid var(--line)}
 .info span{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--acc);color:var(--acc);font:700 12px/1 var(--sans);}
 .lb{display:block;min-width:0}.lb .nw{white-space:nowrap}
 .kpi small .info{width:44px;height:44px;margin:-15px -14px -15px -6px}.kpi small .info span{width:16px;height:16px;font-size:10px}
-.sheet-bg{position:fixed;inset:0;background:color-mix(in srgb,var(--ink) 40%,transparent);z-index:50}
-.sheet{position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;background:var(--card);color:var(--ink);border-radius:18px 18px 0 0;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 18px);z-index:51;box-shadow:0 -8px 30px color-mix(in srgb,var(--ink) 25%,transparent)}
-.sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}.sheet h3{margin:0 0 6px;font-size:var(--fl)}.sheet p{margin:0 0 10px;font-size:var(--fm);line-height:1.4}.sheet .eg{background:var(--field);border-radius:10px;padding:8px 12px;font-size:var(--fm)}.sheet .btn{width:100%}
 .loanrow{display:flex;align-items:stretch;gap:2px;margin:0 0 8px}.loanrow .loanopt{margin:0;flex:1}.loanrow .info{margin:0;align-self:center}
 .morebtn{margin:6px 0 2px}
 
@@ -534,8 +531,6 @@ textarea{border-radius:var(--rm)}
 .vchip{border-radius:var(--rp);padding:2px var(--gm)}
 .tag{border-radius:var(--rp)}
 .bar,.bar i,.seg2{border-radius:var(--rp)}
-.sheet{border-radius:var(--rx) var(--rx) 0 0;box-shadow:var(--shd)}
-.sheet .grab{border-radius:var(--rp)}
 .tip{border-radius:var(--rm)}
 .toast{border-radius:var(--rl)}
 .info span{border-radius:var(--rp)}
@@ -687,18 +682,13 @@ table.cmp th{font-weight:600}
 .dot{border-radius:50%}
 /* Health sheet: failing items first, plain rows */
 .chk b{font-weight:600}
-/* tooltips for (i) on hover (desktop only; the button still opens the full sheet) */
-@media(hover:hover) and (pointer:fine){
-  .info{position:relative}
-  .info[data-tip]:hover::after,.info[data-tip]:focus-visible::after{content:attr(data-tip);position:absolute;z-index:20;left:50%;bottom:calc(100% + var(--gs));transform:translateX(-50%);width:max-content;max-width:min(280px,70vw);padding:var(--gs) var(--gm);border-radius:var(--rm);background:var(--ink);color:var(--card);font-size:var(--fxs);font-weight:500;line-height:1.4;text-align:left;box-shadow:var(--shd);pointer-events:none;white-space:normal}
-}
 /* desktop (>= 900px): master-detail. The list stays on the left, the asset page opens beside it. */
 @media(min-width:900px){
   #app[data-pg=md]{max-width:1280px;padding-inline:var(--gxx)}
   #app[data-pg=md] .mdw{display:grid;grid-template-columns:minmax(380px,5fr) 7fr;gap:var(--gxl);align-items:start}
   #app[data-pg=md] .mdl .pg{display:block}
   #app[data-pg=md] .mdl .side{position:static}
-  #app[data-pg=md] .mdd{position:sticky;top:var(--gl);max-height:calc(100vh - var(--gxl) - var(--gl));overflow:auto;padding-right:var(--gs)}
+  #app[data-pg=md] .mdd{padding-right:var(--gs)}
   #app[data-pg=md] .row.cur{background:var(--field);border-radius:var(--rm)}
   #app[data-pg=order],#app[data-pg=finances],#app[data-pg=settings],#app[data-pg=import]{max-width:760px}
   .btn:focus-visible,.rowbtn:focus-visible{outline-offset:2px}
@@ -746,11 +736,9 @@ button,.row,.seg button,.chip,.info{touch-action:manipulation}
   #app{max-width:720px;padding-left:max(var(--gxl),env(safe-area-inset-left,0px));padding-right:max(var(--gxl),env(safe-area-inset-right,0px));padding-top:max(var(--gm),env(safe-area-inset-top,0px))}
   .herokg .kpi:first-child b{font-size:var(--fhero)}
   .row{padding-block:var(--gm)}
-  .sheet{max-width:560px}
   .toast{max-width:560px}
 }
 @media(min-width:600px){
-  .sheet{max-width:560px}
 }
 /* tablet nav: the three page tabs float at the bottom edge, where the thumbs rest (touch only; a mouse keeps them at the top) */
 @media(min-width:600px) and (pointer:coarse){
@@ -785,7 +773,6 @@ button,.row,.seg button,.chip,.info{touch-action:manipulation}
 @media(min-width:600px){:root{--gpage:32px}}
 @media(min-width:900px){#app[data-pg=planned],#app[data-pg=real],#app[data-pg=saved],#app[data-pg=add],#app[data-pg=md]{padding-left:max(var(--gpage),env(safe-area-inset-left,0px));padding-right:max(var(--gpage),env(safe-area-inset-right,0px))}}
 .toast{width:calc(100% - var(--gpage) - var(--gpage))}
-.sheet{left:var(--gpage);right:var(--gpage);bottom:calc(var(--gs) + env(safe-area-inset-bottom,0px));padding-bottom:var(--gl);border-radius:var(--rx);max-height:calc(100vh - var(--gxl) - env(safe-area-inset-bottom,0px))}
 /* a long figure can never push a column wider than its track: the left column and its cards may shrink */
 .pg>*,.side>.card,.herokg>*{min-width:0}
 .herokg .kpi b{overflow-wrap:anywhere}
@@ -794,3 +781,13 @@ button,.row,.seg button,.chip,.info{touch-action:manipulation}
 .capv-ok{color:var(--warn)}
 .capv-low{color:var(--bad)}
 /* end design system v8 */
+
+/* ===== DESIGN SYSTEM v9: less red (the accent token is an indigo ink, red is for real negatives and errors), one focus ring on fields, the (i) popover. Tokens only. ===== */
+/* (i) popover: small, non-modal, fixed to the viewport, no dimming. Position is set by app.js (flip / clamp inside the gutter). */
+.infopop{position:fixed;z-index:60;box-sizing:border-box;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:var(--rm);padding:var(--gm) var(--gm);box-shadow:var(--shd);overflow-y:auto;overscroll-behavior:contain}
+.infopop h3{margin:0 0 var(--gs);font-size:var(--fm);font-weight:700}.infopop p{margin:0 0 var(--gs);font-size:var(--fs);line-height:1.4}.infopop p:last-child{margin-bottom:0}.infopop .eg{background:var(--field);border-radius:var(--rm);padding:var(--gs) var(--gm)}
+/* one focus ring: a field inside the pill wrapper shows only the wrapper's ring (the pill, token radius) */
+.iw :focus,.iw :focus-visible{outline:0;box-shadow:none}
+.iw:focus-within,.card.lg .iw:focus-within{box-shadow:0 0 0 2px var(--acc);border-radius:var(--rm)}
+.tag{background:var(--field);border-color:transparent}
+/* end design system v9 */

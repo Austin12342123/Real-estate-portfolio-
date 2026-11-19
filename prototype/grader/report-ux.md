@@ -1,8 +1,8 @@
 # UX grader (UX_ONLY)
 
-Run: 2026-11-17T21:00:33.394Z
+Run: 2026-11-18T17:59:55.225Z
 
-## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **99.77 / 100** (separate scale)
+## J. Dates, number-box math, Checks, sold profit, migration, stretch house: **100.00 / 100** (separate scale)
 
 | ID | Check | Pts | Earned | Detail |
 |---|---|---|---|---|
@@ -49,7 +49,7 @@ Run: 2026-11-17T21:00:33.394Z
 | J41 | Examples persist like any asset: reload, Undo after Remove, Saved, backup and restore keep every field; the default plan is untouched (36 assets, nothing owned, real NW >= $125M, after-tax cash flow >= $1.3M/mo, verdict Yes) | 1.01 | 1.01 | 8/8 sub-checks pass |
 | J42 | Edit an example: Edit beside the (i) opens the editor; calculator math, /yr revenue and units math work; the live line and warnings follow; Save keeps it across reload and shows Edited; the added asset equals the edited example; Reset returns only that example; Back asks before discarding | 2.70 | 2.70 | 20/20 sub-checks pass |
 | J43 | Editing and the rest of the app: multi-family units re-check the loan and per-unit costs, the loan picker updates down payment and cash, revenue per year keeps profit = revenue x margin, future dollars and tight widths work, backup / Saved / Undo / examples already owned behave, storage unavailable and two tabs and an old cached engine do not break it | 3.04 | 3.04 | 26/26 sub-checks pass |
-| J44 | Build stamp: app.js, engine.js, info.js, style.css (as --build) and the service worker cache name carry one hash of the four files; editing a file without restamping is caught; stamp.py and build-artifact.py write it | 1.52 | 1.29 | 5/6 sub-checks pass. FAIL: build-artifact.py stamps first, and the bundled artifact carries the same stamp [Traceback (most recent call last):   File "/tmp/stamp-veHWtE/build-artifact.py", line 4, in <module>     c=re.sub(r"url\(fonts/([\w.-]+\.woff2)\)",lambda m:"url(data:font/woff2;base64,"+base64.b64enco] |
+| J44 | Build stamp: app.js, engine.js, info.js, style.css (as --build) and the service worker cache name carry one hash of the four files; editing a file without restamping is caught; stamp.py and build-artifact.py write it | 1.52 | 1.52 | 6/6 sub-checks pass |
 | J45 | Mixed versions: an old engine.js under a new app.js is detected at start, caches are purged, the service worker removed and the page reloads exactly ONCE (no loop), the event is logged, the stored portfolio is untouched; if it is still mixed the notice shows instead; a stale cache name heals the same way, but never after the person has touched the page | 2.02 | 2.02 | 9/9 sub-checks pass |
 | J46 | Safety copies are taken BEFORE a migration, an additions append, an unreadable save, loading a sample, Remove all planned, opening a Saved portfolio, a backup restore, removing an asset, and once a day; each copy equals the state just before; Restore brings back the exact copy (deep-equal), files the current state first and offers Undo | 2.70 | 2.70 | 16/16 sub-checks pass |
 | J47 | Safety ring limits: at most 5 copies, oldest dropped, size capped, newest first, quota errors and a throwing localStorage never throw and never lose the newest copy; the app still works and Undo still shows | 1.18 | 1.18 | 5/5 sub-checks pass |
@@ -70,7 +70,4 @@ Run: 2026-11-17T21:00:33.394Z
 
 ### J failures
 
-- **J44 Build stamp: app.js, engine.js, info.js, style.css (as --build) and the service worker cache name carry one hash of the four files; editing a file without restamping is caught; stamp.py and build-artifact.py write it** (-0.23): 5/6 sub-checks pass. FAIL: build-artifact.py stamps first, and the bundled artifact carries the same stamp [Traceback (most recent call last):
-  File "/tmp/stamp-veHWtE/build-artifact.py", line 4, in <module>
-    c=re.sub(r"url\(fonts/([\w.-]+\.woff2)\)",lambda m:"url(data:font/woff2;base64,"+base64.b64enco]
-  - Reproduce: node: grader/stamp-check.js on v4/ and on a temp copy that is edited, restamped and bundled; browser: window.__app.stamps and the --build property
+None.

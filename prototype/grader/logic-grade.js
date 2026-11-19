@@ -531,8 +531,8 @@ chk('L10', 'L10.2', 'The Assumptions page carries a "how the numbers are built" 
   const m = APP.slice(APP.indexOf('data-testid="model-notes"'), APP.indexOf("colSec('backup'")).replace(/\s+/g, ' '); const ok = /today's dollars/.test(m) && /nothing is inflated/.test(m) && !/All dollars are nominal/.test(m) && /lower cap/.test(m) && /own rent or mortgage/.test(m) && /27\.5/.test(m) && /refinanc/i.test(m) && /NNN/.test(m) && /7%/.test(m) && /4% a year/.test(m) && /grows with its income/.test(m) && /trust/.test(m) && /pool/.test(m) && /Move an asset up or down/.test(m) && !/same cap is used/.test(m) && !/does not include your own rent/.test(m) && !/Depreciation is not modeled/.test(m);
   return { pass: ok, detail: 'model-notes block complete: ' + ok };
 });
-chk('L10', 'L10.3', 'Units and bases are stated (net worth definition says it is before selling costs/taxes and excludes personal savings): yearly inputs say "/ yr", monthly say "/ mo"; DTI limit, vacancy, management are percentages of the right base (vacancy and management of rent; repairs of value per year)', 1, () => {
-  const ok = /before selling costs and taxes/.test(INFO.networth.b) && /savings are not included/.test(INFO.networth.b) && /of rent/.test(APP + JSON.stringify(INFO)) && /percent of the value/.test(INFO.repairs.b) && /Repairs \/ yr/.test(APP + JSON.stringify(Object.keys(require(path.join(V4, 'info.js')).LABEL))); return { pass: ok, detail: '' };
+chk('L10', 'L10.3', 'Units and bases are stated (net worth definition says it is before selling costs/taxes; the plan-end figure excludes personal savings while the big today figure adds them): yearly inputs say "/ yr", monthly say "/ mo"; DTI limit, vacancy, management are percentages of the right base (vacancy and management of rent; repairs of value per year)', 1, () => {
+  const ok = /before selling costs and taxes/.test(INFO.networth.b) && /without your savings/.test(INFO.networth.b) && /of rent/.test(APP + JSON.stringify(INFO)) && /percent of the value/.test(INFO.repairs.b) && /Repairs \/ yr/.test(APP + JSON.stringify(Object.keys(require(path.join(V4, 'info.js')).LABEL))); return { pass: ok, detail: '' };
 });
 chk('L10', 'L10.4', 'Preset notes that state a number or rule match LOANS fields (FHA/203(k)/SBA caps, owner-occupancy, interest-only) and the sellerb/sellerc notes say the share seller-financed is partial and negotiable', 1, () => {
   const ok = LN('sellerb').note.length > 0 && /(typically|usually|often)/i.test(LN('sellerb').note + INFO.sellerfin.b) && /(10%|50%|part)/i.test(INFO.sellerfin.b + LN('sellerb').note); return { pass: ok, detail: LN('sellerb').note };
@@ -760,6 +760,73 @@ chk('L11', 'L11.9', 'Loading is defensive and storage failure is survivable: gar
     if (E.capVerdict('nope', 8) !== null || E.capVerdict('house', NaN) !== null || E.capVerdict('house', undefined) !== null) bad.push('unknown kind or NaN must be null');
     const info = (typeof Info !== 'undefined' ? Info : (global.Info || null)); const src = require('fs').readFileSync(require('path').resolve(__dirname, '../v4/info.js'), 'utf8'), m = /caprate:\s*\{[^}]*?b:\s*'((?:[^'\\]|\\.)*)'[^}]*?e:\s*'((?:[^'\\]|\\.)*)'/.exec(src); void info;
     if (!m) bad.push('caprate entry not found in info.js'); else { const t = m[1] + ' ' + m[2]; if (m[1].length > 450 || m[2].length > 220) bad.push('caprate text too long ' + m[1].length + '/' + m[2].length); Object.keys(want).forEach((k) => want[k].forEach((n) => { if (t.indexOf(String(n)) < 0) bad.push('(i) text lacks ' + n + ' for ' + k); })); if (!/rule of thumb|rules of thumb/i.test(t) || !/not advice/i.test(t)) bad.push('(i) text must say rough rule of thumb, not advice'); }
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  /* ---- round2: hero net worth = today, job money saved up override, comp value (L12.14 - L12.18) ---- */
+  const clone2 = (o) => JSON.parse(JSON.stringify(o)), seed2 = () => E.normalize(clone2(E.seedPlan()));
+  const firstPl = (S) => S.houses.find((h) => h.status !== 'owned');
+  chk('L12', 'L12.14', 'Hero net worth is TODAY: E.todayTotals(S, pl, ownedIds).nw = the bought assets (value - loan - liens - credit line, engine month 0) + savings today; nothing owned = savings only; after Remove all = savings only; a sold or planned asset adds nothing; the plan-end horizon figure is untouched', 2, () => {
+    const bad = []; const S0 = seed2(), cash = S0.p.cash, pl0 = E.plan(S0), end0 = pl0.horizon.nw;
+    const t0 = E.todayTotals(S0, pl0, []); if (Math.abs(t0.nw - cash) > 0.005 || t0.eq !== 0) bad.push('nothing owned: nw ' + t0.nw + ' want ' + cash);
+    const S1 = clone2(S0); const b1 = S1.houses.slice(0, 3); b1.forEach((h) => { h.status = 'owned'; }); const S1n = E.normalize(S1), pl1 = E.plan(S1n), ids = b1.map((h) => h.id), t1 = E.todayTotals(S1n, pl1, ids);
+    const eqRef = ids.reduce((a, id) => { const x = pl1.assetsAt(0).find((q) => q.id === id), v = pl1.V[id]; return a + (x ? x.value - x.debt : 0); }, 0);
+    if (!(t1.eq > 0) || Math.abs(t1.eq - eqRef) > 0.01 || Math.abs(t1.nw - (eqRef + cash)) > 0.01) bad.push('some bought: ' + t1.nw + ' want ' + (eqRef + cash));
+    const tp = E.todayTotals(S1n, pl1, S1n.houses.filter((h) => h.status !== 'owned').map((h) => h.id)); if (Math.abs(tp.nw - cash) > 0.005) bad.push('planned ids add nothing: ' + tp.nw);
+    const S2 = clone2(S1n); S2.houses = []; const t2 = E.todayTotals(S2, E.plan(S2), []); if (Math.abs(t2.nw - cash) > 0.005) bad.push('after Remove all: ' + t2.nw);
+    const S3 = clone2(S1n); S3.houses.find((h) => h.id === ids[0]).exit = 'sell'; S3.houses.find((h) => h.id === ids[0]).exitMonth = 12; const S3n = E.normalize(S3), pl3 = E.plan(S3n), t3 = E.todayTotals(S3n, pl3, ids.slice(1)), t3a = E.todayTotals(S3n, pl3, ids);
+    if (!(t3a.nw > t3.nw + 1) || Math.abs(t3.nw - (t1.nw - (t1.eq - t3.eq))) > 0.01) bad.push('a sold asset is left out of ids: ' + t3.nw + ' vs ' + t3a.nw);
+    if (Math.abs(E.plan(S0).horizon.nw - end0) > 1e-9) bad.push('plan-end net worth changed');
+    const S4 = clone2(S0); S4.p.cash = cash + 1000; if (Math.abs(E.todayTotals(S4, E.plan(S4), []).nw - (cash + 1000)) > 0.005) bad.push('savings are counted');
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.15', 'Job money saved up override (h.jobSavedOverride, null = Auto): empty is byte-identical to the baseline plan; a larger amount buys the first planned asset no later (and sooner here), a zero amount no sooner; the counted cash = savings above the cushion + the typed amount; normalize keeps it through export / import and defaults old assets to null', 2, () => {
+    const bad = [], S0 = seed2(), h0 = firstPl(S0), id = h0.id, base = E.plan(S0), tr0 = base.trust[id];
+    const Sn = clone2(S0); Sn.houses.forEach((h) => { delete h.jobSavedOverride; delete h.comp; }); const pn = E.plan(E.normalize(Sn));
+    if (JSON.stringify(pn.purchase) !== JSON.stringify(base.purchase) || pn.horizon.nw !== base.horizon.nw || JSON.stringify(pn.series.nw) !== JSON.stringify(base.series.nw)) bad.push('empty override changed numbers');
+    if (h0.jobSavedOverride !== null) bad.push('default is not null');
+    if (!(tr0.ok && !tr0.pooled && tr0.month > 0)) bad.push('seed first asset not a month>0 non-pooled purchase: ' + JSON.stringify([tr0.ok, tr0.pooled, tr0.month]));
+    const Sa = clone2(S0); Sa.houses.find((h) => h.id === id).jobSavedOverride = 1000000; const pa = E.plan(E.normalize(Sa)), tra = pa.trust[id];
+    if (!(tra.ok && tra.month < tr0.month)) bad.push('big override should buy sooner: ' + tra.month + ' vs ' + tr0.month);
+    const Sz = clone2(S0); Sz.houses.find((h) => h.id === id).jobSavedOverride = 0; const pz = E.plan(E.normalize(Sz)), trz = pz.trust[id];
+    if (trz.ok && !(trz.month >= tr0.month)) bad.push('zero override should not be sooner: ' + trz.month);
+    const sav = Math.max(0, S0.p.cash - S0.p.emergencyMonths * (S0.p.living * Math.pow(1 + S0.p.inflation / 100, tra.month / 12) + (S0.g.otherDebt || 0))), want = Math.min(tra.need, sav) + 0;
+    if (Math.abs(tra.have - (sav + 1000000)) > 0.5) bad.push('counted cash ' + tra.have + ' want ' + (sav + 1000000));
+    const Sm = clone2(S0); Sm.houses.find((h) => h.id === id).jobSavedOverride = 5000; const rt = E.normalize(JSON.parse(JSON.stringify(Sm))); if (rt.houses.find((h) => h.id === id).jobSavedOverride !== 5000) bad.push('lost in a save / load round trip');
+    const old = clone2(S0); delete old.houses[0].jobSavedOverride; if (E.normalize(old).houses[0].jobSavedOverride !== null) bad.push('old asset not null');
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.16', 'Job money saved up override reaches the verdict, shortfall and totals: a typed amount reaches feasibility (month and the funding line); a big amount buys sooner, a zero amount not sooner; the plan totals still equal the sum of the rows', 2, () => {
+    const bad = [], S0 = seed2(), id = firstPl(S0).id, f0 = E.feasible(S0, E.plan(S0), null).assets[id];
+    const Sb = clone2(S0); Sb.houses.find((h) => h.id === id).jobSavedOverride = 1000000; const fb = E.feasible(E.normalize(Sb), E.plan(E.normalize(Sb)), null).assets[id];
+    const fund = (f) => ((f.criteria.find((c) => c.id === 'funding') || {}).measured || ''), fz0 = E.feasible(E.normalize(clone2(S0)), E.plan(E.normalize(clone2(S0))), null).assets[id];
+    if (!(fb.month < f0.month) || fz0.month !== f0.month || !/1\.02M/.test(fund(fb)) || fund(fb) === fund(f0)) bad.push('feasibility ignores the typed amount: month ' + f0.month + ' -> ' + fb.month + ' funding ' + fund(f0) + ' -> ' + fund(fb));
+    const Sz = clone2(S0); Sz.houses.find((h) => h.id === id).jobSavedOverride = 0; const Szn = E.normalize(Sz), pz = E.plan(Szn), fz = E.feasible(Szn, pz, null).assets[id];
+    if (fz.month < f0.month || (isFinite(fz.month) && fund(fz) === fund(f0) && fz.month === f0.month)) bad.push('zero override should not look the same as Auto: ' + fz.month + ' ' + fund(fz));
+    [Sb, Szn].forEach((S, i) => { const n = E.normalize(clone2(S)), p = E.plan(n), ids = n.houses.map((h) => h.id), tt = E.todayTotals(n, p, ids); const sum = ids.reduce((a, k) => a + p.V[k].cf, 0); if (Math.abs(sum - tt.cf) > 0.01) bad.push('totals != sum of rows (' + i + ')'); });
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.18', 'Borrowing rules edited on the asset page are the SAME global fields as Assumptions (g.hrate, g.cap, g.capBiz, g.haircut): untouched = byte-identical plan; changing each one moves the dependent trust numbers (borrowing room, ready month, plan-end net worth, feasibility month); the values survive a save / load round trip; pool total = room + cash for every pooled asset', 3, () => {
+    const bad = [], S0 = seed2(), ids = S0.houses.map((h) => h.id), last = ids[ids.length - 1], p0 = E.plan(S0), sig = (p) => JSON.stringify([p.purchase, p.horizon.nw, ids.map((i) => p.trust[i].room)]);
+    const S1 = clone2(S0); S1.g.hrate = S0.g.hrate; S1.g.cap = S0.g.cap; S1.g.capBiz = S0.g.capBiz; S1.g.haircut = S0.g.haircut; if (sig(E.plan(E.normalize(S1))) !== sig(p0)) bad.push('same values changed numbers');
+    const f0 = E.feasible(S0, p0, null).assets[last].month;
+    [['hrate', 14], ['cap', 70], ['capBiz', 30], ['haircut', 10]].forEach(([k, v]) => { const S = clone2(S0); S.g[k] = v; const n = E.normalize(S), p = E.plan(n), q = E.normalize(JSON.parse(JSON.stringify(n))); if (q.g[k] !== v) bad.push(k + ' lost in a round trip');
+      if (sig(p) === sig(p0)) bad.push(k + ' changed nothing'); if (k !== 'hrate' && !(p.trust[last].room !== p0.trust[last].room)) bad.push(k + ' did not move the borrowing room');
+      if ((k === 'cap' || k === 'haircut') && !(p.trust[last].room < p0.trust[last].room || p.trust[last].ready !== p0.trust[last].ready)) bad.push(k + ' lowering the room had no effect'); });
+    const Sc = clone2(S0); Sc.g.cap = 70; const pc = E.plan(E.normalize(Sc)), fc = E.feasible(E.normalize(Sc), pc, null).assets[last].month; if (fc === f0 && pc.purchase[last] !== p0.purchase[last]) bad.push('feasibility month ignores the cap');
+    ids.forEach((i) => { const t = p0.trust[i]; if (t.pooled && Math.abs(t.have - (t.room + t.heldCash)) > 1) bad.push('pool total != room + cash for ' + i); });
+    return { pass: !bad.length, detail: bad.slice(0, 4).join('; ') }; });
+  chk('L12', 'L12.17', 'Comp value (h.comp, null = unused): empty = every seeded asset byte-identical (arv, plan, totals); filled = E.appraisalAuto = round((cost basis + comp) / 2), cost basis = price + 1.4 x budget (203(k): (price + budget) x 1.15 to the 1000); a typed appraisal still wins; a loan-type change re-derives it; no budget uses the price; persistence; totals = sum of rows', 3, () => {
+    const bad = [], S0 = seed2(), withB = S0.houses.find((h) => h.status !== 'owned' && h.capex > 0 && (h.type || 'house') === 'house' && !h.finCapex);
+    const SS = clone2(S0); SS.houses.forEach((h) => { h.comp = null; }); const p0 = E.plan(S0), p1 = E.plan(E.normalize(SS));
+    if (JSON.stringify(p0.series.nw) !== JSON.stringify(p1.series.nw) || JSON.stringify(S0.houses.map((h) => [h.arv, h.arvAuto])) !== JSON.stringify(E.normalize(SS).houses.map((h) => [h.arv, h.arvAuto]))) bad.push('empty comp changed numbers');
+    S0.houses.forEach((h) => { if (h.comp !== null) bad.push('default comp not null ' + h.id); if (E.appraisalAuto(h) !== E.costBasisArv(h)) bad.push('empty appraisalAuto != cost basis ' + h.id); });
+    if (!withB) return { pass: false, detail: 'no seeded house with a budget: ' + bad.join('; ') };
+    const cb = Math.round(withB.price + 1.4 * withB.capex), h1 = Object.assign({}, withB, { comp: cb + 40000 }); if (E.appraisalAuto(h1) !== Math.round((cb + cb + 40000) / 2)) bad.push('formula ' + E.appraisalAuto(h1));
+    const h2 = Object.assign({}, withB, { finCapex: true, comp: 200000 }); const cb2 = Math.round(((h2.price + h2.capex) * 1.15) / 1000) * 1000; if (E.appraisalAuto(h2) !== Math.round((cb2 + 200000) / 2)) bad.push('203k formula');
+    const h3 = Object.assign({}, withB, { capex: 0, comp: 120000 }); if (E.appraisalAuto(h3) !== Math.round((withB.price + 120000) / 2)) bad.push('no budget uses price');
+    const Sc = clone2(S0), hc = Sc.houses.find((h) => h.id === withB.id); hc.comp = cb + 40000; hc.arv = E.appraisalAuto(hc); hc.arvAuto = true; const Scn = E.normalize(Sc), pc = E.plan(Scn);
+    if (!(pc.horizon.nw !== p0.horizon.nw)) bad.push('comp did not reach net worth');
+    const hn = Scn.houses.find((h) => h.id === withB.id); if (hn.arv !== Math.round((cb + cb + 40000) / 2)) bad.push('stored arv ' + hn.arv);
+    const rt = E.normalize(JSON.parse(JSON.stringify(Scn))).houses.find((h) => h.id === withB.id); if (rt.comp !== cb + 40000) bad.push('comp lost in round trip');
+    const ids = Scn.houses.map((h) => h.id), tt = E.todayTotals(Scn, pc, ids); if (Math.abs(ids.reduce((a, k) => a + pc.V[k].cf, 0) - tt.cf) > 0.01) bad.push('totals != sum of rows');
+    const lo = E.loansFor('house').find((l) => l.finRehab), hl = clone2(hn); if (lo) { E.applyLoan(hl, lo.id); const w = Math.round((Math.round(((hl.price + hl.capex) * 1.15) / 1000) * 1000 + hl.comp) / 2); if (hl.arv !== w || !hl.arvAuto) bad.push('loan change did not re-derive: ' + hl.arv + ' want ' + w); } else bad.push('no 203k loan');
+    const ht = clone2(hn); ht.arv = 777777; ht.arvAuto = false; E.applyLoan(ht, 'conv' in {} ? 'conv' : E.loansFor('house')[0].id); if (ht.arv !== 777777) bad.push('typed appraisal overwritten by a loan change');
     return { pass: !bad.length, detail: bad.join('; ') }; });
 }
 

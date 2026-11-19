@@ -3,3 +3,5 @@
 2. Parallel work: the user chose "parallel in separate copies" (git worktrees via tools/worktree.sh). The orchestrator merges, then runs ONE full grader run on the merged tree before pushing main.
 3. Questions: the user chose "rarely, just proceed": agents state assumptions in the report; ask only for data loss / silent money-or-time-basis changes / irreversible actions. (This overrides the playbook's earlier 'ask early' default.)
 4. Adoption: yes. CLAUDE.md now carries the agent-workflow section.
+
+- 2026-11-19 (user): ACCEPTED the loosened sync-grade basis-label check (/portfolio row/) after the asset-note text was cut at the user's request.
