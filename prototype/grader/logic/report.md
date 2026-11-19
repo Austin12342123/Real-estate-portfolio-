@@ -1,23 +1,23 @@
 # Logic and math grader (LOGIC_ONLY)
 
-Run: 2026-11-19T00:11:59.247Z
+Run: 2026-11-19T21:41:39.546Z
 
 **TOTAL 100 / 100**
 
 | Cat | Area | Earned | Max |
 |---|---|---|---|
-| L1 | Loan / amortization / payoff math | 8.37 | 8.37 |
-| L2 | Income, expense and NOI model | 5.23 | 5.23 |
-| L3 | Leverage, LTV/CLTV and credit-line rules | 10.21 | 10.21 |
-| L4 | Lender qualification (DTI / DSCR / rental haircut) | 5.76 | 5.76 |
-| L5 | Loan-product terms vs sources (every LOANS preset) | 4.49 | 4.49 |
-| L6 | Appreciation, rent growth, inflation and time basis | 7.85 | 7.85 |
-| L7 | Taxes, selling costs and depreciation | 7.59 | 7.59 |
-| L8 | Business valuation, growth and operating model | 8.37 | 8.37 |
-| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 12.82 | 12.82 |
-| L10 | Disclosure, labels, units and glossary accuracy | 3.14 | 3.14 |
-| L12 | Can-I-buy-this feasibility, shortfall and buy order (engine) | 17.27 | 17.27 |
-| L11 | Purchase examples (16 typical purchases) | 8.9 | 8.9 |
+| L1 | Loan / amortization / payoff math | 8.2 | 8.2 |
+| L2 | Income, expense and NOI model | 5.13 | 5.13 |
+| L3 | Leverage, LTV/CLTV and credit-line rules | 10 | 10 |
+| L4 | Lender qualification (DTI / DSCR / rental haircut) | 5.64 | 5.64 |
+| L5 | Loan-product terms vs sources (every LOANS preset) | 4.39 | 4.39 |
+| L6 | Appreciation, rent growth, inflation and time basis | 7.69 | 7.69 |
+| L7 | Taxes, selling costs and depreciation | 7.43 | 7.43 |
+| L8 | Business valuation, growth and operating model | 8.2 | 8.2 |
+| L9 | Plan integrity (ordering, trust funding, cash recycling, stress test) | 12.56 | 12.56 |
+| L10 | Disclosure, labels, units and glossary accuracy | 3.08 | 3.08 |
+| L12 | Can-I-buy-this feasibility, shortfall and buy order (engine) | 18.97 | 18.97 |
+| L11 | Purchase examples (16 typical purchases) | 8.71 | 8.71 |
 
 ## Checks
 
@@ -107,7 +107,7 @@ Run: 2026-11-19T00:11:59.247Z
 | L9.12 | The default plan owns nothing: every asset is planned, the first is paid from savings and job money, every later one by the trust; with no job the plan cannot start; automatic payments on beat off | 1 | 1 | PASS owned false first pooled false no-job unfunded 36 NW on/off 301.2/58.1 |  |
 | L10.1 | Glossary numbers agree with sources: FHA 1.75% + 0.55% (HUD), Limited 203(k) $75,000 (ML 2024-13), SBA 7(a) $5M and 504 $5.5M (SBA.gov), DSCR 1.2/1.25 wording, 43% DTI wording | 1.5 | 1.5 | PASS  | S2,S4,S6,S7 |
 | L10.2 | The Assumptions page carries a "how the numbers are built" note that is true of the model: figures for future months in today's dollars by default (future dollars on request, prices of planned assets are today's prices and nothing is inflated), growth with value, 50% business credit-line cap, own rent/mortgage in DTI, worked-out taxes with depreciation (27.5/39/15/7 years), refinance at maturity, NNN repayments, 7% vacancy, 4% business growth, savings grow with income; and it no longer says the old things (same cap for all, no own housing, depreciation not modeled) | 1.5 | 1.5 | PASS model-notes block complete: true |  |
-| L10.3 | Units and bases are stated (net worth definition says it is before selling costs/taxes; the plan-end figure excludes personal savings while the big today figure adds them): yearly inputs say "/ yr", monthly say "/ mo"; DTI limit, vacancy, management are percentages of the right base (vacancy and management of rent; repairs of value per year) | 1 | 1 | PASS  |  |
+| L10.3 | Units and bases are stated (net worth definition says it is before selling costs/taxes; the plan-end figure excludes personal savings while the big today figure adds savings and the cash the trust holds): yearly inputs say "/ yr", monthly say "/ mo"; DTI limit, vacancy, management are percentages of the right base (vacancy and management of rent; repairs of value per year) | 1 | 1 | PASS  |  |
 | L10.4 | Preset notes that state a number or rule match LOANS fields (FHA/203(k)/SBA caps, owner-occupancy, interest-only) and the sellerb/sellerc notes say the share seller-financed is partial and negotiable | 1 | 1 | PASS The seller finances part of the price. This preset has the seller carry 80%, which is aggressive; sellers usually carry 10% to 50%. |  |
 | L10.5 | Source ledger (logic/sources.md) lists at least 40 distinct fetched-and-read sources, each with a URL, an access date (header) and an exact fact; every source id cited by a check exists and is not withdrawn; unverified checks are not scored | 1 | 1 | PASS 42 sources with URL and fact; cited ids missing: none |  |
 | L8.6 | Default plan has renovations on at least the first two houses bought (rehab $20K-$40K paid from cash, not financed, new appraisal adds 1.2x-1.6x the rehab cost, rent lift 8-12%), and the engine follows the rules: the value is the new appraisal when the work finishes, income rises by the lift, homes still cash flow positive | 1.5 | 1.5 | PASS maple $25000 -> $70000; cedar $30000 -> $87000 |  |
@@ -141,6 +141,8 @@ Run: 2026-11-19T00:11:59.247Z
 | L12.16 | Job money saved up override reaches the verdict, shortfall and totals: a typed amount reaches feasibility (month and the funding line); a big amount buys sooner, a zero amount not sooner; the plan totals still equal the sum of the rows | 2 | 2 | PASS  |  |
 | L12.18 | Borrowing rules edited on the asset page are the SAME global fields as Assumptions (g.hrate, g.cap, g.capBiz, g.haircut): untouched = byte-identical plan; changing each one moves the dependent trust numbers (borrowing room, ready month, plan-end net worth, feasibility month); the values survive a save / load round trip; pool total = room + cash for every pooled asset | 3 | 3 | PASS  |  |
 | L12.17 | Comp value (h.comp, null = unused): empty = every seeded asset byte-identical (arv, plan, totals); filled = E.appraisalAuto = round((cost basis + comp) / 2), cost basis = price + 1.4 x budget (203(k): (price + budget) x 1.15 to the 1000); a typed appraisal still wins; a loan-type change re-derives it; no budget uses the price; persistence; totals = sum of rows | 3 | 3 | PASS  |  |
+| L12.19 | Net worth TODAY = bought assets (value - loan - liens - credit line) + personal savings + the cash the trust holds today (E.todayTotals: eq, cash, trust, nw), counted once each: nothing owned, some bought, after Remove all, after a sale, with a trust cash balance (the engine has none at month 0, so one is injected into the plan); the plan-end figure is untouched | 2 | 2 | PASS  |  |
+| L12.20 | Job money saved up override is REAL cash, counted once: the credit equals typed amount - the accrued job money (one entry, at the purchase month); two typed amounts 1,000 apart change the cash balance by exactly 1,000 from the purchase on and nothing before; the Health cash check and the plan totals follow; empty = byte-identical; Reset to auto (null) restores the baseline | 2 | 2 | PASS  |  |
 | L9.J1 | Job money per home: with no amount set (the default) the three default plans give exactly the numbers they gave before the feature (loan payoffs, job money used, equity, after-tax cash flow, last purchase) | 1 | 1 | PASS [[1436,200796,21555991,234677,100],[10913,1056844,301214033,3157996,271],[3257,18336,542250657,1083061,170]] |  |
 | L9.J2 | Job money per home: an amount set on a bought home goes to that home's loan every month it has a balance (500 on Maple: 500 at month 5), pays it off sooner, and the engine exposes the plan's own default amount (E.jobDefault) as a positive number | 1 | 1 | PASS at5 506.1961619615092 want 506.1961619615092 end 120->91 default {"amount":128.69676450099058,"from":100} |  |
 | L9.J3 | Job money per home: amounts above the job pay left after living costs are reported (E.jobMoney.over, shortMonths) and never create money (the job money that reaches the loans never exceeds the plan's job surplus, month by month) | 1 | 1 | PASS {"surplus0":1030,"assigned":15000,"count":3,"over":true,"shortMonths":95,"firstShort":2,"short0":0} worst 7.275957614183426e-12 |  |

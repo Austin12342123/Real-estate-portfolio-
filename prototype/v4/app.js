@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'7f300e82'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'5acbc0b3'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine, KEY = 'rep-v4', UIKEY = 'rep-v4-ui', SKEY = 'rep-v4-saved';
@@ -326,7 +326,7 @@
   function jobSavedRow(pl, h) {
     const tr = pl.trust && pl.trust[h.id]; if (!S.p || !tr || h.status === 'owned') return '';
     const set = h.jobSavedOverride !== null && h.jobSavedOverride !== undefined, auto = Math.max(0, (tr.have || 0) - (tr.savings || 0)); if (!set && (!tr.ok || tr.pooled)) return '';
-    return field('Job money saved up', 'h.' + h.id + '.jobSavedOverride', set ? grp(h.jobSavedOverride) : '', { pre: '$', ph: grp(Math.round(auto)), info: 'jobsaved' }) + `<p class="note" data-testid="jobsaved-note">${set ? 'You set this amount.' : 'Empty = Auto: the plan\'s own ' + $f(auto) + '.'} Type your own to replace it.</p>` + (set ? `<button type="button" class="btn plain" data-jobsaved-auto="${h.id}" data-testid="jobsaved-auto">Reset to auto</button>` : '');
+    return field('Job money saved up', 'h.' + h.id + '.jobSavedOverride', set ? grp(h.jobSavedOverride) : '', { pre: '$', ph: grp(Math.round(auto)), info: 'jobsaved' }) + `<p class="note" data-testid="jobsaved-note">${set ? 'You set this amount: it counts as real cash and replaces the plan\'s own.' : 'Empty = Auto: the plan\'s own ' + $f(auto) + '.'} Type your own to replace it.</p>` + (set ? `<button type="button" class="btn plain" data-jobsaved-auto="${h.id}" data-testid="jobsaved-auto">Reset to auto</button>` : '');
   }
   function mathFor(pl, h) {
     const tr = pl.trust[h.id], need = tr.need || E.needFor(S, h);

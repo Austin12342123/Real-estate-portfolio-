@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'7f300e82'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'5acbc0b3'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -310,7 +310,7 @@
     hs.forEach((h) => (V[h.id] = view(S, h)));
     const planM = Math.round(Math.max(1, g.planYears || 20) * 12), hz = isFinite(+g.horizon) ? +g.horizon : GDEF.horizon, TS = Math.max(600, Math.min(2400, Math.round(hz)));
     const queue0 = hs.filter((h) => h.status !== 'owned'), skipped = {}, hel = isFinite(+g.hrate) ? +g.hrate : GDEF.hrate;
-    let P0, sellAt, mergeAt, dr, cur, exits, fund, readyAt, cashA, outsideA, reinv, bought, blocked, BAL, PAY, RAT, LS, AUTO, JOBX, CALLS, FUT = null, JS, JU, JLN, JC, JLO, JSH, LQ, SALET, best;
+    let P0, sellAt, mergeAt, dr, cur, exits, fund, readyAt, cashA, outsideA, reinv, bought, blocked, BAL, PAY, RAT, LS, AUTO, JOBX, CALLS, FUT = null, JS, JU, JLN, JC, JLO, JSH, JCR, LQ, SALET, best;
     const exitTimes = (h) => { const p = P0[h.id]; sellAt[h.id] = Infinity; mergeAt[h.id] = Infinity; if (!isFinite(p)) return;
       const m = Math.max(Math.round(h.exitMonth || 0), p + 1); if (h.exit === 'sell') sellAt[h.id] = m; else if (h.exit === 'merge') mergeAt[h.id] = m; };
     /* state of an asset at month t, ignoring whether it has been sold (hl = its line draw this month) */
@@ -362,7 +362,7 @@
       P0 = {}; sellAt = {}; mergeAt = {}; dr = {}; cur = {}; exits = {}; fund = {}; readyAt = {}; bought = []; blocked = null; best = {};
       BAL = {}; PAY = {}; RAT = {}; LS = {}; AUTO = {}; JOBX = {}; CALLS = new Array(TS + 1).fill(0);
       cashA = new Array(TS + 1).fill(0); outsideA = new Array(TS + 1).fill(0); reinv = new Array(TS + 1).fill(0);
-      JS = new Array(TS + 1).fill(0); JU = new Array(TS + 1).fill(0); JLN = new Array(TS + 1).fill(0); JC = new Array(TS + 1).fill(0); JLO = new Array(TS + 1).fill(0); JSH = new Array(TS + 1).fill(0); LQ = new Array(TS + 1).fill(0); SALET = new Array(TS + 1).fill(0);
+      JS = new Array(TS + 1).fill(0); JU = new Array(TS + 1).fill(0); JLN = new Array(TS + 1).fill(0); JC = new Array(TS + 1).fill(0); JLO = new Array(TS + 1).fill(0); JSH = new Array(TS + 1).fill(0); JCR = new Array(TS + 1).fill(0); LQ = new Array(TS + 1).fill(0); SALET = new Array(TS + 1).fill(0);
       hs.forEach((h) => { cur[h.id] = 0; P0[h.id] = h.status === 'owned' ? 0 : Infinity; exitTimes(h); if (h.status === 'owned') { bought.push(h); dr[h.id] = new Array(TS + 1).fill(0); startLoan(h, 0); } });
       const queue = queue0.filter((h) => !skipped[h.id]); let C = 0, out = 0, qi = 0, L = pp ? +pp.cash || 0 : 0, outPrev = 0;
       const autoPay = g.autoPay !== false, infl = pp ? (pp.inflation || 0) / 100 : 0, apy = pp ? (pp.cashApy || 0) / 1200 : 0;
@@ -395,7 +395,7 @@
           if (!pool && pp && own < needAmt - 1e-6) break;
           P0[N.id] = t; exitTimes(N); dr[N.id] = new Array(TS + 1).fill(0); startLoan(N, t);
           if (pool) { const C0 = C, useC = Math.min(C, needAmt); C -= useC; cur[N.id] = needAmt - useC; fund[N.id] = { pool: true, n: sm.n, room: Math.max(0, sm.head), heldCash: C0, have: avail, cf: sm.sweep, gross: sm.cf, cash: useC, draw: needAmt - useC, need: needAmt }; }
-          else { const nd = base + cap0; out += nd; fund[N.id] = { pool: false, n: 0, room: 0, cf: 0, cash: 0, draw: 0, need: nd, have: pp ? own : nd, savings: pp ? Math.min(nd, Math.max(0, (+pp.cash || 0) - rsv0)) : nd, rsv: rsv0 }; }
+          else { const nd = base + cap0; out += nd; if (pp && jso !== null && jso !== undefined) { const dj = jso - Math.max(0, L - (+pp.cash || 0)); L += dj; JCR[t] += dj; } /* the typed job money is REAL cash: it replaces the job money accrued so far (L - today's savings), counted once, at the purchase month */ fund[N.id] = { pool: false, n: 0, room: 0, cf: 0, cash: 0, draw: 0, need: nd, have: pp ? own : nd, savings: pp ? Math.min(nd, Math.max(0, (+pp.cash || 0) - rsv0)) : nd, rsv: rsv0 }; }
           bought.push(N); qi++; snap = snapOf(t);
         }
         /* 3) record the state and sweep the month's pooled cash flow. Order of use: (a) pay the trust's line down (oldest draw first); (b) while a planned asset is still waiting, hold the rest as cash for it; (c) once nothing is left to buy, the rest goes to each
@@ -495,7 +495,7 @@
     hs.forEach((h) => { const p = P0[h.id]; if (!isFinite(p)) { loanEnd[h.id] = Infinity; return; } let e = Infinity; for (let t = p; t <= TS; t++) if (!(BAL[h.id][t] > 0.005)) { e = t; break; } loanEnd[h.id] = e; });
     const shareAt = (A) => (id, t) => (A[id] ? A[id][Math.max(0, Math.min(TS, Math.round(t)))] || 0 : 0);
     const firstPos = (A) => (id) => { const a = A[id]; if (!a) return -1; for (let t = 0; t <= TS; t++) if (a[t] > 0.005) return t; return -1; };
-    const jobs = { short: JSH.slice(0, T + 1), surplus: JS.slice(0, T + 1), used: JU.slice(0, T + 1), line: JLN.slice(0, T + 1), cash: JC.slice(0, T + 1), loans: JLO.slice(0, T + 1), liquid: LQ.slice(0, T + 1) };
+    const jobs = { short: JSH.slice(0, T + 1), surplus: JS.slice(0, T + 1), used: JU.slice(0, T + 1), line: JLN.slice(0, T + 1), cash: JC.slice(0, T + 1), loans: JLO.slice(0, T + 1), credit: JCR.slice(0, T + 1), liquid: LQ.slice(0, T + 1) };
     const rows = queue0.map((h) => { const m = P0[h.id], r = { id: h.id, target: h.id, start: prevM, locM: isFinite(m) ? Math.max(0, m - prevM) : Infinity, end: m, ok: isFinite(m), funds: funds[h.id], ready: trust[h.id].ready }; if (isFinite(m)) prevM = Math.max(prevM, m); return r; });
     let worst = { dti: 0, month: 0 }; for (let t = 0; t <= T; t++) if (s.dti[t] > worst.dti) worst = { dti: s.dti[t], month: t };
     let extraLater = 0; hs.forEach((h) => { const v = V[h.id]; if (isFinite(P0[h.id]) && P0[h.id] > 0 && v.L > 0 && v.payoff > 0) extraLater += v.X; });
@@ -567,7 +567,7 @@
       R.net[t] = R.income[t] + R.portfolio[t] - R.portTax[t] - R.gm[t] - R.extra[t] - R.living[t] - R.debts[t];
       R.interest[t] = t > 0 ? Math.max(0, liq + s.cash[t - 1]) * apy : 0;
       R.jobSplit[t] = (pl.jobUsed && pl.jobUsed[t]) || 0; R.jobSurplus[t] = (pl.jobs && pl.jobs.surplus[t]) || 0; /* job money that moved into the trust or the loans (never below your cash cushion) */
-      liq += R.net[t] + R.interest[t] + R.capitalIn[t] - R.outsideCall[t] - R.oneTime[t] - R.saleTax[t] - (pl.dpCash[t] || 0) - R.jobSplit[t];
+      liq += (pl.jobs && pl.jobs.credit ? pl.jobs.credit[t] || 0 : 0) + R.net[t] + R.interest[t] + R.capitalIn[t] - R.outsideCall[t] - R.oneTime[t] - R.saleTax[t] - (pl.dpCash[t] || 0) - R.jobSplit[t];
       R.liquid[t] = liq; R.total[t] = liq + s.cash[t];
       R.reserve[t] = (p.emergencyMonths || 0) * (R.living[t] + R.debts[t]);
       R.burn[t] = R.living[t] + R.debts[t] + R.extra[t] + R.gm[t] - Math.max(0, R.portfolio[t] - R.portTax[t]);
@@ -759,10 +759,10 @@
     if (pl && pl.raw) pl = pl.raw; pl = pl || plan(S);
     const o = { n: 0, cf: 0, payment: 0, noi: 0, ds: 0, price: 0, rent: 0, dscr: null };
     (ids || S.houses.map((h) => h.id)).forEach((id) => { const v = pl.V[id], h = H(S, id); if (!v || !h) return; o.n++; o.cf += v.cf; o.payment += v.payment; o.noi += v.noi; o.ds += v.P + v.mip; o.price += +h.price || 0; o.rent += +h.rent || 0; });
-    /* net worth NOW (this month, today's dollars): for the BOUGHT assets among ids, value - loan - liens - credit line drawn (engine month 0, the same terms as series.nw), plus the savings you hold today. Planned assets are not owned yet, so they add nothing. */
+    /* net worth NOW (this month, today's dollars): for the BOUGHT assets among ids, value - loan - liens - credit line drawn (engine month 0, the same terms as series.nw), plus the savings you hold today, plus the cash the trust holds today (o.trust). Planned assets are not owned yet, so they add nothing. */
     const ask = {}; (ids || S.houses.map((h) => h.id)).forEach((id) => { const h = H(S, id); if (h && h.status === 'owned') ask[id] = 1; });
     o.eq = 0; if (pl.assetsAt) pl.assetsAt(0).forEach((x) => { if (ask[x.id]) o.eq += x.equity; });
-    o.cash = S.p ? Math.max(0, +S.p.cash || 0) : 0; o.nw = o.eq + o.cash;
+    o.cash = S.p ? Math.max(0, +S.p.cash || 0) : 0; o.trust = Math.max(0, (pl.series && pl.series.cash && pl.series.cash[0]) || 0); o.nw = o.eq + o.cash + o.trust; /* NET WORTH TODAY = bought assets (value - loan - liens - credit line) + your savings + the cash the trust holds today (the engine's month-0 trust cash, separate from your savings, so nothing is counted twice) */
     o.dscr = o.ds > 0.5 ? o.noi / o.ds : null; /* DSCR = income before the loan / loan payment (principal + interest + mortgage insurance), the same ratio the asset page shows */
     return o;
   }

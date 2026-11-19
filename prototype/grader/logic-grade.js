@@ -531,8 +531,8 @@ chk('L10', 'L10.2', 'The Assumptions page carries a "how the numbers are built" 
   const m = APP.slice(APP.indexOf('data-testid="model-notes"'), APP.indexOf("colSec('backup'")).replace(/\s+/g, ' '); const ok = /today's dollars/.test(m) && /nothing is inflated/.test(m) && !/All dollars are nominal/.test(m) && /lower cap/.test(m) && /own rent or mortgage/.test(m) && /27\.5/.test(m) && /refinanc/i.test(m) && /NNN/.test(m) && /7%/.test(m) && /4% a year/.test(m) && /grows with its income/.test(m) && /trust/.test(m) && /pool/.test(m) && /Move an asset up or down/.test(m) && !/same cap is used/.test(m) && !/does not include your own rent/.test(m) && !/Depreciation is not modeled/.test(m);
   return { pass: ok, detail: 'model-notes block complete: ' + ok };
 });
-chk('L10', 'L10.3', 'Units and bases are stated (net worth definition says it is before selling costs/taxes; the plan-end figure excludes personal savings while the big today figure adds them): yearly inputs say "/ yr", monthly say "/ mo"; DTI limit, vacancy, management are percentages of the right base (vacancy and management of rent; repairs of value per year)', 1, () => {
-  const ok = /before selling costs and taxes/.test(INFO.networth.b) && /without your savings/.test(INFO.networth.b) && /of rent/.test(APP + JSON.stringify(INFO)) && /percent of the value/.test(INFO.repairs.b) && /Repairs \/ yr/.test(APP + JSON.stringify(Object.keys(require(path.join(V4, 'info.js')).LABEL))); return { pass: ok, detail: '' };
+chk('L10', 'L10.3', 'Units and bases are stated (net worth definition says it is before selling costs/taxes; the plan-end figure excludes personal savings while the big today figure adds savings and the cash the trust holds): yearly inputs say "/ yr", monthly say "/ mo"; DTI limit, vacancy, management are percentages of the right base (vacancy and management of rent; repairs of value per year)', 1, () => {
+  const ok = /before selling costs and taxes/.test(INFO.networth.b) && /without your savings/.test(INFO.networth.b) && /cash the trust holds today/.test(INFO.networth.b) && /of rent/.test(APP + JSON.stringify(INFO)) && /percent of the value/.test(INFO.repairs.b) && /Repairs \/ yr/.test(APP + JSON.stringify(Object.keys(require(path.join(V4, 'info.js')).LABEL))); return { pass: ok, detail: '' };
 });
 chk('L10', 'L10.4', 'Preset notes that state a number or rule match LOANS fields (FHA/203(k)/SBA caps, owner-occupancy, interest-only) and the sellerb/sellerc notes say the share seller-financed is partial and negotiable', 1, () => {
   const ok = LN('sellerb').note.length > 0 && /(typically|usually|often)/i.test(LN('sellerb').note + INFO.sellerfin.b) && /(10%|50%|part)/i.test(INFO.sellerfin.b + LN('sellerb').note); return { pass: ok, detail: LN('sellerb').note };
@@ -827,6 +827,39 @@ chk('L11', 'L11.9', 'Loading is defensive and storage failure is survivable: gar
     const ids = Scn.houses.map((h) => h.id), tt = E.todayTotals(Scn, pc, ids); if (Math.abs(ids.reduce((a, k) => a + pc.V[k].cf, 0) - tt.cf) > 0.01) bad.push('totals != sum of rows');
     const lo = E.loansFor('house').find((l) => l.finRehab), hl = clone2(hn); if (lo) { E.applyLoan(hl, lo.id); const w = Math.round((Math.round(((hl.price + hl.capex) * 1.15) / 1000) * 1000 + hl.comp) / 2); if (hl.arv !== w || !hl.arvAuto) bad.push('loan change did not re-derive: ' + hl.arv + ' want ' + w); } else bad.push('no 203k loan');
     const ht = clone2(hn); ht.arv = 777777; ht.arvAuto = false; E.applyLoan(ht, 'conv' in {} ? 'conv' : E.loansFor('house')[0].id); if (ht.arv !== 777777) bad.push('typed appraisal overwritten by a loan change');
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  /* ---- round3: net worth today = bought equity + personal savings + the cash the trust holds today (L12.19); the job money override is REAL cash, counted once (L12.20) ---- */
+  chk('L12', 'L12.19', 'Net worth TODAY = bought assets (value - loan - liens - credit line) + personal savings + the cash the trust holds today (E.todayTotals: eq, cash, trust, nw), counted once each: nothing owned, some bought, after Remove all, after a sale, with a trust cash balance (the engine has none at month 0, so one is injected into the plan); the plan-end figure is untouched', 2, () => {
+    const bad = [], S0 = seed2(), cash = S0.p.cash, pl0 = E.plan(S0), end0 = pl0.horizon.nw;
+    const chkNw = (lab, S, pl, ids, trust) => { const t = E.todayTotals(S, pl, ids), want = t.eq + cash + trust; if (!isFinite(t.trust) || Math.abs(t.trust - trust) > 0.005 || Math.abs(t.cash - cash) > 0.005 || Math.abs(t.nw - want) > 0.01) bad.push(lab + ': nw ' + t.nw + ' trust ' + t.trust + ' cash ' + t.cash + ' want ' + want); return t; };
+    chkNw('nothing owned', S0, pl0, [], 0);
+    const S1 = clone2(S0); S1.houses.slice(0, 3).forEach((h) => { h.status = 'owned'; }); const S1n = E.normalize(S1), pl1 = E.plan(S1n), ids = S1n.houses.slice(0, 3).map((h) => h.id), t1 = chkNw('some bought', S1n, pl1, ids, 0);
+    if (!(t1.eq > 0)) bad.push('some bought: no equity');
+    const S2 = clone2(S1n); S2.houses = []; chkNw('after Remove all', S2, E.plan(S2), [], 0);
+    const S3 = clone2(S1n); S3.houses.find((h) => h.id === ids[0]).exit = 'sell'; S3.houses.find((h) => h.id === ids[0]).exitMonth = 12; const S3n = E.normalize(S3), pl3 = E.plan(S3n); chkNw('after a sale (the sold asset is left out)', S3n, pl3, ids.slice(1), 0);
+    const plT = E.plan(S1n); plT.series.cash[0] = 25000; const tT = chkNw('trust cash balance', S1n, plT, ids, 25000); if (Math.abs(tT.nw - (t1.nw + 25000)) > 0.01) bad.push('trust cash not added exactly once: ' + tT.nw + ' vs ' + t1.nw);
+    const plE = E.plan(S0); plE.series.cash[0] = 7000; chkNw('trust cash, nothing owned', S0, plE, [], 7000);
+    if (Math.abs(E.plan(S0).horizon.nw - end0) > 1e-9) bad.push('plan-end net worth changed');
+    return { pass: !bad.length, detail: bad.join('; ') }; });
+  chk('L12', 'L12.20', 'Job money saved up override is REAL cash, counted once: the credit equals typed amount - the accrued job money (one entry, at the purchase month); two typed amounts 1,000 apart change the cash balance by exactly 1,000 from the purchase on and nothing before; the Health cash check and the plan totals follow; empty = byte-identical; Reset to auto (null) restores the baseline', 2, () => {
+    const bad = [], S0 = seed2(), id = firstPl(S0).id, base = E.plan(S0);
+    if (!base.jobs || !Array.isArray(base.jobs.credit) || base.jobs.credit.some((x) => x !== 0)) bad.push('Auto must credit nothing (jobs.credit missing or non-zero)');
+    const mkS = (v) => { const S = clone2(S0); S.g.autoPay = false; S.p.cashApy = 0; S.houses.find((h) => h.id === id).jobSavedOverride = v; return E.normalize(S); };
+    const pA = E.plan(mkS(1000000)), pB = E.plan(mkS(1001000)), fA = E.finance(mkS(1000000), pA), fB = E.finance(mkS(1001000), pB), m = pA.purchase[id];
+    if (!(isFinite(m) && m === pB.purchase[id])) bad.push('both buy in the same month: ' + m + ' ' + pB.purchase[id]);
+    else {
+      const cr = pA.jobs && pA.jobs.credit ? pA.jobs.credit : [], nz = cr.map((x, t) => [t, x]).filter((q) => Math.abs(q[1]) > 0.005);
+      if (nz.length !== 1 || nz[0][0] !== m) bad.push('credit must be one entry at the purchase month ' + m + ': ' + JSON.stringify(nz.slice(0, 4)));
+      else if (pB.jobs.credit[m] - cr[m] < 999.99 || pB.jobs.credit[m] - cr[m] > 1000.01) bad.push('credit moves 1:1 with the typed amount: ' + (pB.jobs.credit[m] - cr[m]));
+      for (let t = 0; t <= Math.min(fA.T, 60); t++) { const d = fB.series.liquid[t] - fA.series.liquid[t], w = t >= m ? 1000 : 0; if (Math.abs(d - w) > 0.01) { bad.push('cash balance at month ' + t + ' differs by ' + d + ' want ' + w); break; } }
+    }
+    const f0 = E.finance(E.normalize(S0), base), fz = E.finance(mkS(null), E.plan(mkS(null))); const fl = E.finance(mkS(1000000), pA);
+    if (!(fl.kpis.minLiquid > fz.kpis.minLiquid)) bad.push('Health cash check ignores the typed cash: ' + fl.kpis.minLiquid + ' vs ' + fz.kpis.minLiquid);
+    const Sr = clone2(S0); Sr.houses.find((h) => h.id === id).jobSavedOverride = 50000; const Srn = E.normalize(Sr), Sre = clone2(Srn); Sre.houses.find((h) => h.id === id).jobSavedOverride = null; const pr = E.plan(E.normalize(Sre));
+    if (JSON.stringify(pr.series.nw) !== JSON.stringify(base.series.nw) || JSON.stringify(pr.purchase) !== JSON.stringify(base.purchase) || pr.jobs.credit.some((x) => x !== 0)) bad.push('Reset to auto does not restore the baseline');
+    [mkS(1000000), mkS(0)].forEach((S, i) => { const p = E.plan(S), ids = S.houses.map((h) => h.id), tt = E.todayTotals(S, p, ids), sum = ids.reduce((a, k) => a + p.V[k].cf, 0); if (Math.abs(sum - tt.cf) > 0.01) bad.push('totals != sum of rows (' + i + ')'); });
+    const rt = E.normalize(JSON.parse(JSON.stringify(mkS(5000)))); if (rt.houses.find((h) => h.id === id).jobSavedOverride !== 5000) bad.push('lost in export / import');
+    if (!f0) bad.push('no finance');
     return { pass: !bad.length, detail: bad.join('; ') }; });
 }
 

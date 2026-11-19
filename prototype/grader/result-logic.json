@@ -1,67 +1,67 @@
 {
- "run": "2026-11-19T00:11:59.247Z",
+ "run": "2026-11-19T21:41:39.546Z",
  "total": 100,
  "max": 100,
  "categories": {
   "L1": {
    "name": "Loan / amortization / payoff math",
-   "earned": 8.37,
-   "max": 8.37
+   "earned": 8.2,
+   "max": 8.2
   },
   "L2": {
    "name": "Income, expense and NOI model",
-   "earned": 5.23,
-   "max": 5.23
+   "earned": 5.13,
+   "max": 5.13
   },
   "L3": {
    "name": "Leverage, LTV/CLTV and credit-line rules",
-   "earned": 10.21,
-   "max": 10.21
+   "earned": 10,
+   "max": 10
   },
   "L4": {
    "name": "Lender qualification (DTI / DSCR / rental haircut)",
-   "earned": 5.76,
-   "max": 5.76
+   "earned": 5.64,
+   "max": 5.64
   },
   "L5": {
    "name": "Loan-product terms vs sources (every LOANS preset)",
-   "earned": 4.49,
-   "max": 4.49
+   "earned": 4.39,
+   "max": 4.39
   },
   "L6": {
    "name": "Appreciation, rent growth, inflation and time basis",
-   "earned": 7.85,
-   "max": 7.85
+   "earned": 7.69,
+   "max": 7.69
   },
   "L7": {
    "name": "Taxes, selling costs and depreciation",
-   "earned": 7.59,
-   "max": 7.59
+   "earned": 7.43,
+   "max": 7.43
   },
   "L8": {
    "name": "Business valuation, growth and operating model",
-   "earned": 8.37,
-   "max": 8.37
+   "earned": 8.2,
+   "max": 8.2
   },
   "L9": {
    "name": "Plan integrity (ordering, trust funding, cash recycling, stress test)",
-   "earned": 12.82,
-   "max": 12.82
+   "earned": 12.56,
+   "max": 12.56
   },
   "L10": {
    "name": "Disclosure, labels, units and glossary accuracy",
-   "earned": 3.14,
-   "max": 3.14
+   "earned": 3.08,
+   "max": 3.08
   },
   "L12": {
    "name": "Can-I-buy-this feasibility, shortfall and buy order (engine)",
-   "earned": 17.27,
-   "max": 17.27
+   "earned": 18.97,
+   "max": 18.97
   },
   "L11": {
    "name": "Purchase examples (16 typical purchases)",
-   "earned": 8.9,
-   "max": 8.9
+   "earned": 8.71,
+   "max": 8.71
   }
  },
  "checks": [
@@ -992,7 +992,7 @@
   {
    "cat": "L10",
    "id": "L10.3",
-   "name": "Units and bases are stated (net worth definition says it is before selling costs/taxes; the plan-end figure excludes personal savings while the big today figure adds them): yearly inputs say \"/ yr\", monthly say \"/ mo\"; DTI limit, vacancy, management are percentages of the right base (vacancy and management of rent; repairs of value per year)",
+   "name": "Units and bases are stated (net worth definition says it is before selling costs/taxes; the plan-end figure excludes personal savings while the big today figure adds savings and the cash the trust holds): yearly inputs say \"/ yr\", monthly say \"/ mo\"; DTI limit, vacancy, management are percentages of the right base (vacancy and management of rent; repairs of value per year)",
    "pts": 1,
    "earned": 1,
    "pass": true,
@@ -1358,6 +1358,28 @@
    "name": "Comp value (h.comp, null = unused): empty = every seeded asset byte-identical (arv, plan, totals); filled = E.appraisalAuto = round((cost basis + comp) / 2), cost basis = price + 1.4 x budget (203(k): (price + budget) x 1.15 to the 1000); a typed appraisal still wins; a loan-type change re-derives it; no budget uses the price; persistence; totals = sum of rows",
    "pts": 3,
    "earned": 3,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.19",
+   "name": "Net worth TODAY = bought assets (value - loan - liens - credit line) + personal savings + the cash the trust holds today (E.todayTotals: eq, cash, trust, nw), counted once each: nothing owned, some bought, after Remove all, after a sale, with a trust cash balance (the engine has none at month 0, so one is injected into the plan); the plan-end figure is untouched",
+   "pts": 2,
+   "earned": 2,
+   "pass": true,
+   "detail": "",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "L12",
+   "id": "L12.20",
+   "name": "Job money saved up override is REAL cash, counted once: the credit equals typed amount - the accrued job money (one entry, at the purchase month); two typed amounts 1,000 apart change the cash balance by exactly 1,000 from the purchase on and nothing before; the Health cash check and the plan totals follow; empty = byte-identical; Reset to auto (null) restores the baseline",
+   "pts": 2,
+   "earned": 2,
    "pass": true,
    "detail": "",
    "source": "",
