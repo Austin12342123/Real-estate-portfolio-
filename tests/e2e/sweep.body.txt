@@ -1,0 +1,28 @@
+  const SWEEP_JS = () => {
+    const R = { ov: false, wide: [], small: [], low: [], fonts: [], radii: [], clipped: [], prim: 0, n: 0 };
+    const cv = document.createElement('canvas'); cv.width = cv.height = 1; const cx = cv.getContext('2d', { willReadFrequently: true });
+    const px = (c) => { cx.clearRect(0, 0, 1, 1); cx.fillStyle = '#000'; cx.fillStyle = c; cx.fillRect(0, 0, 1, 1); const d = cx.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2], d[3] / 255]; };
+    const over = (f, b) => [0, 1, 2].map((i) => f[i] * f[3] + b[i] * (1 - f[3]));
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const bgOf = (el) => { const L = []; for (let e = el; e; e = e.parentElement) { const c = px(getComputedStyle(e).backgroundColor); if (c[3] > 0) { L.push(c); if (c[3] >= 0.999) break; } } let bg = dark ? [0, 0, 0] : [255, 255, 255]; if (L.length && L[L.length - 1][3] >= 0.999) bg = L.pop().slice(0, 3); while (L.length) bg = over(L.pop(), bg); return bg; };
+    const lum = (c) => { const f = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2]; };
+    const de = document.documentElement; R.ov = de.scrollWidth > innerWidth + 1 || document.body.scrollWidth > innerWidth + 1;
+    const seen = new Set(), seenF = new Set(), seenR = new Set(), mc = cv.getContext('2d'), name = (e) => (e.dataset && (e.dataset.testid || e.dataset.p) || (e.className && e.className.baseVal === undefined ? String(e.className).split(' ')[0] : '') || e.tagName);
+    document.querySelectorAll('#app *').forEach((el) => {
+      const r = el.getBoundingClientRect(), cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden') return;
+      const inSvg = !!el.closest('svg'); if (r.right > innerWidth + 1 && cs.position !== 'fixed' && !inSvg && r.width > 0) R.wide.push(name(el));
+      if (r.width < 1 || r.height < 1) return; R.n++;
+      const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()), isIn = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA';
+      if (/^(BUTTON|SELECT|SUMMARY)$/.test(el.tagName) || (isIn && !/^(hidden|checkbox|radio|file|range)$/.test(el.type) && !el.readOnly) || el.getAttribute('role') === 'button') { if (r.height < 43.5 && !el.disabled && !el.hidden) R.small.push(name(el) + ':' + Math.round(r.height)); }
+      if (own || (isIn && (el.value || el.placeholder))) {
+        const fg = px(cs.color), bg = bgOf(el), f = fg[3] < 1 ? over(fg, bg) : fg.slice(0, 3), L1 = lum(f), L2 = lum(bg), cr = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05), key = el.tagName + String(el.className) + (el.textContent || el.value).trim().slice(0, 14);
+        if (!seen.has(key)) { seen.add(key); if (cr < 4.5 && !(isIn && !el.value)) R.low.push(key + ' ' + cr.toFixed(2)); }
+        const fam = cs.fontFamily.split(',')[0].replace(/["']/g, '').trim(); if (fam !== 'Manrope' && !seenF.has(fam + name(el))) { seenF.add(fam + name(el)); R.fonts.push(name(el) + '=' + fam); }
+      }
+      if (!inSvg && r.width > 2 && r.height > 2) { const ellip = (own || isIn); if (isIn && !/^(hidden|checkbox|radio|file|range|date)$/.test(el.type)) { const t = el.value || el.placeholder || ''; if (t && el.type !== 'date') { mc.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily; const w = mc.measureText(t).width, av = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight); if (w > av + 1 && !(el.matches('.top input.t') && document.querySelector('[data-testid=full-addr]'))) R.clipped.push(name(el) + ' "' + t.slice(0, 18) + '" ' + Math.round(w) + '>' + Math.round(av)); } }
+        else if (ellip && (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') && el.id !== 'app') { if ((el.scrollWidth > el.clientWidth + 1 && !el.matches('.addr')) || el.scrollHeight > el.clientHeight + 1) R.clipped.push(name(el) + ' "' + (el.textContent || '').trim().slice(0, 18) + '"'); } }
+      if (!inSvg) { ['TopLeft', 'TopRight', 'BottomLeft', 'BottomRight'].forEach((c) => { const raw = cs['border' + c + 'Radius'], v = parseFloat(raw); if (v > 0 && !/%/.test(raw) && v < 99 && ![12, 16, 22, 28].includes(v)) { const k = name(el) + v; if (!seenR.has(k)) { seenR.add(k); R.radii.push(name(el) + '=' + v); } } }); }
+      if (el.classList.contains('btn') && !el.classList.contains('plain') && !el.classList.contains('ghost') && !el.classList.contains('danger') && !el.classList.contains('danger-o') && !el.classList.contains('reorderbtn') && !el.classList.contains('chip')) R.prim++;
+    });
+    return R;
+  };

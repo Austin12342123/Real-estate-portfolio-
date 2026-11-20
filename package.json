@@ -1,0 +1,11 @@
+{
+  "name": "real-estate-portfolio-e2e",
+  "private": true,
+  "description": "Device matrix tests (dev dependencies only; the app itself has no build dependencies)",
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1"
+  }
+}
