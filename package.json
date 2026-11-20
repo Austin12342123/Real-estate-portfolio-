@@ -1,7 +1,13 @@
 {
   "name": "real-estate-portfolio-tests",
   "private": true,
-  "description": "Unit tests (dev dependencies only; the app itself has no build dependencies)",
-  "scripts": { "test:unit": "vitest run" },
-  "devDependencies": { "vitest": "2.1.9" }
+  "description": "Unit tests and device matrix tests (dev dependencies only; the app itself has no build dependencies)",
+  "scripts": {
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "vitest": "2.1.9"
+  }
 }

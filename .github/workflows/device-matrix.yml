@@ -1,0 +1,36 @@
+name: Device matrix (iPhone / iPad, WebKit)
+# Separate from pages.yml (the Pages deploy). Runs on Linux only; WebKit is installed by Playwright itself. Not a merge gate yet: it reports failures as named tests.
+on:
+  push:
+    branches: ['claude/m1-device-matrix']
+  pull_request:
+    paths: ['tests/e2e/**', 'playwright.config.js', 'package.json', 'package-lock.json', '.github/workflows/device-matrix.yml', 'prototype/v4/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - name: Run the device matrix (shard ${{ matrix.shard }} of 4)
+        run: npx playwright test --shard=${{ matrix.shard }}/4 --workers=4
+        env:
+          CI: 'true'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
