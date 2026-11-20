@@ -20,4 +20,4 @@ const t2 = (typed) => {
 };
 /* T4: 240000 home, 25% down (60000 in), IO loan 180000, value grows 5%/yr, sold at month 12, no selling cost, no tax: 252000 - 180000 = 72000 */
 const t4 = () => ({ g: G(), p: P(), houses: [A({ id: 's', price: 240000, dp: 25, rate: 6, rent: 2000, tax: 0, ins: 0, growth: 5, sellCost: 0, exit: 'sell', exitMonth: 12 })] });
-module.exports = { E, t1, t2, t4, t5 };
+module.exports = { E, G, P, A, t1, t2, t4, t5 };
