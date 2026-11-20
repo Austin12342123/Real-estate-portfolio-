@@ -1,6 +1,6 @@
 {
   "design": {
-    "earned": 70.28,
+    "earned": 69.32,
     "max": 100,
     "checks": [
       {
@@ -23,7 +23,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme on every new screen and measure text vs its real background",
-        "seconds": 11.7
+        "seconds": 10.2
       },
       {
         "id": "K3",
@@ -34,7 +34,7 @@
         "ratio": 1,
         "detail": "7/7 sub-checks pass",
         "repro": "compare class names on the new screens with the classes of the existing screens",
-        "seconds": 18.6
+        "seconds": 16.6
       },
       {
         "id": "K4",
@@ -45,7 +45,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "measure buttons, inputs and selects and the page width on each new screen at three widths",
-        "seconds": 16.5
+        "seconds": 14.1
       },
       {
         "id": "K5",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "collect Range client rects of every text node and test them pairwise",
-        "seconds": 11.5
+        "seconds": 9.5
       },
       {
         "id": "K6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "3/3 sub-checks pass",
         "repro": "collect computed font-size / margin / padding / radius on the existing screens, then on the new screens, and compare the sets",
-        "seconds": 5.5
+        "seconds": 4.8
       },
       {
         "id": "K7",
@@ -78,7 +78,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "compare computed styles of existing and new controls",
-        "seconds": 0.5
+        "seconds": 0.4
       },
       {
         "id": "K8",
@@ -89,7 +89,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "measure every .note and the guide on the new screens",
-        "seconds": 5.6
+        "seconds": 4.7
       },
       {
         "id": "K9",
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "tap through the flow and count",
-        "seconds": 7.7
+        "seconds": 7.4
       },
       {
         "id": "K10",
@@ -111,7 +111,7 @@
         "ratio": 1,
         "detail": "1/1 sub-checks pass",
         "repro": "full-page screenshots of every new screen",
-        "seconds": 34.9
+        "seconds": 31.2
       },
       {
         "id": "K11",
@@ -133,7 +133,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme and measure text vs its real background on each example screen",
-        "seconds": 5.8
+        "seconds": 5.2
       },
       {
         "id": "K13",
@@ -144,7 +144,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "measure buttons, page width and text rectangles on each example screen at three widths",
-        "seconds": 8.4
+        "seconds": 8.1
       },
       {
         "id": "K14",
@@ -155,7 +155,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "measure the closed line, the Add button position with and without the line, and compare style sets with the existing screens",
-        "seconds": 4.2
+        "seconds": 3.7
       },
       {
         "id": "K15",
@@ -166,7 +166,7 @@
         "ratio": 1,
         "detail": "1/1 sub-checks pass",
         "repro": "full-page screenshots of every example screen",
-        "seconds": 21.6
+        "seconds": 18.5
       },
       {
         "id": "K16",
@@ -177,7 +177,7 @@
         "ratio": 1,
         "detail": "4/4 sub-checks pass",
         "repro": "scan the editor CSS block and template; list the classes on the editor screens against the existing screens",
-        "seconds": 3.1
+        "seconds": 2.6
       },
       {
         "id": "K17",
@@ -188,7 +188,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme and measure text vs its real background on each editor screen",
-        "seconds": 4.9
+        "seconds": 4.7
       },
       {
         "id": "K18",
@@ -199,7 +199,7 @@
         "ratio": 1,
         "detail": "9/9 sub-checks pass",
         "repro": "measure controls, page width and text rectangles on each editor screen at three widths",
-        "seconds": 7.8
+        "seconds": 7.2
       },
       {
         "id": "K19",
@@ -210,7 +210,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "tap through the flow, press keys, measure notes",
-        "seconds": 2
+        "seconds": 1.8
       },
       {
         "id": "K20",
@@ -221,7 +221,7 @@
         "ratio": 1,
         "detail": "1/1 sub-checks pass",
         "repro": "full-page screenshots of every editor screen",
-        "seconds": 14.4
+        "seconds": 12.8
       },
       {
         "id": "K21",
@@ -243,7 +243,7 @@
         "ratio": 1,
         "detail": "2/2 sub-checks pass",
         "repro": "emulate prefers-color-scheme on each new screen and measure text vs its real background",
-        "seconds": 10.7
+        "seconds": 10.3
       },
       {
         "id": "K23",
@@ -254,7 +254,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "compare class names with the baseline of existing screens",
-        "seconds": 9.7
+        "seconds": 8.3
       },
       {
         "id": "K24",
@@ -265,7 +265,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "measure buttons, boxes and the page width on each new screen at three widths",
-        "seconds": 16.8
+        "seconds": 15.5
       },
       {
         "id": "K25",
@@ -287,7 +287,7 @@
         "ratio": 1,
         "detail": "3/3 sub-checks pass",
         "repro": "collect computed font-size / margin / padding / radius on the existing screens, then on the new ones",
-        "seconds": 5.8
+        "seconds": 5.2
       },
       {
         "id": "K27",
@@ -298,7 +298,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "count taps; measure notes; open the (i) sheet",
-        "seconds": 9.5
+        "seconds": 8.9
       },
       {
         "id": "K28",
@@ -309,7 +309,7 @@
         "ratio": 1,
         "detail": "1/1 sub-checks pass",
         "repro": "full-page screenshots of every new screen",
-        "seconds": 33.7
+        "seconds": 30.7
       },
       {
         "id": "K29",
@@ -320,7 +320,7 @@
         "ratio": 1,
         "detail": "6/6 sub-checks pass",
         "repro": "sweep every page at 4 widths in light and dark; computed font-family of every text element must start with Manrope; document.fonts.check",
-        "seconds": 132.5
+        "seconds": 117.5
       },
       {
         "id": "K30",
@@ -386,7 +386,7 @@
         "ratio": 1,
         "detail": "8/8 sub-checks pass",
         "repro": "desktop context 1280x900 (mouse, hover): open an asset, hover (i), drag row 2 above row 1, press o / ? / Esc, Tab through Planned",
-        "seconds": 3.7
+        "seconds": 3
       },
       {
         "id": "K36",
@@ -404,11 +404,11 @@
         "category": "K",
         "name": "Screenshots (light and dark, 390 and 1280) of every page are saved to grader/screens/v6-*.png",
         "points": 0.96,
-        "earned": 0.96,
-        "ratio": 1,
-        "detail": "1/1 sub-checks pass",
+        "earned": 0,
+        "ratio": 0,
+        "detail": "0/1 sub-checks pass. FAIL: 62 screenshots saved (failed planned-open@1280,real@1280)",
         "repro": "full-page screenshots of every page",
-        "seconds": 116.5
+        "seconds": 107.8
       },
       {
         "id": "K38",
@@ -417,9 +417,9 @@
         "points": 2.23,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: page.emulateMedia: Target page, context or browser has been closed\n    at tabletSweep (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:542:87)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:550:39\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:549:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: page.emulateMedia: Target page, context or browser has been closed\n    at tabletSweep (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:542:87)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:550:39\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:549:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "touch-emulated pages at 10 viewports; measure #app width, .mdw, list/detail rects, grid columns; resize portrait -> landscape -> portrait on an asset page",
-        "seconds": 65.2
+        "seconds": 118.2
       },
       {
         "id": "K39",
@@ -428,7 +428,7 @@
         "points": 2.23,
         "earned": 1.49,
         "ratio": 0.6666666666666666,
-        "detail": "10/20 sub-checks pass. FAIL: ipad-p768: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [planned@ipad-l1180 page.evaluate: Target page, context or browser has been closed | planned-open@ipad-l1180 page.goto: Target page, context or browser has been closed | real@ipad-l1180 page.goto: Target page, context or browser has been closed]; ipad-p820: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [planned@ipad-l1180 page.evaluate: Target page, context or browser has been closed | planned-open@ipad-l1180 page.goto: Target page, context or browser has been closed | real@ipad-l1180 page.goto: Target page, context or browser has been closed]; ipad-p834: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [planned@ipad-l1180 page.evaluate: Target page, context or browser has been closed | planned-open@ipad-l1180 page.goto: Target page, context or browser has been closed | real@ipad-l1180 page.goto: Target page, context or browser has been closed]; ipad-l1024: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [planned@ipad-l1180 page.evaluate: Target page, context or browser has been closed | planned-open@ipad-l1180 page.goto: Target page, context or browser has been closed | real@ipad-l1180 page.goto: Target page, context or browser has been closed]; ipad-l1180: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [planned@ipad-l1180 page.evaluate: Target page, context or browser has been closed | planned-open@ipad-l1180 page.goto: Target page, context or browser has been closed | real@ipad-l1180 page.goto: Target page, context or browser has been closed]; ipad-l1366: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [planned@ipad-l1180 page.evaluate: Target page, context or browser has been closed | planned-open@ipad-l1180 page.goto: Target page, context or browser has been closed | real@ipad-l1180 page.goto: Target page, context or browser has been closed]; split-320: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [planned@ipad-l1180 page.evaluate: Target page, context or browser has been closed | planned-open@ipad-l1180 page.goto: Target page, context or browser has been closed | real@ipad-l1180 page.goto: Target page, context or browser has been closed]; split-375: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [planned@ipad-l1180 page.evaluate: Target page, context or browser has been closed | planned-open@ipad-l1180 page.goto: Target page, context or browser has been closed | real@ipad-l1180 page.goto: Target page, context or browser has been closed]; split-507: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [planned@ipad-l1180 page.evaluate: Target page, context or browser has been closed | planned-open@ipad-l1180 page.goto: Target page, context or browser has been closed | real@ipad-l1180 page.goto: Target page, context or browser has been closed]; split-678: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [planned@ipad-l1180 page.evaluate: Target page, context or browser has been closed | planned-open@ipad-l1180 page.goto: Target page, context or browser has been closed | real@ipad-l1180 page.goto: Target page, context or browser has been closed]",
+        "detail": "10/20 sub-checks pass. FAIL: ipad-p768: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [real@split-507 page.waitForTimeout: Target page, context or browser has been closed | saved@split-507 page.goto: Target page, context or browser has been closed | health@split-507 page.goto: Target page, context or browser has been closed]; ipad-p820: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [real@split-507 page.waitForTimeout: Target page, context or browser has been closed | saved@split-507 page.goto: Target page, context or browser has been closed | health@split-507 page.goto: Target page, context or browser has been closed]; ipad-p834: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [real@split-507 page.waitForTimeout: Target page, context or browser has been closed | saved@split-507 page.goto: Target page, context or browser has been closed | health@split-507 page.goto: Target page, context or browser has been closed]; ipad-l1024: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [real@split-507 page.waitForTimeout: Target page, context or browser has been closed | saved@split-507 page.goto: Target page, context or browser has been closed | health@split-507 page.goto: Target page, context or browser has been closed]; ipad-l1180: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [real@split-507 page.waitForTimeout: Target page, context or browser has been closed | saved@split-507 page.goto: Target page, context or browser has been closed | health@split-507 page.goto: Target page, context or browser has been closed]; ipad-l1366: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [real@split-507 page.waitForTimeout: Target page, context or browser has been closed | saved@split-507 page.goto: Target page, context or browser has been closed | health@split-507 page.goto: Target page, context or browser has been closed]; split-320: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [real@split-507 page.waitForTimeout: Target page, context or browser has been closed | saved@split-507 page.goto: Target page, context or browser has been closed | health@split-507 page.goto: Target page, context or browser has been closed]; split-375: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [real@split-507 page.waitForTimeout: Target page, context or browser has been closed | saved@split-507 page.goto: Target page, context or browser has been closed | health@split-507 page.goto: Target page, context or browser has been closed]; split-507: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [real@split-507 page.waitForTimeout: Target page, context or browser has been closed | saved@split-507 page.goto: Target page, context or browser has been closed | health@split-507 page.goto: Target page, context or browser has been closed]; split-678: no sideways scroll and nothing past the edge on 16 pages x 2 schemes [real@split-507 page.waitForTimeout: Target page, context or browser has been closed | saved@split-507 page.goto: Target page, context or browser has been closed | health@split-507 page.goto: Target page, context or browser has been closed]",
         "repro": "tablet sweep: scrollWidth, element rects, canvas-measured input text, overflow:hidden text",
         "seconds": 0
       },
@@ -450,7 +450,7 @@
         "points": 1.91,
         "earned": 0,
         "ratio": 0,
-        "detail": "0/2 sub-checks pass. FAIL: light: 27487 elements on 16 pages x 10 viewports all >= 4.5:1 []; dark: 0 elements on 16 pages x 10 viewports all >= 4.5:1 []",
+        "detail": "0/2 sub-checks pass. FAIL: light: 60795 elements on 16 pages x 10 viewports all >= 4.5:1 []; dark: 0 elements on 16 pages x 10 viewports all >= 4.5:1 []",
         "repro": "tablet sweep: text colour against the real composited background",
         "seconds": 0
       },
@@ -472,7 +472,7 @@
         "points": 2.23,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:603:74\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:596:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:603:74\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:596:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "tablet sweep tab rects + touch taps + CSS scan",
         "seconds": 0
       },
@@ -483,7 +483,7 @@
         "points": 1.91,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: browserContext.newCDPSession: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:621:72\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:620:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: browserContext.newCDPSession: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:621:72\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:620:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "CDP touch events on the Buy order page; press O / N / ? on a touch page",
         "seconds": 0
       },
@@ -494,7 +494,7 @@
         "points": 0.96,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: page.emulateMedia: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:638:140\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:636:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: page.emulateMedia: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:638:140\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:636:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "full-page screenshots of every page at both orientations",
         "seconds": 0
       },
@@ -505,7 +505,7 @@
         "points": 2.23,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:649:119\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:643:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:649:119\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:643:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "tablet sweep: min left / max right of every non-fixed element; fixed tabs and sheet rects; CSS scan",
         "seconds": 0
       },
@@ -516,7 +516,7 @@
         "points": 1.91,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:657:119\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:654:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: page.setViewportSize: Target page, context or browser has been closed\n    at /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:657:119\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:654:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "DOM order of the Planned page at 390, 820, 1180 (touch) and 1600 (mouse); sweep of desktop widths in light and dark",
         "seconds": 0
       },
@@ -527,7 +527,7 @@
         "points": 1.91,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:671:33\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:670:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:671:33\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:670:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "asset pages of every kind and several cap rates; read the chip, compare with E.capVerdict, run the sweep",
         "seconds": 0
       },
@@ -538,7 +538,7 @@
         "points": 1.59,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:690:144\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:688:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:690:144\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:688:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "sweep every page; list elements with overflow-y auto/scroll/overlay whose scrollHeight exceeds clientHeight, and read .mdd computed style",
         "seconds": 0
       },
@@ -549,7 +549,7 @@
         "points": 1.27,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:699:32\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:698:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:699:32\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:698:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "keyboard-focus each field kind on desktop 1280, read computed outline / box-shadow / radius of the input and its wrapper",
         "seconds": 0
       },
@@ -560,7 +560,7 @@
         "points": 2.23,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:711:49\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:709:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:711:49\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:709:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "every (i) of every page at 6 viewports: click, measure #infopop; hover sweep; close ways",
         "seconds": 0
       },
@@ -571,7 +571,7 @@
         "points": 1.27,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:741:42\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:740:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:741:42\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:740:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "read the tokens, decode full-page screenshots in the page and count red-hue pixels",
         "seconds": 0
       },
@@ -582,7 +582,7 @@
         "points": 1.59,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:757:32\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:756:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:757:32\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:756:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "phone 390 and desktop 1280: read hero, open Details, read asset page",
         "seconds": 0
       },
@@ -593,7 +593,7 @@
         "points": 1.59,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:770:45\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:769:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:770:45\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:769:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "type into the two fields on the maple asset page and read the state",
         "seconds": 0
       },
@@ -604,7 +604,7 @@
         "points": 1.27,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:788:32\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:787:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:788:32\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:787:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "owned and planned assets with and without an own extra and a job amount",
         "seconds": 0
       },
@@ -615,7 +615,7 @@
         "points": 1.59,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:805:32\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:804:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:805:32\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:804:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "owned asset page, salary and hourly incomes",
         "seconds": 0
       },
@@ -626,7 +626,7 @@
         "points": 1.27,
         "earned": 0,
         "ratio": 0,
-        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:821:32\n    at async kcheck (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/prototype/grader/design-grade.js:820:3)\n    at async /home/user/Real-estate-portfolio-/prototype/grader/grade.js:1311:20",
+        "detail": "CRASH in check: browser.newContext: Target page, context or browser has been closed\n    at async mkCtx (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:94:15)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:821:32\n    at async kcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:15:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/design-grade.js:820:3)\n    at async /home/user/Real-estate-portfolio-/.claude/worktrees/agent-ae273f3a9aa2f8ac3/prototype/grader/grade.js:1311:20",
         "repro": "cedar asset page, type the line of credit rate, read Assumptions",
         "seconds": 0
       }
