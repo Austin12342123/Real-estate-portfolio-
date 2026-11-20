@@ -69,5 +69,10 @@ if __name__ == "__main__":
         want, got = check()
         bad = [FILES[i][1] for i, g in enumerate(got) if g != want]
         print("stamp", want, "stale: " + ", ".join(bad) if bad else "ok")
+        if os.path.isdir(os.path.join(D, "src")):  # engine.js and app.js are bundles of src/ (see build.py, ../MODULES.md)
+            import build
+            stale = build.stale()
+            print("bundles", "STALE vs src: " + ", ".join(stale) + " (run: python3 build.py)" if stale else "ok")
+            bad = bad or stale
         sys.exit(1 if bad else 0)
     print(restamp())
