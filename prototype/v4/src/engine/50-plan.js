@@ -644,7 +644,11 @@
         if (net >= 0) incAdd += net;
         else debtAdd += -net;
       }
-      s.nw[t] += cashA[t];
+      s.nw[t] = netWorth(
+        s.nw[t],
+        pp ? (t === 0 ? +pp.cash || 0 : LQ[t]) : 0,
+        cashA[t],
+      ); /* plan-end net worth = equity + your savings + the trust's cash, the same formula as today's (todayTotals); month 0 is today's savings */
       s.cash[t] = cashA[t];
       s.outside[t] = outsideA[t];
       s.cf[t] = s.noi[t] - s.ds[t];

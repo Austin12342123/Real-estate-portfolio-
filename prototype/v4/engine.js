@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'49ed711b'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'edcb0cfb'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -621,6 +621,8 @@
               : 'New ' + u + '-unit building',
     };
   }
+  /* ONE net-worth formula (today's page and every plan month): equity in the assets + your own savings + the cash the trust holds. */
+  const netWorth = (equity, savings, trust) => (+equity || 0) + (+savings || 0) + (+trust || 0);
   let uid = 0;
   const DEFAULTS = {
     house: {
@@ -2024,7 +2026,11 @@
         if (net >= 0) incAdd += net;
         else debtAdd += -net;
       }
-      s.nw[t] += cashA[t];
+      s.nw[t] = netWorth(
+        s.nw[t],
+        pp ? (t === 0 ? +pp.cash || 0 : LQ[t]) : 0,
+        cashA[t],
+      ); /* plan-end net worth = equity + your savings + the trust's cash, the same formula as today's (todayTotals); month 0 is today's savings */
       s.cash[t] = cashA[t];
       s.outside[t] = outsideA[t];
       s.cf[t] = s.noi[t] - s.ds[t];
@@ -3909,10 +3915,11 @@
       });
     o.cash = S.p ? Math.max(0, +S.p.cash || 0) : 0;
     o.trust = Math.max(0, (pl.series && pl.series.cash && pl.series.cash[0]) || 0);
-    o.nw =
-      o.eq +
-      o.cash +
-      o.trust; /* NET WORTH TODAY = bought assets (value - loan - liens - credit line) + your savings + the cash the trust holds today (the engine's month-0 trust cash, separate from your savings, so nothing is counted twice) */
+    o.nw = netWorth(
+      o.eq,
+      o.cash,
+      o.trust,
+    ); /* NET WORTH TODAY = bought assets (value - loan - liens - credit line) + your savings + the cash the trust holds today (the engine's month-0 trust cash, separate from your savings, so nothing is counted twice) */
     o.dscr =
       o.ds > 0.5
         ? o.noi / o.ds
@@ -8023,6 +8030,7 @@
     FEAS,
     feasible,
     todayTotals,
+    netWorth,
     checkList,
     shortfall,
     moveTo,
