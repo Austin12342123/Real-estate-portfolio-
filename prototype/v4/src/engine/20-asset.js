@@ -36,8 +36,6 @@
               : 'New ' + u + '-unit building',
     };
   }
-  /* ONE net-worth formula (today's page and every plan month): equity in the assets + your own savings + the cash the trust holds. */
-  const netWorth = (equity, savings, trust) => (+equity || 0) + (+savings || 0) + (+trust || 0);
   let uid = 0;
   const DEFAULTS = {
     house: {

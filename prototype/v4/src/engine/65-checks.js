@@ -28,11 +28,10 @@
       });
     o.cash = S.p ? Math.max(0, +S.p.cash || 0) : 0;
     o.trust = Math.max(0, (pl.series && pl.series.cash && pl.series.cash[0]) || 0);
-    o.nw = netWorth(
-      o.eq,
-      o.cash,
-      o.trust,
-    ); /* NET WORTH TODAY = bought assets (value - loan - liens - credit line) + your savings + the cash the trust holds today (the engine's month-0 trust cash, separate from your savings, so nothing is counted twice) */
+    o.nw =
+      o.eq +
+      o.cash +
+      o.trust; /* NET WORTH TODAY = bought assets (value - loan - liens - credit line) + your savings + the cash the trust holds today (the engine's month-0 trust cash, separate from your savings, so nothing is counted twice) */
     o.dscr =
       o.ds > 0.5
         ? o.noi / o.ds
