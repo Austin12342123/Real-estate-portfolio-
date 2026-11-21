@@ -397,9 +397,9 @@
         const parts = [];
         if (v.P > 0) parts.push((h.io ? 'interest ' : 'P&amp;I ') + $f(v.P));
         if (v.X > 0.5) parts.push('extra ' + $f(v.X));
-        if (v.escrow > 0) parts.push('costs ' + $f(v.escrow));
-        if (v.mip > 0) parts.push('insurance ' + $f(v.mip));
-        return parts.length > 1 ? parts.join(' + ') : '';
+        if (v.escrow > 0) parts.push('property costs ' + $f(v.escrow));
+        if (v.mip > 0) parts.push('mortgage insurance ' + $f(v.mip));
+        return parts.length > 1 ? (v.escrow > 0 ? 'includes ' : '') + parts.join(' + ') : '';
       })(),
     )}${kpi('h-cf', exS ? 'Cash flow while held' : 'Cash flow now', $s(v.cf), v.X > 0.5 ? `${$s(v.cf - v.X)} after extra` : '', v.cf < 0 ? 'bad' : '')}
       ${kpi('h-dscr', exS ? 'DSCR while held' : 'DSCR now', r(dscrH, 2), isFinite(dscrH) ? (dscrH >= 1.2 ? 'income covers the loan' : dscrH >= 1 ? 'thin cushion' : 'below 1.0') : 'no loan payment', isFinite(dscrH) && dscrH < 1 ? 'bad' : '', 1)}${kpi('h-cap', exS ? 'Cap rate while held' : 'Cap rate now', isFinite(capN) ? r(capN, 1) + '%' : '—', capChip(h, capN) + (type === 'business' ? 'yearly owner profit ÷ value' : 'yearly income after costs ÷ value'), capN < 0 ? 'bad' : '', 1)}</div>

@@ -202,27 +202,36 @@
           value: c.have,
           how: fm(c.savings) + ' + ' + fm(c.trustCash) + ' + ' + fm(c.room) + ' = ' + fm(c.have),
         },
-        downShort: {
-          label: 'Down payment short',
-          value: -c.short,
-          how: fm(c.have) + ' can pull out - ' + fm(c.need) + ' needed = ' + sgn(c.have - c.need),
-        },
+        downShort:
+          c.short > 0.5
+            ? {
+                label: 'Down payment short',
+                value: -c.short,
+                how: fm(c.have) + ' can pull out - ' + fm(c.need) + ' needed = ' + sgn(c.have - c.need),
+              }
+            : {
+                label: 'Down payment covered',
+                value: c.have - c.need,
+                how: fm(c.have) + ' can pull out - ' + fm(c.need) + ' needed = ' + fm(c.have - c.need) + ' to spare',
+                suf: ' to spare',
+              },
         uncovered: {
           label: 'Money still uncovered',
-          value: -c.uncovered,
-          how: fm(c.have) + ' can pull out - price ' + fm(c.price) + ' = ' + sgn(c.have - c.price),
+          value: c.uncovered > 0 ? -c.uncovered : 0,
+          how: fm(c.have) + ' can pull out - ' + fm(c.need) + ' cash to close = ' + sgn(c.have - c.need),
         },
         payment: {
           label: 'New loan payment',
           value: mo.payment,
           how:
             'principal + interest' +
-            (mipMonthly(h) > 0 ? ' + mortgage insurance' : '') +
+            (mipMonthly(h) > 0 ? ' + mortgage insurance ' + fm(mipMonthly(h)) : '') +
             ' on ' +
             fm(loan(h)) +
             ' at ' +
             h.rate +
-            '%',
+            '%' +
+            (type !== 'business' && (h.tax || h.ins || h.hoa) ? ' (property costs are not in this figure)' : ''),
         },
         available: {
           label: 'Cash flow available to carry it',

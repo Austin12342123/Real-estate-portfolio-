@@ -604,7 +604,8 @@
     ];
     const s = {};
     keys.forEach((k) => (s[k] = new Array(T + 1).fill(0)));
-    const dpCash = new Array(T + 1).fill(0);
+    const dpCash = new Array(T + 1).fill(0),
+      savA = new Array(T + 1).fill(0);
     for (let t = 1; t <= T; t++)
       dpCash[t] =
         reinv[
@@ -644,7 +645,12 @@
         if (net >= 0) incAdd += net;
         else debtAdd += -net;
       }
-      s.nw[t] += cashA[t];
+      savA[t] = pp ? (t === 0 ? (+pp.cash || 0) - outsideA[0] : LQ[t]) : 0;
+      s.nw[t] = netWorth(
+        s.nw[t],
+        savA[t],
+        cashA[t],
+      ); /* plan net worth = equity + your savings + the trust's cash, the same formula as today's (todayTotals). Month 0 = today's savings less what is paid out of them that month; later months = the plan's savings after every cost, so a purchase month drops net worth only by its closing costs */
       s.cash[t] = cashA[t];
       s.outside[t] = outsideA[t];
       s.cf[t] = s.noi[t] - s.ds[t];
@@ -688,6 +694,18 @@
           };
         })
         .filter(Boolean);
+      if (Math.abs(savA[t]) > 0.5)
+        list.push({
+          id: '__savings',
+          addr: 'Your savings',
+          type: 'cash',
+          equity: savA[t],
+          value: savA[t],
+          debt: 0,
+          payment: 0,
+          cf: 0,
+          income: 0,
+        });
       if (s.cash[t] > 0.5)
         list.push({
           id: '__cash',

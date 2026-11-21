@@ -101,7 +101,7 @@
       } else sav = have;
     }
     const cashShort = Math.max(0, need - have),
-      uncovered = Math.max(0, price - have),
+      uncovered = cashShort /* what is still missing of the cash to close (not of the full price) */,
       down = downAmt(h),
       closing = (price * clPct(S, h)) / 100,
       rehab = h.finCapex ? 0 : Math.max(0, h.capex || 0);

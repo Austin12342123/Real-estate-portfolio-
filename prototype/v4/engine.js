@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'49ed711b'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'aa159b0d'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -621,6 +621,8 @@
               : 'New ' + u + '-unit building',
     };
   }
+  /* ONE net-worth formula (today's page and every plan month): equity in the assets + your own savings + the cash the trust holds. */
+  const netWorth = (equity, savings, trust) => (+equity || 0) + (+savings || 0) + (+trust || 0);
   let uid = 0;
   const DEFAULTS = {
     house: {
@@ -1984,7 +1986,8 @@
     ];
     const s = {};
     keys.forEach((k) => (s[k] = new Array(T + 1).fill(0)));
-    const dpCash = new Array(T + 1).fill(0);
+    const dpCash = new Array(T + 1).fill(0),
+      savA = new Array(T + 1).fill(0);
     for (let t = 1; t <= T; t++)
       dpCash[t] =
         reinv[
@@ -2024,7 +2027,12 @@
         if (net >= 0) incAdd += net;
         else debtAdd += -net;
       }
-      s.nw[t] += cashA[t];
+      savA[t] = pp ? (t === 0 ? (+pp.cash || 0) - outsideA[0] : LQ[t]) : 0;
+      s.nw[t] = netWorth(
+        s.nw[t],
+        savA[t],
+        cashA[t],
+      ); /* plan net worth = equity + your savings + the trust's cash, the same formula as today's (todayTotals). Month 0 = today's savings less what is paid out of them that month; later months = the plan's savings after every cost, so a purchase month drops net worth only by its closing costs */
       s.cash[t] = cashA[t];
       s.outside[t] = outsideA[t];
       s.cf[t] = s.noi[t] - s.ds[t];
@@ -2068,6 +2076,18 @@
           };
         })
         .filter(Boolean);
+      if (Math.abs(savA[t]) > 0.5)
+        list.push({
+          id: '__savings',
+          addr: 'Your savings',
+          type: 'cash',
+          equity: savA[t],
+          value: savA[t],
+          debt: 0,
+          payment: 0,
+          cf: 0,
+          income: 0,
+        });
       if (s.cash[t] > 0.5)
         list.push({
           id: '__cash',
@@ -3024,7 +3044,7 @@
       } else sav = have;
     }
     const cashShort = Math.max(0, need - have),
-      uncovered = Math.max(0, price - have),
+      uncovered = cashShort /* what is still missing of the cash to close (not of the full price) */,
       down = downAmt(h),
       closing = (price * clPct(S, h)) / 100,
       rehab = h.finCapex ? 0 : Math.max(0, h.capex || 0);
@@ -3909,10 +3929,7 @@
       });
     o.cash = S.p ? Math.max(0, +S.p.cash || 0) : 0;
     o.trust = Math.max(0, (pl.series && pl.series.cash && pl.series.cash[0]) || 0);
-    o.nw =
-      o.eq +
-      o.cash +
-      o.trust; /* NET WORTH TODAY = bought assets (value - loan - liens - credit line) + your savings + the cash the trust holds today (the engine's month-0 trust cash, separate from your savings, so nothing is counted twice) */
+    o.nw = netWorth(o.eq, o.cash, o.trust); /* NET WORTH TODAY = bought assets (value - loan - liens - credit line) + your savings + the cash the trust holds today (the engine's month-0 trust cash, separate from your savings, so nothing is counted twice) */
     o.dscr =
       o.ds > 0.5
         ? o.noi / o.ds
@@ -4307,27 +4324,36 @@
           value: c.have,
           how: fm(c.savings) + ' + ' + fm(c.trustCash) + ' + ' + fm(c.room) + ' = ' + fm(c.have),
         },
-        downShort: {
-          label: 'Down payment short',
-          value: -c.short,
-          how: fm(c.have) + ' can pull out - ' + fm(c.need) + ' needed = ' + sgn(c.have - c.need),
-        },
+        downShort:
+          c.short > 0.5
+            ? {
+                label: 'Down payment short',
+                value: -c.short,
+                how: fm(c.have) + ' can pull out - ' + fm(c.need) + ' needed = ' + sgn(c.have - c.need),
+              }
+            : {
+                label: 'Down payment covered',
+                value: c.have - c.need,
+                how: fm(c.have) + ' can pull out - ' + fm(c.need) + ' needed = ' + fm(c.have - c.need) + ' to spare',
+                suf: ' to spare',
+              },
         uncovered: {
           label: 'Money still uncovered',
-          value: -c.uncovered,
-          how: fm(c.have) + ' can pull out - price ' + fm(c.price) + ' = ' + sgn(c.have - c.price),
+          value: c.uncovered > 0 ? -c.uncovered : 0,
+          how: fm(c.have) + ' can pull out - ' + fm(c.need) + ' cash to close = ' + sgn(c.have - c.need),
         },
         payment: {
           label: 'New loan payment',
           value: mo.payment,
           how:
             'principal + interest' +
-            (mipMonthly(h) > 0 ? ' + mortgage insurance' : '') +
+            (mipMonthly(h) > 0 ? ' + mortgage insurance ' + fm(mipMonthly(h)) : '') +
             ' on ' +
             fm(loan(h)) +
             ' at ' +
             h.rate +
-            '%',
+            '%' +
+            (type !== 'business' && (h.tax || h.ins || h.hoa) ? ' (property costs are not in this figure)' : ''),
         },
         available: {
           label: 'Cash flow available to carry it',
@@ -8023,6 +8049,7 @@
     FEAS,
     feasible,
     todayTotals,
+    netWorth,
     checkList,
     shortfall,
     moveTo,

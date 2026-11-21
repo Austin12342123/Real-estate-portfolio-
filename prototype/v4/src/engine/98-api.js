@@ -45,6 +45,7 @@
     FEAS,
     feasible,
     todayTotals,
+    netWorth,
     checkList,
     shortfall,
     moveTo,

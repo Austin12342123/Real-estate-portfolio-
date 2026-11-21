@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'49ed711b'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'aa159b0d'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine,
@@ -1050,7 +1050,7 @@
     const ln = (k, cls, tid) => {
       const l = sf.lines[k],
         v = l.value;
-      return `<div class="f sfl" data-testid="${tid || 'sf-' + k}"><span class="lb">${esc(l.label)}<small class="dh">${esc(l.how)}</small></span><b class="${cls}" data-v="${Math.round(v)}">${sgnv(v)}</b></div>`;
+      return `<div class="f sfl" data-testid="${tid || 'sf-' + k}"><span class="lb">${esc(l.label)}<small class="dh">${esc(l.how)}</small></span><b class="${cls}" data-v="${Math.round(v)}">${sgnv(v)}${l.suf ? '<small>' + esc(l.suf) + '</small>' : ''}</b></div>`;
     };
     let panel = '';
     if (sf) {
@@ -1060,7 +1060,7 @@
       panel = `<section class="card sfp ${vd.cls}" data-testid="shortfall-panel" data-verdict="${A.verdict}" data-kind="${A.kind}"><div class="f head"><span class="lb"><b>Can I buy this?</b>${infoBtn('buyscore')}</span><span class="vchip ${vd.cls}" data-testid="sf-verdict">${vd.word}</span></div>
         <p class="note sfwhy" data-testid="sf-why">${esc(top ? top.text : '')}</p>
         <div class="sfh">Cash to close · ${mondH(c.month)}${c.closest ? ' (closest the plan gets)' : ''}</div>
-        ${ln('cashNeeded', '')}${ln('savings', '')}${ln('trustCash', '')}${ln('room', '')}${ln('pull', '')}${ln('downShort', c.short > 0.5 ? 'bad' : 'ok')}${ln('uncovered', c.uncovered > 0.5 ? 'bad' : 'ok')}
+        ${ln('cashNeeded', '')}${ln('savings', '')}${ln('trustCash', '')}${ln('room', '')}${ln('pull', '')}${ln('downShort', c.short > 0.5 ? 'bad' : 'ok', 'sf-downShort')}${ln('uncovered', c.uncovered > 0.5 ? 'bad' : 'ok')}
         <div class="sfh">Every month · today's dollars</div>
         ${ln('payment', '')}${ln('available', '')}${ln('monthShort', mo.covered ? 'ok' : 'bad')}
         <div class="sfh">What needs to change</div>${sf.changes.length ? `<ol class="sfch" data-testid="sf-changes">${sf.changes.map((x) => `<li data-testid="sf-change-${x.id}">${esc(x.text)}</li>`).join('')}</ol>` : '<p class="note" data-testid="sf-changes">Nothing in the numbers is short. The note above says what is tight.</p>'}
@@ -1070,7 +1070,7 @@
       worst = cs.reduce((a2, x) => Math.max(a2, x.status === 'fail' ? 2 : x.status === 'caution' ? 1 : 0), 0),
       open = !(UI.coll.score === undefined ? worst === 0 : UI.coll.score),
       nBad = cs.filter((x) => x.status !== 'ok').length;
-    const card = `<section class="card checks ${worst === 0 ? 'safe' : worst === 2 ? 'over' : 'caution'}" data-testid="scorecard" data-verdict="${A.verdict}"><div class="chkh"><h2 class="chkt">Can I buy this?${infoBtn('buyscore')}</h2><button type="button" class="chip link chkbtn" data-coll="score" aria-expanded="${open}" data-testid="scorecard-details">Details ${open ? '▾' : '▸'}</button></div>${worst === 0 ? '<p class="chkok" data-testid="scorecard-ok">✓ Every test passes</p>' : `<p class="chkflag ${worst === 2 ? 'bad' : 'warn'}" data-testid="scorecard-flag">${nBad} to look at</p>`}${open ? `<div class="chklist" data-testid="scorecard-list">${cs.map((x) => `<div class="chk lv-${LVC[x.status]}" data-testid="sc-${x.id}" data-lvl="${LVC[x.status]}" data-status="${x.status}"><div class="ct"><b>${esc(x.label)}</b><span class="cv lv-${LVC[x.status]}">${esc(x.measured)}</span></div><small>${esc(x.how)}${x.limit ? ' · limit: ' + esc(x.limit) : ''}</small></div>`).join('')}</div>` : ''}</section>`;
+    const card = `<section class="card checks ${worst === 0 ? 'safe' : worst === 2 ? 'over' : 'caution'}" data-testid="scorecard" data-verdict="${A.verdict}"><div class="chkh"><h2 class="chkt">Can I buy this?${infoBtn('buyscore')}</h2><button type="button" class="chip link chkbtn" data-coll="score" aria-expanded="${open}" data-testid="scorecard-details">Details ${open ? '▾' : '▸'}</button></div>${A.verdict === 'yes' ? '<p class="chkok" data-testid="scorecard-ok">✓ Possible: every test passes</p>' : `<p class="chkflag ${A.verdict === 'no' ? 'bad' : 'warn'}" data-testid="scorecard-flag">${A.verdict === 'no' ? 'Not possible' : 'Possible, tight'}: ${esc(vd.why || (A.top ? A.top.text : ''))}${nBad > 1 ? ' (' + nBad + ' to look at)' : ''}</p>`}${open ? `<div class="chklist" data-testid="scorecard-list">${cs.map((x) => `<div class="chk lv-${LVC[x.status]}" data-testid="sc-${x.id}" data-lvl="${LVC[x.status]}" data-status="${x.status}"><div class="ct"><b>${esc(x.label)}</b><span class="cv lv-${LVC[x.status]}">${esc(x.measured)}</span></div><small>${esc(x.how)}${x.limit ? ' · limit: ' + esc(x.limit) : ''}</small></div>`).join('')}</div>` : ''}</section>`;
     return panel + card;
   }
   /* the one-line math under a planned row: what it needs, what the pool has, and the month (full numbers are in the row's panel and on the asset page) */
@@ -1566,7 +1566,7 @@
     if (empty || nOwn0 === S.houses.length)
       return (
         head +
-        `<p class="note" style="margin:0 4px 8px" data-testid="empty-note">${empty ? 'Nothing added yet.' : 'Nothing planned yet.'} Add a home, a commercial property or a business to see your plan.</p>${nOwn0 ? `<p class="note" style="margin:0 4px 8px" data-testid="empty-bought-note">${nOwn0} bought asset${nOwn0 === 1 ? ' is' : 's are'} counted on Real. <button type="button" class="linkbtn" data-page="real" data-testid="empty-real-link">Open Real</button></p>` : ''}${sections}${manage}`
+        `<section class="card" data-testid="saved-now">${field('How much do you have saved now?', 'p.cash', grp(S.p.cash), { pre: '$' })}<p class="note">Before your first home this pays its down payment and closing costs (the part above your cash cushion). You can change it later under Finances, "Savings you have now".</p></section><p class="note" style="margin:0 4px 8px" data-testid="empty-note">${empty ? 'Nothing added yet.' : 'Nothing planned yet.'} Add a home, a commercial property or a business to see your plan.</p>${nOwn0 ? `<p class="note" style="margin:0 4px 8px" data-testid="empty-bought-note">${nOwn0} bought asset${nOwn0 === 1 ? ' is' : 's are'} counted on Real. <button type="button" class="linkbtn" data-page="real" data-testid="empty-real-link">Open Real</button></p>` : ''}${sections}${manage}`
       );
     const c3 = (label, a, b, c, f, cls) =>
       `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td data-k="c-${label}-b">${f(b)}</td><td class="${cls || ''}" data-k="c-${label}-c"><b>${f(c)}</b></td></tr>`;
@@ -2227,9 +2227,9 @@
         const parts = [];
         if (v.P > 0) parts.push((h.io ? 'interest ' : 'P&amp;I ') + $f(v.P));
         if (v.X > 0.5) parts.push('extra ' + $f(v.X));
-        if (v.escrow > 0) parts.push('costs ' + $f(v.escrow));
-        if (v.mip > 0) parts.push('insurance ' + $f(v.mip));
-        return parts.length > 1 ? parts.join(' + ') : '';
+        if (v.escrow > 0) parts.push('property costs ' + $f(v.escrow));
+        if (v.mip > 0) parts.push('mortgage insurance ' + $f(v.mip));
+        return parts.length > 1 ? (v.escrow > 0 ? 'includes ' : '') + parts.join(' + ') : '';
       })(),
     )}${kpi('h-cf', exS ? 'Cash flow while held' : 'Cash flow now', $s(v.cf), v.X > 0.5 ? `${$s(v.cf - v.X)} after extra` : '', v.cf < 0 ? 'bad' : '')}
       ${kpi('h-dscr', exS ? 'DSCR while held' : 'DSCR now', r(dscrH, 2), isFinite(dscrH) ? (dscrH >= 1.2 ? 'income covers the loan' : dscrH >= 1 ? 'thin cushion' : 'below 1.0') : 'no loan payment', isFinite(dscrH) && dscrH < 1 ? 'bad' : '', 1)}${kpi('h-cap', exS ? 'Cap rate while held' : 'Cap rate now', isFinite(capN) ? r(capN, 1) + '%' : '—', capChip(h, capN) + (type === 'business' ? 'yearly owner profit ÷ value' : 'yearly income after costs ÷ value'), capN < 0 ? 'bad' : '', 1)}</div>
@@ -2482,7 +2482,7 @@
     </div>`;
     })()}</section>
     ${colSec('fin-inc', 'Your income', p.jobs.length + (p.jobs.length === 1 ? ' job' : ' jobs') + ' · ' + $f(p.jobs.reduce((s0, j) => s0 + E.jobMonthly(j, 0) * (1 - E.taxPctFor(j) / 100), 0)) + '/mo', `${jobs}<button class="addrow cardbtn" data-addjob="salary" data-testid="add-job">+ Add a salaried job</button><button class="addrow cardbtn" data-addjob="hourly" data-testid="add-hourly-job">+ Add an hourly job (wage and tips)</button>`, true)}
-    ${colSec('fin-cash', 'Your cash and expenses', $f(p.cash) + ' cash', `<section class="card">${field('Liquid cash you have', 'p.cash', grp(p.cash), { pre: '$' })}${field('Cash interest', 'p.cashApy', r(p.cashApy, 2), { suf: '%' })}${field('Cash cushion (months)', 'p.emergencyMonths', r(p.emergencyMonths, 1))}${field('Living costs / month', 'p.living', grp(p.living), { pre: '$' })}${field('Your own rent or mortgage / month', 'p.housing', grp(p.housing), { pre: '$' })}<p class="note">Already part of living costs. Lenders count it as a debt when they work out your debt-to-income.</p>${field('Cost increases / year', 'p.inflation', r(p.inflation, 1), { suf: '%' })}${field('Other debts / month', 'g.otherDebt', grp(g.otherDebt), { pre: '$' })}</section>`, true)}
+    ${colSec('fin-cash', 'Your cash and expenses', $f(p.cash) + ' saved', `<section class="card">${field('Savings you have now', 'p.cash', grp(p.cash), { pre: '$' })}${field('Cash interest', 'p.cashApy', r(p.cashApy, 2), { suf: '%' })}${field('Cash cushion (months)', 'p.emergencyMonths', r(p.emergencyMonths, 1))}${field('Living costs / month', 'p.living', grp(p.living), { pre: '$' })}${field('Your own rent or mortgage / month', 'p.housing', grp(p.housing), { pre: '$' })}<p class="note">Already part of living costs. Lenders count it as a debt when they work out your debt-to-income.</p>${field('Cost increases / year', 'p.inflation', r(p.inflation, 1), { suf: '%' })}${field('Other debts / month', 'g.otherDebt', grp(g.otherDebt), { pre: '$' })}</section>`, true)}
     <div class="sec">Cash over time</div><section class="card" data-testid="cash-card"><p class="note" data-testid="fin-unit">Amounts for later months are in ${UNIT()}; amounts for today are the same in both. Change this in Assumptions.</p>${finChart(f)}
       <div class="f"><span class="lb">Lowest cash</span><b data-testid="lowest-cash">${$f(k.minLiquid)} · ${mond(k.minLiquidMonth)}</b></div>
       <div class="f stack"><span class="lb">Months you could last without a paycheck</span><b>${isFinite(k.minRunway) ? r(k.minRunway, 1) : 'No limit — portfolio income covers it'}</b></div>

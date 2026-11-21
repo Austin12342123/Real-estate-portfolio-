@@ -56,7 +56,7 @@
     const ln = (k, cls, tid) => {
       const l = sf.lines[k],
         v = l.value;
-      return `<div class="f sfl" data-testid="${tid || 'sf-' + k}"><span class="lb">${esc(l.label)}<small class="dh">${esc(l.how)}</small></span><b class="${cls}" data-v="${Math.round(v)}">${sgnv(v)}</b></div>`;
+      return `<div class="f sfl" data-testid="${tid || 'sf-' + k}"><span class="lb">${esc(l.label)}<small class="dh">${esc(l.how)}</small></span><b class="${cls}" data-v="${Math.round(v)}">${sgnv(v)}${l.suf ? '<small>' + esc(l.suf) + '</small>' : ''}</b></div>`;
     };
     let panel = '';
     if (sf) {
@@ -66,7 +66,7 @@
       panel = `<section class="card sfp ${vd.cls}" data-testid="shortfall-panel" data-verdict="${A.verdict}" data-kind="${A.kind}"><div class="f head"><span class="lb"><b>Can I buy this?</b>${infoBtn('buyscore')}</span><span class="vchip ${vd.cls}" data-testid="sf-verdict">${vd.word}</span></div>
         <p class="note sfwhy" data-testid="sf-why">${esc(top ? top.text : '')}</p>
         <div class="sfh">Cash to close · ${mondH(c.month)}${c.closest ? ' (closest the plan gets)' : ''}</div>
-        ${ln('cashNeeded', '')}${ln('savings', '')}${ln('trustCash', '')}${ln('room', '')}${ln('pull', '')}${ln('downShort', c.short > 0.5 ? 'bad' : 'ok')}${ln('uncovered', c.uncovered > 0.5 ? 'bad' : 'ok')}
+        ${ln('cashNeeded', '')}${ln('savings', '')}${ln('trustCash', '')}${ln('room', '')}${ln('pull', '')}${ln('downShort', c.short > 0.5 ? 'bad' : 'ok', 'sf-downShort')}${ln('uncovered', c.uncovered > 0.5 ? 'bad' : 'ok')}
         <div class="sfh">Every month · today's dollars</div>
         ${ln('payment', '')}${ln('available', '')}${ln('monthShort', mo.covered ? 'ok' : 'bad')}
         <div class="sfh">What needs to change</div>${sf.changes.length ? `<ol class="sfch" data-testid="sf-changes">${sf.changes.map((x) => `<li data-testid="sf-change-${x.id}">${esc(x.text)}</li>`).join('')}</ol>` : '<p class="note" data-testid="sf-changes">Nothing in the numbers is short. The note above says what is tight.</p>'}
@@ -76,7 +76,7 @@
       worst = cs.reduce((a2, x) => Math.max(a2, x.status === 'fail' ? 2 : x.status === 'caution' ? 1 : 0), 0),
       open = !(UI.coll.score === undefined ? worst === 0 : UI.coll.score),
       nBad = cs.filter((x) => x.status !== 'ok').length;
-    const card = `<section class="card checks ${worst === 0 ? 'safe' : worst === 2 ? 'over' : 'caution'}" data-testid="scorecard" data-verdict="${A.verdict}"><div class="chkh"><h2 class="chkt">Can I buy this?${infoBtn('buyscore')}</h2><button type="button" class="chip link chkbtn" data-coll="score" aria-expanded="${open}" data-testid="scorecard-details">Details ${open ? '▾' : '▸'}</button></div>${worst === 0 ? '<p class="chkok" data-testid="scorecard-ok">✓ Every test passes</p>' : `<p class="chkflag ${worst === 2 ? 'bad' : 'warn'}" data-testid="scorecard-flag">${nBad} to look at</p>`}${open ? `<div class="chklist" data-testid="scorecard-list">${cs.map((x) => `<div class="chk lv-${LVC[x.status]}" data-testid="sc-${x.id}" data-lvl="${LVC[x.status]}" data-status="${x.status}"><div class="ct"><b>${esc(x.label)}</b><span class="cv lv-${LVC[x.status]}">${esc(x.measured)}</span></div><small>${esc(x.how)}${x.limit ? ' · limit: ' + esc(x.limit) : ''}</small></div>`).join('')}</div>` : ''}</section>`;
+    const card = `<section class="card checks ${worst === 0 ? 'safe' : worst === 2 ? 'over' : 'caution'}" data-testid="scorecard" data-verdict="${A.verdict}"><div class="chkh"><h2 class="chkt">Can I buy this?${infoBtn('buyscore')}</h2><button type="button" class="chip link chkbtn" data-coll="score" aria-expanded="${open}" data-testid="scorecard-details">Details ${open ? '▾' : '▸'}</button></div>${A.verdict === 'yes' ? '<p class="chkok" data-testid="scorecard-ok">✓ Possible: every test passes</p>' : `<p class="chkflag ${A.verdict === 'no' ? 'bad' : 'warn'}" data-testid="scorecard-flag">${A.verdict === 'no' ? 'Not possible' : 'Possible, tight'}: ${esc(vd.why || (A.top ? A.top.text : ''))}${nBad > 1 ? ' (' + nBad + ' to look at)' : ''}</p>`}${open ? `<div class="chklist" data-testid="scorecard-list">${cs.map((x) => `<div class="chk lv-${LVC[x.status]}" data-testid="sc-${x.id}" data-lvl="${LVC[x.status]}" data-status="${x.status}"><div class="ct"><b>${esc(x.label)}</b><span class="cv lv-${LVC[x.status]}">${esc(x.measured)}</span></div><small>${esc(x.how)}${x.limit ? ' · limit: ' + esc(x.limit) : ''}</small></div>`).join('')}</div>` : ''}</section>`;
     return panel + card;
   }
   /* the one-line math under a planned row: what it needs, what the pool has, and the month (full numbers are in the row's panel and on the asset page) */

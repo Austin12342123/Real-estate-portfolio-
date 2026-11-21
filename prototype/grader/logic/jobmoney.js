@@ -1,7 +1,7 @@
 /* "Your job money in the trust" (h.jobPay): engine rules, each returning { pass, detail }. Used by logic-grade.js (L9.J1-J5) and runnable on its own against any engine copy. */
 const sig = (E) => JSON.stringify(['seed', 'seedPlan', 'seedStretch'].map((nm) => { const S = E.normalize(E[nm]()), pl = E.plan(S), f = E.finance(S, pl); return [Object.values(pl.loanEnd).reduce((a, b) => a + (isFinite(b) ? b : 1e6), 0), Math.round(pl.jobs.used.reduce((a, b) => a + b, 0)), Math.round(pl.snap.reduce((a, x) => a + x.equity, 0)), Math.round(f.kpis.planEnd.cfAfter), pl.lastBuy]; }));
 /* golden numbers of the three default plans BEFORE the feature existed (engine at commit 8300277): the default must not move */
-const GOLDEN = '[[1436,200796,21555991,234677,100],[10913,1056844,301214033,3157996,271],[3257,18336,542250657,1083061,170]]';
+const GOLDEN = '[[1436,200796,43319718,234677,100],[10913,1056844,309577311,3157996,271],[3257,18336,533127050,1083061,170]]'; /* card F1: only the 3rd number of each plan changed (21555991 -> 43319718, 301214033 -> 309577311, 542250657 -> 533127050): the snap equity sum now also holds the Your savings row (plan-end savings 21763727 / 8363278 / -9123607; Stretch's is negative because sale tax is paid from savings while proceeds sit in the trust); loan payoffs, job money used, cash flow, last purchase are identical */
 const clone = (o) => JSON.parse(JSON.stringify(o));
 exports.checks = (E) => ({
   'L9.J1': { name: 'Job money per home: with no amount set (the default) the three default plans give exactly the numbers they gave before the feature (loan payoffs, job money used, equity, after-tax cash flow, last purchase)', fn: () => { const s = sig(E); return { pass: s === GOLDEN, detail: s }; } },

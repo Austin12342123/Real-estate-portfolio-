@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'49ed711b'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'aa159b0d'});/*ENDSTAMP*/
 /* Plain-language definitions shown by the "i" buttons. t = title, b = what it means, e = a short example (optional).
    Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
 (function (root) {
@@ -80,7 +80,7 @@
     cashfromselling: { t: 'Trust cash', b: 'Cash the trust holds: what you keep after a sale (the price, minus selling costs, minus the loan paid off) and pooled cash flow not yet spent. It counts toward net worth and pays for later purchases first.' },
     projection: { t: 'Years until your target', b: 'How many years ahead the plan looks. Portfolio totals show where you stand at the end. A longer period means more inflation, so the same dollars buy less: figures are shown in today\'s dollars by default (see Show figures in), with the future-dollar amount beside them.' },
     emergency: { t: 'Emergency reserve', b: 'Cash you want to keep in case your income stops or a repair hits, counted as months of living costs plus debts. Many people aim for 3 to 6 months.' },
-    liquid: { t: 'Liquid cash', b: 'Money you can use right away, like savings and checking. Not retirement accounts or the value of a home.' },
+    liquid: { t: 'Savings you have now', b: 'Money you can use right away, like savings and checking. Not retirement accounts or the value of a home.' },
     cashapy: { t: 'Cash interest', b: 'The yearly percent your savings earn. High-yield savings accounts pay a few percent. Enter 0 if unsure.' },
     living: { t: 'Living costs', b: 'What you spend each month on your own life: rent, food, car, phone, insurance, fun.' },
     inflation: { t: 'Cost increases per year', b: 'How much your living costs go up each year. 3% is a common planning number. It is also the rate used to convert future dollars to today\'s dollars (see Show figures in).' },

@@ -448,7 +448,7 @@
     if (empty || nOwn0 === S.houses.length)
       return (
         head +
-        `<p class="note" style="margin:0 4px 8px" data-testid="empty-note">${empty ? 'Nothing added yet.' : 'Nothing planned yet.'} Add a home, a commercial property or a business to see your plan.</p>${nOwn0 ? `<p class="note" style="margin:0 4px 8px" data-testid="empty-bought-note">${nOwn0} bought asset${nOwn0 === 1 ? ' is' : 's are'} counted on Real. <button type="button" class="linkbtn" data-page="real" data-testid="empty-real-link">Open Real</button></p>` : ''}${sections}${manage}`
+        `<section class="card" data-testid="saved-now">${field('How much do you have saved now?', 'p.cash', grp(S.p.cash), { pre: '$' })}<p class="note">Before your first home this pays its down payment and closing costs (the part above your cash cushion). You can change it later under Finances, "Savings you have now".</p></section><p class="note" style="margin:0 4px 8px" data-testid="empty-note">${empty ? 'Nothing added yet.' : 'Nothing planned yet.'} Add a home, a commercial property or a business to see your plan.</p>${nOwn0 ? `<p class="note" style="margin:0 4px 8px" data-testid="empty-bought-note">${nOwn0} bought asset${nOwn0 === 1 ? ' is' : 's are'} counted on Real. <button type="button" class="linkbtn" data-page="real" data-testid="empty-real-link">Open Real</button></p>` : ''}${sections}${manage}`
       );
     const c3 = (label, a, b, c, f, cls) =>
       `<tr><td>${label}</td><td data-k="c-${label}-a">${f(a)}</td><td data-k="c-${label}-b">${f(b)}</td><td class="${cls || ''}" data-k="c-${label}-c"><b>${f(c)}</b></td></tr>`;
