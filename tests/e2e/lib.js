@@ -12,6 +12,9 @@ const seedS = () => withV(E.seedPlan());
 const ownedS = () => { const S = seedS(); S.houses.slice(0, 2).forEach((h, i) => { h.status = 'owned'; h.boughtOn = '2025-0' + (i + 3) + '-15'; }); return S; };
 const feasS = () => { const S = seedS(); S.houses = [E.newAsset('business', 'bankbiz', { id: 'g', addr: 'Premier Florida General Contractor', price: 27000000, rent: 340000, capex: 3010000, closingPct: 2 }), ...S.houses.slice(0, 3)]; S.p.cash = 20000; S.added = E.ADDITIONS.map((a) => a.key); return S; };
 
+/* F1 screens: empty Planned page ("How much do you have saved now?"), the Your savings row, the "Can I buy this?" panel */
+const emptyS = () => { const S = seedS(); S.houses = []; S.p.cash = 0; return S; };
+const savedS = () => { const S = seedS(); S.p.cash = 25000; return S; };
 /* the app pins "today" in the grader; do the same so dates are stable */
 async function pin(ctxOrPage) { await ctxOrPage.addInitScript(() => { window.REP_TODAY = '2026-11-12'; }); }
 
@@ -35,7 +38,10 @@ const PAGES = [
   ['order', seedS, '#order'], ['add', seedS, '#add'],
   ['add-open', seedS, '#add', async (pg) => { await pg.click('[data-testid=add-more-toggle]'); await pg.click('[data-testid=loan-row]'); }],
   ['add-owned', seedS, '#', async (pg) => { await pg.click('[data-testid=tab-real]'); await pg.click('[data-testid=add-owned]'); }],
-  ['import', seedS, '#import-new']];
+  ['import', seedS, '#import-new'],
+  ['planned-empty-savings', emptyS, '#', async (pg) => { await pg.waitForSelector('[data-testid=saved-now]'); }],
+  ['your-savings-row', savedS, '#', async (pg) => { await openAll(pg); await pg.locator('text=Your savings').first().waitFor({ state: 'attached' }); }],
+  ['can-i-buy', savedS, '#house-maple', async (pg) => { await openAll(pg); await pg.waitForSelector('[data-testid=scorecard],[data-testid=shortfall-panel]'); }]];
 const PAGE_NAMES = PAGES.map((p) => p[0]);
 async function goPage(pg, name) { const p = PAGES.find((x) => x[0] === name); await boot(pg, p[1](), p[2]); if (p[3]) await p[3](pg); await pg.waitForTimeout(60); }
 

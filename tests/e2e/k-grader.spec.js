@@ -57,8 +57,38 @@ test('K43 page tabs float at the bottom on a tablet, inside the screen, and a ta
   expect(t.pos, 'tabs position on ' + where(page, 'planned')).toBe('fixed'); expect(t.bottom).toBeLessThanOrEqual(t.vh); expect(t.btnH, 'tab button height >= 48').toBeGreaterThanOrEqual(48);
   await page.click('[data-testid=tab-real]'); await expect(page.locator('[data-testid=tab-real]')).toHaveAttribute('aria-selected', 'true');
 });
-test('K44 touch drag on Buy order (NOT PORTED: needs CDP touch sequences)', async () => { test.skip(true, 'not ported in M1; the grader K44 stays authoritative'); });
-test('K45 screenshots (NOT PORTED: the grader saves PNGs; CI uploads Playwright traces instead)', async () => { test.skip(true, 'not ported in M1'); });
+/* K44 port: WebKit has no CDP, so the touch is dispatched as real PointerEvents (pointerType 'touch') on the row; the app's hold / move / up handlers see the same events a finger produces. */
+const touchSeq = (page, fromSel, toSel, holdMs, steps) => page.evaluate(async ([fromSel, toSel, holdMs, steps]) => {
+  const pt = (sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return { x: r.left + 30, y: r.top + r.height / 2 }; };
+  const f = pt(fromSel), t = pt(toSel), el = document.querySelector(fromSel), sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const ev = (type, x, y, tgt) => (tgt || document).dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, button: 0, buttons: type === 'pointerup' ? 0 : 1 }));
+  ev('pointerdown', f.x, f.y, el); await sleep(holdMs);
+  const lifted = !!document.querySelector('.rw.lift') && document.getElementById('app').classList.contains('dragmode');
+  for (let i = 1; i <= steps; i++) { ev('pointermove', f.x, f.y + (t.y - f.y - 6) * i / steps, document); await sleep(16); }
+  ev('pointerup', f.x, t.y, document); await sleep(150);
+  return { lifted, left: !!document.querySelector('.rw.lift') };
+}, [fromSel, toSel, holdMs, steps]);
+test('K44 touch drag on Buy order: hold lifts a row and a drag reorders it; a quick swipe moves nothing; O / N / ? do nothing on touch', async ({ page }) => {
+  test.skip(vwOf(page) < 600 && page.viewportSize().height < 600 || vwOf(page) < 600, 'the grader runs K44 on iPad only (phone rows scroll off screen in landscape)');
+  const ids = () => page.evaluate(() => [...document.querySelectorAll('[data-testid=order-row]')].map((e) => e.dataset.row));
+  await L.boot(page, L.seedS(), '#order'); const a = await ids();
+  const row = (id) => '[data-row="' + id + '"] [data-testid=order-status]';
+  const r1 = await touchSeq(page, row(a[2]), row(a[0]), 560, 10); const b = await ids();
+  expect(r1.lifted && b[0] === a[2] && b.length === a.length, where(page, 'order') + ' hold 560 ms lifts the row and a drag moves row 3 to the top ' + JSON.stringify([r1, a.slice(0, 3), b.slice(0, 3)])).toBe(true);
+  await L.boot(page, L.seedS(), '#order'); const r2 = await touchSeq(page, row(a[2]), row(a[0]), 0, 6); const c = await ids();
+  expect(c.join() === a.join() && !r2.left, where(page, 'order') + ' a quick swipe moves nothing ' + c.slice(0, 3)).toBe(true);
+  await L.boot(page, L.seedS(), '#'); for (const k of ['o', 'n', 'f', '?', '2']) { await page.keyboard.press(k); await page.waitForTimeout(40); }
+  const st = await page.evaluate(() => ({ h: location.hash, sheet: !!document.querySelector('#infopop'), real: document.querySelector('[data-testid=tab-planned]').getAttribute('aria-selected') }));
+  expect(st.h === '' || st.h === '#', 'O / N / F do not navigate on touch: ' + st.h).toBe(true); expect(!st.sheet && st.real === 'true', '? and 2 do nothing on touch ' + JSON.stringify(st)).toBe(true);
+});
+/* K45 port: every page screenshotted light and dark at this project's size (PNGs go to test-results/, uploaded by CI) */
+test('K45 screenshots of every page, light and dark, at this size', async ({ page }, info) => {
+  test.skip(vwOf(page) < 600, 'the grader runs K45 on iPad only');
+  const bad = []; let n = 0;
+  for (const sc of SCHEMES) { await page.emulateMedia({ colorScheme: sc });
+    for (const name of L.PAGE_NAMES) { try { await L.goPage(page, name); const buf = await page.screenshot({ fullPage: false }); if (buf.length < 1000) throw new Error('empty'); await info.attach('v7-' + name + '-' + info.project.name + '-' + sc + '.png', { body: buf, contentType: 'image/png' }); n++; } catch (e) { bad.push(name + ' ' + sc); } } }
+  expect(bad, n + ' screenshots saved').toEqual([]); expect(n).toBe(L.PAGE_NAMES.length * 2);
+});
 
 test('K46 page margin: gutter >= 20px phone / 32px tablet on every screen', async ({ page }) => {
   const w = vwOf(page), need = w < 600 ? 20 : 32, bad = [];
