@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'aa159b0d'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'ecd368bc'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -1660,14 +1660,17 @@
               dep: depCum(S, h, a.depAge),
               cost: costBasis(S, h),
             };
+            let taxNow = 0;
             if (pp) {
               const m0 = sumSnap(snapOf(t), t);
-              SALET[t] += (
-                saleTax(S, { exits, T: TS, series: { txRE: { [t]: m0.re }, txBiz: { [t]: m0.bz } } }, h) || {
-                  tax: 0,
-                }
-              ).tax;
-            } /* the tax on the sale comes out of your cash (used only to keep your reserve) */
+              taxNow =
+                (
+                  saleTax(S, { exits, T: TS, series: { txRE: { [t]: m0.re }, txBiz: { [t]: m0.bz } } }, h) || {
+                    tax: 0,
+                  }
+                ).tax || 0;
+              SALET[t] += taxNow;
+            } /* the tax on the sale is paid out of the sale proceeds (below); only what the proceeds cannot cover comes out of your savings */
             /* the proceeds (after the sold asset's own loan) go to the trust's cash; the sold asset's own line draw stays with the trust and moves to the oldest asset still held (with nothing left, cash pays it) */
             let x = proceeds;
             if (x < 0) {
@@ -1684,6 +1687,11 @@
                 x -= p0;
                 out += own - p0;
               }
+            }
+            if (taxNow > 0 && x > 0) {
+              const fromSale = Math.min(taxNow, x);
+              x -= fromSale;
+              SALET[t] -= fromSale;
             }
             C += x;
           }
@@ -1978,6 +1986,7 @@
       'dti',
       'count',
       'outside',
+      'sav',
       'cash',
       'intr',
       'dep',
@@ -2033,6 +2042,7 @@
         savA[t],
         cashA[t],
       ); /* plan net worth = equity + your savings + the trust's cash, the same formula as today's (todayTotals). Month 0 = today's savings less what is paid out of them that month; later months = the plan's savings after every cost, so a purchase month drops net worth only by its closing costs */
+      s.sav[t] = savA[t];
       s.cash[t] = cashA[t];
       s.outside[t] = outsideA[t];
       s.cf[t] = s.noi[t] - s.ds[t];
@@ -2082,7 +2092,7 @@
           addr: 'Your savings',
           type: 'cash',
           equity: savA[t],
-          value: savA[t],
+          value: 0,
           debt: 0,
           payment: 0,
           cf: 0,
@@ -2250,6 +2260,7 @@
       today: at(0),
       final: at(Math.min(T, lastEvent)),
       horizon: at(Math.min(T, planM)),
+      saleTaxPersonal: SALET.slice(0, T + 1) /* sale tax the proceeds could not cover (comes out of savings) */,
       at,
       assetsAt,
       poolAt,
@@ -2302,6 +2313,7 @@
     'dsti',
     'outside',
     'cash',
+    'sav',
     'intr',
     'dep',
     'txRE',
@@ -2499,7 +2511,7 @@
         R.capitalIn[t] -
         R.outsideCall[t] -
         R.oneTime[t] -
-        R.saleTax[t] -
+        (pl.saleTaxPersonal ? pl.saleTaxPersonal[t] || 0 : R.saleTax[t]) -
         (pl.dpCash[t] || 0) -
         R.jobSplit[t];
       R.liquid[t] = liq;

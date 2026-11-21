@@ -190,7 +190,7 @@ exports.run = async function run(X) {
       const sum = (arr) => arr.reduce((a, t) => a + money(t), 0);
       T('sum of row payments = KPI monthly payments', Math.abs(sum(heldPay) - money(mon.v)) <= sumTol(heldPay) + dispTol(mon.v) + 1, 1, sum(heldPay) + ' vs ' + mon.v);
       T('sum of row cash flows = KPI cash flow', Math.abs(sum(heldCf) - money(cf.v)) <= sumTol(heldCf) + dispTol(cf.v) + 1, 1, sum(heldCf) + ' vs ' + cf.v);
-      const cashPart = sn.cash > 0.5 ? sn.cash : 0;
+      const cashPart = (sn.cash > 0.5 ? sn.cash : 0) + (Math.abs(sn.sav || 0) > 0.5 ? sn.sav : 0);
       T('sum of row equity + cash from sales = KPI net worth', Math.abs(sum(heldEq) + cashPart - money(nw.v)) <= sumTol(heldEq) + dispTol(nw.v) + 1, 1, sum(heldEq) + '+' + cashPart + ' vs ' + nw.v);
     }
     if (g.real && g.real.kpis) { /* the Real page covers only the bought assets: its KPIs equal the engine's bought-only numbers and the sum of its rows */

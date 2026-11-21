@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'aa159b0d'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'ecd368bc'});/*ENDSTAMP*/
 /* Plain-language definitions shown by the "i" buttons. t = title, b = what it means, e = a short example (optional).
    Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
 (function (root) {
@@ -162,7 +162,7 @@
     'Synergy lift': 'merge', 'Months already paid': 'paid', 'Not before (months)': 'buyin', 'Cash needed': 'cashneeded', 'Max loan vs value': 'debtcap', 'Appraisal cut': 'haircut',
     'Closing costs': 'closing', 'Line of credit rate': 'creditline', 'Co-signer 1 / yr': 'cosigner', 'Co-signer 2 / yr': 'cosigner', 'Debt-to-income limit': 'dti', 'Rent counted': 'rentcount',
     'Other monthly debts': 'otherdebts', 'Other debts / month': 'otherdebts', 'Vacancy': 'vacancy', 'Management (of rent)': 'mgmt', 'Repairs / yr': 'repairs', 'Projection length (years)': 'projection',
-    'Liquid cash you have': 'liquid', 'Cash interest': 'cashapy', 'Cash cushion (months)': 'emergency', 'Living costs / month': 'living', 'Cost increases / year': 'inflation', 'Tax on portfolio income': 'portfoliotax',
+    'Savings you have now': 'liquid', 'Cash interest': 'cashapy', 'Cash cushion (months)': 'emergency', 'Living costs / month': 'living', 'Cost increases / year': 'inflation', 'Tax on portfolio income': 'portfoliotax',
     'Tax on gains when you sell': 'salestax', 'Businesses you run yourself': 'operating', 'Hours / week each takes': 'bizhours', 'Manager pay per other business / mo': 'gmpay', 'Hourly wage': 'wage', 'Tips per hour (optional)': 'tips',
     'Hours / week': 'hours', 'Weeks worked / year': 'weeks', 'Tax rate (blank = estimate)': 'taxrate', 'Yearly raise': 'raise', 'Ends in (months)': 'jobend', 'Starts in (months)': 'jobstart', 'Gross pay / year': 'grosspay',
     'DSCR': 'dscr', 'DSCR now': 'dscr', 'DSCR while held': 'dscr', 'Cash flow while held': 'cashflow', 'Cap rate now': 'caprate', 'Cap rate while held': 'caprate', 'Net proceeds before tax': 'proceeds', 'Net worth': 'networth', 'Cash flow / mo': 'cashflow', 'Cash flow now': 'cashflow', 'Loan option': 'loanoption',

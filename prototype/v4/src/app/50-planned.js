@@ -481,6 +481,7 @@
           return o.n ? bRow(TPL[tp] + ' (' + o.n + ')', o) : '';
         })
         .join('')}
+      ${Math.abs(sn.sav || 0) > 0.5 ? bRow('Your savings', { value: sn.sav, equity: sn.sav, cf: 0 }) : ''}
       ${sn.cash > 0.5 ? bRow('Trust cash', { value: sn.cash, equity: sn.cash, cf: 0 }) : ''}
       ${bRow('Portfolio', { value: restSn.reduce((a, x) => a + x.value, 0), equity: sn.nw, cf: td.cf }, 'tot')}</tbody></table>`;
     /* Checks: one plain row per number; a row is highlighted only when its number passes a safe amount (see SAFE). One root cause is one row: debt-to-income covers the lenders too. */

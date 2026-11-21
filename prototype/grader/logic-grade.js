@@ -436,7 +436,7 @@ chk('L9', 'L9.1', 'Default plan: list order = buy order (owned first, then non-d
 });
 chk('L9', 'L9.2', 'Combined portfolio total equals the sum of the rows at 12 months across the plan (net worth, value, debt, cash flow, payments)', 1.5, () => {
   let bad = 0; for (let t = 0; t <= plS.T; t += Math.max(1, Math.floor(plS.T / 12))) { const rows = plS.assetsAt(t); const sum = (k) => rows.reduce((a, x) => a + x[k], 0); const s = plS.series;
-    if (!near(sum('equity'), s.nw[t], 0.01) || !near(sum('value') - (rows.find((x) => x.id === '__cash') ? s.cash[t] : 0) - rows.filter((x) => x.id === '__savings').reduce((a, x) => a + x.value, 0), s.value[t], 0.01) || !near(sum('debt'), s.debt[t], 0.01) || !near(sum('cf'), s.cf[t], 0.01)) bad++; }
+    if (!near(sum('equity'), s.nw[t], 0.01) || !near(sum('value') - (rows.find((x) => x.id === '__cash') ? s.cash[t] : 0), s.value[t], 0.01) || !near(sum('debt'), s.debt[t], 0.01) || !near(sum('cf'), s.cf[t], 0.01)) bad++; }
   return { pass: bad === 0, detail: bad + ' months disagree' };
 });
 const F1S = (cash, extra) => { const g = Object.assign({}, E.GDEF, { vac: 0, mgmt: 0, maint: 0, appr: 0, closing: 0 }); const p = Object.assign(E.samplePersonal(), { cash, living: 0, emergencyMonths: 0, housing: 0, jobs: [], gmMonthly: 0, inflation: 0, cashApy: 0, planned: [] });

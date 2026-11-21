@@ -17,6 +17,7 @@
     'dsti',
     'outside',
     'cash',
+    'sav',
     'intr',
     'dep',
     'txRE',
@@ -214,7 +215,7 @@
         R.capitalIn[t] -
         R.outsideCall[t] -
         R.oneTime[t] -
-        R.saleTax[t] -
+        (pl.saleTaxPersonal ? pl.saleTaxPersonal[t] || 0 : R.saleTax[t]) -
         (pl.dpCash[t] || 0) -
         R.jobSplit[t];
       R.liquid[t] = liq;

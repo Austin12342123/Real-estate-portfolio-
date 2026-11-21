@@ -168,7 +168,7 @@ async function snap(page) {
   d.rows = allRows;
   const s = { raw: d, nw: money(d.nw), mon: money(d.mon), cf: money(d.cf), dscr: parseFloat(d.dscr), totX: money(d.totX), headline: d.headline, rows: d.rows, bd: d.bd, body: d.body, real: real ? { nw: money(real.nw), mon: money(real.mon), cf: money(real.cf), dscr: parseFloat(real.dscr), raw: real } : null };
   s.rows.forEach((r) => { r.payN = r.payA != null && r.payA !== '' ? +r.payA : NaN; /* the row no longer prints its payment: its month-0 payment is on the row's data-pay */ r.sold = /sold/.test(r.pay || ''); r.exN = r.extra == null ? 0 : money(r.extra); r.buy = buyOf(r.tag); r.cfN = /—/.test(r.cf) || r.sold ? 0 : money(r.cf); /* a sold row's cash cell shows the sale proceeds, not a monthly cash flow */ r.eqN = r.eqA ? +r.eqA : 0; });
-  { const k = Object.keys(s.bd).find((x) => /^Trust cash$/.test(x)); s.soldCash = k ? money(s.bd[k][1]) : 0; }
+  { const k = Object.keys(s.bd).find((x) => /^Trust cash$/.test(x)); s.soldCash = k ? money(s.bd[k][1]) : 0; const k2 = Object.keys(s.bd).find((x) => /^Your savings$/.test(x)); s.savCash = k2 ? money(s.bd[k2][1]) : 0; }
   { const st = stt; const plst = st && Array.isArray(st.houses) && st.houses.length ? E.planR(E.normalize(clone(st))) : null; if (st) s.rows.forEach((r) => { if (plst) r.buy = isFinite(plst.purchase[r.id]) ? plst.purchase[r.id] : Infinity; /* the rows no longer carry a tag: the buy month is the engine's */ const h = (st.houses || []).find((x) => x.id === r.id); if (h && !r.sold) { const X = E.view(st, h).X; r.extra = Math.round(X).toLocaleString('en-US'); r.exN = Math.round(X); } }); }
   s.row = (id) => s.rows.find((r) => r.id === id);
   return s;
@@ -295,7 +295,7 @@ async function engineChecks() {
     P.t(n >= 5 && worst <= 0.01, 'no purchase draws more than the pool room (' + n + ' pooled purchases)', 1, 'worst excess $' + worst.toFixed(0));
     P.t(worstM <= 1, 'the line drawn stays within the pool room in every sampled month', 0.5, 'worst excess $' + worstM.toFixed(0));
     P.t(pl.funds.ridge && pl.funds.north, 'sample purchases are funded by the trust', 0.25);
-    P.t(pl.snap.every((x) => x.equity === x.value - x.debt), 'equity = value - debt per asset', 0.5); return P; });
+    P.t(pl.snap.every((x) => x.id === '__savings' || x.equity === x.value - x.debt), 'equity = value - debt per asset', 0.5); return P; });
   /* ---- v4 features ---- */
   await check('B16', 'B', 'Loan options: every option listed, per-type lists, applyLoan fills dp/rate/term/io/closing; payment follows', 2, 'node: Engine.LOANS, loansFor, applyLoan, newAsset', () => {
     const P = new Parts(); P.t(E.LOANS.length >= 13 && E.LOANS.some((l) => l.id === 'k203'), E.LOANS.length + ' loan options including FHA 203(k)', 0.5, E.LOANS.length);
@@ -568,7 +568,7 @@ async function reqChecks(page) {
     P.t(nearRel(s.nw, h.nw, 1, 0.004) && nearRel(s.mon, h.monthly, 1, 0.002) && nearRel(s.cf, h.cf, 1, 0.002), 'KPIs equal the engine: net worth at the plan end in today\'s dollars (shown to $0.1M), payments and cash flow in today\'s terms', 0.7, `nw ${s.nw} vs ${Math.round(h.nw)}; mon ${s.mon} vs ${Math.round(h.monthly)}; cf ${s.cf} vs ${Math.round(h.cf)}`);
     const cfSum = s.rows.reduce((a, r) => a + (r.cfN || 0), 0); P.t(near(cfSum, s.cf, 0.5 * s.rows.length + 1 + Math.abs(s.cf) * 0.001), 'sum of row cash flows = Cash flow / mo KPI', 0.8, `${Math.round(cfSum)} vs ${s.cf}`);
     const paySum = s.rows.reduce((a, r) => a + (r.sold || !isFinite(r.payN) ? 0 : r.payN), 0); P.t(near(paySum, s.mon, 0.5 * s.rows.length + 1 + Math.abs(s.mon) * 0.001), 'sum of row payments = Total monthly payments KPI', 0.8, `${Math.round(paySum)} vs ${s.mon}`);
-    const eq = s.rows.reduce((a, r) => a + r.eqN, 0), cash = s.soldCash; const tot = eq + cash; /* row equity from data-equity; cash kept from sales is the breakdown Sold row */
+    const eq = s.rows.reduce((a, r) => a + r.eqN, 0), cash = s.soldCash + s.savCash; const tot = eq + cash; /* row equity from data-equity; cash kept from sales is the breakdown Sold row */
     P.t(near(tot, s.nw, Math.abs(s.nw) * 0.004 + 1000), 'sum of row equity (+ cash from sales) = Net worth KPI', 0.8, `${Math.round(tot)} vs ${s.nw}`);
     const pr = s.bd['Portfolio']; P.t(!!pr && nearRel(money(pr[1]), s.nw, 1, 0.003) && nearRel(money(pr[2]), s.cf, 1, 0.003), 'breakdown table Portfolio row = KPIs', 0.4, JSON.stringify(pr));
     const exSum = s.rows.reduce((a, r) => a + r.exN, 0); P.t(near(exSum, s.totX, s.rows.length), 'total extra = sum of extra inputs', 0.3, `${exSum} vs ${s.totX}`);
@@ -645,7 +645,7 @@ async function reqChecks(page) {
     P.t(!!s.real && nearRel(s.real.nw, rH.nw, 1, 0.004) && nearRel(s.real.mon, rH.monthly, 1, 0.003) && nearRel(s.real.cf, rH.cf, 1, 0.003), 'Real KPIs = engine plan end for the bought assets only', 0.5, s.real && `nw ${s.real.nw}/${Math.round(rH.nw)} mon ${s.real.mon}/${Math.round(rH.monthly)}`);
     const pr = s.rows.filter((r) => !owned.includes(r.id) && !r.sold), rr = s.rows.filter((r) => owned.includes(r.id) && !r.sold);
     const sm = (a, k) => a.reduce((t, r) => t + (r[k] || 0), 0);
-    P.t(near(sm(pr, 'cfN'), s.cf, pr.length + 1 + Math.abs(s.cf) * 0.002) && near(sm(pr, 'payN'), s.mon, pr.length + 1 + s.mon * 0.002) && near(sm(pr, 'eqN') + s.soldCash, s.nw, Math.abs(s.nw) * 0.004 + 1000), 'Planned totals = sum of the planned rows (cash flow, payments, equity + trust cash)', 0.5);
+    P.t(near(sm(pr, 'cfN'), s.cf, pr.length + 1 + Math.abs(s.cf) * 0.002) && near(sm(pr, 'payN'), s.mon, pr.length + 1 + s.mon * 0.002) && near(sm(pr, 'eqN') + s.soldCash + s.savCash, s.nw, Math.abs(s.nw) * 0.004 + 1000), 'Planned totals = sum of the planned rows (cash flow, payments, equity + trust cash)', 0.5);
     P.t(near(sm(rr, 'cfN'), s.real.cf, rr.length + 1 + Math.abs(s.real.cf) * 0.002) && near(sm(rr, 'payN'), s.real.mon, rr.length + 1 + s.real.mon * 0.002) && near(sm(rr, 'eqN'), s.real.nw, Math.abs(s.real.nw) * 0.004 + 600), 'Real totals = sum of the bought rows', 0.5);
     P.t(Math.abs(s.nw - s.real.nw) > 1000 && Math.abs(s.mon - s.real.mon) > 1 && Math.abs(s.cf - s.real.cf) > 1, 'the two pages show different totals', 0.3, `${s.nw}/${s.real.nw}`);
     P.t(nearRel(s.nw + s.real.nw, pl.horizon.nw, 1, 0.005) && nearRel(s.mon + s.real.mon, HZ.todayOf(S, pl, pl.snap.filter((x) => x.type !== 'cash').map((x) => x.id)).monthly, 1, 0.004) && nearRel(s.cf + s.real.cf, HZ.todayOf(S, pl, pl.snap.filter((x) => x.type !== 'cash').map((x) => x.id)).cf, 1, 0.004), 'planned + bought totals add up to the whole plan (net worth at the plan end; payments and cash flow in today\'s terms)', 0.3);

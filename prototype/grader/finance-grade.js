@@ -50,7 +50,7 @@ exports.run = async function run(X) {
     const keys = ['income', 'portfolio', 'portTax', 'extra', 'living', 'debts', 'gm', 'hours', 'nBiz', 'outsideCall', 'saleTax', 'net', 'interest', 'liquid', 'total', 'reserve', 'burn', 'runway', 'oneTime', 'capitalIn'];
     keys.forEach((k) => (o[k] = []));
     const jobPay = (j, t) => { if (t < j.start) return 0; if (j.end !== null && j.end !== undefined && t >= j.end) return 0; const yrs = Math.floor((t - j.start) / 12); return (j.gross / 12) * Math.pow(1 + j.raise / 100, yrs); };
-    const saleTaxAt = {}; for (const h of S.houses) { const ex = pl.exits[h.id]; if (!ex) continue; const gain = ex.price * (1 - h.sellCost / 100) - (ex.cost - ex.dep); /* flat override: rate x (sale price after costs - price, closing costs and improvements + depreciation taken) */ saleTaxAt[ex.month] = (saleTaxAt[ex.month] || 0) + Math.max(0, gain) * p.salesTaxPct / 100; }
+    const saleTaxAt = {}, saleTaxSav = {}; for (const h of S.houses) { const ex = pl.exits[h.id]; if (!ex) continue; const gain = ex.price * (1 - h.sellCost / 100) - (ex.cost - ex.dep); /* flat override: rate x (sale price after costs - price, closing costs and improvements + depreciation taken) */ const tx = Math.max(0, gain) * p.salesTaxPct / 100; saleTaxAt[ex.month] = (saleTaxAt[ex.month] || 0) + tx; saleTaxSav[ex.month] = (saleTaxSav[ex.month] || 0) + Math.max(0, tx - Math.max(0, ex.proceeds)); /* card F1: the sale tax is paid from the sale proceeds; only what they cannot cover comes out of savings */ }
     let liq = p.cash;
     for (let t = 0; t <= T; t++) {
       let inc = 0, hrs = 0; for (const j of p.jobs) { const v = jobPay(j, t); inc += v * (1 - j.tax / 100); if (v > 0) hrs += j.hours; }
@@ -61,7 +61,7 @@ exports.run = async function run(X) {
       const net = inc + port - ptax - gm - ex - liv - dbt;
       const intr = t > 0 ? Math.max(0, o.liquid[t - 1] + s.cash[t - 1]) * p.cashApy / 100 / 12 : 0;
       let cap = 0; for (const c of p.capital) if (c.month === t) cap += c.amount; let one = 0; for (const x of p.planned) if (x.month === t) one += x.amount;
-      liq = liq + net + intr + cap - oc - one - (saleTaxAt[t] || 0) - (pl.dpCash ? pl.dpCash[t] || 0 : 0) - (pl.jobUsed ? pl.jobUsed[t] || 0 : 0);
+      liq = liq + net + intr + cap - oc - one - (saleTaxSav[t] || 0) - (pl.dpCash ? pl.dpCash[t] || 0 : 0) - (pl.jobUsed ? pl.jobUsed[t] || 0 : 0);
       const tot = liq + s.cash[t], res = p.emergencyMonths * (liv + dbt), burn = liv + dbt + ex + gm - Math.max(0, port - ptax);
       const vals = { income: inc, portfolio: port, portTax: ptax, extra: ex, living: liv, debts: dbt, gm, hours: hrs, nBiz: nb, outsideCall: oc, saleTax: saleTaxAt[t] || 0, net, interest: intr, liquid: liq, total: tot, reserve: res, burn, runway: burn > 0.5 ? Math.max(0, tot) / burn : Infinity, oneTime: one, capitalIn: cap };
       keys.forEach((k) => o[k].push(vals[k]));

@@ -91,3 +91,14 @@ describe('CAN-I-BUY fixture (price 170839, financed reno 35000, cash to close 15
     const l = sf.lines.downShort; expect(l.label).toBe('Down payment covered'); close(l.value, 10102, 1); expect(l.how).toMatch(/to spare/); expect(l.how).not.toMatch(/short \$0/);
   });
 });
+
+describe('F1 sale tax is paid from the sale proceeds, so savings never go negative from a sale', () => {
+  it('Stretch plan: personal savings stay at or above 0 in every month (was -29.5M at month 228)', () => {
+    const S = E.normalize(E.seedStretch()), pl = E.plan(S);
+    expect(Math.min(...pl.jobs.liquid.slice(0, 229))).toBeGreaterThanOrEqual(0);
+  });
+  it('plan net worth always equals the sum of the breakdown rows (assets + Your savings + Trust cash)', () => {
+    const pl = E.plan(E.normalize(E.seedStretch()));
+    for (let t = 0; t <= pl.T; t += 24) close(pl.assetsAt(t).reduce((a, x) => a + x.equity, 0), pl.series.nw[t], 0.01);
+  });
+});
