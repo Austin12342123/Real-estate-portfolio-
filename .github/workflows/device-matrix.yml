@@ -2,7 +2,7 @@ name: Device matrix (iPhone / iPad, WebKit)
 # Separate from pages.yml (the Pages deploy). Runs on Linux only; WebKit is installed by Playwright itself. Not a merge gate yet: it reports failures as named tests.
 on:
   push:
-    branches: ['claude/m1-device-matrix']
+    branches: ['claude/m1-device-matrix', 'claude/m1f-device-matrix']
   pull_request:
     paths: ['tests/e2e/**', 'playwright.config.js', 'package.json', 'package-lock.json', '.github/workflows/device-matrix.yml', 'prototype/v4/**']
   workflow_dispatch:
