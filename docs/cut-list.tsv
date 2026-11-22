@@ -240,3 +240,45 @@ note	3159:job-split:1	REMOVE
 note	3161:job-split:1	KEEP	
 note	3168:job-split:1	KEEP	
 note	3178:-:1	SHORTEN	Reinvested cash flow and job money are already taken out of Cash over time.
+note	3179:-:1	KEEP	
+note	3180:-:1	REMOVE	
+note	3183:-:1	SHORTEN	Already part of living costs.
+note	3184:fin-unit:1	REMOVE	
+note	3187:funding-line:1	SHORTEN	Paid from your own pocket: ${$f(pl.outsideTotal)} over the plan. ${k.capitalTotal > 0 ? `Partners and investors you listed cover ${$f(Math.min(k.totalOutside, k.capitalTotal))}; the rest` : 'All of it'} comes out of your savings and monthly income.
+note	3188:-:1	KEEP	
+note	3192:sale-taxes:1	KEEP	
+note	3193:-:1	SHORTEN	Left blank, rates are worked out from 2026 single brackets. Type a rate to use your own.
+note	3194:-:1	REMOVE	
+note	3195:-:1	KEEP	
+note	3195:-:2	REMOVE	
+note	3196:-:1	KEEP	
+note	3196:-:2	REMOVE	
+note	3219:-:1	KEEP	
+note	3221:ex-storage-note:1	KEEP	
+note	3240:loan-fit:1	KEEP	
+note	3240:-:1	SHORTEN	If you will live there
+note	3240:-:2	KEEP	
+note	3240:-:3	KEEP	
+note	3240:loan-typical:1	KEEP	
+note	3241:-:1	SHORTEN	If you will live there
+note	3256:-:1	SHORTEN	Tap one to fill in the numbers; it is only added when you tap Add.
+note	3256:ex-msg:1	KEEP	
+note	3256:ex-storage-note:1	KEEP	
+note	3263:-:1	KEEP	
+note	3263:-:2	SHORTEN	Leave blank and the plan splits your job money. Type an amount to fix it.
+note	3304:-:1	SHORTEN	You can type math in any number box, like 650*3.[i] Keyboard shortcuts[i]
+note	3305:-:1	REMOVE	
+note	3306:-:1	KEEP	
+note	3306:-:2	REMOVE	
+note	3307:-:1	KEEP	
+note	3307:-:2	REMOVE	
+note	3309:unit-help:1	REMOVE	
+note	3310:-:1	SHORTEN	Planned is the default.
+note	3325:-:1	KEEP	
+note	3329:-:1	KEEP	
+note	3331:-:1	SHORTEN	Loading one saves your current plan in Saved first and shows an Undo.
+note	3360:-:1	KEEP	
+note	3361:-:1	KEEP	
+note	3364:-:1	SHORTEN	Takes about a minute.
+note	3531:-:1	SHORTEN	The app keeps its last ${D ? D.SAFE_MAX : 5} copies of your portfolio here.[i]
+note	3531:safety-empty:1	KEEP	
