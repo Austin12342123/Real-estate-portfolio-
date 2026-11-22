@@ -282,3 +282,8 @@ note	3361:-:1	KEEP
 note	3364:-:1	SHORTEN	Takes about a minute.
 note	3531:-:1	SHORTEN	The app keeps its last ${D ? D.SAFE_MAX : 5} copies of your portfolio here.[i]
 note	3531:safety-empty:1	KEEP	
+note	3534:-:1	KEEP	
+note	3536:-:1	KEEP	
+note	3539:-:1	KEEP	
+note	3542:bug-num-help:1	KEEP	
+note	3544:bug-msg:1	KEEP	
