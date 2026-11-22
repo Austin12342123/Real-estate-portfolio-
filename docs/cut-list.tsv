@@ -137,3 +137,36 @@ info	mfSbl	REMOVE
 info	mfAgency	REMOVE	
 info	mfHud	REMOVE	
 info	mfBank5	REMOVE	
+info	mfBank10	REMOVE	
+info	mfCmbs	REMOVE	
+info	mfSba504	REMOVE	
+info	mfBridge	REMOVE	
+info	mfSeller	REMOVE	
+info	mfSellerIO	REMOVE	
+info	mfAssume	SHORTEN	The app assumes you pay the gap between price and loan balance in cash, about 35%.
+info	mfLease	SHORTEN	The app models this as a 5 year interest only seller loan with a 3% option fee.
+info	mfSubTo	SHORTEN	The app models this as taking over the seller loan and paying the gap in cash.
+info	mfJv	SHORTEN	The app models a 75% bank loan. Add partner money under Finances, Outside capital.
+info	safety	SHORTEN	Taken before anything that could replace your portfolio, and once a day. Not part of a backup.
+info	bugreport	KEEP	
+note	2634:-:1	SHORTEN	No planned assets yet.
+note	2642:-:1	SHORTEN	● = the month the trust can pay for it. Tap a row to edit.
+note	2662:-:1	SHORTEN	● = the trust can pay for an asset.
+note	2711:sf-why:1	KEEP	
+note	2716:sf-changes:1	SHORTEN	Nothing in the numbers is short.
+note	2717:-:1	REMOVE	
+note	2734:jobsaved-note:1	KEEP	
+note	2776:-:1	SHORTEN	Sold in this plan; no extra payment.
+note	2838:sold-note:1	SHORTEN	Numbers follow purchase order on this page only; a sold asset keeps its number.
+note	2838:-:1	SHORTEN	Drag ⋮⋮ to reorder. Assets above fund the ones below.
+note	2857:-:1	SHORTEN	Add something you already own to see it here.
+note	2869:unit-note:1	REMOVE	
+note	2877:empty-note:1	SHORTEN	${empty ? 'Nothing added yet.' : 'Nothing planned yet.'}
+note	2877:empty-bought-note:1	KEEP	
+note	2905:-:1	SHORTEN	This sample leans on a few fast growing businesses; check each growth rate.
+note	2911:unit-foot:1	REMOVE	
+note	2915:-:1	KEEP	
+note	2919:cf-progress:1	KEEP	
+note	2922:real-nw:1	REMOVE	
+note	2928:-:1	KEEP	
+note	2929:bd-unit:1	REMOVE	
