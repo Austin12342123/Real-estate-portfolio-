@@ -28,3 +28,47 @@ info	multiple	REMOVE
 info	growth	SHORTEN	Rent and costs grow at this same rate. The business default is 4%.
 info	arv	REMOVE	
 info	comp	SHORTEN	Optional. When filled, the auto appraisal becomes the midpoint of price plus 1.4 times the budget and this value.
+info	jobsaved	KEEP	
+info	gain	SHORTEN	Type a gain and the new appraisal fills itself in.
+info	capex	REMOVE	
+info	capexmonths	SHORTEN	The new value and higher rent start the month the work is done.
+info	liftincome	REMOVE	
+info	exit	REMOVE	
+info	sellcost	REMOVE	
+info	merge	SHORTEN	Folds this business into another one you own; value and income rise by the synergy lift.
+info	proceeds	REMOVE	
+info	units	REMOVE	
+info	openon	REMOVE	
+info	saved	REMOVE	
+info	creditline	KEEP	
+info	debtcap	SHORTEN	The app keeps the loan, liens and line of credit together under this share of value.
+info	trustmath	KEEP	
+info	nextdp	KEEP	
+info	autopay	KEEP	
+info	cashneeded	REMOVE	
+info	dti	SHORTEN	Counts your other debts, your own housing and the plan's loans, and only part of rent as income.
+info	qualifying	REMOVE	
+info	cosigner	REMOVE	
+info	rentcount	REMOVE	
+info	haircut	REMOVE	
+info	vacancy	SHORTEN	The default is 7%, about the U.S. rental vacancy rate.
+info	mgmt	REMOVE	
+info	repairs	SHORTEN	A yearly percent of the asset's value, not of rent.
+info	ownerocc	REMOVE	
+info	fha	REMOVE	
+info	k203	REMOVE	
+info	mip	SHORTEN	The app uses 1.75% of the loan up front, added to the loan, and 0.55% a year, paid monthly.
+info	interestonly	REMOVE	
+info	bridge	REMOVE	
+info	sba	REMOVE	
+info	sellerfin	SHORTEN	Sellers rarely carry 80% or more, so treat this app's seller note presets as aggressive.
+info	conv	REMOVE	
+info	cashbuy	REMOVE	
+info	bankloan	REMOVE	
+info	buyin	SHORTEN	The earliest month to buy. The trust still waits until the pool can pay; 0 means no limit.
+info	paid	REMOVE	
+info	networth	REMOVE	Austin Nov 21: "Remove it". The F1 savings breakdown shows what is counted.
+info	equity	REMOVE	
+info	cashflow	REMOVE	
+info	impact	REMOVE	
+info	boughton	SHORTEN	A record only. No number in the app depends on this date.
