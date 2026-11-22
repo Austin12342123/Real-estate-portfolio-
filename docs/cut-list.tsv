@@ -72,3 +72,30 @@ info	equity	REMOVE
 info	cashflow	REMOVE	
 info	impact	REMOVE	
 info	boughton	SHORTEN	A record only. No number in the app depends on this date.
+info	outsidecash	SHORTEN	Not a warning. Amber when it exceeds all your savings, red if your cash would run short.
+info	cashfromselling	SHORTEN	Trust cash pays for later purchases first, before your savings or outside money.
+info	projection	REMOVE	
+info	emergency	REMOVE	
+info	liquid	REMOVE	
+info	cashapy	REMOVE	
+info	living	REMOVE	
+info	inflation	REMOVE	
+info	otherdebts	REMOVE	
+info	portfoliotax	SHORTEN	Left blank, the app estimates federal, state and 3.8% tax on profit after interest and depreciation.
+info	salestax	SHORTEN	Left blank, the app works it out, including tax on the depreciation you took. Type a rate to override.
+info	operating	SHORTEN	Businesses beyond this number each get a paid manager, set under Manager pay.
+info	bizhours	REMOVE	
+info	gmpay	REMOVE	
+info	planned	SHORTEN	Taken from your cash in the month you pick.
+info	capital	SHORTEN	Added to your cash in the month you pick.
+info	wage	SHORTEN	Before tax. The app multiplies it by your hours and weeks. Enter tips separately.
+info	tips	REMOVE	
+info	hours	SHORTEN	Your job plus businesses you run, at the plan's busiest month. Amber above 70 hours.
+info	weeks	REMOVE	
+info	taxrate	SHORTEN	Leave blank for a rough U.S. estimate with no state tax. Type a number to use your own.
+info	raise	REMOVE	
+info	jobend	SHORTEN	Months from today. Leave blank if the job has no end date.
+info	jobstart	SHORTEN	Months from today. 0 means you already have the job.
+info	checks	SHORTEN	Plain is safe, amber is past the caution line, red is over the limit everywhere, including Can I afford this.
+info	runway	SHORTEN	Months your cash lasts with no job pay, counting portfolio income. Amber under 3, red under 1.
+info	cltv	SHORTEN	Measured at the month the last asset is bought, against the debt cap in Assumptions.
