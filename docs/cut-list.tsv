@@ -1,0 +1,30 @@
+kind	id	verdict	replacement
+info	refi	SHORTEN	At the due month the app refinances the balance at the refinance rate and term. Blank boxes use Assumptions.
+info	debtcapbiz	SHORTEN	The default is 50% of the business value, a conservative choice, not a lender rule.
+info	housing	SHORTEN	Counted in your debt to income, and it rises each year at the cost increase rate.
+info	nnn	SHORTEN	Enter the share tenants repay. The app adds it to income, so still enter the full costs.
+info	statetax	SHORTEN	It is 0 by default because the app does not know your state.
+info	landshare	REMOVE	
+info	goodwillshare	SHORTEN	The app writes off this share over 15 years and the rest as equipment over 7. Default 70%.
+info	exedit	SHORTEN	Save as my default keeps these numbers on this device, for this example only. Warnings are advice, not blocks.
+info	auto	KEEP	
+info	liens	REMOVE	
+info	downpayment	REMOVE	
+info	downamt	REMOVE	
+info	loanamount	SHORTEN	Price minus down payment, plus any fees the loan adds (FHA insurance) and 203(k) repair money.
+info	rate	REMOVE	
+info	term	REMOVE	
+info	closing	REMOVE	
+info	shortcuts	KEEP	
+info	jobmoney	KEEP	
+info	extra	SHORTEN	Only your own extra. The plan also sends this asset's profit and your job money to the loan.
+info	payoff	SHORTEN	Type months and the app works out the extra needed. It counts only your own extra, not plan money.
+info	loanoption	REMOVE	
+info	dscr	REMOVE	
+info	dscrloan	REMOVE	
+info	noi	REMOVE	
+info	caprate	SHORTEN	Chip lines, Low then Good: homes 5%, 7%; multi-family 5.5%, 7%; commercial 6%, 8%; businesses 15%, 25%.
+info	multiple	REMOVE	
+info	growth	SHORTEN	Rent and costs grow at this same rate. The business default is 4%.
+info	arv	REMOVE	
+info	comp	SHORTEN	Optional. When filled, the auto appraisal becomes the midpoint of price plus 1.4 times the budget and this value.
