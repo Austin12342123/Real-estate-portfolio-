@@ -4,11 +4,9 @@
       "/opt/node22/bin/node",
       "/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2979f8ab3f641929/node_modules/.bin/playwright",
       "test",
-      "--project=iphone-se-portrait",
-      "--project=ipad-pro-landscape",
+      "--project=ipad-portrait",
       "-g",
-      "K52|K56|K44",
-      "--workers=3"
+      "K38b"
     ],
     "configFile": "/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2979f8ab3f641929/playwright.config.js",
     "rootDir": "/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2979f8ab3f641929/tests/e2e",
@@ -22,7 +20,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 2
+      "actualWorkers": 1
     },
     "preserveOutput": "always",
     "projects": [
@@ -229,43 +227,7 @@
         "metadata": {
           "kind": "device"
         },
-        "name": "iphone-se-portrait",
-        "testDir": "/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2979f8ab3f641929/tests/e2e",
-        "snapshotDir": "/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2979f8ab3f641929/tests/e2e",
-        "testIgnore": {},
-        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
-        "timeout": 60000,
-        "use": {
-          "baseURL": "http://127.0.0.1:4173",
-          "serviceWorkers": "block",
-          "reducedMotion": "reduce",
-          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/27.2 Mobile/14E304 Safari/602.1",
-          "viewport": {
-            "width": 320,
-            "height": 568
-          },
-          "deviceScaleFactor": 2,
-          "isMobile": true,
-          "hasTouch": true,
-          "browserName": "chromium",
-          "launchOptions": {
-            "executablePath": "/usr/bin/google-chrome"
-          }
-        },
-        "dependencies": [],
-        "ignoreSnapshots": false,
-        "__projectId": "iphone-se-portrait"
-      },
-      {
-        "grep": {},
-        "grepInvert": null,
-        "outputDir": "/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2979f8ab3f641929/test-results",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {
-          "kind": "device"
-        },
-        "name": "ipad-pro-landscape",
+        "name": "ipad-portrait",
         "testDir": "/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2979f8ab3f641929/tests/e2e",
         "snapshotDir": "/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2979f8ab3f641929/tests/e2e",
         "testIgnore": {},
@@ -277,8 +239,8 @@
           "reducedMotion": "reduce",
           "userAgent": "Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1",
           "viewport": {
-            "width": 1194,
-            "height": 834
+            "width": 810,
+            "height": 1080
           },
           "deviceScaleFactor": 2,
           "isMobile": true,
@@ -290,7 +252,7 @@
         },
         "dependencies": [],
         "ignoreSnapshots": false,
-        "__projectId": "ipad-pro-landscape"
+        "__projectId": "ipad-portrait"
       }
     ],
     "quiet": false,
@@ -331,84 +293,7 @@
       "line": 0,
       "specs": [
         {
-          "title": "K44 touch drag on Buy order: hold lifts a row and a drag reorders it; a quick swipe moves nothing; O / N / ? do nothing on touch",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 60000,
-              "annotations": [
-                {
-                  "type": "skip",
-                  "description": "the grader runs K44 on iPad only (phone rows scroll off screen in landscape)",
-                  "location": {
-                    "file": "/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2979f8ab3f641929/tests/e2e/k-grader.spec.js",
-                    "line": 63,
-                    "column": 8
-                  }
-                }
-              ],
-              "expectedStatus": "skipped",
-              "projectId": "iphone-se-portrait",
-              "projectName": "iphone-se-portrait",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "skipped",
-                  "duration": 248,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-11-22T15:50:52.906Z",
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "the grader runs K44 on iPad only (phone rows scroll off screen in landscape)",
-                      "location": {
-                        "file": "/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2979f8ab3f641929/tests/e2e/k-grader.spec.js",
-                        "line": 63,
-                        "column": 8
-                      }
-                    }
-                  ],
-                  "attachments": []
-                }
-              ],
-              "status": "skipped"
-            },
-            {
-              "timeout": 60000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "ipad-pro-landscape",
-              "projectName": "ipad-pro-landscape",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 4247,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-11-22T15:50:53.082Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "3c827bc28164beff740b-9d29b566881f29d22261",
-          "file": "k-grader.spec.js",
-          "line": 62,
-          "column": 1
-        },
-        {
-          "title": "K52 info popover (grader selector #app button.info, DOM click): opens, fixed child of body, inside the screen gutter, closes on Escape",
+          "title": "K38b turning the device changes the layout live (no reload)",
           "ok": true,
           "tags": [],
           "tests": [
@@ -416,42 +301,19 @@
               "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
-              "projectId": "iphone-se-portrait",
-              "projectName": "iphone-se-portrait",
+              "projectId": "ipad-portrait",
+              "projectName": "ipad-portrait",
               "results": [
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3364,
+                  "duration": 2316,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-22T15:50:53.409Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            },
-            {
-              "timeout": 60000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "ipad-pro-landscape",
-              "projectName": "ipad-pro-landscape",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 5512,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-11-22T15:50:57.696Z",
+                  "startTime": "2026-11-22T16:02:50.486Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -459,66 +321,9 @@
               "status": "expected"
             }
           ],
-          "id": "3c827bc28164beff740b-904061937fc6afcff92a",
+          "id": "3c827bc28164beff740b-6cab25f9849d996f881c",
           "file": "k-grader.spec.js",
-          "line": 109,
-          "column": 1
-        },
-        {
-          "title": "K56 Extra / month breakdown line directly under Extra / month (grader scenario: owned + own extra)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 60000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "iphone-se-portrait",
-              "projectName": "iphone-se-portrait",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 1173,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-11-22T15:50:56.811Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            },
-            {
-              "timeout": 60000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "ipad-pro-landscape",
-              "projectName": "ipad-pro-landscape",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 1123,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-11-22T15:51:03.221Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "3c827bc28164beff740b-c39d300f5ecdac10522b",
-          "file": "k-grader.spec.js",
-          "line": 136,
+          "line": 37,
           "column": 1
         }
       ]
@@ -526,10 +331,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-11-22T15:50:51.776Z",
-    "duration": 12738.357,
-    "expected": 5,
-    "skipped": 1,
+    "startTime": "2026-11-22T16:02:49.465Z",
+    "duration": 3649.661,
+    "expected": 1,
+    "skipped": 0,
     "unexpected": 0,
     "flaky": 0
   }

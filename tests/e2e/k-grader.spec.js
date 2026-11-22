@@ -37,7 +37,7 @@ test('K38 layout mode follows the width (phone column < 600, tablet column 600-8
 test('K38b turning the device changes the layout live (no reload)', async ({ page }) => {
   const vp = page.viewportSize(); await L.goPage(page, 'asset'); await page.evaluate(() => { window.__stay = 1; });
   const mode = () => page.evaluate(() => ({ mdw: !!document.querySelector('.mdw'), stay: window.__stay === 1, ov: document.documentElement.scrollWidth > innerWidth + 1 }));
-  const a = await mode(); await page.setViewportSize({ width: vp.height, height: vp.width }); await page.waitForTimeout(250); const b = await mode();
+  const a = await mode(); await page.setViewportSize({ width: vp.height, height: vp.width }); await page.waitForFunction((want) => !!document.querySelector('.mdw') === want, vp.height >= 900, { timeout: 4000 }).catch(() => {}); /* wait on the real condition (layout follows width) instead of a fixed 250 ms; WebKit on CI is slower */ const b = await mode();
   expect(b.stay && !b.ov, 'after rotating ' + vp.width + 'x' + vp.height + ' -> ' + vp.height + 'x' + vp.width + ': ' + JSON.stringify(b)).toBe(true);
   expect(b.mdw, 'master-detail follows the new width (' + vp.height + ')').toBe(vp.height >= 900);
   expect(a.mdw).toBe(vp.width >= 900);
@@ -60,7 +60,7 @@ const touchSeq = (page, fromSel, toSel, holdMs, steps) => page.evaluate(async ([
   return { lifted, left: !!document.querySelector('.rw.lift') };
 }, [fromSel, toSel, holdMs, steps]);
 test('K44 touch drag on Buy order: hold lifts a row and a drag reorders it; a quick swipe moves nothing; O / N / ? do nothing on touch', async ({ page }) => {
-  test.skip(vwOf(page) < 600 && page.viewportSize().height < 600 || vwOf(page) < 600, 'the grader runs K44 on iPad only (phone rows scroll off screen in landscape)');
+  test.skip(Math.min(vwOf(page), page.viewportSize().height) < 600, 'the grader runs K44 on iPad only (a phone, either orientation)');
   const ids = () => page.evaluate(() => [...document.querySelectorAll('[data-testid=order-row]')].map((e) => e.dataset.row));
   await L.boot(page, L.seedS(), '#order'); const a = await ids();
   const row = (id) => '[data-row="' + id + '"] [data-testid=order-status]';
@@ -74,7 +74,7 @@ test('K44 touch drag on Buy order: hold lifts a row and a drag reorders it; a qu
 });
 /* K45 port: every page screenshotted light and dark at this project's size (PNGs go to test-results/, uploaded by CI) */
 test('K45 screenshots of every page, light and dark, at this size', async ({ page }, info) => {
-  test.skip(vwOf(page) < 600, 'the grader runs K45 on iPad only');
+  test.skip(Math.min(vwOf(page), page.viewportSize().height) < 600, 'the grader runs K45 on iPad only'); test.setTimeout(240000); /* 36 screens x 2 schemes: 60 s default was exceeded on CI WebKit */
   const bad = []; let n = 0;
   for (const sc of SCHEMES) { await page.emulateMedia({ colorScheme: sc });
     for (const name of L.PAGE_NAMES) { try { await L.goPage(page, name); const buf = await page.screenshot({ fullPage: false }); if (buf.length < 1000) throw new Error('empty'); await info.attach('v7-' + name + '-' + info.project.name + '-' + sc + '.png', { body: buf, contentType: 'image/png' }); n++; } catch (e) { bad.push(name + ' ' + sc); } } }
