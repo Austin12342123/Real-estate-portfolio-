@@ -99,3 +99,41 @@ info	jobstart	SHORTEN	Months from today. 0 means you already have the job.
 info	checks	SHORTEN	Plain is safe, amber is past the caution line, red is over the limit everywhere, including Can I afford this.
 info	runway	SHORTEN	Months your cash lasts with no job pay, counting portfolio income. Amber under 3, red under 1.
 info	cltv	SHORTEN	Measured at the month the last asset is bought, against the debt cap in Assumptions.
+info	concentration	SHORTEN	Price share of the biggest asset. Amber above 35%, red above 60%, once there are at least 3 assets.
+info	cushion	SHORTEN	Shows the lowest your cash gets over the plan against the cushion at that month.
+info	lasts	SHORTEN	Assumes the biggest earners, about 45% of a group's assets, stop paying. Months your cash and trust cash cover bills.
+info	buyscore	SHORTEN	If a cash or lender test fails, the answer is Not possible. Near a limit, it is Tight.
+info	buypos	KEEP	
+info	planpace	SHORTEN	A Plan timing check appears only when the last purchase is late or an asset is never funded.
+info	cashin	REMOVE	
+info	cashprofit	SHORTEN	After selling costs, the loan and liens, tax on the sale, and the cash you put in.
+info	revenue	SHORTEN	Type per month or per year, like 100k/month or $1.2M per year. No period means per month.
+info	margin	REMOVE	
+info	ownerprofit	REMOVE	
+info	calc	SHORTEN	Type math like 650*3 or (2000-300)/2. Incomplete math keeps the last good number and shows Check the math.
+info	grosspay	REMOVE	
+info	hometype	REMOVE	
+info	unitcount	SHORTEN	From 2 to 500. Rent, tax and insurance start at typical amounts for that size.
+info	mfpack	SHORTEN	A pack is several separate houses, financed with a blanket loan or separate investor loans, not as a building.
+info	rentunit	SHORTEN	You can type the total instead, and rent per unit follows.
+info	mfreserve	REMOVE	
+info	mfother	REMOVE	
+info	oer	REMOVE	
+info	mfchecklist	REMOVE	
+info	mflenders	REMOVE	
+info	mfcosts	REMOVE	
+info	mfstaff	REMOVE	
+info	mfsec8	REMOVE	
+info	ltv	REMOVE	
+info	mfcreative	REMOVE	
+info	mfFha	REMOVE	
+info	mfVa	REMOVE	
+info	mfConvOO	REMOVE	
+info	mfK203	REMOVE	
+info	mfConvInv	REMOVE	
+info	mfBlanket	REMOVE	
+info	mfDscr	REMOVE	
+info	mfSbl	REMOVE	
+info	mfAgency	REMOVE	
+info	mfHud	REMOVE	
+info	mfBank5	REMOVE	
