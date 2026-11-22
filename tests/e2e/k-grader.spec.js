@@ -106,11 +106,14 @@ test('K50 one scroll only: no element other than the page scrolls', async ({ pag
     if (r.length) bad.push(where(page, name) + ': ' + r.join(', ')); }
   expect(bad).toEqual([]);
 });
-test('K52 info popover: opens on tap of (i), sits inside the screen, closes on Escape', async ({ page }) => {
-  await L.goPage(page, 'asset'); const i = page.locator('#app .info, #app [data-info]').first(); await i.scrollIntoViewIfNeeded(); await i.click();
-  const pop = page.locator('#infopop'); await expect(pop, 'popover opens on ' + where(page, 'asset')).toBeVisible();
-  const r = await pop.boundingBox(); const vp = page.viewportSize(); expect(r.x >= 0 && r.x + r.width <= vp.width + 1, 'popover inside the screen ' + JSON.stringify(r)).toBe(true);
-  await page.keyboard.press('Escape'); await expect(pop).toBeHidden();
+test('K52 info popover (grader selector #app button.info, DOM click): opens, fixed child of body, inside the screen gutter, closes on Escape', async ({ page }) => {
+  await L.goPage(page, 'asset'); const g = vwOf(page) < 600 ? 20 : 32;
+  const r = await page.evaluate(async (g) => { const b = document.querySelector('#app button.info'); if (!b) return { none: true }; b.scrollIntoView({ block: 'center' }); b.click(); await new Promise((q) => setTimeout(q, 20));
+    const pop = document.getElementById('infopop'); if (!pop) return { open: false }; const rc = pop.getBoundingClientRect(), cs = getComputedStyle(pop), vw = document.documentElement.clientWidth, vh = innerHeight; const out = [];
+    if (rc.left < g - 0.5 || rc.top < g - 0.5 || rc.right > vw - g + 0.5 || rc.bottom > vh - g + 0.5) out.push('outside ' + [rc.left, rc.top, rc.right, rc.bottom].map(Math.round) + ' of ' + vw + 'x' + vh + ' (gutter ' + g + ')');
+    if (pop.parentElement !== document.body || cs.position !== 'fixed') out.push('not a fixed child of body');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); await new Promise((q) => setTimeout(q, 20)); return { open: true, out, closed: !document.getElementById('infopop') }; }, g);
+  expect(r.open, 'popover opens on ' + where(page, 'asset')).toBe(true); expect(r.out, where(page, 'asset')).toEqual([]); expect(r.closed, 'closes on Escape').toBe(true);
 });
 test('K53 accent token is calm blue, not red/orange', async ({ page }) => {
   await L.goPage(page, 'planned');
@@ -129,8 +132,13 @@ test('K55 comp value under New appraised value, with Job money saved up (reduced
   await L.goPage(page, 'asset'); const t = await appText(page); const a = t.indexOf('New appraised value'), c = t.indexOf('Average comp value');
   expect(a >= 0 && c > a, 'Average comp value follows New appraised value (' + a + ',' + c + ')').toBe(true); expect(/Job money saved up/.test(t)).toBe(true);
 });
-test('K56 Extra / month breakdown line (reduced)', async ({ page }) => {
-  await L.goPage(page, 'asset-owned'); expect(/Total paying this loan down/.test(await appText(page)), 'breakdown line under Extra / month').toBe(true);
+/* grader K56 scenarios: the line [data-testid=extra-break] directly under the Extra / month field. It is hidden when every part is zero (owned asset while the plan is still buying), so use "owned, nothing left to buy + own extra 150" like the grader */
+test('K56 Extra / month breakdown line directly under Extra / month (grader scenario: owned + own extra)', async ({ page }) => {
+  const S = L.ownedS(); S.houses = S.houses.slice(0, 2); S.houses.forEach((h) => { h.capex = 0; h.arv = 0; h.arvAuto = false; }); S.houses[0].extra = 150;
+  await L.boot(page, S, '#house-' + S.houses[0].id); await L.openAll(page);
+  const o = await page.evaluate(() => { const x = document.querySelector('[data-testid=extra-break]'), f = document.querySelector('[data-p$=".extra"]'); if (!x) return null; const r = x.getBoundingClientRect(), fl = f.closest('label').getBoundingClientRect(); return { txt: x.textContent, below: x.previousElementSibling === f.closest('label') && r.top >= fl.bottom - 1, fit: r.right <= innerWidth + 0.5 && x.scrollWidth <= x.clientWidth + 1 }; });
+  expect(o, where(page, 'asset-owned') + ' no [data-testid=extra-break] line').not.toBeNull();
+  expect(/Total paying this loan down/.test(o.txt) && o.below && o.fit, where(page, 'asset-owned') + ' ' + JSON.stringify(o)).toBe(true);
 });
 test('K57 job money card: "Total from your job this month" row (reduced)', async ({ page }) => {
   await L.goPage(page, 'asset-owned'); expect(/Total from your job this month/.test(await appText(page))).toBe(true);
