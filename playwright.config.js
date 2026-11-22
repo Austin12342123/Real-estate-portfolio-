@@ -7,7 +7,7 @@ const PORT = 4173;
 function profile(label, device, landscape) {
   const d = Object.assign({}, devices[device + (landscape ? ' landscape' : '')]);
   if (local) { delete d.defaultBrowserType; d.browserName = 'chromium'; d.launchOptions = { executablePath: local }; }
-  return { name: label + (landscape ? '-landscape' : '-portrait'), metadata: { kind: 'device' }, testIgnore: /k-grader-desktop/, use: d };
+  return { name: label + (landscape ? '-landscape' : '-portrait'), metadata: { kind: 'device' }, testIgnore: /k-grader-desktop|clipping/, use: d };
 }
 const DEVICES = [['iphone-se', 'iPhone SE'], ['iphone-15', 'iPhone 15'], ['ipad', 'iPad (gen 7)'], ['ipad-pro', 'iPad Pro 11']];
 const projects = [];

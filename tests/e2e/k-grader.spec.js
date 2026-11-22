@@ -9,29 +9,20 @@ test.beforeEach(async ({ context }) => { await L.pin(context); });
 const vwOf = (page) => page.viewportSize().width;
 const where = (page, name, sc) => name + '@' + vwOf(page) + 'x' + page.viewportSize().height + (sc ? ' ' + sc : '');
 
-/* per-screen sweep tests: K39 (overflow + clipped), K40 (tap size), K41 (contrast), K42 (fonts, radii, input size) */
-for (const name of L.PAGE_NAMES) {
-  test('K39 no sideways scroll, nothing past the edge, no clipped text: ' + name, async ({ page }) => {
-    const bad = [];
-    for (const sc of SCHEMES) { await page.emulateMedia({ colorScheme: sc }); await L.goPage(page, name); const r = await page.evaluate(L.SWEEP_JS);
-      if (r.ov) bad.push(where(page, name, sc) + ' page scrolls sideways'); if (r.wide.length) bad.push(where(page, name, sc) + ' past edge: ' + r.wide.slice(0, 3).join(',')); if (r.clipped.length) bad.push(where(page, name, sc) + ' clipped: ' + r.clipped.slice(0, 3).join(' | ')); }
-    expect(bad).toEqual([]);
-  });
-  test('K40 tap targets >= 44px: ' + name, async ({ page }) => {
-    await L.goPage(page, name); const r = await page.evaluate(L.SWEEP_JS);
-    expect(r.small.slice(0, 6), where(page, name)).toEqual([]);
-  });
-  test('K41 contrast >= 4.5:1 light and dark: ' + name, async ({ page }) => {
-    const bad = [];
-    for (const sc of SCHEMES) { await page.emulateMedia({ colorScheme: sc }); await L.goPage(page, name); const r = await page.evaluate(L.SWEEP_JS); if (r.low.length) bad.push(where(page, name, sc) + ': ' + r.low.slice(0, 3).join(' | ')); }
-    expect(bad).toEqual([]);
-  });
-  test('K42 Manrope everywhere, token radii, inputs 16px, text >= 12px: ' + name, async ({ page }) => {
-    await L.goPage(page, name); const r = await page.evaluate(L.SWEEP_JS);
-    const t = await page.evaluate(() => { const bad = []; document.querySelectorAll('#app *').forEach((el) => { if (el.closest('svg') || el.closest('.info')) return; const rc = el.getBoundingClientRect(), s = getComputedStyle(el); if (rc.width < 1 || s.display === 'none') return;
-      if ([...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && parseFloat(s.fontSize) < 12) bad.push('small text ' + (el.className || el.tagName) + '=' + s.fontSize);
-      if ((el.tagName === 'INPUT' && !/^(hidden|checkbox|radio|file|range)$/.test(el.type) || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') && parseFloat(s.fontSize) < 16) bad.push('input under 16px (iOS zooms) ' + (el.dataset.p || el.dataset.testid || el.tagName) + '=' + s.fontSize); }); return bad.slice(0, 5); });
-    expect([].concat(r.fonts.slice(0, 3), r.radii.slice(0, 3), t), where(page, name)).toEqual([]);
+/* per-screen sweep: ONE page load per screen and colour scheme runs K39 (overflow + clipped), K40 (tap size, light), K41 (contrast), K42 (fonts, radii, input size, light) and the clipping detector.
+   Each rule is an expect.soft with its K-number in the message, so every failure is still named (screen, size, scheme, element). Merged from 5 loads to 1 to fit the 10-minute CI limit; assertions unchanged. */
+const K42_JS = () => { const bad = []; document.querySelectorAll('#app *').forEach((el) => { if (el.closest('svg') || el.closest('.info')) return; const rc = el.getBoundingClientRect(), s = getComputedStyle(el); if (rc.width < 1 || s.display === 'none') return;
+  if ([...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && parseFloat(s.fontSize) < 12) bad.push('small text ' + (el.className || el.tagName) + '=' + s.fontSize);
+  if ((el.tagName === 'INPUT' && !/^(hidden|checkbox|radio|file|range)$/.test(el.type) || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') && parseFloat(s.fontSize) < 16) bad.push('input under 16px (iOS zooms) ' + (el.dataset.p || el.dataset.testid || el.tagName) + '=' + s.fontSize); }); return bad.slice(0, 5); };
+for (const name of L.PAGE_NAMES) for (const sc of SCHEMES) {
+  test('sweep K39 K40 K41 K42 clipping: ' + name + ' (' + sc + ')', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: sc }); await L.goPage(page, name);
+    const r = await page.evaluate(L.SWEEP_JS), clip = await page.evaluate(L.CLIP_JS), w = where(page, name, sc);
+    expect.soft([r.ov ? 'page scrolls sideways' : null].concat(r.wide.slice(0, 3), r.clipped.slice(0, 3)).filter(Boolean), 'K39 ' + w).toEqual([]);
+    expect.soft(clip, 'clipping ' + w).toEqual([]);
+    expect.soft(r.low.slice(0, 3), 'K41 contrast ' + w).toEqual([]);
+    if (sc === 'light') { expect.soft(r.small.slice(0, 6), 'K40 tap targets ' + w).toEqual([]);
+      expect.soft([].concat(r.fonts.slice(0, 3), r.radii.slice(0, 3), await page.evaluate(K42_JS)), 'K42 ' + w).toEqual([]); }
   });
 }
 
