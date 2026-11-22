@@ -195,3 +195,48 @@ note	3017:units-note:1	KEEP
 note	3019:mf-tier:1	KEEP	
 note	3027:mgmt-note:1	SHORTEN	${h.mgmtPct != null ? 'Set for this asset only.' : 'Starts at the Assumptions rate (' + r(g.mgmt, 1) + '%); type a number to set it for this asset only.'}
 note	3029:rev-note:1	SHORTEN	Price ÷ yearly profit is ${r(v.multiple, 1)}×. Type revenue per month or per year.[i]
+note	3029:mgmt-note-biz:1	SHORTEN	No property manager here. A paid manager for businesses you do not run is set in Finances (${$f(pp0.gmMonthly)}/mo each).
+note	3030:nnn-note:1	SHORTEN	Tenants repay ${r(h.nnn, 0)}% of tax, insurance and CAM (${$f(v.reimb)}/mo) on top of rent.
+note	3032:-:1	SHORTEN	Net operating income ${$f(v.noi)}/mo.
+note	3033:dep-note:1	KEEP	
+note	3039:-:1	REMOVE	
+note	3043:h-auto:1	REMOVE	
+note	3044:h-auto:1	KEEP	
+note	3048:h-auto:1	KEEP	
+note	3048:h-job:1	KEEP	
+note	3053:extra-break:1	REMOVE	
+note	3056:extra-break:1	REMOVE	
+note	3057:extra-break:1	KEEP	
+note	3062:-:1	KEEP	
+note	3064:jobmoney-now:1	KEEP	
+note	3065:jobmoney-basis:1	KEEP	
+note	3066:jobmoney-default:1	KEEP	
+note	3070:bought-on-note:1	REMOVE	
+note	3073:-:1	KEEP	
+note	3075:plan-math:1	KEEP	
+note	3079:-:1	REMOVE	
+note	3085:-:1	KEEP	
+note	3088:reno-note:1	KEEP	
+note	3089:asset-share:1	KEEP	
+note	3093:-:1	KEEP	
+note	3098:-:1	SHORTEN	${lo ? esc(lo.note) + ' ' : ''}
+note	3098:-:2	SHORTEN	Custom terms.
+note	3098:loan-info-only:1	SHORTEN	Info only. Modelled as ${esc(lo.modelledAs)}.[i]
+note	3098:mf-dscr:1	KEEP	
+note	3098:k203-cap:1	KEEP	
+note	3101:refi-note:1	KEEP	
+note	3102:-:1	KEEP	
+note	3107:trust-owned:1	SHORTEN	Owned now, so its borrowing room (${$f(v.head0)}) and cash flow (${$s(v.cf)}/mo) help fund every planned asset.
+note	3107:trust-next:1	KEEP	
+note	3109:trust-pool:1	KEEP	
+note	3115:loc-split:1	KEEP	
+note	3117:trust-pool:1	KEEP	
+note	3117:trust-pool:2	KEEP	
+note	3120:-:1	KEEP	
+note	3120:impact-note:1	REMOVE	
+note	3136:-:1	SHORTEN	Solid line: your cash. Dashed line: the reserve you want to keep.
+note	3150:job-take:1	KEEP	
+note	3159:job-split:1	REMOVE	
+note	3161:job-split:1	KEEP	
+note	3168:job-split:1	KEEP	
+note	3178:-:1	SHORTEN	Reinvested cash flow and job money are already taken out of Cash over time.
