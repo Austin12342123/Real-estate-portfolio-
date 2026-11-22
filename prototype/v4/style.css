@@ -1,4 +1,4 @@
-/*STAMP*/html{--build:"ecd368bc"}/*ENDSTAMP*/
+/*STAMP*/html{--build:"eb861578"}/*ENDSTAMP*/
 /* Manrope (SIL OFL 1.1, fonts/OFL.txt), latin subset, bundled offline */
 @font-face{font-family:Manrope;font-style:normal;font-weight:400;font-display:swap;src:local("Manrope Regular"),url(fonts/manrope-latin-400-normal.woff2) format("woff2")}
 @font-face{font-family:Manrope;font-style:normal;font-weight:500;font-display:swap;src:local("Manrope Medium"),url(fonts/manrope-latin-500-normal.woff2) format("woff2")}
@@ -442,6 +442,7 @@ details[data-testid=model-notes][open]{padding-bottom:10px!important}
 /* can-I-buy-this panel and the buy order screen */
 .sfp .sfh{font-size:13px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.03em;margin:12px 0 2px}
 .sfp .sfl{align-items:flex-start;gap:10px;padding:8px 0;min-height:44px}.sfp .sfl b{flex:none;text-align:right;font-size:var(--fm)}.sfp .sfl .lb{flex:1 1 auto;min-width:0}.sfp .sfl b.bad{color:var(--bad)}.sfp .sfl b.ok{color:var(--ok)}
+.card.sfp,.card.sfp.warn,.card.sfp.bad,.card.sfp.ok{color:var(--ink)}.sfp .sfl b{color:var(--ink)}.sfp .sfl b.bad{color:var(--bad)}.sfp .sfl b.ok{color:var(--ok)}
 .sfp .sfwhy{font-weight:600;color:var(--ink);margin:4px 0 0;font-size:var(--fs)}.sfp.bad .sfwhy{color:var(--bad)}.sfp.warn .sfwhy{color:var(--warn)}
 .sfch{margin:4px 0 6px;padding-left:20px;font-size:var(--fs)}.sfch li{margin:5px 0}
 .ordlist{padding:0 14px 4px}.row.ord{padding-top:8px}

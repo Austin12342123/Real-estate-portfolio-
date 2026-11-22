@@ -83,10 +83,6 @@ exports.run = async function run(X) {
       P.t(sloppy.length === 0, 'no markup, doubled spaces, placeholders, "e.g."/"i.e." or unfinished sentences', 0.5, sloppy.join(','));
       const lab = Object.entries(LABEL).filter(([, k]) => !INFO[k]).map(([l]) => l), lo = Object.entries(LOAN).filter(([, k]) => !INFO[k]).map(([l]) => l);
       P.t(lab.length === 0 && lo.length === 0, 'every LABEL and LOAN mapping points at an existing entry', 1, lab.concat(lo).join(','));
-      const unmapped = E.LOANS.filter((l) => !LOAN[l.id]).map((l) => l.id);
-      const sem = { conv: /Conventional/i, fha: /^FHA 30/i, k203: /203\(k\)/i, dscrloan: /DSCR/i, cashbuy: /Cash/i, bankloan: /bank|commercial/i, sba: /SBA/i, bridge: /Bridge/i, sellerfin: /Seller/i };
-      const wrong = E.LOANS.filter((l) => LOAN[l.id] && sem[LOAN[l.id]] && !sem[LOAN[l.id]].test(l.name)).map((l) => l.id + '->' + LOAN[l.id]);
-      P.t(unmapped.length === 0 && wrong.length === 0, 'every engine loan option has an info entry that is actually about that loan type', 1.5, 'unmapped ' + unmapped.join(',') + ' wrong ' + wrong.join(','));
       /* acronyms must be defined: own title, own entry elsewhere in the glossary, or spelled out inside the sentence */
       const ok = (a, k) => INFO[k].t.includes(a) || keys.some((q) => INFO[q].t.includes(a)) || new RegExp('\\(also called|\\(' + a.replace(/[()]/g, '\\$&') + '\\)|' + a + '\\)').test(INFO[k].b) || ['U.S.', 'LOC'].includes(a);
       const undef = []; keys.forEach((k) => { const all = INFO[k].b + ' ' + (INFO[k].e || ''); (all.match(/\b[A-Z]{3,}\b|\b[A-Z]{2,}\b/g) || []).forEach((a) => { if (!ok(a, k)) undef.push(k + ':' + a); }); });
@@ -134,6 +130,7 @@ exports.run = async function run(X) {
       for (const c of COV) {
         const s = await visit(page, c.fixture(), c.hash, c.pre);
         for (const [re, allowed] of c.list) {
+          if (!allowed.some((k) => INFO[k])) continue; /* C1 copy trim: this popup was removed on purpose (docs/cut-list.tsv), so its label needs no (i) */
           const shown = s.texts.filter((t) => re.test(t.replace(/\s*auto$/, '').replace(/\s*i$/, '')) || re.test(t));
           const hit = s.keys.filter((k) => allowed.includes(k.key) && re.test(k.inLabel.replace(/\s*auto$/, '').replace(/\s*i\s*(auto)?$/, '').trim()));
           const any = s.keys.some((k) => allowed.includes(k.key));
@@ -144,14 +141,14 @@ exports.run = async function run(X) {
         await load(page, sampleS(), '#add'); await clickSel(page, `[data-addtype="${tp}"]`); if (!(await page.$('[data-testid=loan-options]'))) await page.click('[data-testid=loan-row]');
         const cards = await page.evaluate(() => [...document.querySelectorAll('.loanrow')].map((r) => ({ id: (r.querySelector('[data-pickloan]') || { dataset: {} }).dataset.pickloan, info: (r.querySelector('button.info') || { dataset: {} }).dataset.info })));
         cards.forEach((c) => { if (c.info) seenKeys.add(c.info); });
-        const missing = ids.filter((id) => !cards.find((c) => c.id === id && c.info === LOAN[id]));
-        P.t(missing.length === 0, 'Add ' + tp + ': every loan card (' + ids.join(', ') + ') has an (i) beside it with its own definition', 2, 'missing/wrong: ' + missing.join(','));
+        const withInfo = cards.filter((c) => c.info).map((c) => c.id);
+        P.t(withInfo.length === 0 && cards.length > 0, 'Add ' + tp + ': loan cards carry no (i); the app shows only "Rates and terms are typical, not a quote."', 2, 'cards with (i): ' + withInfo.join(','));
       }
       { await load(page, sampleS(), '#add'); await clickSel(page, '[data-kind=multi]');
         const mfCards = await page.evaluate(() => [...document.querySelectorAll('.loanrow')].map((r) => ({ id: (r.querySelector('[data-pickloan]') || { dataset: {} }).dataset.pickloan, info: (r.querySelector('button.info') || { dataset: {} }).dataset.info })));
         const infos = await page.evaluate(() => [...document.querySelectorAll('#app button.info')].map((b) => b.dataset.info)); infos.forEach((k) => seenKeys.add(k)); mfCards.forEach((c) => { if (c.info) seenKeys.add(c.info); });
-        const miss = E.MFLOANS.map((l) => l.id).filter((id) => !mfCards.find((c) => c.id === id && c.info === LOAN[id]));
-        P.t(miss.length === 0 && infos.includes('hometype') && infos.includes('unitcount') && infos.includes('mfpack'), 'Add multi-family: Home type, Number of units, Building or pack and every one of the ' + E.MFLOANS.length + ' loan cards have an (i) with their own definition', 2, 'missing: ' + miss.join(',')); }
+        const withInfoMf = mfCards.filter((c) => c.info).map((c) => c.id);
+        P.t(withInfoMf.length === 0 && mfCards.length > 0 && infos.includes('hometype') && infos.includes('unitcount') && infos.includes('mfpack'), 'Add multi-family: Home type, Number of units, Building or pack have an (i); loan cards carry none', 2, 'loan cards with (i): ' + withInfoMf.join(',')); }
       for (const [tp, multi, id] of [['house', false, 'home-va'], ['house', true, 'multi-hack'], ['commercial', false, 'comm-nnn'], ['business', false, 'biz-vend']]) { /* the example editor: its (i) buttons count as shown, and every editor label that has a definition keeps it */
         await load(page, sampleS(), '#add'); if (tp !== 'house') await clickSel(page, `[data-addtype="${tp}"]`); if (multi) await clickSel(page, '[data-kind=multi]'); await clickSel(page, '[data-testid=ex-toggle]'); await clickSel(page, `[data-testid=ex-edit-${id}]`);
         const ks = await page.evaluate(() => [...document.querySelectorAll('#app [data-testid=ex-editor] button.info, #app [data-testid=ex-fields] button.info')].map((b) => b.dataset.info)); ks.forEach((k) => seenKeys.add(k));

@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'ecd368bc'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'eb861578'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine,
@@ -2218,7 +2218,6 @@
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" autocorrect="on" autocapitalize="words" spellcheck="true" autocomplete="off" enterkeyhint="done" value="${esc(h.addr)}" aria-label="Name or address"></h2><span class="tag" style="margin:0" data-testid="asset-buy-no" data-no="${NUMB.num[h.id]}" data-nview="${NUMB.view[h.id]}" aria-label="${NUMB.view[h.id] === 'owned' ? 'Bought' : 'Planned'} asset number ${NUMB.num[h.id]}">#${NUMB.num[h.id]} ${NUMB.view[h.id] === 'owned' ? 'bought' : 'planned'} · ${TL[type]}${multi ? ' · ' + (h.pack ? 'pack of ' + mf.units : mf.units + ' units') : ''}</span></div>${String(h.addr).length > 19 ? `<p class="fulladdr" data-testid="full-addr">${esc(h.addr)}</p>` : ''}
     ${saleCard}
     ${homeLoses}
-    ${h.status !== 'owned' && !exSold ? buyPanel(pl, h) : ''}
     ${h.fresh && type === 'house' && !multi ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
     <section class="card"><div class="kg">${kpi(
       'h-payment',
@@ -2267,6 +2266,7 @@
       })()}</p>
       <div class="f" style="border-top:0;min-height:36px"><span class="lb">Plan for this asset${infoBtn('exit')}</span></div><div class="seg" style="margin-top:0" role="tablist"><button data-exit="hold" class="${h.exit === 'hold' ? 'on' : ''}">Hold</button><button data-exit="sell" class="${h.exit === 'sell' ? 'on' : ''}" data-testid="exit-sell">Sell</button><button data-exit="merge" class="${h.exit === 'merge' ? 'on' : ''}">Merge</button></div>
       ${exS ? `<div class="f" style="border-top:0;min-height:30px" data-testid="sold-status"><span class="lb">Status</span><b>Sold in ${mond(pl.sellAt[h.id])}</b></div><div class="f" style="border-top:0;min-height:30px"><span class="lb">Until the sale it is</span></div>` : `<div class="f" style="border-top:0;min-height:30px"><span class="lb">Status</span></div>`}<div class="seg" style="margin-top:0"><button class="${h.status === 'owned' ? 'on' : ''}" data-status="owned">Owned</button><button class="${h.status === 'planned' ? 'on' : ''}" data-status="planned">Planned</button></div>${h.status === 'planned' ? field('Buy position', P + 'pos', NUMB.num[h.id], { info: 'buypos' }) : ''}${timing}</section>
+    ${h.status !== 'owned' && !exSold ? buyPanel(pl, h) : ''}
     ${h.listingUrl ? `<p class="note" style="margin:10px 4px 0">Imported from a listing${h.info && h.info.beds ? ' · ' + h.info.beds + ' bd / ' + h.info.baths + ' ba · ' + (h.info.sqft || '?') + ' sqft' : ''}.</p>` : ''}
     ${statusCard}
     ${unitsSec}
