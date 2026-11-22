@@ -170,3 +170,28 @@ note	2919:cf-progress:1	KEEP
 note	2922:real-nw:1	REMOVE	
 note	2928:-:1	KEEP	
 note	2929:bd-unit:1	REMOVE	
+note	2930:cash-note:1	SHORTEN	Trust cash: sale cash and pooled cash flow not yet spent. It counts in net worth.[i]
+note	2946:-:1	SHORTEN	Assets above fund the ones below. Assets you already own are not in this list.
+note	2947:order-hint:1	SHORTEN	On a phone or tablet, press and hold a row before dragging.
+note	2948:order-empty:1	KEEP	
+note	2963:-:1	KEEP	
+note	2965:save-now:1	SHORTEN	Working portfolio now: ${S.houses.length} asset${S.houses.length === 1 ? '' : 's'} · net worth ${$f(th.nw)} · cash flow ${$s(th.cf)}/mo in year ${yrs}.
+note	2966:saved-empty:1	SHORTEN	Nothing saved yet.
+note	2967:-:1	SHORTEN	Stays on this device and in your backup. Opening one replaces your portfolio; Undo brings it back.
+note	2967:-:2	KEEP	
+note	2982:rehab-financed:1	REMOVE	
+note	2982:arv-note:1	KEEP	
+note	2982:arv-low:1	KEEP	
+note	2982:rent-lift:1	KEEP	
+note	2984:sale-tax:1	SHORTEN	Net proceeds before tax ${$f(sq.N)}; estimated tax ${$f(sq.T)}; cash profit after tax ${$s(sq.F)}. The tax is paid from your cash.
+note	2984:-:1	REMOVE	
+note	2985:-:1	REMOVE	
+note	2986:-:1	KEEP	
+note	2992:impact-${id}-sum:1	KEEP	
+note	2998:sold-timing:1	KEEP	
+note	3000:buyin-note:1	KEEP	
+note	3011:mf-oer:1	SHORTEN	Costs are ${isFinite(mf.oer) ? r(mf.oer, 0) : '—'}% of rent collected (typical 35% to 55%)${oerOk ? '' : '. Check the numbers: that is outside the usual range'}.
+note	3017:units-note:1	KEEP	
+note	3019:mf-tier:1	KEEP	
+note	3027:mgmt-note:1	SHORTEN	${h.mgmtPct != null ? 'Set for this asset only.' : 'Starts at the Assumptions rate (' + r(g.mgmt, 1) + '%); type a number to set it for this asset only.'}
+note	3029:rev-note:1	SHORTEN	Price ÷ yearly profit is ${r(v.multiple, 1)}×. Type revenue per month or per year.[i]
