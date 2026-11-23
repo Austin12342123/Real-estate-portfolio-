@@ -16,10 +16,14 @@ jobs:
       fail-fast: false
       matrix:
         group:
-          - { name: iphone-se, projects: '--project=iphone-se-portrait --project=iphone-se-landscape' }
-          - { name: iphone-15, projects: '--project=iphone-15-portrait --project=iphone-15-landscape' }
-          - { name: ipad, projects: '--project=ipad-portrait --project=ipad-landscape' }
-          - { name: ipad-pro, projects: '--project=ipad-pro-portrait --project=ipad-pro-landscape' }
+          - { name: iphone-se-portrait, projects: '--project=iphone-se-portrait' }
+          - { name: iphone-se-landscape, projects: '--project=iphone-se-landscape' }
+          - { name: iphone-15-portrait, projects: '--project=iphone-15-portrait' }
+          - { name: iphone-15-landscape, projects: '--project=iphone-15-landscape' }
+          - { name: ipad-portrait, projects: '--project=ipad-portrait' }
+          - { name: ipad-landscape, projects: '--project=ipad-landscape' }
+          - { name: ipad-pro-portrait, projects: '--project=ipad-pro-portrait' }
+          - { name: ipad-pro-landscape, projects: '--project=ipad-pro-landscape' }
           - { name: desktop, projects: '--project=desktop-1280 --project=desktop-1024 --project=desktop-768' }
     steps:
       - uses: actions/checkout@v4
