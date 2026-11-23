@@ -13,7 +13,7 @@ const where = (page, name, sc) => name + '@' + vwOf(page) + 'x' + page.viewportS
    Each rule is an expect.soft with its K-number in the message, so every failure is still named (screen, size, scheme, element). Merged from 5 loads to 1 to fit the 10-minute CI limit; assertions unchanged. */
 const K42_JS = () => { const bad = []; document.querySelectorAll('#app *').forEach((el) => { if (el.closest('svg') || el.closest('.info')) return; const rc = el.getBoundingClientRect(), s = getComputedStyle(el); if (rc.width < 1 || s.display === 'none') return;
   if ([...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && parseFloat(s.fontSize) < 12) bad.push('small text ' + (el.className || el.tagName) + '=' + s.fontSize);
-  if ((el.tagName === 'INPUT' && !/^(hidden|checkbox|radio|file|range)$/.test(el.type) || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') && parseFloat(s.fontSize) < 16) bad.push('input under 16px (iOS zooms) ' + (el.dataset.p || el.dataset.testid || el.tagName) + '=' + s.fontSize); }); return bad.slice(0, 5); };
+  if ((el.tagName === 'INPUT' && !/^(hidden|checkbox|radio|file|range)$/.test(el.type) || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') && parseFloat(s.fontSize) < 16) bad.push('input under 16px (iOS zooms) ' + (el.dataset.p || el.dataset.testid || el.tagName) + '=' + s.fontSize); }); return [...new Set(bad)].slice(0, 40); /* full unique list (was the first 5) so card M2 sees every element */ };
 for (const name of L.PAGE_NAMES) for (const sc of SCHEMES) {
   test('sweep K39 K40 K41 K42 clipping: ' + name + ' (' + sc + ')', async ({ page }) => {
     await page.emulateMedia({ colorScheme: sc }); await L.goPage(page, name);
