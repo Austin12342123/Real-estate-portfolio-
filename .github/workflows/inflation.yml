@@ -1,0 +1,44 @@
+name: inflation-data
+
+# Spec: docs/inflation-spec.md section 2. Refreshes data/inflation.json and opens a PR to dev.
+# NOTE: the schedule is OFF on purpose (card IF1a). Austin enables it by uncommenting the
+# cron lines below. Until then this runs only on demand (Actions tab, "Run workflow").
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '17 9 11 * *'   # monthly on the 11th, after Cleveland's CPI-day release
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build data/inflation.json
+        env:
+          BLS_USER_AGENT: inflation-data-pipeline (GitHub Actions, ${{ github.repository }})
+        run: node scripts/inflation/build.js "$RUNNER_TEMP/pr-body.md"
+      - name: Open pull request to dev
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- data/inflation.json; then
+            echo "No change in data/inflation.json; no PR."
+            exit 0
+          fi
+          BRANCH="inflation-data-$(date -u +%Y%m%d-%H%M)"
+          git config user.name "inflation-bot"
+          git config user.email "inflation-bot@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add data/inflation.json
+          git commit -m "Refresh inflation data"
+          git push origin "$BRANCH"
+          gh pr create --base dev --head "$BRANCH" --title "Refresh inflation data" --body-file "$RUNNER_TEMP/pr-body.md"
