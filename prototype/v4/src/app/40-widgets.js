@@ -52,7 +52,7 @@
   function timeline(pl) {
     const steps = pl.rows.filter((x) => H(x.id));
     if (!steps.length)
-      return '<p class="note">No planned assets yet. Add one and the trust works out when it can pay for it.</p>';
+      return '<p class="note">No planned assets yet.</p>';
     const fin = steps.filter((x) => x.ok).map((x) => x.end),
       max = Math.max(12, ...fin) * 1.06,
       pc = (m) => (m / max) * 100;
