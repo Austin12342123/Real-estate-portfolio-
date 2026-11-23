@@ -15,5 +15,13 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
   await page.locator('[data-coll]').first().click(); await page.waitForTimeout(200);
   const n = await page.evaluate(() => JSON.parse(localStorage.getItem('rep-v4')).houses.length);
   console.log(n === 5 ? 'PASS stored portfolio kept (5)' : 'FAIL stored portfolio overwritten, now ' + n);
-  await browser.close(); srv.close(); process.exit(n === 5 ? 0 : 1);
+  /* the line: visible after the skipped save, Reload brings back the stored 5 assets */
+  await page.evaluate(() => { location.hash = ''; }); const vis = await page.locator('[data-testid=stale-note]').count();
+  console.log(vis === 1 ? 'PASS the line is shown after the skipped save' : 'FAIL the line is missing (' + vis + ')');
+  let ok2 = vis === 1; if (vis === 1) { await page.locator('[data-testid=stale-reload]').click(); await page.waitForSelector('#app > *'); await page.waitForTimeout(300); const after = await page.evaluate(() => ({ n: JSON.parse(localStorage.getItem('rep-v4')).houses.length, note: !!document.querySelector('[data-testid=stale-note]') })); ok2 = after.n === 5 && !after.note; console.log(ok2 ? 'PASS Reload shows the stored 5-asset portfolio, no line' : 'FAIL after Reload ' + JSON.stringify(after)); }
+  /* storage event: a second tab saves; the first tab shows the line before any edit */
+  const p1 = await ctx.newPage(); await p1.goto(BASE + '/index.html'); await p1.waitForSelector('#app > *'); const p2 = await ctx.newPage(); await p2.goto(BASE + '/index.html'); await p2.waitForSelector('#app > *');
+  await p2.locator('[data-coll]').first().click(); await p2.evaluate(() => { const k = 'rep-v4', s = JSON.parse(localStorage.getItem(k)); s.houses = s.houses.slice(0, 3); localStorage.setItem(k, JSON.stringify(s)); }); await p1.waitForTimeout(400);
+  const ev = await p1.locator('[data-testid=stale-note]').count(); console.log(ev === 1 ? 'PASS storage event shows the line in the other tab' : 'FAIL no line after another tab saved'); 
+  await browser.close(); srv.close(); process.exit(n === 5 && ok2 && ev === 1 ? 0 : 1);
 })();
