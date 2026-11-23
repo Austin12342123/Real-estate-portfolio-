@@ -1,0 +1,789 @@
+{
+ "version": 1,
+ "checkedOn": "2026-11-20",
+ "course": {
+  "modules": [
+   {
+    "id": "m1-basics",
+    "title": "Money basics: how a rental makes you rich",
+    "minutes": 7,
+    "summary": "A rental pays you four ways: cash flow each month, tenants paying down your loan, appreciation over time, and tax breaks. Learn the core words first so every later lesson clicks. Think of the property as a small business with rent coming in and bills going out.",
+    "keyPoints": [
+     "Four profit engines: cash flow, loan paydown, appreciation, tax savings.",
+     "Equity = value minus loan. It grows from paydown and appreciation.",
+     "Gross rent is the top line; expenses and vacancy come out next.",
+     "Leverage magnifies gains and losses alike."
+    ],
+    "vocab": [
+     "gross-rent",
+     "equity",
+     "appreciation",
+     "amortization",
+     "down-payment",
+     "ltv"
+    ],
+    "links": [
+     {
+      "type": "official",
+      "title": "Mortgages key terms",
+      "author": "CFPB",
+      "url": "https://www.consumerfinance.gov/consumer-tools/mortgages/answers/key-terms/",
+      "why": "Neutral glossary for escrow, amortization, balloon and interest-only loans.",
+      "checked": "ok"
+     },
+     {
+      "type": "book",
+      "title": "The Millionaire Real Estate Investor",
+      "author": "Gary Keller, Dave Jenks, Jay Papasan",
+      "url": "https://www.mheducation.com/highered/mhp/product/millionaire-real-estate-investor.html",
+      "why": "Big-picture mindset and long-term wealth models from a classic.",
+      "checked": "ok"
+     },
+     {
+      "type": "video",
+      "title": "How To Buy Your First Rental Property (With Graham Stephan)",
+      "author": "Nate O'Brien",
+      "url": "https://www.youtube.com/watch?v=LxAniFgeCOg",
+      "why": "Beginner walkthrough of buying a first rental, start to finish.",
+      "checked": "ok"
+     }
+    ],
+    "check": {
+     "question": "You owe $180,000 on a house worth $240,000. What is your equity?",
+     "choices": [
+      "$240,000",
+      "$60,000",
+      "$180,000",
+      "$420,000"
+     ],
+     "answer": 1
+    }
+   },
+   {
+    "id": "m2-analyze",
+    "title": "Analyze a deal in 10 minutes",
+    "minutes": 10,
+    "summary": "Run every property through the same funnel: quick screens first, then real math. Estimate rent, subtract vacancy and operating expenses to get NOI, then subtract the mortgage for cash flow. Cap rate compares properties; cash-on-cash shows your return; DSCR shows if a lender will like it.",
+    "keyPoints": [
+     "Screen fast: 1% rule and 50% rule weed out bad deals.",
+     "NOI = rent - vacancy - operating expenses (no mortgage).",
+     "Cap rate = NOI / price. Cash-on-cash = yearly cash flow / cash invested.",
+     "DSCR = NOI / yearly loan payments; aim for 1.2+.",
+     "Budget for CapEx even when nothing is broken."
+    ],
+    "vocab": [
+     "noi",
+     "cap-rate",
+     "cash-flow",
+     "cash-on-cash",
+     "dscr",
+     "one-percent-rule",
+     "fifty-percent-rule",
+     "operating-expenses",
+     "vacancy-rate",
+     "capex"
+    ],
+    "links": [
+     {
+      "type": "book",
+      "title": "What Every Real Estate Investor Needs to Know About Cash Flow",
+      "author": "Frank Gallinelli",
+      "url": "https://www.goodreads.com/book/show/996",
+      "why": "The reference for deal math: NOI, cap rate, DSCR and more.",
+      "checked": "ok"
+     },
+     {
+      "type": "book",
+      "title": "The Book on Rental Property Investing",
+      "author": "Brandon Turner",
+      "url": "https://www.barnesandnoble.com/w/the-book-on-rental-property-investing-brandon-turner/1137246601",
+      "why": "The standard beginner playbook for buy-and-hold rentals.",
+      "checked": "ok"
+     },
+     {
+      "type": "forum",
+      "title": "BiggerPockets Forums",
+      "author": "BiggerPockets community",
+      "url": "https://www.biggerpockets.com/forums",
+      "why": "Ask deal questions and read how others solved the same problem.",
+      "checked": "ok"
+     }
+    ],
+    "check": {
+     "question": "NOI is $12,000 and the price is $200,000. What is the cap rate?",
+     "choices": [
+      "6%",
+      "12%",
+      "1.67%",
+      "16.7%"
+     ],
+     "answer": 0
+    }
+   },
+   {
+    "id": "m3-financing",
+    "title": "Financing and scaling: loans, refis, BRRRR",
+    "minutes": 10,
+    "summary": "Your loan shapes the deal more than almost anything. FHA allows 3.5% down if you live there; conventional needs PMI under 20% down. Avoid loan features that hide risk, like interest-only periods and balloons. Later, refinancing and BRRRR turn built-up equity into the down payment for the next property.",
+    "keyPoints": [
+     "FHA: 3.5% down, must live there, 1-4 units.",
+     "Conventional under 20% down adds PMI until equity builds.",
+     "Interest-only and balloon loans lower payments now, raise risk later.",
+     "Cash-out refi turns equity into cash for the next deal.",
+     "BRRRR: buy below value, rehab, rent, refi, repeat. LLCs come later."
+    ],
+    "vocab": [
+     "fha-loan",
+     "conventional-loan",
+     "pmi",
+     "piti",
+     "escrow",
+     "interest-only-loan",
+     "balloon-payment",
+     "refinance",
+     "cash-out-refi",
+     "arv",
+     "brrrr",
+     "llc",
+     "appraisal"
+    ],
+    "links": [
+     {
+      "type": "official",
+      "title": "Understand the different kinds of loans available",
+      "author": "CFPB",
+      "url": "https://www.consumerfinance.gov/owning-a-home/explore/understand-the-different-kinds-of-loans-available/",
+      "why": "Conventional vs FHA vs VA, fixed vs adjustable, side by side.",
+      "checked": "ok"
+     },
+     {
+      "type": "official",
+      "title": "FHA loans",
+      "author": "CFPB",
+      "url": "https://www.consumerfinance.gov/owning-a-home/fha-loans/",
+      "why": "Low-down-payment loan most house hackers start with.",
+      "checked": "ok"
+     },
+     {
+      "type": "book",
+      "title": "Buy, Rehab, Rent, Refinance, Repeat",
+      "author": "David Greene",
+      "url": "https://biggerpockets.com/brrrr-book",
+      "why": "Step-by-step guide to recycling cash into the next property.",
+      "checked": "ok"
+     }
+    ],
+    "check": {
+     "question": "Which loan lets you buy with 3.5% down, as long as you live in the home?",
+     "choices": [
+      "Interest-only loan",
+      "FHA loan",
+      "Balloon loan",
+      "Cash-out refinance"
+     ],
+     "answer": 1
+    }
+   },
+   {
+    "id": "m4-house-hack",
+    "title": "Your first property: the house hack",
+    "minutes": 8,
+    "summary": "House hacking means you live in the home and rent the other rooms or units. Owner-occupied loans keep the down payment small, and roommates cover most of the mortgage. Get pre-approved, know your DTI, run the numbers with your own room left empty, and plan closing costs and reserves before you offer.",
+    "keyPoints": [
+     "Rent the other rooms; your housing cost drops toward zero.",
+     "Lenders check DTI; pay down debts before applying.",
+     "Run numbers as if you move out later: is it still a good rental?",
+     "Budget closing costs (a few % of price) on top of the down payment.",
+     "Get inspection and title checked before closing."
+    ],
+    "vocab": [
+     "house-hacking",
+     "dti",
+     "closing-costs",
+     "title",
+     "lien",
+     "reserves"
+    ],
+    "links": [
+     {
+      "type": "book",
+      "title": "The House Hacking Strategy",
+      "author": "Craig Curelop",
+      "url": "https://www.biggerpockets.com/house-hacking-book",
+      "why": "Whole book on your exact first move: live in it, rent rooms.",
+      "checked": "ok"
+     },
+     {
+      "type": "podcast",
+      "title": "Real Estate Rookie",
+      "author": "BiggerPockets (Ashley Kehr, Tony J. Robinson)",
+      "url": "https://podcasts.apple.com/us/podcast/real-estate-rookie/id1499646507",
+      "why": "Built for people buying their first one or two properties.",
+      "checked": "ok"
+     },
+     {
+      "type": "official",
+      "title": "What is a debt-to-income ratio?",
+      "author": "CFPB",
+      "url": "https://www.consumerfinance.gov/ask-cfpb/what-is-a-debt-to-income-ratio-why-is-the-43-debt-to-income-ratio-important-en-1791/",
+      "why": "The number lenders check first to see how much you can borrow.",
+      "checked": "ok"
+     }
+    ],
+    "check": {
+     "question": "Your payment is $2,200 and you rent 3 rooms at $650. What do you pay to live there?",
+     "choices": [
+      "$2,200",
+      "$1,550",
+      "$250",
+      "$0"
+     ],
+     "answer": 2
+    }
+   },
+   {
+    "id": "m5-operations",
+    "title": "Tenants, operations and risk",
+    "minutes": 9,
+    "summary": "Good operations protect cash flow. Screen every applicant with the same written criteria and follow fair housing law. Use a written lease, collect a deposit, and track everyone on a rent roll. Fix small problems fast. Keep reserves and proper insurance, and do not borrow so much that one vacancy breaks you.",
+    "keyPoints": [
+     "Same written screening rules for everyone: income, history, references.",
+     "Fair Housing Act bans discrimination on 7 protected classes.",
+     "Lease + deposit + rent roll = clean records.",
+     "Reserves cover vacancy and repairs; aim for months, not weeks.",
+     "Over-leverage is the classic way investors lose properties."
+    ],
+    "vocab": [
+     "rent-roll",
+     "security-deposit",
+     "property-manager",
+     "reserves",
+     "vacancy-rate",
+     "nnn"
+    ],
+    "links": [
+     {
+      "type": "official",
+      "title": "Housing Discrimination Under the Fair Housing Act",
+      "author": "HUD",
+      "url": "https://hud.gov/helping-americans/fair-housing-act-overview",
+      "why": "The federal rules every landlord must follow when screening.",
+      "checked": "ok"
+     },
+     {
+      "type": "podcast",
+      "title": "BiggerPockets Real Estate Podcast",
+      "author": "BiggerPockets",
+      "url": "https://podcasts.apple.com/us/podcast/biggerpockets-real-estate-podcast/id594419649",
+      "why": "Long-running show of real investors walking through real deals.",
+      "checked": "ok"
+     },
+     {
+      "type": "channel",
+      "title": "Coach Carson",
+      "author": "Chad Carson",
+      "url": "https://www.youtube.com/channel/UCMB4AigBkfj-TFKLDsXcOTg",
+      "why": "Calm, numbers-first advice on small, low-stress rental portfolios.",
+      "checked": "search-only"
+     }
+    ],
+    "check": {
+     "question": "Which is the best defense against a surprise $6,000 repair plus a vacant room?",
+     "choices": [
+      "A higher-LTV loan",
+      "Cash reserves",
+      "Raising rent mid-lease",
+      "Skipping insurance"
+     ],
+     "answer": 1
+    }
+   },
+   {
+    "id": "m6-taxes",
+    "title": "Taxes and records",
+    "minutes": 8,
+    "summary": "Rental income and expenses go on Schedule E. The building, not the land, is depreciated over 27.5 years, which can shelter cash flow on paper. When you rent rooms in your own home, split shared costs between personal and rental use. Keep receipts and mileage. A 1031 exchange can defer gains on investment property.",
+    "keyPoints": [
+     "Report rental income and expenses on Schedule E.",
+     "Depreciate the building over 27.5 years; land never depreciates.",
+     "Renting rooms in your home: split costs by the rented share.",
+     "Save every receipt, lease and mileage log.",
+     "1031 exchange: 45 days to identify, 180 to close."
+    ],
+    "vocab": [
+     "schedule-e",
+     "depreciation",
+     "cost-basis",
+     "1031-exchange"
+    ],
+    "links": [
+     {
+      "type": "official",
+      "title": "Publication 527: Residential Rental Property",
+      "author": "IRS",
+      "url": "https://www.irs.gov/publications/p527",
+      "why": "Primary source on rental income, expenses and renting part of your home.",
+      "checked": "ok"
+     },
+     {
+      "type": "official",
+      "title": "Publication 946: How To Depreciate Property",
+      "author": "IRS",
+      "url": "https://www.irs.gov/publications/p946",
+      "why": "Official depreciation rules, including the 27.5-year schedule.",
+      "checked": "ok"
+     },
+     {
+      "type": "official",
+      "title": "Instructions for Schedule E (Form 1040)",
+      "author": "IRS",
+      "url": "https://www.irs.gov/node/40046",
+      "why": "How rental income and expenses land on your tax return.",
+      "checked": "ok"
+     }
+    ],
+    "check": {
+     "question": "Building value is $220,000 (land excluded). About how much depreciation per year?",
+     "choices": [
+      "$22,000",
+      "$8,000",
+      "$5,500",
+      "$27,500"
+     ],
+     "answer": 1
+    }
+   }
+  ]
+ },
+ "board": [
+  {
+   "type": "podcast",
+   "title": "BiggerPockets Real Estate Podcast",
+   "author": "BiggerPockets",
+   "url": "https://podcasts.apple.com/us/podcast/biggerpockets-real-estate-podcast/id594419649",
+   "why": "Long-running show of real investors walking through real deals.",
+   "checked": "ok",
+   "tags": [
+    "podcast",
+    "deals"
+   ]
+  },
+  {
+   "type": "podcast",
+   "title": "Real Estate Rookie",
+   "author": "BiggerPockets (Ashley Kehr, Tony J. Robinson)",
+   "url": "https://podcasts.apple.com/us/podcast/real-estate-rookie/id1499646507",
+   "why": "Built for people buying their first one or two properties.",
+   "checked": "ok",
+   "tags": [
+    "podcast",
+    "beginner"
+   ]
+  },
+  {
+   "type": "forum",
+   "title": "BiggerPockets Forums",
+   "author": "BiggerPockets community",
+   "url": "https://www.biggerpockets.com/forums",
+   "why": "Ask deal questions and read how others solved the same problem.",
+   "checked": "ok",
+   "tags": [
+    "community"
+   ]
+  },
+  {
+   "type": "book",
+   "title": "The Book on Rental Property Investing",
+   "author": "Brandon Turner",
+   "url": "https://www.barnesandnoble.com/w/the-book-on-rental-property-investing-brandon-turner/1137246601",
+   "why": "The standard beginner playbook for buy-and-hold rentals.",
+   "checked": "ok",
+   "tags": [
+    "book",
+    "beginner"
+   ]
+  },
+  {
+   "type": "book",
+   "title": "The House Hacking Strategy",
+   "author": "Craig Curelop",
+   "url": "https://www.biggerpockets.com/house-hacking-book",
+   "why": "Whole book on your exact first move: live in it, rent rooms.",
+   "checked": "ok",
+   "tags": [
+    "book",
+    "house-hacking"
+   ]
+  },
+  {
+   "type": "book",
+   "title": "Buy, Rehab, Rent, Refinance, Repeat",
+   "author": "David Greene",
+   "url": "https://biggerpockets.com/brrrr-book",
+   "why": "Step-by-step guide to recycling cash into the next property.",
+   "checked": "ok",
+   "tags": [
+    "book",
+    "scaling"
+   ]
+  },
+  {
+   "type": "book",
+   "title": "The Millionaire Real Estate Investor",
+   "author": "Gary Keller, Dave Jenks, Jay Papasan",
+   "url": "https://www.mheducation.com/highered/mhp/product/millionaire-real-estate-investor.html",
+   "why": "Big-picture mindset and long-term wealth models from a classic.",
+   "checked": "ok",
+   "tags": [
+    "book",
+    "mindset"
+   ]
+  },
+  {
+   "type": "book",
+   "title": "What Every Real Estate Investor Needs to Know About Cash Flow",
+   "author": "Frank Gallinelli",
+   "url": "https://www.goodreads.com/book/show/996",
+   "why": "The reference for deal math: NOI, cap rate, DSCR and more.",
+   "checked": "ok",
+   "tags": [
+    "book",
+    "deal-math"
+   ]
+  },
+  {
+   "type": "official",
+   "title": "Publication 527: Residential Rental Property",
+   "author": "IRS",
+   "url": "https://www.irs.gov/publications/p527",
+   "why": "Primary source on rental income, expenses and renting part of your home.",
+   "checked": "ok",
+   "tags": [
+    "official",
+    "taxes"
+   ]
+  },
+  {
+   "type": "official",
+   "title": "Like-Kind Exchanges: Real Estate Tax Tips",
+   "author": "IRS",
+   "url": "https://www.irs.gov/businesses/small-businesses-self-employed/like-kind-exchanges-real-estate-tax-tips",
+   "why": "Plain IRS overview of the 1031 exchange.",
+   "checked": "ok",
+   "tags": [
+    "official",
+    "taxes"
+   ]
+  },
+  {
+   "type": "official",
+   "title": "FHA loans",
+   "author": "CFPB",
+   "url": "https://www.consumerfinance.gov/owning-a-home/fha-loans/",
+   "why": "Low-down-payment loan most house hackers start with.",
+   "checked": "ok",
+   "tags": [
+    "official",
+    "financing"
+   ]
+  },
+  {
+   "type": "official",
+   "title": "Housing Discrimination Under the Fair Housing Act",
+   "author": "HUD",
+   "url": "https://hud.gov/helping-americans/fair-housing-act-overview",
+   "why": "The federal rules every landlord must follow when screening.",
+   "checked": "ok",
+   "tags": [
+    "official",
+    "tenants"
+   ]
+  },
+  {
+   "type": "channel",
+   "title": "BiggerPockets on YouTube",
+   "author": "BiggerPockets",
+   "url": "https://www.youtube.com/c/biggerpockets",
+   "why": "Free deal breakdowns, rookie episodes and strategy explainers.",
+   "checked": "search-only",
+   "tags": [
+    "video",
+    "beginner"
+   ]
+  },
+  {
+   "type": "channel",
+   "title": "Graham Stephan",
+   "author": "Graham Stephan",
+   "url": "https://www.youtube.com/@GrahamStephan",
+   "why": "Agent-turned-investor; clear takes on rentals and personal finance.",
+   "checked": "search-only",
+   "tags": [
+    "video",
+    "personal-finance"
+   ]
+  },
+  {
+   "type": "channel",
+   "title": "Coach Carson",
+   "author": "Chad Carson",
+   "url": "https://www.youtube.com/channel/UCMB4AigBkfj-TFKLDsXcOTg",
+   "why": "Calm, numbers-first advice on small, low-stress rental portfolios.",
+   "checked": "search-only",
+   "tags": [
+    "video",
+    "strategy"
+   ]
+  }
+ ],
+ "vocab": [
+  {
+   "id": "gross-rent",
+   "term": "Gross rent",
+   "definition": "All rent the property could collect in a period before any expenses or vacancy.",
+   "example": "3 rooms x $700 x 12 = $25,200 a year."
+  },
+  {
+   "id": "vacancy-rate",
+   "term": "Vacancy rate",
+   "definition": "Share of time or rent lost because a unit or room sits empty.",
+   "example": "Empty 1 month out of 12 = 8.3% vacancy."
+  },
+  {
+   "id": "operating-expenses",
+   "term": "Operating expenses",
+   "definition": "Costs to run the property: taxes, insurance, repairs, utilities, management. Mortgage payments are not included.",
+   "example": "$300 taxes + $150 insurance + $200 repairs = $650/mo."
+  },
+  {
+   "id": "noi",
+   "term": "NOI (net operating income)",
+   "definition": "Income left after vacancy and operating expenses, before any loan payments.",
+   "example": "$24,000 rent - $9,600 expenses = $14,400 NOI."
+  },
+  {
+   "id": "cash-flow",
+   "term": "Cash flow",
+   "definition": "Money left each month after every expense and the mortgage payment.",
+   "example": "$2,000 rent - $800 expenses - $1,000 mortgage = $200/mo."
+  },
+  {
+   "id": "cap-rate",
+   "term": "Cap rate",
+   "definition": "NOI divided by price. Compares properties as if bought with all cash.",
+   "example": "$14,400 NOI / $240,000 price = 6%."
+  },
+  {
+   "id": "cash-on-cash",
+   "term": "Cash-on-cash return",
+   "definition": "Yearly cash flow divided by the cash you actually put in.",
+   "example": "$2,400 a year / $30,000 invested = 8%."
+  },
+  {
+   "id": "dscr",
+   "term": "DSCR (debt service coverage ratio)",
+   "definition": "NOI divided by yearly loan payments. Most lenders want at least 1.2 to 1.25.",
+   "example": "$14,400 NOI / $12,000 payments = 1.2."
+  },
+  {
+   "id": "one-percent-rule",
+   "term": "1% rule",
+   "definition": "Quick screen: monthly rent should be at least 1% of the purchase price. A filter, not a verdict.",
+   "example": "$250,000 house should rent for $2,500+/mo."
+  },
+  {
+   "id": "fifty-percent-rule",
+   "term": "50% rule",
+   "definition": "Rough guess that operating expenses eat about half of gross rent over time, excluding the mortgage.",
+   "example": "$2,400 rent -> plan on about $1,200 in expenses."
+  },
+  {
+   "id": "capex",
+   "term": "CapEx (capital expenditures)",
+   "definition": "Big, infrequent replacements like a roof, HVAC or water heater. Save for them monthly.",
+   "example": "$12,000 roof / 20 years = $50/mo set aside."
+  },
+  {
+   "id": "reserves",
+   "term": "Reserves",
+   "definition": "Cash kept aside for vacancies, repairs and surprises so one bad month does not sink you.",
+   "example": "6 months x $2,300 costs = $13,800 reserve."
+  },
+  {
+   "id": "equity",
+   "term": "Equity",
+   "definition": "The part of the property you own: value minus what you owe.",
+   "example": "$260,000 value - $200,000 loan = $60,000 equity."
+  },
+  {
+   "id": "appreciation",
+   "term": "Appreciation",
+   "definition": "Increase in a property's value over time. Nice when it happens, risky to count on.",
+   "example": "$250,000 -> $260,000 is 4% appreciation."
+  },
+  {
+   "id": "ltv",
+   "term": "LTV (loan-to-value)",
+   "definition": "Loan balance divided by property value. Lower LTV means more equity and less risk for the lender.",
+   "example": "$200,000 loan / $250,000 value = 80% LTV."
+  },
+  {
+   "id": "dti",
+   "term": "Debt-to-income ratio (DTI)",
+   "definition": "Monthly debt payments divided by gross monthly income. Lenders use it to cap how much you can borrow.",
+   "example": "$1,800 debts / $5,000 income = 36%."
+  },
+  {
+   "id": "down-payment",
+   "term": "Down payment",
+   "definition": "Cash you pay upfront toward the price. The loan covers the rest.",
+   "example": "20% of $250,000 = $50,000."
+  },
+  {
+   "id": "conventional-loan",
+   "term": "Conventional loan",
+   "definition": "Mortgage not backed by a government agency. Usually needs stronger credit; PMI applies under 20% down."
+  },
+  {
+   "id": "fha-loan",
+   "term": "FHA loan",
+   "definition": "Government-insured mortgage with as little as 3.5% down. You must live in the home; 1-4 units allowed.",
+   "example": "3.5% of $300,000 = $10,500 down."
+  },
+  {
+   "id": "pmi",
+   "term": "PMI (private mortgage insurance)",
+   "definition": "Insurance protecting the lender on conventional loans with under 20% down. You pay it until enough equity builds."
+  },
+  {
+   "id": "amortization",
+   "term": "Amortization",
+   "definition": "Paying a loan down on a schedule. Early payments are mostly interest; later ones mostly principal.",
+   "example": "$200k at 6.5%: payment $1,264, first month $1,083 is interest."
+  },
+  {
+   "id": "piti",
+   "term": "PITI",
+   "definition": "Principal, interest, taxes and insurance: the full monthly housing payment lenders look at.",
+   "example": "$1,264 + $300 tax + $150 insurance = $1,714."
+  },
+  {
+   "id": "escrow",
+   "term": "Escrow",
+   "definition": "Account your lender uses to collect and pay your property taxes and insurance for you.",
+   "example": "$3,600 taxes + $1,800 insurance = $450/mo into escrow."
+  },
+  {
+   "id": "interest-only-loan",
+   "term": "Interest-only loan",
+   "definition": "Loan where early payments cover only interest, so the balance does not shrink.",
+   "example": "$200,000 at 7% = $1,167/mo; still owe $200,000."
+  },
+  {
+   "id": "balloon-payment",
+   "term": "Balloon payment",
+   "definition": "A large lump sum due at the end of a loan whose regular payments did not pay it off.",
+   "example": "5-year loan ends with $180,000 due at once."
+  },
+  {
+   "id": "refinance",
+   "term": "Refinance",
+   "definition": "Replacing your loan with a new one, usually for a lower rate or different term.",
+   "example": "Drop 7% to 6% on $200k: saves about $130/mo."
+  },
+  {
+   "id": "cash-out-refi",
+   "term": "Cash-out refinance",
+   "definition": "New, larger loan that pays off the old one and hands you the difference in cash.",
+   "example": "75% of $300k = $225k loan - $150k owed = $75k cash before costs."
+  },
+  {
+   "id": "appraisal",
+   "term": "Appraisal",
+   "definition": "A licensed professional's estimate of a property's value, ordered for the lender."
+  },
+  {
+   "id": "arv",
+   "term": "ARV (after-repair value)",
+   "definition": "What a property should be worth once renovations are done. The key number in BRRRR.",
+   "example": "Buy $150k + $40k rehab, ARV $250k."
+  },
+  {
+   "id": "brrrr",
+   "term": "BRRRR",
+   "definition": "Buy, Rehab, Rent, Refinance, Repeat: add value, refinance to pull cash out, reuse it on the next deal.",
+   "example": "75% of $250k ARV = $187,500 back out."
+  },
+  {
+   "id": "house-hacking",
+   "term": "House hacking",
+   "definition": "Living in a property you own while renting the other rooms or units to cover the mortgage.",
+   "example": "Rent 3 rooms at $700 vs $2,300 payment: you pay $200."
+  },
+  {
+   "id": "rent-roll",
+   "term": "Rent roll",
+   "definition": "List of every tenant with rent, deposit, lease dates and balance owed."
+  },
+  {
+   "id": "security-deposit",
+   "term": "Security deposit",
+   "definition": "Money a tenant pays upfront to cover damage or unpaid rent. State law sets limits and return deadlines.",
+   "example": "One month's rent: $700."
+  },
+  {
+   "id": "property-manager",
+   "term": "Property manager",
+   "definition": "Person or company you pay to handle tenants, rent and repairs. Often 8-10% of rent.",
+   "example": "10% of $2,100 = $210/mo."
+  },
+  {
+   "id": "lien",
+   "term": "Lien",
+   "definition": "A legal claim on property for a debt, such as a mortgage or unpaid taxes. It must be cleared to sell cleanly."
+  },
+  {
+   "id": "title",
+   "term": "Title",
+   "definition": "Legal ownership of a property. A title search checks for liens or ownership problems before you buy."
+  },
+  {
+   "id": "closing-costs",
+   "term": "Closing costs",
+   "definition": "Fees paid to finish a purchase or refinance: lender, title, appraisal, recording and prepaid items.",
+   "example": "3% of $300,000 = $9,000."
+  },
+  {
+   "id": "cost-basis",
+   "term": "Cost basis",
+   "definition": "What you paid for a property plus certain purchase costs and improvements. Used for depreciation and gains."
+  },
+  {
+   "id": "depreciation",
+   "term": "Depreciation",
+   "definition": "Yearly tax deduction for wear on the building, not the land: 27.5 years for rentals. Taxed back partly when you sell.",
+   "example": "$240,000 building / 27.5 = $8,727 a year."
+  },
+  {
+   "id": "schedule-e",
+   "term": "Schedule E",
+   "definition": "The IRS form where you report rental income and expenses each year."
+  },
+  {
+   "id": "1031-exchange",
+   "term": "1031 exchange",
+   "definition": "Swap one investment property for another and defer the tax on the gain, if strict deadlines are met.",
+   "example": "Name new property in 45 days, close within 180."
+  },
+  {
+   "id": "llc",
+   "term": "LLC",
+   "definition": "A legal entity that can own property and may limit personal liability. Costs fees and can complicate loans."
+  },
+  {
+   "id": "nnn",
+   "term": "Triple net (NNN)",
+   "definition": "Lease where the tenant pays rent plus taxes, insurance and maintenance. Common in commercial real estate."
+  }
+ ]
+}
