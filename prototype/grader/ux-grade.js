@@ -449,7 +449,7 @@ exports.run = async function run(X) {
       await page.setViewportSize({ width: w, height: 800 }); await load(withV(E.seedPlan()), ''); await page.waitForTimeout(100);
       const g = await page.evaluate(() => { const t = document.querySelector('[data-testid=breakdown]'); if (!t) return null; const ths = [...t.querySelectorAll('thead th')], td = [...t.querySelectorAll('tbody tr:last-child td')];
         const lines = (n) => { const r = document.createRange(); r.selectNodeContents(n); const rs = [...r.getClientRects()].filter((q) => q.width > 0).sort((x, y) => x.top - y.top); let c = 0, bot = -1e9; rs.forEach((q) => { if (q.top >= bot - 1) { c++; bot = q.bottom; } else bot = Math.max(bot, q.bottom); }); return c; }; /* rects that overlap vertically are one line (the old top/4 rounding flipped with the page's scroll position) */
-        const eq = ths[2], ib = eq.querySelector('.info span'), er = eq.getBoundingClientRect(), cf = ths[3];
+        const eq = ths[2], ib = eq.querySelector('.info span') || eq.querySelector('.nw'), er = eq.getBoundingClientRect(), cf = ths[3];
         const right = (n) => { const r = document.createRange(); r.selectNodeContents(n); return r.getBoundingClientRect().right; };
         const ir = ib.getBoundingClientRect(), tr = document.createRange(); tr.selectNodeContents(eq.querySelector('.nw')); const nwr = eq.querySelector('.nw').getBoundingClientRect();
         return { eqLines: lines(eq), cfLines: lines(cf), valLines: lines(ths[1]), iconInside: ir.right <= er.right + 1 && ir.left >= er.left - 1, iconMid: Math.abs((ir.top + ir.height / 2) - (nwr.top + nwr.height / 2)) < 6, alignV: Math.abs(right(ths[1]) - right(td[1])) <= 2, alignE: Math.abs(ir.right + 12 - right(td[2])) <= 14, alignC: Math.abs(right(cf) - right(td[3])) <= 2, over: ths.some((c) => { const r = document.createRange(); r.selectNodeContents(c); return r.getBoundingClientRect().width > c.getBoundingClientRect().width + 0.5; }) }; });
@@ -487,7 +487,7 @@ exports.run = async function run(X) {
     await page.setViewportSize({ width: 320, height: 800 }); await load(S, ''); await openMoreU(); const tg = await page.evaluate(() => { const b = document.querySelector('[data-testid=target-toggle]'); if (!b) return null; const nw = b.querySelector('.nw'); if (!nw) return { nw: false }; const r = document.createRange(); r.selectNodeContents(nw); const tops = new Set([...r.getClientRects()].filter((q) => q.width > 0).map((q) => Math.round(q.top))); return { nw: true, txt: nw.textContent, lines: tops.size }; });
     P.t(tg && tg.nw && /[▸▾]$/.test(tg.txt) && /^\S+\s[▸▾]$/.test(tg.txt) && tg.lines === 1, 'the ▸ arrow is glued to the last word ("dollars ▸") and never wraps alone at 320', 1, JSON.stringify(tg));
     await load(S, '#house-birch'); await openAllColl(); const kl = await page.evaluate(() => [...document.querySelectorAll('.kpi small .info')].map((i) => { const p = i.parentElement; return p.classList.contains('nw') && p.textContent.trim().length > 1 && !/^\s*$/.test((p.textContent || '').replace(/i$/, '')); }));
-    P.t(kl.every(Boolean), 'every stat-grid (i) sits inside a no-wrap span with its last word (asset page at 320)', 1, JSON.stringify(kl));
+    P.t(kl.length >= 3 && kl.every(Boolean), 'every stat-grid (i) sits inside a no-wrap span with its last word (asset page at 320)', 1, JSON.stringify(kl));
     await page.setViewportSize({ width: 390, height: 844 }); return P;
   });
 

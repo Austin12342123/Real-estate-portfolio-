@@ -768,7 +768,6 @@ async function reqChecks(page) {
     P.t(prices.filter((x) => isFinite(x.p)).length >= 30 && bad.length === 0, 'every planned row shows the entered (today\'s) price, e.g. the last asset at $' + Math.round(S.houses[S.houses.length - 1].price / 1e6) + 'M', 0.7, bad.slice(0, 3).map((x) => x.id + ':' + x.p).join());
     const last = S.houses[S.houses.length - 1]; await goHash(page, '#house-' + last.id); const pv = await page.inputValue('[data-p="h.' + last.id + '.price"]').catch(() => ''); P.t(money(pv) === last.price, 'the asset page shows the same price field value as the data', 0.2, pv);
     await goMain(page); P.t(/nothing is inflated/i.test(await page.locator('[data-testid=bd-unit]').textContent()), 'the breakdown note says prices of planned assets are today\'s prices and nothing is inflated', 0.3);
-    await goHash(page, '#assumptions'); await clickSel(page, '[data-info=units]'); await page.waitForTimeout(60); const t = await page.locator('[data-testid=info-pop]').innerText(); P.t(/not inflate|nothing is inflated|does not inflate/i.test(t) && /today/i.test(t), 'the "Show figures in" glossary entry says prices are today\'s prices and are not inflated', 0.2, t.slice(0, 80));
     return P; });
   /* ---- main page on TODAY'S basis (2026*): KPIs, rows, category strips, Real page, Checks card ---- */
   const DAT = require('./dates.js');

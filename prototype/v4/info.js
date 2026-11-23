@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'9c7bcc03'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{info:'018fa2cf'});/*ENDSTAMP*/
 /* Plain-language definitions shown by the "i" buttons. t = title, b = what it means, e = a short example (optional).
    Keep each one short and free of jargon. Figures marked "typical" are rules of thumb, not guarantees. */
 (function (root) {
@@ -42,7 +42,6 @@
     planned: { t: 'Planned expenses', b: "Taken from your cash in the month you pick.", },
     capital: { t: 'Outside capital', b: "Added to your cash in the month you pick.", },
     wage: { t: 'Hourly wage', b: "Before tax. The app multiplies it by your hours and weeks. Enter tips separately.", },
-    hours: { t: 'Hours per week', b: "Your job plus businesses you run, at the plan's busiest month. Amber above 70 hours.", },
     taxrate: { t: 'Tax rate', b: "Leave blank for a rough U.S. estimate with no state tax. Type a number to use your own.", },
     jobend: { t: 'How long you will do this job', b: "Months from today. Leave blank if the job has no end date.", },
     jobstart: { t: 'When the job starts', b: "Months from today. 0 means you already have the job.", },
@@ -57,7 +56,7 @@
     buypos: { t: 'Buy position', b: 'Where this asset sits in the buy order, counted across homes, commercial properties and businesses together: 1 is bought first. Type a number and the asset moves there, even past other types; the others shift and every number is worked out again. An asset is never bought before the ones above it.', e: 'With 5 planned, type 1 on the third asset and it is bought first; the old first and second become second and third.' },
     planpace: { t: 'Last purchase', b: "A Plan timing check appears only when the last purchase is late or an asset is never funded.", },
     cashprofit: { t: 'Cash profit', b: "After selling costs, the loan and liens, tax on the sale, and the cash you put in.", e: 'Sold for $180,000; $11,000 selling costs, $90,000 loan, $7,000 tax; you put in $60,000: cash profit $12,000.' },
-    revenue: { t: 'Total revenue', b: "Type per month or per year, like 100k/month or 'All the money the business takes in from customers, before any of its costs. Type it per month or per year: 1,200,000/yr, 100k/month, 90000 mo, $1.2M per year. With no period it counts as per month, and the box always shows the monthly amount after you leave it.'.2M per year. No period means per month.", e: '1,200,000/yr becomes 100,000 a month.' },
+    revenue: { t: 'Total revenue', b: "Type per month or per year, like 100k/month or $1.2M per year. No period means per month.", e: '1,200,000/yr becomes 100,000 a month.' },
     calc: { t: 'Math in a number box', b: "Type math like 650*3 or (2000-300)/2. Incomplete math keeps the last good number and shows Check the math.", e: 'Rent of $650 for each of 3 people: type 650*3 and it becomes 1,950.' },
     unitcount: { t: "Number of units", b: "From 2 to 500. Rent, tax and insurance start at typical amounts for that size.", e: "A fourplex is 4 units. A Section 8 pack of 5 houses is 5 units." },
     mfpack: { t: "Building or pack of houses", b: "A pack is several separate houses, financed with a blanket loan or separate investor loans, not as a building.", e: "Five houses on five streets are a pack. A 12-unit building is a building." },
