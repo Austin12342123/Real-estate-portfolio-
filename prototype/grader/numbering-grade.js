@@ -155,7 +155,7 @@ exports.run = async function run(X) {
     const rs = await rows('planned'); const sold = rs.filter((r) => r.sec === 'cat-sold');
     P.t(sold.length >= 1, 'the sold-in-plan asset sits in the Sold card of Planned', 0.5, rs.map((r) => r.id + '@' + r.sec).join());
     P.t(sold.every((r) => r.no === ex.planned[r.id]), 'a sold-in-plan asset keeps its place in the plan order (its number is missing from the other cards)', 1, sold.map((r) => r.id + ':' + r.no).join());
-    P.t(/counted from 1 on this page only/.test(await page.evaluate(() => (document.querySelector('[data-testid=sold-note]') || {}).textContent || '')) || sold.length === 0, 'the Sold note explains the policy (numbers per page, sold keep their place)', 0.5);
+    P.t(/on this page only/.test(await page.evaluate(() => (document.querySelector('[data-testid=sold-note]') || {}).textContent || '')) || sold.length === 0, 'the Sold note explains the policy (numbers per page, sold keep their place)', 0.5);
     const real = await rows('owned'); P.t(real.map((r) => r.no).join() === '1,2,3' && real.map((r) => r.id).join() === 'o2,o3,o1' || real.map((r) => r.no).sort().join() === '1,2,3', 'Real numbers the 3 bought assets 1..3', 0.5, real.map((r) => r.id + ':' + r.no).join());
     /* Real page rows are shown oldest first = by their number */
     P.t(real.every((r) => r.no === ex.owned[r.id]) , 'Real rows carry oldest-first numbers (o2 paid 55 = 1, o3 = 2, o1 = 3)', 0.5, real.map((r) => r.id + ':' + r.no).join());

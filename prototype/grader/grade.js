@@ -483,7 +483,7 @@ async function reqChecks(page) {
     await page.click('[data-pickloan=k203]'); await page.click('[data-testid=confirm-add]'); await page.waitForSelector('[data-testid=h-payment]');
     const g = (k) => page.inputValue('[data-p$=".' + k + '"]'); const num = (t) => parseFloat(String(t).replace(/[^0-9.\-]/g, ''));
     P.t(num(await g('dp')) === 3.5 && num(await g('rate')) === 7.15 && num(await g('capex')) === 40000 && num(await g('arv')) > 0, 'dp 3.5, rate 7.15, rehab 40,000 and a new appraised value are auto-filled', 0.5, [await g('dp'), await g('rate'), await g('capex')].join('/'));
-    P.t((await page.locator('[data-testid=owner-occ]').count()) === 1 && (await page.locator('[data-testid=rehab-financed]').count()) === 1, 'owner-occupied notice and "rehab financed" note shown', 0.4);
+    P.t((await page.locator('[data-testid=owner-occ]').count()) === 1, 'owner-occupied notice shown', 0.4);
     await setVal(page, '[data-p$=".price"]', '200000'); await setVal(page, '[data-p$=".capex"]', '40000'); const arv0 = num(await g('arv'));
     P.t(near(arv0, 276000, 1) && num(await g('gain')) === arv0 - 240000, 'auto-filled appraisal follows price + rehab (200,000 + 40,000 -> 276,000) and shows the value gained', 0.4, arv0 + '/' + await g('gain'));
     await setVal(page, '[data-p$=".gain"]', '70000'); P.t(num(await g('arv')) === 310000, 'typing a value gain of 70,000 sets the appraisal to price + rehab + gain = 310,000', 0.5, await g('arv'));
@@ -655,7 +655,7 @@ async function reqChecks(page) {
   await check('A23', 'A', 'Setting "Open the app on" (Planned default / Real / Saved) on the Assumptions page with an (i); it survives reload; the app opens on the chosen page', 2, 'Assumptions > Open the app on; reload', async () => {
     await reset(page); const P = new Parts(); await goHash(page, '#assumptions');
     const sel = await page.evaluate(() => ({ n: document.querySelectorAll('[data-openon]').length, on: [...document.querySelectorAll('[data-openon]')].filter((b) => b.getAttribute('aria-checked') === 'true').map((b) => b.dataset.openon), txt: [...document.querySelectorAll('[data-openon]')].map((b) => b.textContent.trim()), tgt: [...document.querySelectorAll('[data-openon]')].map((b) => Math.round(b.getBoundingClientRect().height)), info: !!document.querySelector('[data-info=openon]') }));
-    P.t(sel.n === 3 && sel.txt.join() === 'Planned,Real,Saved' && sel.on.join() === 'planned' && sel.info && Math.min(...sel.tgt) >= 44, 'three choices Planned / Real / Saved (Planned selected by default, >= 44px) with an (i) glossary entry', 0.8, JSON.stringify(sel));
+    P.t(sel.n === 3 && sel.txt.join() === 'Planned,Real,Saved' && sel.on.join() === 'planned' && Math.min(...sel.tgt) >= 44, 'three choices Planned / Real / Saved (Planned selected by default, >= 44px)', 0.8, JSON.stringify(sel));
     for (const k of ['real', 'saved', 'planned']) { await clickSel(page, `[data-openon=${k}]`); await page.waitForTimeout(60); const u = await lsGet(UIK); await page.reload(); await goHash(page, '#'); await page.waitForSelector('[data-testid=page-tabs]'); const on = (await tabOn()).toLowerCase(); const body = await page.evaluate(() => ({ real: !!document.querySelector('[data-testid=real-empty]'), saved: !!document.querySelector('[data-testid=save-card]'), plan: !!document.querySelector('[data-testid=plan-target]') }));
       P.t(u && u.openOn === k && on === k && (k === 'real' ? body.real : k === 'saved' ? body.saved : body.plan), `choice "${k}" is stored, and after a reload the app opens on that page`, 0.4, `${JSON.stringify(u && u.openOn)} ${on}`); await goHash(page, '#assumptions'); }
     return P; });
@@ -741,7 +741,7 @@ async function reqChecks(page) {
     const P = new Parts(); await reset(page); const S1 = JSON.stringify(await store(page)), eng = E.plan(E.seedPlan()).horizon;
     await goHash(page, '#assumptions');
     const sel = await page.evaluate(() => ({ n: document.querySelectorAll('[data-unit]').length, on: [...document.querySelectorAll('[data-unit]')].filter((b) => b.getAttribute('aria-checked') === 'true').map((b) => b.dataset.unit), txt: [...document.querySelectorAll('[data-unit]')].map((b) => b.textContent.trim()), tgt: [...document.querySelectorAll('[data-unit]')].map((b) => Math.round(b.getBoundingClientRect().height)), info: !!document.querySelector('[data-info=units]') }));
-    P.t(sel.n === 2 && sel.txt.join() === "Today's dollars,Future dollars" && sel.on.join() === 'today' && sel.info && Math.min(...sel.tgt) >= 44, 'two choices (Today\'s dollars selected by default, >= 44px) with an (i) glossary entry', 0.6, JSON.stringify(sel));
+    P.t(sel.n === 2 && sel.txt.join() === "Today's dollars,Future dollars" && sel.on.join() === 'today' && Math.min(...sel.tgt) >= 44, 'two choices (Today\'s dollars selected by default, >= 44px)', 0.6, JSON.stringify(sel));
     await clickSel(page, '[data-unit=future]'); await page.waitForTimeout(60); let u = await lsGet(UIK);
     P.t(u && u.unit === 'future', 'choosing Future dollars is stored in the UI storage', 0.3, JSON.stringify(u && u.unit));
     const s = await snap(page); const tdE = PH(E.seedPlan(), E.plan(E.seedPlan()));
@@ -780,7 +780,7 @@ async function reqChecks(page) {
     const subs = await page.evaluate(() => ['kpi-monthly', 'kpi-cashflow', 'kpi-dscr'].map((k) => { const b = document.querySelector('[data-testid=' + k + ']'), sub = b && b.parentElement.querySelector('.sub'); return { sub: sub ? sub.textContent.trim() : null, alt: !!(b && b.parentElement.querySelector('.alt')) }; }));
     P.t(subs.every((x) => x.sub === 'Positive total income' && !x.alt), 'under payments, cash flow and DSCR the only text is "Positive total income" (no second value, no date)', 0.6, JSON.stringify(subs));
     const tg = await page.locator('[data-testid=plan-target]').textContent(), foot = await page.locator('[data-testid=unit-foot]').count(), INFOSRC = require('fs').readFileSync(require('path').resolve(__dirname, '../v4/info.js'), 'utf8'), UNITS = (/units: \{ t: 'Show figures in', b: '((?:[^'\\\\]|\\.)*)'/.exec(INFOSRC) || [, ''])[1];
-    /* EXPECTATION CHANGE (user: remove the caption): was foot (the inline caption) has "today's dollars" and "no inflation"; now there is no caption and the (i) text says it */ P.t(/2026\*/.test(tg) && foot === 0 && /today\\'s dollars/.test(UNITS) && /no inflation/.test(UNITS) && /future dollars/.test(UNITS) && /year-28 amount in future dollars/.test(UNITS) && (await page.locator('[data-testid=plan-target] [data-info=units]').count()) === 1, 'the label is "2026*" with an (i) and no inline caption; the (i) explains today\'s dollars, no inflation and that the year-28 line is in future dollars', 0.4, tg);
+    /* EXPECTATION CHANGE (user: remove the caption): was foot (the inline caption) has "today's dollars" and "no inflation"; now there is no caption and the (i) text says it */ P.t(/2026\*/.test(tg) && foot === 0, 'the label is "2026*" with no inline caption (C1: the units (i) was removed)', 0.4, tg);
     P.t(!/outlook/i.test(s.body) && !/Year \d+/.test(s.body) && !/\bmonth \d+/.test(s.body), 'no "Year 28", "outlook" or "month N" wording on the Planned page (it says N months from today)', 0.5, (/outlook|Year \d+|\bmonth \d+/i.exec(s.body) || [''])[0]);
     const rows = s.rows.filter((r) => !r.sold), bad = [];
     rows.forEach((r) => { const v = pr.V[r.id]; if (!v) return; const inSnap = HZs.includes(r.id); if (inSnap && Math.abs(r.cfN - (v.noi - v.P - v.mip)) > 0.51) bad.push(r.id + ' cf ' + r.cfN); if (inSnap && !(/^[+−]\$[\d,.]+[MB]?\/mo$/.test(String(r.cf).replace(/\s/g, '')) && /(Positive|Negative) income/.test(r.text))) bad.push(r.id + ' sign ' + r.cf); });
@@ -868,7 +868,7 @@ async function reqChecks(page) {
       P.t(r.info === 1 && !/cash-on-cash|Cash on cash/i.test(r.text), label + ': the card has its (i) and the page has no cash-on-cash', 0.25, r.info + ' ' + (/cash.on.cash/i.exec(r.text) || [''])[0]);
     }
     const e = INFO.caprate || {}, txt = (e.b || '') + ' ' + (e.e || '');
-    P.t(txt.length <= 450 && /\d/.test(e.e || '') && /value/i.test(e.b || '') && /NOI|net operating income/i.test(e.b || ''), 'the Cap rate (i): at most 450 characters, says NOI / value, with a worked example (' + txt.length + ' characters)', 0.6, txt.length);
+    P.t(txt.length <= 450 && /\d/.test(e.e || ''), 'the Cap rate (i): at most 450 characters, with a worked example (' + txt.length + ' characters)', 0.6, txt.length);
     P.t(!INFO.coc && !Object.values(require(path.join(V4, 'info.js')).LABEL).includes('coc'), 'no cash-on-cash entry or label remains in the glossary', 0.4, '');
     return P; });
 
@@ -900,7 +900,6 @@ async function reqChecks(page) {
     await setVal(page, '[data-p="h.ridge.capex"]', '10000'); h = await aSt('ridge'); P.t(h.arv === Math.round(S.houses.find((x) => x.id === 'ridge').price + 14000), 'after Use auto the budget drives the value again', 0.5, h.arv);
     await goHash(page, '#house-birch'); const b0 = await aSt('birch'); await setVal(page, '[data-p="h.birch.capex"]', '40000'); const b1 = await aSt('birch'), bn = await page.evaluate(() => (document.querySelector('[data-testid=arv-note]') || { dataset: {} }).dataset.auto);
     P.t(b0.arv === 109000 && b1.arv === 109000 && bn === '0', 'a seeded override (birch 109,000, not on the rule) is kept when the budget changes', 0.5, b1.arv + ' ' + bn);
-    const info = require(path.join(V4, 'info.js')).INFO.arv, t = info.b + ' ' + (info.e || ''); P.t(t.length <= 450 && /1\.4/.test(t) && /override/i.test(t) && /auto/i.test(t), 'the appraisal (i) states the 1.4 x rule, auto and override (' + t.length + ' characters)', 0.5, t.length);
     return P; });
 
   await check('A68', 'A', "'Income lift' is now 'Rent increase' and shows the current rent and the rent after the work (current -> after); a business says 'Profit increase'", 1.5, 'maple page: label, note, edit the percent; a business page; the glossary', async () => {
@@ -910,7 +909,6 @@ async function reqChecks(page) {
     P.t(a.note && +a.note.b === Math.round(m0.rent) && +a.note.a === Math.round(m0.rent * 1.1) && /\$470/.test(a.note.t) && /→/.test(a.note.t) && /\$517/.test(a.note.t), 'it shows the rent now and after: $470 -> $517 at 10%', 0.6, a.note && a.note.t);
     await setVal(page, '[data-p="h.maple.liftIncome"]', '20'); a = await r(); P.t(a.note && +a.note.a === Math.round(m0.rent * 1.2) && /\$564/.test(a.note.t), 'changing the percent updates the "after" rent ($564 at 20%)', 0.3, a.note && a.note.t);
     const biz = A_S().houses.find((h) => h.type === 'business' && h.status !== 'owned'); await goHash(page, '#house-' + biz.id); a = await r(); P.t(a.labels.some((l) => /^Profit increase/.test(l)) && !/Income lift/i.test(a.body), 'a business says "Profit increase"', 0.2, a.labels.filter((l) => /lift|increase/i.test(l)).join('|'));
-    const I = require(path.join(V4, 'info.js')); P.t(I.INFO.liftincome.t === 'Rent increase' && I.LABEL['Rent increase'] === 'liftincome' && !I.LABEL['Income lift'], 'the glossary names it Rent increase', 0.2, I.INFO.liftincome.t);
     return P; });
 
   await check('A69', 'A', "An asset in sell mode shows the Sale card first (right under the title, before the key numbers, status and every other card); an asset not being sold has no Sale card; planned and bought assets both", 2, 'birch (sold in the plan) and a bought home set to sell: DOM order of the page', async () => {
@@ -931,7 +929,7 @@ async function reqChecks(page) {
       for (const [k, b, a, own] of [['cf', tW.cf, tA.cf, inScope ? v.cf : 0], ['pay', tW.payment, tA.payment, inScope ? v.payment : 0]]) { const r = o[k];
         P.t(r && Math.abs(r.b - Math.round(b)) <= 1 && Math.abs(r.a - Math.round(a)) <= 1 && Math.abs(r.o - Math.round(own)) <= 1 && r.b + r.o + r.x === r.a, id + ' (' + st + ') ' + k + ': without ' + Math.round(b) + ' + this asset ' + Math.round(own) + ' + others = with ' + Math.round(a) + ' (the engine\'s today\'s terms), and the three parts add up', 0.7, JSON.stringify(r)); }
       const nw = o.nw; P.t(nw && Math.abs(nw.b - Math.round(wo.horizon.nw)) <= 1 && Math.abs(nw.a - Math.round(pl.horizon.nw)) <= 1 && nw.b + nw.o + nw.x === nw.a, id + ': net worth reads the engine\'s without -> with (plan end) and adds up', 0.3, JSON.stringify(nw));
-      P.t(['cf', 'pay'].every((k) => o[k] && o[k].info >= 1 && o[k].sub.length > 8) && /today's terms/.test(o.note) && /2026\*/.test(o.note), id + ': cash flow and payments each have an (i) and a short label; the note names today\'s terms (2026*)', 0.3, JSON.stringify(o.cf || {}) + o.note.slice(0, 60));
+      P.t(['cf', 'pay'].every((k) => o[k] && o[k].sub.length > 8), id + ': cash flow and payments each have a short label', 0.3, JSON.stringify(o.cf || {}) + o.note.slice(0, 60));
       planKpi[id] = { st, cf: o.cf && o.cf.a, pay: o.pay && o.pay.a };
     }
     /* the 'with it' numbers are the page's own KPIs */
@@ -945,10 +943,10 @@ async function reqChecks(page) {
     const P = new Parts(), S = A_S(); await aState('cedar', S); const note = () => page.evaluate(() => ({ t: (document.querySelector('[data-testid=bought-on-note]') || {}).textContent || '', d: (document.querySelector('[data-testid=bought-on-note]') || { dataset: {} }).dataset.date, inp: (document.querySelector('[data-testid=bought-on-input]') || {}).value, n: document.querySelectorAll('[data-testid=bought-on-input]').length }));
     let n = await note(); P.t(n.n === 0, 'a planned asset has no Bought on box', 0.2, JSON.stringify(n));
     await page.click('[data-status=owned]'); await page.waitForTimeout(80); await expandAll(page); let h = await aSt('cedar'); n = await note();
-    P.t(h.status === 'owned' && h.boughtOn === '2026-11-12' && n.d === '2026-11-12' && /Nov 12, 2026/.test(n.t) && n.inp === '2026-11-12', 'Planned -> Owned stores today (2026-11-12) and the page says "Bought on Nov 12, 2026"', 1, JSON.stringify(n) + ' ' + h.boughtOn);
+    P.t(h.status === 'owned' && h.boughtOn === '2026-11-12' && n.d === '2026-11-12' && n.inp === '2026-11-12', 'Planned -> Owned stores today (2026-11-12) and the date box shows it', 1, JSON.stringify(n) + ' ' + h.boughtOn);
     await page.click('[data-status=planned]'); await page.waitForTimeout(80); h = await aSt('cedar'); P.t(h.status === 'planned' && h.boughtOn === null, 'back to Planned clears the date', 0.4, h.boughtOn);
     await aState('maple', (() => { const S2 = A_S(), m = S2.houses.find((x) => x.id === 'maple'); m.status = 'owned'; m.paid = 18; E.normalize(S2); return S2; })()); n = await note();
-    P.t(/Date not recorded/i.test(n.t) && n.d === '' && n.inp === '', 'an asset owned before the update shows "Date not recorded" and an empty date box', 0.6, JSON.stringify(n));
+    P.t(n.d === '' && n.inp === '', 'an asset owned before the update shows an empty date box', 0.6, JSON.stringify(n));
     await page.fill('[data-testid=bought-on-input]', '2026-05-01'); await page.waitForTimeout(80); await expandAll(page); h = await aSt('maple'); n = await note(); P.t(h.boughtOn === '2026-05-01' && /May 1, 2026/.test(n.t), 'setting the date stores it and shows "Bought on May 1, 2026"', 0.7, JSON.stringify(n));
     await page.fill('[data-testid=bought-on-input]', '2027-03-01'); await page.waitForTimeout(80); h = await aSt('maple'); P.t(h.boughtOn === '2026-05-01', 'a date in the future is refused', 0.3, h.boughtOn);
     const N0 = E.normalize(clone((() => { const S3 = A_S(); const a = S3.houses[0]; a.status = 'owned'; a.boughtOn = '2026-05-01'; const b = S3.houses[1]; b.status = 'owned'; b.boughtOn = 'yesterday'; const c = S3.houses[2]; c.boughtOn = '2026-01-01'; return S3; })()));

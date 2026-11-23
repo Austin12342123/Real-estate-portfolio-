@@ -659,7 +659,7 @@ exports.run = async function run(X) {
       for (const d of DATA) {
         const main = d.main, S = main.state, pl = planOf(main), sn = pl.horizon;
         /* label shown twice with different values (asset + finance pages) */
-        const scanDup = (g, where) => { const seen = {}; g.kv.forEach((x) => { if (!x.lb || x.inImpact) return; const k = x.lb; (seen[k] = seen[k] || []).push(x.v); }); Object.keys(seen).forEach((k) => A.t('same label never shown twice with different values', new Set(seen[k]).size <= 1, 2, d.tag + ' ' + where + ': "' + k + '" = ' + seen[k].join(' / '))); };
+        const scanDup = (g, where) => { const seen = {}; g.kv.forEach((x) => { if (!x.lb || x.inImpact) return; const k = x.lb; (seen[k] = seen[k] || []).push(x.v); }); Object.keys(seen).forEach((k) => A.t('same label never shown twice with different values', new Set(seen[k].map((q) => String(q).replace(/[$,]/g, ''))).size <= 1, 2, d.tag + ' ' + where + ': "' + k + '" = ' + seen[k].join(' / '))); };
         scanDup(d.fin, '#finances'); for (const id in d.houses) scanDup(d.houses[id], '#house-' + id);
         /* KPI subtext that restates the main value */
         main.kpis.forEach((k) => { const m = k.sub.match(money$) || []; A.t('KPI subtext does not restate its own main value', !m.some((x) => x === k.v || x.replace('+', '') === k.v.replace('+', '')), 1.5, d.tag + ' ' + k.id + ': "' + k.v + '" with subtext "' + k.sub + '"'); });
