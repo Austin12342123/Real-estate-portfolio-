@@ -1,0 +1,118 @@
+/* Theme tokens. Generated from docs/themes.json (verify: scripts/test-themes.sh). Device font stacks only, no font downloads.
+   Not linked from any page yet (card TH1 wires the picker). Names are namespaced --th-* so they cannot clash with the app's legacy --bg/--ink vars. */
+
+[data-theme=oxford]{
+  color-scheme:light;
+  --th-bg:#F7F3EA;
+  --th-surface:#FFFDF7;
+  --th-surface2:#EEE7D8;
+  --th-border:#CFC3AA;
+  --th-text:#141B2D;
+  --th-text-muted:#4B5162;
+  --th-accent:#1E3A6E;
+  --th-on-accent:#FFFFFF;
+  --th-good:#1F5135;
+  --th-warn:#7A5B12;
+  --th-bad:#7A1F2B;
+  --th-font-display:"Times New Roman", Times, "Liberation Serif", "Nimbus Roman", serif;
+  --th-font-body:"Times New Roman", Times, "Liberation Serif", "Nimbus Roman", serif;
+  --th-radius:2px;
+  --th-font-weight-body:500;
+  --th-font-weight-heading:700;
+  --th-font-weight-numbers:700;
+  --th-font-stroke:0.35px;
+}
+
+[data-theme=clay]{
+  color-scheme:light;
+  --th-bg:#F4F2EF;
+  --th-surface:#FFFFFF;
+  --th-surface2:#EFECE8;
+  --th-border:#E2DDD7;
+  --th-text:#141312;
+  --th-text-muted:#5E5954;
+  --th-accent:#B24A2C;
+  --th-on-accent:#FFFFFF;
+  --th-good:#2F6B45;
+  --th-warn:#7A5C00;
+  --th-bad:#8F1D4A;
+  --th-font-display:system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --th-font-body:system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --th-radius:20px;
+}
+
+[data-theme=cottagecore]{
+  color-scheme:light;
+  --th-bg:#F3F1E4;
+  --th-surface:#FBFAF2;
+  --th-surface2:#E6E6D2;
+  --th-border:#C9CBB0;
+  --th-text:#26301F;
+  --th-text-muted:#566049;
+  --th-accent:#4E6B3A;
+  --th-on-accent:#FFFFFF;
+  --th-good:#2F6B3A;
+  --th-warn:#8A5A00;
+  --th-bad:#9C3B2E;
+  --th-font-display:Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --th-font-body:system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --th-radius:12px;
+  --th-font-weight-body:500;
+  --th-font-weight-heading:700;
+  --th-font-weight-numbers:700;
+  --th-font-stroke:0.35px;
+}
+
+[data-theme=technoir]{
+  color-scheme:dark;
+  --th-bg:#0B0B0C;
+  --th-surface:#151517;
+  --th-surface2:#1F1F22;
+  --th-border:#34343A;
+  --th-text:#EDEDEF;
+  --th-text-muted:#A3A3AB;
+  --th-accent:#C9CDD4;
+  --th-on-accent:#0B0B0C;
+  --th-good:#6FCF97;
+  --th-warn:#E6B450;
+  --th-bad:#FF7A70;
+  --th-font-display:system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --th-font-body:system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --th-radius:6px;
+}
+
+[data-theme=darkacademia]{
+  color-scheme:dark;
+  --th-bg:#0F1712;
+  --th-surface:#17211A;
+  --th-surface2:#202B23;
+  --th-border:#36443A;
+  --th-text:#EDE6D8;
+  --th-text-muted:#B5AB98;
+  --th-accent:#C9A961;
+  --th-on-accent:#0F1712;
+  --th-good:#8DC48F;
+  --th-warn:#E8E07A;
+  --th-bad:#E58A8A;
+  --th-font-display:Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --th-font-body:system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --th-radius:4px;
+}
+
+[data-theme=ember]{
+  color-scheme:dark;
+  --th-bg:#151311;
+  --th-surface:#1F1C19;
+  --th-surface2:#292522;
+  --th-border:#3D3833;
+  --th-text:#F4F0EB;
+  --th-text-muted:#B4ACA3;
+  --th-accent:#E8875A;
+  --th-on-accent:#151311;
+  --th-good:#7FCB93;
+  --th-warn:#E8C86A;
+  --th-bad:#F2788A;
+  --th-font-display:system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --th-font-body:system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --th-radius:18px;
+}
