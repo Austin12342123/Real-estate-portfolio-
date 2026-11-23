@@ -19,7 +19,7 @@ module.exports = defineConfig({
   testDir: './tests/e2e',
   timeout: 60000, /* 60 s per test (card M1.4) */
   expect: { timeout: 5000 },
-  fullyParallel: false,
+  fullyParallel: true, /* every test boots its own page, so --shard splits by test, not by file */
   workers: process.env.CI ? 4 : 3,
   retries: 0, /* a failing check is never "flaky" (CLAUDE.md) */
   reporter: [['list'], ['json', { outputFile: 'test-results/report.json' }]],
