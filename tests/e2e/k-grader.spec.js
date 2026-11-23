@@ -73,15 +73,14 @@ test('K44 touch drag on Buy order: hold lifts a row and a drag reorders it; a qu
   expect(st.h === '' || st.h === '#', 'O / N / F do not navigate on touch: ' + st.h).toBe(true); expect(!st.sheet && st.real === 'true', '? and 2 do nothing on touch ' + JSON.stringify(st)).toBe(true);
 });
 /* K45 port: every page screenshotted light and dark at this project's size (PNGs go to test-results/, uploaded by CI) */
-test('K45 screenshots of every page, light and dark, at this size', async ({ page }, info) => {
-  test.skip(Math.min(vwOf(page), page.viewportSize().height) < 600, 'the grader runs K45 on iPad only'); test.setTimeout(240000); /* 36 screens x 2 schemes: 60 s default was exceeded on CI WebKit */
-  const bad = []; let n = 0;
-  for (const sc of SCHEMES) { await page.emulateMedia({ colorScheme: sc });
-    for (const name of L.PAGE_NAMES) { try { await L.goPage(page, name); const buf = await page.screenshot({ fullPage: false }); if (buf.length < 1000) throw new Error('empty'); await info.attach('v7-' + name + '-' + info.project.name + '-' + sc + '.png', { body: buf, contentType: 'image/png' }); n++; } catch (e) { bad.push(name + ' ' + sc); } } }
-  expect(bad, n + ' screenshots saved').toEqual([]); expect(n).toBe(L.PAGE_NAMES.length * 2);
+for (const sc of SCHEMES) test('K45 screenshots of every page at this size: ' + sc, async ({ page }, info) => {
+  test.skip(Math.min(vwOf(page), page.viewportSize().height) < 600, 'the grader runs K45 on iPad only'); test.setTimeout(300000); /* one scheme per test: 36 screens */
+  const bad = []; let n = 0; await page.emulateMedia({ colorScheme: sc });
+  for (const name of L.PAGE_NAMES) { try { await L.goPage(page, name); const buf = await page.screenshot({ fullPage: false }); if (buf.length < 1000) throw new Error('empty'); await info.attach('v7-' + name + '-' + info.project.name + '-' + sc + '.png', { body: buf, contentType: 'image/png' }); n++; } catch (e) { bad.push(name); } }
+  expect(bad, n + ' screenshots saved').toEqual([]); expect(n).toBe(L.PAGE_NAMES.length);
 });
 
-test('K46 page margin: gutter >= 20px phone / 32px tablet on every screen', async ({ page }) => {
+test('K46 page margin: gutter >= 20px phone / 32px tablet on every screen', async ({ page }) => { test.setTimeout(180000); /* loops over every screen; 60 s default exceeded on CI WebKit */
   const w = vwOf(page), need = w < 600 ? 20 : 32, bad = [];
   for (const name of ['planned', 'real', 'saved', 'asset', 'finances', 'assumptions', 'order', 'add', 'import']) {
     await L.goPage(page, name);
@@ -99,7 +98,7 @@ test('K48 cap rate chip (Good / Okay / Low word) on the asset page', async ({ pa
   await L.goPage(page, 'asset'); const txt = await page.evaluate(() => document.getElementById('app').innerText);
   expect(/\b(Good|Okay|Low)\b/.test(txt) && /cap rate/i.test(txt), where(page, 'asset') + ' cap rate chip').toBe(true);
 });
-test('K50 one scroll only: no element other than the page scrolls', async ({ page }) => {
+test('K50 one scroll only: no element other than the page scrolls', async ({ page }) => { test.setTimeout(180000); /* loops over every screen; 60 s default exceeded on CI WebKit */
   const bad = [];
   for (const name of ['planned', 'asset', 'real', 'saved', 'finances', 'assumptions', 'order', 'add', 'import', 'health', 'shortfall']) { await L.goPage(page, name);
     const r = await page.evaluate(() => [...document.querySelectorAll('body *')].filter((e) => { if (/^(TEXTAREA|SELECT|INPUT|svg)$/i.test(e.tagName) || e.closest('svg') || e.id === 'infopop') return false; const s = getComputedStyle(e); return /(auto|scroll|overlay)/.test(s.overflowY) && e.scrollHeight > e.clientHeight + 1; }).map((e) => (e.className || e.tagName) + ' ' + e.scrollHeight + '>' + e.clientHeight).slice(0, 3));
