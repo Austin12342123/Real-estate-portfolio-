@@ -13,6 +13,8 @@ for n, t in T.items():
     want = {kebab(k): v for k, v in t.items() if k != 'mode'}
     if decl != want: errs.append('%s: css != json (%s)' % (n, sorted(set(decl.items()) ^ set(want.items()))[:3]))
     if 'color-scheme:%s;' % t['mode'] not in blocks.get(n, ''): errs.append(n + ': color-scheme')
+for n, t in T.items():
+    if 'control' not in t or ('--th-control:%s;' % t.get('control')) not in blocks.get(n, ''): errs.append(n + ': --th-control missing or != json')
 if re.search(r'@import|url\(|@font-face', css): errs.append('font download / url() in themes.css')
 r = subprocess.run([sys.executable, os.path.join(R, 'scripts/color-inventory.py')], capture_output=True, text=True)
 if r.returncode: errs.append('color-inventory failed: ' + r.stderr[-200:])

@@ -89,6 +89,7 @@ def report(rs):
     kinds = collections.Counter(r[3] for r in rs)
     o.append('By kind: ' + ', '.join('%s %d' % kv for kv in sorted(kinds.items())) + '.')
     nm = [r for r in rs if r[4].startswith('NO MATCHING')]
+    o += ['', '**Input and select outlines** (`input`/`select`, the `.iw` field box and focus ring) map to `--th-control` (3:1 on bg, surface, surface2), not `--th-border`. Decorative hairlines stay soft and map to `--th-border`.']
     o += ['', 'Needing a decision (no matching token): %d.' % len(nm), '', '## Detail', '']
     for f, x in byf.items():
         o += ['### ' + f, '', '| Line | Value | Kind | Should become |', '|---|---|---|---|']
