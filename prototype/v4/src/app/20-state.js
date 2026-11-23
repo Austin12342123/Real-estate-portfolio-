@@ -181,10 +181,27 @@
     chars: 0,
     err: '',
   }; /* did the last save read back exactly as written? (an invariant the anomaly monitor checks) */
+  let LASTJS = RAW0; /* the last text of the portfolio this page read or wrote: a save never replaces a stored portfolio that differs from it (another tab, a restore or a test changed it): the stale page would overwrite newer data with its own copy */
   const save = () => {
     try {
       const js = JSON.stringify(S);
+      const cur = localStorage.getItem(KEY);
+      let foreign = false;
+      if (cur !== null && cur !== '' && cur !== LASTJS && cur !== js) {
+        try {
+          const o = JSON.parse(cur);
+          foreign = !!(o && Array.isArray(o.houses));
+        } catch (e) {}
+      } /* only a readable portfolio counts: an unreadable or damaged value is still replaced by a good save */
+      if (foreign) {
+        logEv('stale', 'save skipped: the stored portfolio was changed elsewhere; this page keeps it');
+        storageOK = true;
+        RW.ok = true;
+        RW.err = '';
+        return;
+      }
       localStorage.setItem(KEY, js);
+      LASTJS = js;
       localStorage.setItem(UIKEY, JSON.stringify(UI));
       storageOK = true;
       RW.ok = localStorage.getItem(KEY) === js;

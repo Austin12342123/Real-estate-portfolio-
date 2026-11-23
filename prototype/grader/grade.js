@@ -959,7 +959,10 @@ async function reqChecks(page) {
     const P = new Parts(), S5 = E.normalize(clone(A_S())); S5.houses = S5.houses.slice(0, 5); S5.v = DATA_V;
     await page.goto(BASE + '/index.html?r=' + rn++); await page.evaluate(([k, s]) => { localStorage.clear(); localStorage.setItem(k, JSON.stringify(s)); }, [KEY, S5]);
     await page.goto(BASE + '/index.html?r=' + rn++); await page.waitForSelector('#app > *'); await page.waitForTimeout(1400);
-    const fp = await page.evaluate(() => { try { const d = JSON.parse(localStorage.getItem('rep-v4-diag')); return d && d.fp && d.fp.n; } catch (e) { return null; } }); P.t(fp === 5, 'setup: the app filed a fingerprint of the 5-asset portfolio', 0.3, fp);
+    const fp = await page.evaluate(() => { try { const d = JSON.parse(localStorage.getItem('rep-v4-diag')); return d && d.fp && d.fp.n; } catch (e) { return null; } });
+    /* regression (the real cause of the old intermittent setup failure): the page that was open before the seed (the default plan, with the grader's auto-expand clicking sections) saved its 36 assets over the 5 just stored. A page must never overwrite a stored portfolio it did not write. */
+    const st72 = await page.evaluate((k) => { try { return JSON.parse(localStorage.getItem(k)).houses.length; } catch (e) { return null; } }, KEY); P.t(st72 === 5, 'setup: the stored 5-asset portfolio was not overwritten by the page that was open before it was stored', 0.2, st72);
+    P.t(fp === 5, 'setup: the app filed a fingerprint of the 5-asset portfolio', 0.1, fp);
     await page.evaluate(() => { localStorage.clear(); window.dispatchEvent(new Event('pagehide')); document.dispatchEvent(new Event('visibilitychange')); }); await page.waitForTimeout(200);
     const left = await page.evaluate(() => { try { const d = JSON.parse(localStorage.getItem('rep-v4-diag') || 'null'); return { fp: d && d.fp, ev: d && d.ev.map((e) => e.k) }; } catch (e) { return null; } }); P.t(left && !left.fp, 'after the clear, hiding the page does not refile the old fingerprint', 0.6, JSON.stringify(left));
     await page.goto(BASE + '/index.html?r=' + rn++); await page.waitForSelector('#app > *'); await page.waitForTimeout(500); P.t((await page.locator('[data-testid=replaced-note]').count()) === 0, 'the next start shows no "portfolio replaced" note', 0.6, '');
