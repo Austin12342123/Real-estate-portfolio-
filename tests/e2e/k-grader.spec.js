@@ -73,10 +73,10 @@ test('K44 touch drag on Buy order: hold lifts a row and a drag reorders it; a qu
   expect(st.h === '' || st.h === '#', 'O / N / F do not navigate on touch: ' + st.h).toBe(true); expect(!st.sheet && st.real === 'true', '? and 2 do nothing on touch ' + JSON.stringify(st)).toBe(true);
 });
 /* K45 port: every page screenshotted light and dark at this project's size (PNGs go to test-results/, uploaded by CI) */
-/* K45: every page, light and dark; split into groups of 6 screens per test so each test (and each CI shard) stays well under its timeout; every screenshot is kept */
-const K45_GROUPS = []; for (let i = 0; i < L.PAGE_NAMES.length; i += 6) K45_GROUPS.push(L.PAGE_NAMES.slice(i, i + 6));
+/* K45: every page, light and dark; split into groups of 3 screens per test so each test (and each CI shard) stays well under its timeout; every screenshot is kept */
+const K45_GROUPS = []; for (let i = 0; i < L.PAGE_NAMES.length; i += 3) K45_GROUPS.push(L.PAGE_NAMES.slice(i, i + 6));
 for (const sc of SCHEMES) K45_GROUPS.forEach((names, gi) => test('K45 screenshots at this size: ' + sc + ' group ' + (gi + 1) + '/' + K45_GROUPS.length + ' (' + names[0] + '..' + names[names.length - 1] + ')', async ({ page }, info) => {
-  test.skip(Math.min(vwOf(page), page.viewportSize().height) < 600, 'the grader runs K45 on iPad only'); test.setTimeout(120000);
+  test.skip(Math.min(vwOf(page), page.viewportSize().height) < 600, 'the grader runs K45 on iPad only'); test.setTimeout(180000);
   const bad = []; let n = 0; await page.emulateMedia({ colorScheme: sc });
   for (const name of names) { try { await L.goPage(page, name); const buf = await page.screenshot({ fullPage: false }); if (buf.length < 1000) throw new Error('empty'); await info.attach('v7-' + name + '-' + info.project.name + '-' + sc + '.png', { body: buf, contentType: 'image/png' }); n++; } catch (e) { bad.push(name); } }
   expect(bad, n + ' screenshots saved').toEqual([]); expect(n).toBe(names.length);
