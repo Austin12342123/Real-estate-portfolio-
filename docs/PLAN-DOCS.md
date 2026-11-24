@@ -8,3 +8,4 @@ Read-only inputs for the build cards. Read them with `git show origin/claude/pla
 - learn.json: Learn page content (card L1)
 - cut-list.tsv: copy trim decisions (card C1)
 - themes-contrast-check.py: contrast check for the six themes (card TH1a ports it into scripts/)
+- cut-list-v2.tsv: Nov 24 cut list under Austin's corrected rule (every (i) keeps its popup); flips-v2.md lists what changed

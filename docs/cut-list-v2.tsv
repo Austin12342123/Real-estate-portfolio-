@@ -1,0 +1,289 @@
+kind	id	verdict	replacement
+info	refi	SHORTEN	At the due month the app refinances the balance at the refinance rate and term. Blank boxes use Assumptions.
+info	debtcapbiz	SHORTEN	The default is 50% of the business value, a conservative choice, not a lender rule.
+info	housing	SHORTEN	Counted in your debt to income, and it rises each year at the cost increase rate.
+info	nnn	SHORTEN	Enter the share tenants repay. The app adds it to income, so still enter the full costs.
+info	statetax	SHORTEN	It is 0 by default because the app does not know your state.
+info	landshare	KEEP	
+info	goodwillshare	SHORTEN	The app writes off this share over 15 years and the rest as equipment over 7. Default 70%.
+info	exedit	SHORTEN	Save as my default keeps these numbers on this device, for this example only. Warnings are advice, not blocks.
+info	auto	KEEP	
+info	liens	KEEP	
+info	downpayment	KEEP	
+info	downamt	KEEP	
+info	loanamount	SHORTEN	Price minus down payment, plus any fees the loan adds (FHA insurance) and 203(k) repair money.
+info	rate	KEEP	
+info	term	KEEP	
+info	closing	KEEP	
+info	shortcuts	KEEP	
+info	jobmoney	KEEP	
+info	extra	SHORTEN	Only your own extra. The plan also sends this asset's profit and your job money to the loan.
+info	payoff	SHORTEN	Type months and the app works out the extra needed. It counts only your own extra, not plan money.
+info	loanoption	KEEP	
+info	dscr	KEEP	
+info	dscrloan	KEEP	
+info	noi	KEEP	
+info	caprate	SHORTEN	Chip lines, Low then Good: homes 5%, 7%; multi-family 5.5%, 7%; commercial 6%, 8%; businesses 15%, 25%.
+info	multiple	KEEP	
+info	growth	SHORTEN	Rent and costs grow at this same rate. The business default is 4%.
+info	arv	SHORTEN	What an appraiser says the asset will be worth once the work is finished (after-repair value). Type your own value to override the automatic one.
+info	comp	SHORTEN	Optional. When filled, the auto appraisal becomes the midpoint of price plus 1.4 times the budget and this value.
+info	jobsaved	KEEP	
+info	gain	SHORTEN	Type a gain and the new appraisal fills itself in.
+info	capex	KEEP	
+info	capexmonths	SHORTEN	The new value and higher rent start the month the work is done.
+info	liftincome	SHORTEN	How much more rent (profit, for a business) you expect after the improvement, as a percent.
+info	exit	KEEP	
+info	sellcost	KEEP	
+info	merge	SHORTEN	Folds this business into another one you own; value and income rise by the synergy lift.
+info	proceeds	KEEP	
+info	units	KEEP	
+info	openon	KEEP	
+info	saved	KEEP	
+info	creditline	KEEP	
+info	debtcap	SHORTEN	The app keeps the loan, liens and line of credit together under this share of value.
+info	trustmath	KEEP	
+info	nextdp	KEEP	
+info	autopay	KEEP	
+info	cashneeded	KEEP	
+info	dti	SHORTEN	Counts your other debts, your own housing and the plan's loans, and only part of rent as income.
+info	qualifying	KEEP	
+info	cosigner	KEEP	
+info	rentcount	KEEP	
+info	haircut	KEEP	
+info	vacancy	SHORTEN	The default is 7%, about the U.S. rental vacancy rate.
+info	mgmt	KEEP	
+info	repairs	SHORTEN	A yearly percent of the asset's value, not of rent.
+info	ownerocc	KEEP	
+info	fha	KEEP	
+info	k203	KEEP	
+info	mip	SHORTEN	The app uses 1.75% of the loan up front, added to the loan, and 0.55% a year, paid monthly.
+info	interestonly	KEEP	
+info	bridge	KEEP	
+info	sba	KEEP	
+info	sellerfin	SHORTEN	Sellers rarely carry 80% or more, so treat this app's seller note presets as aggressive.
+info	conv	KEEP	
+info	cashbuy	KEEP	
+info	bankloan	KEEP	
+info	buyin	SHORTEN	The earliest month to buy. The trust still waits until the pool can pay; 0 means no limit.
+info	paid	KEEP	
+info	networth	KEEP	
+info	equity	KEEP	
+info	cashflow	KEEP	
+info	impact	KEEP	
+info	boughton	SHORTEN	A record only. No number in the app depends on this date.
+info	outsidecash	SHORTEN	Not a warning. Amber when it exceeds all your savings, red if your cash would run short.
+info	cashfromselling	SHORTEN	Trust cash pays for later purchases first, before your savings or outside money.
+info	projection	KEEP	
+info	emergency	KEEP	
+info	liquid	KEEP	
+info	cashapy	KEEP	
+info	living	KEEP	
+info	inflation	KEEP	
+info	otherdebts	KEEP	
+info	portfoliotax	SHORTEN	Left blank, the app estimates federal, state and 3.8% tax on profit after interest and depreciation.
+info	salestax	SHORTEN	Left blank, the app works it out, including tax on the depreciation you took. Type a rate to override.
+info	operating	SHORTEN	Businesses beyond this number each get a paid manager, set under Manager pay.
+info	bizhours	KEEP	
+info	gmpay	KEEP	
+info	planned	SHORTEN	Taken from your cash in the month you pick.
+info	capital	SHORTEN	Added to your cash in the month you pick.
+info	wage	SHORTEN	Before tax. The app multiplies it by your hours and weeks. Enter tips separately.
+info	tips	KEEP	
+info	hours	SHORTEN	Your job plus businesses you run, at the plan's busiest month. Amber above 70 hours.
+info	weeks	KEEP	
+info	taxrate	SHORTEN	Leave blank for a rough U.S. estimate with no state tax. Type a number to use your own.
+info	raise	KEEP	
+info	jobend	SHORTEN	Months from today. Leave blank if the job has no end date.
+info	jobstart	SHORTEN	Months from today. 0 means you already have the job.
+info	checks	SHORTEN	Plain is safe, amber is past the caution line, red is over the limit everywhere, including Can I afford this.
+info	runway	SHORTEN	Months your cash lasts with no job pay, counting portfolio income. Amber under 3, red under 1.
+info	cltv	SHORTEN	Measured at the month the last asset is bought, against the debt cap in Assumptions.
+info	concentration	SHORTEN	Price share of the biggest asset. Amber above 35%, red above 60%, once there are at least 3 assets.
+info	cushion	SHORTEN	Shows the lowest your cash gets over the plan against the cushion at that month.
+info	lasts	SHORTEN	Assumes the biggest earners, about 45% of a group's assets, stop paying. Months your cash and trust cash cover bills.
+info	buyscore	SHORTEN	If a cash or lender test fails, the answer is Not possible. Near a limit, it is Tight.
+info	buypos	KEEP	
+info	planpace	SHORTEN	A Plan timing check appears only when the last purchase is late or an asset is never funded.
+info	cashin	KEEP	
+info	cashprofit	SHORTEN	After selling costs, the loan and liens, tax on the sale, and the cash you put in.
+info	revenue	SHORTEN	Type per month or per year, like 100k/month or $1.2M per year. No period means per month.
+info	margin	KEEP	
+info	ownerprofit	KEEP	
+info	calc	SHORTEN	Type math like 650*3 or (2000-300)/2. Incomplete math keeps the last good number and shows Check the math.
+info	grosspay	KEEP	
+info	hometype	KEEP	
+info	unitcount	SHORTEN	From 2 to 500. Rent, tax and insurance start at typical amounts for that size.
+info	mfpack	SHORTEN	A pack is several separate houses, financed with a blanket loan or separate investor loans, not as a building.
+info	rentunit	SHORTEN	You can type the total instead, and rent per unit follows.
+info	mfreserve	KEEP	
+info	mfother	KEEP	
+info	oer	KEEP	
+info	mfchecklist	KEEP	
+info	mflenders	KEEP	
+info	mfcosts	KEEP	
+info	mfstaff	KEEP	
+info	mfsec8	KEEP	
+info	ltv	KEEP	
+info	mfcreative	KEEP	
+info	mfFha	KEEP	
+info	mfVa	KEEP	
+info	mfConvOO	KEEP	
+info	mfK203	KEEP	
+info	mfConvInv	KEEP	
+info	mfBlanket	KEEP	
+info	mfDscr	KEEP	
+info	mfSbl	KEEP	
+info	mfAgency	KEEP	
+info	mfHud	KEEP	
+info	mfBank5	KEEP	
+info	mfBank10	KEEP	
+info	mfCmbs	KEEP	
+info	mfSba504	KEEP	
+info	mfBridge	KEEP	
+info	mfSeller	KEEP	
+info	mfSellerIO	KEEP	
+info	mfAssume	SHORTEN	The app assumes you pay the gap between price and loan balance in cash, about 35%.
+info	mfLease	SHORTEN	The app models this as a 5 year interest only seller loan with a 3% option fee.
+info	mfSubTo	SHORTEN	The app models this as taking over the seller loan and paying the gap in cash.
+info	mfJv	SHORTEN	The app models a 75% bank loan. Add partner money under Finances, Outside capital.
+info	safety	SHORTEN	Taken before anything that could replace your portfolio, and once a day. Not part of a backup.
+info	bugreport	KEEP	
+note	2634:-:1	SHORTEN	No planned assets yet.
+note	2642:-:1	SHORTEN	● = the month the trust can pay for it. Tap a row to edit.
+note	2662:-:1	SHORTEN	● = the trust can pay for an asset.
+note	2711:sf-why:1	KEEP	
+note	2716:sf-changes:1	SHORTEN	Nothing in the numbers is short.
+note	2717:-:1	REMOVE	
+note	2734:jobsaved-note:1	KEEP	
+note	2776:-:1	SHORTEN	Sold in this plan; no extra payment.
+note	2838:sold-note:1	SHORTEN	Numbers follow purchase order on this page only; a sold asset keeps its number.
+note	2838:-:1	SHORTEN	Drag ⋮⋮ to reorder. Assets above fund the ones below.
+note	2857:-:1	SHORTEN	Add something you already own to see it here.
+note	2869:unit-note:1	REMOVE	
+note	2877:empty-note:1	SHORTEN	${empty ? 'Nothing added yet.' : 'Nothing planned yet.'}
+note	2877:empty-bought-note:1	KEEP	
+note	2905:-:1	SHORTEN	This sample leans on a few fast growing businesses; check each growth rate.
+note	2911:unit-foot:1	REMOVE	
+note	2915:-:1	KEEP	
+note	2919:cf-progress:1	KEEP	
+note	2922:real-nw:1	REMOVE	
+note	2928:-:1	KEEP	
+note	2929:bd-unit:1	REMOVE	
+note	2930:cash-note:1	SHORTEN	Trust cash: sale cash and pooled cash flow not yet spent. It counts in net worth.[i]
+note	2946:-:1	SHORTEN	Assets above fund the ones below. Assets you already own are not in this list.
+note	2947:order-hint:1	SHORTEN	On a phone or tablet, press and hold a row before dragging.
+note	2948:order-empty:1	KEEP	
+note	2963:-:1	KEEP	
+note	2965:save-now:1	SHORTEN	Working portfolio now: ${S.houses.length} asset${S.houses.length === 1 ? '' : 's'} · net worth ${$f(th.nw)} · cash flow ${$s(th.cf)}/mo in year ${yrs}.
+note	2966:saved-empty:1	SHORTEN	Nothing saved yet.
+note	2967:-:1	SHORTEN	Stays on this device and in your backup. Opening one replaces your portfolio; Undo brings it back.
+note	2967:-:2	KEEP	
+note	2982:rehab-financed:1	REMOVE	
+note	2982:arv-note:1	KEEP	
+note	2982:arv-low:1	KEEP	
+note	2982:rent-lift:1	KEEP	
+note	2984:sale-tax:1	SHORTEN	Net proceeds before tax ${$f(sq.N)}; estimated tax ${$f(sq.T)}; cash profit after tax ${$s(sq.F)}. The tax is paid from your cash.
+note	2984:-:1	REMOVE	
+note	2985:-:1	REMOVE	
+note	2986:-:1	KEEP	
+note	2992:impact-${id}-sum:1	KEEP	
+note	2998:sold-timing:1	KEEP	
+note	3000:buyin-note:1	KEEP	
+note	3011:mf-oer:1	SHORTEN	Costs are ${isFinite(mf.oer) ? r(mf.oer, 0) : '—'}% of rent collected (typical 35% to 55%)${oerOk ? '' : '. Check the numbers: that is outside the usual range'}.
+note	3017:units-note:1	KEEP	
+note	3019:mf-tier:1	KEEP	
+note	3027:mgmt-note:1	SHORTEN	${h.mgmtPct != null ? 'Set for this asset only.' : 'Starts at the Assumptions rate (' + r(g.mgmt, 1) + '%); type a number to set it for this asset only.'}
+note	3029:rev-note:1	SHORTEN	Price ÷ yearly profit is ${r(v.multiple, 1)}×. Type revenue per month or per year.[i]
+note	3029:mgmt-note-biz:1	SHORTEN	No property manager here. A paid manager for businesses you do not run is set in Finances (${$f(pp0.gmMonthly)}/mo each).
+note	3030:nnn-note:1	SHORTEN	Tenants repay ${r(h.nnn, 0)}% of tax, insurance and CAM (${$f(v.reimb)}/mo) on top of rent.
+note	3032:-:1	SHORTEN	Net operating income ${$f(v.noi)}/mo.
+note	3033:dep-note:1	KEEP	
+note	3039:-:1	REMOVE	
+note	3043:h-auto:1	REMOVE	
+note	3044:h-auto:1	KEEP	
+note	3048:h-auto:1	KEEP	
+note	3048:h-job:1	KEEP	
+note	3053:extra-break:1	REMOVE	
+note	3056:extra-break:1	REMOVE	
+note	3057:extra-break:1	KEEP	
+note	3062:-:1	KEEP	
+note	3064:jobmoney-now:1	KEEP	
+note	3065:jobmoney-basis:1	KEEP	
+note	3066:jobmoney-default:1	KEEP	
+note	3070:bought-on-note:1	REMOVE	
+note	3073:-:1	KEEP	
+note	3075:plan-math:1	KEEP	
+note	3079:-:1	REMOVE	
+note	3085:-:1	KEEP	
+note	3088:reno-note:1	KEEP	
+note	3089:asset-share:1	KEEP	
+note	3093:-:1	KEEP	
+note	3098:-:1	SHORTEN	${lo ? esc(lo.note) + ' ' : ''}
+note	3098:-:2	SHORTEN	Custom terms.
+note	3098:loan-info-only:1	SHORTEN	Info only. Modelled as ${esc(lo.modelledAs)}.[i]
+note	3098:mf-dscr:1	KEEP	
+note	3098:k203-cap:1	KEEP	
+note	3101:refi-note:1	KEEP	
+note	3102:-:1	KEEP	
+note	3107:trust-owned:1	SHORTEN	Owned now, so its borrowing room (${$f(v.head0)}) and cash flow (${$s(v.cf)}/mo) help fund every planned asset.
+note	3107:trust-next:1	KEEP	
+note	3109:trust-pool:1	KEEP	
+note	3115:loc-split:1	KEEP	
+note	3117:trust-pool:1	KEEP	
+note	3117:trust-pool:2	KEEP	
+note	3120:-:1	KEEP	
+note	3120:impact-note:1	REMOVE	
+note	3136:-:1	SHORTEN	Solid line: your cash. Dashed line: the reserve you want to keep.
+note	3150:job-take:1	KEEP	
+note	3159:job-split:1	REMOVE	
+note	3161:job-split:1	KEEP	
+note	3168:job-split:1	KEEP	
+note	3178:-:1	SHORTEN	Reinvested cash flow and job money are already taken out of Cash over time.
+note	3179:-:1	KEEP	
+note	3180:-:1	REMOVE	
+note	3183:-:1	SHORTEN	Already part of living costs.
+note	3184:fin-unit:1	REMOVE	
+note	3187:funding-line:1	SHORTEN	Paid from your own pocket: ${$f(pl.outsideTotal)} over the plan. ${k.capitalTotal > 0 ? `Partners and investors you listed cover ${$f(Math.min(k.totalOutside, k.capitalTotal))}; the rest` : 'All of it'} comes out of your savings and monthly income.
+note	3188:-:1	KEEP	
+note	3192:sale-taxes:1	KEEP	
+note	3193:-:1	SHORTEN	Left blank, rates are worked out from 2026 single brackets. Type a rate to use your own.
+note	3194:-:1	REMOVE	
+note	3195:-:1	KEEP	
+note	3195:-:2	REMOVE	
+note	3196:-:1	KEEP	
+note	3196:-:2	REMOVE	
+note	3219:-:1	KEEP	
+note	3221:ex-storage-note:1	KEEP	
+note	3240:loan-fit:1	KEEP	
+note	3240:-:1	SHORTEN	If you will live there
+note	3240:-:2	KEEP	
+note	3240:-:3	KEEP	
+note	3240:loan-typical:1	KEEP	
+note	3241:-:1	SHORTEN	If you will live there
+note	3256:-:1	SHORTEN	Tap one to fill in the numbers; it is only added when you tap Add.
+note	3256:ex-msg:1	KEEP	
+note	3256:ex-storage-note:1	KEEP	
+note	3263:-:1	KEEP	
+note	3263:-:2	SHORTEN	Leave blank and the plan splits your job money. Type an amount to fix it.
+note	3304:-:1	SHORTEN	You can type math in any number box, like 650*3.[i] Keyboard shortcuts[i]
+note	3305:-:1	REMOVE	
+note	3306:-:1	KEEP	
+note	3306:-:2	REMOVE	
+note	3307:-:1	KEEP	
+note	3307:-:2	REMOVE	
+note	3309:unit-help:1	REMOVE	
+note	3310:-:1	SHORTEN	Planned is the default.
+note	3325:-:1	KEEP	
+note	3329:-:1	KEEP	
+note	3331:-:1	SHORTEN	Loading one saves your current plan in Saved first and shows an Undo.
+note	3360:-:1	KEEP	
+note	3361:-:1	KEEP	
+note	3364:-:1	SHORTEN	Takes about a minute.
+note	3531:-:1	SHORTEN	The app keeps its last ${D ? D.SAFE_MAX : 5} copies of your portfolio here.[i]
+note	3531:safety-empty:1	KEEP	
+note	3534:-:1	KEEP	
+note	3536:-:1	KEEP	
+note	3539:-:1	KEEP	
+note	3542:bug-num-help:1	KEEP	
+note	3544:bug-msg:1	KEEP	
