@@ -145,7 +145,7 @@ async function setVal(page, sel, val) {
 }
 const routeFor = (p) => (p.startsWith('g.') ? '#assumptions' : '#house-' + p.split('.')[1]);
 async function edit(page, p, val) { await goHash(page, routeFor(p)); await setVal(page, `[data-p="${p}"]`, val); }
-const store = (page) => page.evaluate((k) => { try { const j = JSON.parse(localStorage.getItem(k)); if (j) return j; } catch (e) {} try { return JSON.parse(JSON.stringify(window.__app.state)); } catch (e) { return null; } }, KEY);
+const store = async (page) => { const b = await BOOT.stored(page).catch(() => null); if (b) return b; return page.evaluate((k) => { try { const j = JSON.parse(localStorage.getItem(k)); if (j) return j; } catch (e) {} try { return JSON.parse(JSON.stringify(window.__app.state)); } catch (e) { return null; } }, KEY); }; /* B1: IndexedDB first */
 const READ_MAIN = () => {
     const txt = (s) => { const e = document.querySelector(s); return e ? e.textContent.trim() : null; };
     const rows = [...document.querySelectorAll('[data-testid=ledger-row]')].map((r) => { const loc = r.querySelector('[data-testid=loc-line]'), inp = r.querySelector('input'), cf = r.querySelector('[data-testid=row-cashflow] b'), ex = r.querySelector('.exitline');

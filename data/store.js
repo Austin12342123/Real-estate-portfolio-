@@ -97,9 +97,9 @@
       /* save the working portfolio. { ok:true, rev } | { ok:false, readonly | stale | error } ; never overwrites a newer stored portfolio */
       async save(portfolio) { return st._write(portfolio, null); },
       /* a major change: the stored portfolio is filed as a safety copy and the new one written in ONE transaction; the 3 newest copies are kept */
-      async saveMajor(reason, portfolio, build) {
+      async saveMajor(reason, portfolio, build, label) {
         if (!isMajor(reason)) return { ok: false, error: 'not a major change: ' + reason };
-        return st._write(portfolio, { reason, build });
+        return st._write(portfolio, { reason, build, label });
       },
       /* a major change that is not a save (nothing new to write, e.g. before deleting rows elsewhere): file a copy of the stored portfolio now */
       async snapshotNow(reason, build) {
@@ -107,6 +107,14 @@
         const tx = db.transaction(['portfolio', 'snapshots'], 'readwrite');
         const cur = await req(tx.objectStore('portfolio').get('current'));
         if (cur) addSnap(tx, cur, reason, build);
+        await done(tx);
+        return { ok: true };
+      },
+      /* file a copy of a portfolio the caller holds (the state BEFORE a major change, which may not be stored yet); prunes to the 3 newest in the same transaction */
+      async snapshotData(reason, portfolio, build, label) {
+        if (!isMajor(reason)) return { ok: false, error: 'not a major change: ' + reason };
+        const tx = db.transaction('snapshots', 'readwrite');
+        addSnap(tx, { hash: SCH.hashOf(portfolio), rev: rev || 0, data: portfolio }, reason, build, label);
         await done(tx);
         return { ok: true };
       },
@@ -119,7 +127,7 @@
         const ps = tx.objectStore('portfolio');
         const cur = await req(ps.get('current'));
         if ((cur ? cur.rev : 0) !== rev) { try { tx.abort(); } catch (e) {} await done(tx).catch(() => {}); needsReload = true; return { ok: false, stale: true }; }
-        if (major && cur) addSnap(tx, cur, major.reason, major.build);
+        if (major && cur) addSnap(tx, cur, major.reason, major.build, major.label);
         const next = rev + 1, data = Object.assign({}, portfolio, { updatedAt: now() });
         ps.put({ id: 'current', rev: next, hash: SCH.hashOf(data), savedAt: now(), data });
         await done(tx);
@@ -162,9 +170,9 @@
         } catch (e) { return null; }
       },
     };
-    function addSnap(tx, cur, reason, build) {
+    function addSnap(tx, cur, reason, build, label) {
       const ss = tx.objectStore('snapshots');
-      ss.add({ ts: now(), reason, build: build || '', hash: cur.hash, assets: SCH.countAssets(cur.data), rev: cur.rev, data: cur.data });
+      ss.add({ ts: now(), kind: reason, reason: label || reason, build: build || '', hash: cur.hash, assets: SCH.countAssets(cur.data), rev: cur.rev, data: cur.data });
       /* prune in the same transaction: keep the SAFE_KEEP newest by seq */
       const k = ss.getAllKeys();
       k.onsuccess = () => { const keys = k.result.slice().sort((a, b) => a - b); keys.slice(0, Math.max(0, keys.length - SAFE_KEEP)).forEach((x) => ss.delete(x)); };

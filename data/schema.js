@@ -84,7 +84,8 @@
   function toV22(legacy, opts) {
     opts = opts || {};
     const L = clone(legacy), now = opts.now || Date.now();
-    const meta = defaultMeta();
+    const meta = Object.assign(defaultMeta(), opts.meta ? clone(opts.meta) : {});
+    meta.legacyTop = {};
     if (opts.deviceId) meta.deviceId = opts.deviceId;
     if (opts.ui && opts.ui.unit === 'future') meta.moneyView = 'future';
     Object.keys(L).forEach((k) => {

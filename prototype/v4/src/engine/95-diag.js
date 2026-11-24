@@ -2,7 +2,7 @@
   const Diag = (function () {
     const SAFEKEY = 'rep-v4-safety',
       DIAGKEY = 'rep-v4-diag',
-      SAFE_MAX = 5,
+      SAFE_MAX = 3,
       SAFE_BYTES = 700000,
       EV_MAX = 60,
       ACT_MAX = 10,

@@ -25,7 +25,7 @@ exports.run = async function run(X) {
   async function load(S, hash, ui, saved) {
     await BOOT.boot(page, { base: base(), tag: 'j', S, DATA_V, hash, write: [([k, s, uk, u, sk, sv]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); if (u) localStorage.setItem(uk, JSON.stringify(u)); if (sv) localStorage.setItem(sk, JSON.stringify(sv)); } catch (e) {} }, [KEY, S || null, UIKEY, ui || null, SKEY, saved || null]] });
   }
-  const store = () => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
+  const store = () => BOOT.stored(page); /* B1: the portfolio is read from IndexedDB (was localStorage rep-v4) */
   const withV = (S) => Object.assign(clone(S), { v: DATA_V });
   /* design v5: the loan options sit behind the Loan row; the 'More figures' fold hides payments, DSCR and the target years */
   const openLoansU = async () => { if (!(await page.$('[data-testid=loan-options]'))) await page.click('[data-testid=loan-row]'); await page.waitForSelector('[data-testid=loan-options]'); };

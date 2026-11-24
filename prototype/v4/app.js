@@ -1,6 +1,457 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'8dfc7796'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'31a25751'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
-(function () {
+(async function () {
+/* Data schema v22 (docs/schema-v22.md). Pure functions, no storage. Works in the browser (global RepData) and in node (require).
+   toV22(legacy)  : the app's working portfolio ({ g, p, houses, v, ... }, money in dollars) -> a v22 Portfolio (money in cents).
+   fromV22(p)     : the exact inverse, so the engine keeps running on its own shape. toV22 then fromV22 returns the same portfolio (same figures).
+   Ids of existing records are KEPT (the engine refers to them: mergeInto, planned ids); only new records get UUIDs. */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.RepData = Object.assign(root.RepData || {}, api);
+})(typeof self !== 'undefined' ? self : this, function () {
+  const SCHEMA_V = 22;
+  const THEMES = ['oxford', 'clay', 'cottagecore', 'technoir', 'darkacademia', 'ember'];
+  const MONEY_VIEWS = ['today', 'future', 'todaySub'];
+  /* dollar fields that become cents. Ambiguous ones (percent-like: nnn, mipUp, mipAnn, liftIncome) are NOT converted. */
+  const ASSET_MONEY = ['price', 'liens', 'paid', 'buyIn', 'capex', 'arv', 'rent', 'tax', 'ins', 'hoa', 'mfRes', 'mfOther', 'revenue', 'extra', 'jobPay', 'jobSavedOverride', 'comp'];
+  const PERSONAL_MONEY = ['cash', 'living', 'housing', 'gmMonthly'];
+  const JOB_MONEY = ['gross', 'wage', 'tips'];
+  const CAP_MONEY = ['amount'];
+  const G_MONEY = ['p1', 'p2', 'otherDebt'];
+  const LEGACY_TOP = ['g', 'p', 'houses']; /* these map to schema fields; EVERY other top-level key of the working portfolio (v, added, orderV, seq, ...) is kept in meta.legacyTop so a round trip loses nothing */
+  const uuid = () => {
+    const c = typeof crypto !== 'undefined' && crypto;
+    if (c && c.randomUUID) return c.randomUUID();
+    const b = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256);
+    b[6] = (b[6] & 15) | 64;
+    b[8] = (b[8] & 63) | 128;
+    const h = Array.from(b, (x) => ('0' + x.toString(16)).slice(-2)).join('');
+    return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+  };
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const isNum = (v) => typeof v === 'number' && isFinite(v);
+  const toCents = (d) => Math.round(d * 100);
+  const fromCents = (c) => c / 100;
+  /* canonical text (sorted keys) and a 53-bit hash of it (cyrb53): the same portfolio always gives the same hash */
+  const canon = (v) => {
+    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+    if (v && typeof v === 'object')
+      return '{' + Object.keys(v).filter((k) => v[k] !== undefined).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+    return JSON.stringify(v === undefined ? null : v);
+  };
+  const hash = (s) => {
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, '0');
+  };
+  const hashOf = (v) => hash(canon(v));
+  /* convert the listed dollar fields of o to cents in place; a value that is not an exact number of cents is kept verbatim in o.exact so nothing is rounded */
+  function moneyOut(o, fields) {
+    const exact = {};
+    fields.forEach((k) => {
+      if (!isNum(o[k])) return;
+      const c = toCents(o[k]);
+      if (fromCents(c) !== o[k]) exact[k] = o[k];
+      o[k] = c;
+    });
+    if (Object.keys(exact).length) o.exact = exact;
+  }
+  function moneyIn(o, fields) {
+    const exact = o.exact || {};
+    fields.forEach((k) => {
+      if (k in exact) o[k] = exact[k];
+      else if (isNum(o[k])) o[k] = fromCents(o[k]);
+    });
+    delete o.exact;
+  }
+  const mapNum = (arr, fields, fn) =>
+    Array.isArray(arr)
+      ? arr.map((x) => {
+          const y = clone(x);
+          fn(y, fields);
+          return y;
+        })
+      : arr;
+  function defaultMeta() {
+    return { goal: null, deviceId: uuid(), csvProfiles: [], lastBackupAt: null, theme: 'oxford', moneyView: 'today', futureYear: null, inflationMode: 'auto', learn: { done: [] }, legacyTop: {} };
+  }
+  /* legacy = the working portfolio. opts = { ui: legacy UI object (unit), now, deviceId, entityId, id } */
+  function toV22(legacy, opts) {
+    opts = opts || {};
+    const L = clone(legacy), now = opts.now || Date.now();
+    const meta = Object.assign(defaultMeta(), opts.meta ? clone(opts.meta) : {});
+    meta.legacyTop = {};
+    if (opts.deviceId) meta.deviceId = opts.deviceId;
+    if (opts.ui && opts.ui.unit === 'future') meta.moneyView = 'future';
+    Object.keys(L).forEach((k) => {
+      if (LEGACY_TOP.indexOf(k) < 0) meta.legacyTop[k] = L[k];
+    });
+    const entityId = opts.entityId || 'ent-personal';
+    const units = [];
+    const assets = (L.houses || []).map((a) => {
+      a.entityId = entityId;
+      a.updatedAt = a.created || now;
+      moneyOut(a, ASSET_MONEY);
+      if (a.kind === 'multi' && a.units >= 2)
+        for (let i = 1; i <= a.units; i++) units.push({ id: a.id + '~u' + i, assetId: a.id, label: 'Unit ' + i, createdAt: a.created || now, updatedAt: a.created || now });
+      return a;
+    });
+    const personal = L.p ? clone(L.p) : null;
+    if (personal) {
+      moneyOut(personal, PERSONAL_MONEY);
+      personal.jobs = mapNum(personal.jobs, JOB_MONEY, moneyOut);
+      personal.capital = mapNum(personal.capital, CAP_MONEY, moneyOut);
+    }
+    const assumptions = L.g ? clone(L.g) : null;
+    if (assumptions) moneyOut(assumptions, G_MONEY);
+    return {
+      id: opts.id || 'current',
+      schemaVersion: SCHEMA_V,
+      updatedAt: now,
+      assumptions,
+      personal,
+      entities: [{ id: entityId, name: 'Me', kind: 'personal', createdAt: now, updatedAt: now }],
+      accounts: [],
+      assets,
+      units,
+      leases: [],
+      loans: [],
+      ledger: [],
+      rules: [],
+      notes: [],
+      meta,
+    };
+  }
+  function fromV22(p) {
+    if (!p || p.schemaVersion !== SCHEMA_V) throw new Error('not a v22 portfolio');
+    const out = {};
+    const top = (p.meta && p.meta.legacyTop) || {};
+    Object.keys(top).forEach((k) => {
+      out[k] = clone(top[k]);
+    });
+    out.g = p.assumptions ? clone(p.assumptions) : undefined;
+    if (out.g) moneyIn(out.g, G_MONEY);
+    if (p.personal) {
+      out.p = clone(p.personal);
+      moneyIn(out.p, PERSONAL_MONEY);
+      out.p.jobs = mapNum(out.p.jobs, JOB_MONEY, moneyIn);
+      out.p.capital = mapNum(out.p.capital, CAP_MONEY, moneyIn);
+    }
+    out.houses = p.assets.map((a) => {
+      const h = clone(a);
+      delete h.entityId;
+      delete h.updatedAt;
+      moneyIn(h, ASSET_MONEY);
+      return h;
+    });
+    return out;
+  }
+  const countAssets = (p) => (p && Array.isArray(p.assets) ? p.assets.length : p && Array.isArray(p.houses) ? p.houses.length : 0);
+  function validate(p) {
+    const err = [];
+    if (!p || typeof p !== 'object') return ['not an object'];
+    if (p.schemaVersion !== SCHEMA_V) err.push('schemaVersion ' + p.schemaVersion);
+    ['entities', 'accounts', 'assets', 'units', 'leases', 'loans', 'ledger', 'rules', 'notes'].forEach((k) => {
+      if (!Array.isArray(p[k])) err.push(k + ' missing');
+    });
+    const m = p.meta || {};
+    if (MONEY_VIEWS.indexOf(m.moneyView) < 0) err.push('meta.moneyView');
+    if (THEMES.indexOf(m.theme) < 0) err.push('meta.theme');
+    if (['auto', 'custom'].indexOf(m.inflationMode) < 0) err.push('meta.inflationMode');
+    if (!('futureYear' in m)) err.push('meta.futureYear');
+    if (!m.learn || !Array.isArray(m.learn.done)) err.push('meta.learn');
+    return err;
+  }
+  return { SCHEMA_V, THEMES, MONEY_VIEWS, ASSET_MONEY, toV22, fromV22, validate, canon, hash, hashOf, countAssets, uuid, defaultMeta, toCents, fromCents };
+});
+/* IndexedDB store for the v22 portfolio (card B1). Browser global RepData.createStore, or require() in node (tests pass fake-indexeddb).
+   Stores: portfolio (one record 'current' { id, rev, hash, savedAt, data }), saved (saved portfolios), snapshots (safety copies, newest 3),
+   kv (flags and small values). Everything is injectable: createStore({ indexedDB, locks, BroadcastChannel, now, name }).
+   Rules:
+   - STALE GUARD (carried from A72F): a page remembers the rev it loaded; a save is refused (stale:true) when the stored rev differs, so a page that is
+     still open on old data can never overwrite a newer stored portfolio. The check and the write are ONE transaction.
+   - ONE WRITER: a tab saves only while it holds the Web Lock 'rep-v4-writer'. Other tabs are read-only and are told through a BroadcastChannel when the
+     writer saved (they must reload). When the writer closes, a waiting tab gets the lock, but must reload before its first save.
+   - SAFETY COPIES: only before a major change (MAJOR below). The copy and the change are one transaction; the 3 newest copies are kept and older ones are
+     deleted in that same transaction. There are no daily or weekly copies. */
+(function (root, factory) {
+  const api = factory(typeof require === 'function' && typeof module === 'object' ? require('./schema.js') : root.RepData);
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.RepData = Object.assign(root.RepData || {}, api);
+})(typeof self !== 'undefined' ? self : this, function (SCH) {
+  const DB_NAME = 'rep-v4-store', DB_VER = 1, SAFE_KEEP = 3, LOCK_NAME = 'rep-v4-writer', CHAN_NAME = 'rep-v4-store';
+  /* the only reasons a safety copy may be taken (a reason must start with one of these) */
+  const MAJOR = ['data migration', 'backup import', 'restore', 'csv import', 'delete asset', 'delete entity'];
+  const isMajor = (r) => typeof r === 'string' && MAJOR.some((m) => r.indexOf(m) === 0);
+  const req = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const done = (tx) => new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onabort = () => rej(tx.error || new Error('transaction aborted')); tx.onerror = () => rej(tx.error); });
+
+  function createStore(o) {
+    o = o || {};
+    const idb = o.indexedDB || (typeof indexedDB !== 'undefined' ? indexedDB : null);
+    const locks = o.locks !== undefined ? o.locks : typeof navigator !== 'undefined' && navigator.locks ? navigator.locks : null;
+    const BC = o.BroadcastChannel !== undefined ? o.BroadcastChannel : typeof BroadcastChannel !== 'undefined' ? BroadcastChannel : null;
+    const now = o.now || (() => Date.now());
+    const name = o.name || DB_NAME;
+    let db = null, rev = null, isWriter = !locks, needsReload = false, chan = null, releaseLock = null, listeners = [];
+    const st = {
+      get rev() { return rev; },
+      get isWriter() { return isWriter; },
+      get needsReload() { return needsReload; },
+      onChange(fn) { listeners.push(fn); },
+      async open() {
+        if (db) return st;
+        if (!idb) throw new Error('IndexedDB is not available');
+        db = await new Promise((res, rej) => {
+          const r = idb.open(name, DB_VER);
+          r.onupgradeneeded = () => {
+            const d = r.result;
+            d.createObjectStore('portfolio', { keyPath: 'id' });
+            d.createObjectStore('saved', { keyPath: 'id' });
+            d.createObjectStore('snapshots', { keyPath: 'seq', autoIncrement: true });
+            d.createObjectStore('kv', { keyPath: 'key' });
+          };
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+          r.onblocked = () => rej(new Error('open blocked'));
+        });
+        db.onversionchange = () => { db.close(); db = null; };
+        if (BC) {
+          chan = new BC(CHAN_NAME);
+          chan.onmessage = (e) => {
+            const m = e.data || {};
+            if (m.type === 'saved' && m.rev !== rev) { needsReload = true; listeners.forEach((f) => f({ type: 'stale', rev: m.rev })); }
+          };
+        }
+        return st;
+      },
+      close() {
+        if (releaseLock) releaseLock();
+        if (chan) chan.close();
+        if (db) db.close();
+        db = null; chan = null;
+      },
+      /* take the writer lock. Resolves true when this tab is the writer now, false when another tab is (this tab stays read-only and is promoted later: onChange gets {type:'writer'}) */
+      async claimWriter() {
+        if (!locks) { isWriter = true; return true; }
+        const got = await new Promise((resolve) => {
+          const hold = (granted) => {
+            if (!granted) { resolve(false); return undefined; }
+            resolve(true);
+            return new Promise((rel) => { releaseLock = rel; });
+          };
+          locks.request(LOCK_NAME, { ifAvailable: true }, hold).catch(() => resolve(false));
+        });
+        isWriter = got;
+        if (!got) {
+          locks.request(LOCK_NAME, () => {
+            isWriter = true; needsReload = true; /* the data this tab holds may be older than the stored one: reload before the first save */
+            listeners.forEach((f) => f({ type: 'writer' }));
+            return new Promise((rel) => { releaseLock = rel; });
+          }).catch(() => {});
+        }
+        return got;
+      },
+      /* read the working portfolio; remembers its rev for the stale guard */
+      async load() {
+        const tx = db.transaction('portfolio', 'readonly');
+        const r = await req(tx.objectStore('portfolio').get('current'));
+        rev = r ? r.rev : 0;
+        needsReload = false;
+        return r ? { portfolio: r.data, rev: r.rev, hash: r.hash } : null;
+      },
+      /* save the working portfolio. { ok:true, rev } | { ok:false, readonly | stale | error } ; never overwrites a newer stored portfolio */
+      async save(portfolio) { return st._write(portfolio, null); },
+      /* a major change: the stored portfolio is filed as a safety copy and the new one written in ONE transaction; the 3 newest copies are kept */
+      async saveMajor(reason, portfolio, build, label) {
+        if (!isMajor(reason)) return { ok: false, error: 'not a major change: ' + reason };
+        return st._write(portfolio, { reason, build, label });
+      },
+      /* a major change that is not a save (nothing new to write, e.g. before deleting rows elsewhere): file a copy of the stored portfolio now */
+      async snapshotNow(reason, build) {
+        if (!isMajor(reason)) return { ok: false, error: 'not a major change: ' + reason };
+        const tx = db.transaction(['portfolio', 'snapshots'], 'readwrite');
+        const cur = await req(tx.objectStore('portfolio').get('current'));
+        if (cur) addSnap(tx, cur, reason, build);
+        await done(tx);
+        return { ok: true };
+      },
+      /* file a copy of a portfolio the caller holds (the state BEFORE a major change, which may not be stored yet); prunes to the 3 newest in the same transaction */
+      async snapshotData(reason, portfolio, build, label) {
+        if (!isMajor(reason)) return { ok: false, error: 'not a major change: ' + reason };
+        const tx = db.transaction('snapshots', 'readwrite');
+        addSnap(tx, { hash: SCH.hashOf(portfolio), rev: rev || 0, data: portfolio }, reason, build, label);
+        await done(tx);
+        return { ok: true };
+      },
+      async _write(portfolio, major) {
+        if (!isWriter) return { ok: false, readonly: true };
+        if (needsReload) return { ok: false, stale: true };
+        const errs = SCH.validate(portfolio);
+        if (errs.length) return { ok: false, error: 'invalid portfolio: ' + errs.join(', ') };
+        const tx = db.transaction(['portfolio', 'snapshots'], 'readwrite');
+        const ps = tx.objectStore('portfolio');
+        const cur = await req(ps.get('current'));
+        if ((cur ? cur.rev : 0) !== rev) { try { tx.abort(); } catch (e) {} await done(tx).catch(() => {}); needsReload = true; return { ok: false, stale: true }; }
+        if (major && cur) addSnap(tx, cur, major.reason, major.build, major.label);
+        const next = rev + 1, data = Object.assign({}, portfolio, { updatedAt: now() });
+        ps.put({ id: 'current', rev: next, hash: SCH.hashOf(data), savedAt: now(), data });
+        await done(tx);
+        rev = next;
+        if (chan) chan.postMessage({ type: 'saved', rev });
+        return { ok: true, rev };
+      },
+      async snapshots() {
+        const tx = db.transaction('snapshots', 'readonly');
+        const all = await req(tx.objectStore('snapshots').getAll());
+        return all.sort((a, b) => b.seq - a.seq);
+      },
+      async restoreSnapshot(seq, build) { /* restoring is itself a major change: the current portfolio is filed first */
+        const tx0 = db.transaction('snapshots', 'readonly');
+        const s = await req(tx0.objectStore('snapshots').get(seq));
+        if (!s) return { ok: false, error: 'no such copy' };
+        return st.saveMajor('restore', Object.assign({}, s.data), build);
+      },
+      async getSaved() { return req(db.transaction('saved', 'readonly').objectStore('saved').getAll()); },
+      async putSaved(list) { /* replace the saved list */
+        const tx = db.transaction('saved', 'readwrite');
+        const s = tx.objectStore('saved');
+        s.clear();
+        (list || []).forEach((x) => s.put(x));
+        await done(tx);
+      },
+      async kvGet(key) { const r = await req(db.transaction('kv', 'readonly').objectStore('kv').get(key)); return r ? r.value : undefined; },
+      async kvSet(key, value) { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put({ key, value }); await done(tx); },
+      async kvDelete(key) { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').delete(key); await done(tx); },
+      /* raw transaction for the migration (copy / verify / roll back) */
+      _db: () => db,
+      /* ask the browser not to evict this origin's storage; resolves true / false / null (unsupported) and records the answer */
+      async persist() {
+        try {
+          const s = typeof navigator !== 'undefined' ? navigator.storage : null;
+          if (!s || !s.persist) return null;
+          const ok = (s.persisted && (await s.persisted())) || (await s.persist());
+          await st.kvSet('persistGranted', !!ok);
+          return !!ok;
+        } catch (e) { return null; }
+      },
+    };
+    function addSnap(tx, cur, reason, build, label) {
+      const ss = tx.objectStore('snapshots');
+      ss.add({ ts: now(), kind: reason, reason: label || reason, build: build || '', hash: cur.hash, assets: SCH.countAssets(cur.data), rev: cur.rev, data: cur.data });
+      /* prune in the same transaction: keep the SAFE_KEEP newest by seq */
+      const k = ss.getAllKeys();
+      k.onsuccess = () => { const keys = k.result.slice().sort((a, b) => a - b); keys.slice(0, Math.max(0, keys.length - SAFE_KEEP)).forEach((x) => ss.delete(x)); };
+    }
+    return st;
+  }
+  return { createStore, MAJOR, isMajor, SAFE_KEEP, DB_NAME };
+});
+/* localStorage -> IndexedDB migration (card B1). copy, verify (asset count + hash), then flag; roll back on any mismatch.
+   The old localStorage keys are NEVER written or removed here (they stay as the user's untouched fallback).
+   migrateFromLocalStorage({ ls, store, now, afterCopy }) resolves { status, ... } with status one of:
+     'already'    the flag is set: nothing to do
+     'nothing'    no portfolio in localStorage (fresh start: the app creates its first v22 portfolio itself)
+     'unreadable' the stored text is not a portfolio: left alone, no flag (the app's own recovery handles it)
+     'migrated'   copied, verified, flagged
+     'rolled-back' verification failed: everything written was removed, no flag, localStorage untouched (reason says why)
+   afterCopy (tests only) runs between copy and verify. */
+(function (root, factory) {
+  const isNode = typeof require === 'function' && typeof module === 'object';
+  const api = factory(isNode ? require('./schema.js') : root.RepData);
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.RepData = Object.assign(root.RepData || {}, api);
+})(typeof self !== 'undefined' ? self : this, function (SCH) {
+  const KEYS = { state: 'rep-v4', ui: 'rep-v4-ui', saved: 'rep-v4-saved', safety: 'rep-v4-safety', examples: 'rep-v4-examples', backup: 'rep-v4-backup', diag: 'rep-v4-diag' };
+  const FLAG = 'migratedFromLocalStorage';
+  const req = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const done = (tx) => new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onabort = () => rej(tx.error || new Error('aborted')); tx.onerror = () => rej(tx.error); });
+  const readLS = (ls, k) => { try { return ls.getItem(k); } catch (e) { return null; } };
+  const parse = (t) => { try { return JSON.parse(t); } catch (e) { return null; } };
+  const okLegacy = (s) => !!(s && typeof s === 'object' && Array.isArray(s.houses) && s.g);
+
+  async function migrateFromLocalStorage(o) {
+    const { ls, store } = o, now = o.now || (() => Date.now());
+    await store.open();
+    if (await store.kvGet(FLAG)) return { status: 'already' };
+    const raw = readLS(ls, KEYS.state);
+    if (raw === null || raw === '') return { status: 'nothing' };
+    const legacy = parse(raw);
+    if (!okLegacy(legacy)) return { status: 'unreadable' };
+    const ui = parse(readLS(ls, KEYS.ui)) || {};
+    const savedList = (() => { const a = parse(readLS(ls, KEYS.saved)); return Array.isArray(a) ? a.filter((x) => x && x.id && okLegacy(x.state)) : []; })();
+    const safety = (() => { const j = parse(readLS(ls, KEYS.safety)); return j && Array.isArray(j.items) ? j.items.filter((x) => x && okLegacy(x.state)).slice(0, 3) : []; })();
+    const t = now();
+    const portfolio = SCH.toV22(legacy, { ui, now: t });
+    const want = { assets: SCH.countAssets(legacy), hash: SCH.hashOf(legacy) };
+    const savedRecs = savedList.map((x) => ({ id: String(x.id), name: x.name, ts: x.ts, data: SCH.toV22(x.state, { now: t, id: String(x.id) }), want: { assets: SCH.countAssets(x.state), hash: SCH.hashOf(x.state) } }));
+    const db = store._db();
+    const written = { portfolio: false, saved: [], snaps: [], kv: [] };
+    const rollback = async () => {
+      const tx = db.transaction(['portfolio', 'saved', 'snapshots', 'kv'], 'readwrite');
+      if (written.portfolio) tx.objectStore('portfolio').delete('current');
+      written.saved.forEach((id) => tx.objectStore('saved').delete(id));
+      written.snaps.forEach((s) => tx.objectStore('snapshots').delete(s));
+      written.kv.forEach((k) => tx.objectStore('kv').delete(k));
+      tx.objectStore('kv').delete(FLAG);
+      await done(tx);
+    };
+    try {
+      /* 1. copy, in one transaction (all or nothing) */
+      const tx = db.transaction(['portfolio', 'saved', 'snapshots', 'kv'], 'readwrite');
+      const ps = tx.objectStore('portfolio');
+      const existing = await req(ps.get('current'));
+      if (existing) { try { tx.abort(); } catch (e) {} await done(tx).catch(() => {}); return { status: 'rolled-back', reason: 'the store already holds a portfolio; not overwritten' }; }
+      ps.put({ id: 'current', rev: 1, hash: SCH.hashOf(portfolio), savedAt: t, data: portfolio });
+      written.portfolio = true;
+      savedRecs.forEach((r) => { tx.objectStore('saved').put({ id: r.id, name: r.name, ts: r.ts, data: r.data }); written.saved.push(r.id); });
+      for (const it of safety.slice().reverse()) {
+        const k = await req(tx.objectStore('snapshots').add({ ts: it.ts, reason: 'carried over: ' + (it.reason || 'safety copy'), build: it.build || '', hash: SCH.hashOf(SCH.toV22(it.state, { now: t })), assets: SCH.countAssets(it.state), rev: 0, data: SCH.toV22(it.state, { now: t }) }));
+        written.snaps.push(k);
+      }
+      [['lsSeen', SCH.hash(raw)], ['ui', ui], ['examples', parse(readLS(ls, KEYS.examples))], ['backupAt', readLS(ls, KEYS.backup)]].forEach(([k, v]) => {
+        if (v !== null && v !== undefined) { tx.objectStore('kv').put({ key: k, value: v }); written.kv.push(k); }
+      });
+      await done(tx);
+      if (o.afterCopy) await o.afterCopy(db);
+      /* 2. verify by reading everything back */
+      const rtx = db.transaction(['portfolio', 'saved'], 'readonly');
+      const back = await req(rtx.objectStore('portfolio').get('current'));
+      const backSaved = await req(rtx.objectStore('saved').getAll());
+      const bad = (what, got, w) => {
+        const g = { assets: SCH.countAssets(got), hash: SCH.hashOf(got) };
+        return g.assets !== w.assets ? what + ': asset count ' + g.assets + ' vs ' + w.assets : g.hash !== w.hash ? what + ': hash ' + g.hash + ' vs ' + w.hash : '';
+      };
+      let why = '';
+      if (!back) why = 'portfolio missing after copy';
+      else {
+        try { why = bad('portfolio', SCH.fromV22(back.data), want); } catch (e) { why = 'portfolio unreadable: ' + e.message; }
+      }
+      for (const r of savedRecs) {
+        if (why) break;
+        const b = backSaved.find((x) => x.id === r.id);
+        if (!b) why = 'saved ' + r.id + ' missing';
+        else { try { why = bad('saved ' + r.id, SCH.fromV22(b.data), r.want); } catch (e) { why = 'saved ' + r.id + ' unreadable'; } }
+      }
+      if (why) { await rollback(); return { status: 'rolled-back', reason: why }; }
+      /* 3. flag last */
+      await store.kvSet(FLAG, { at: t, assets: want.assets, hash: want.hash, saved: savedRecs.length });
+      return { status: 'migrated', assets: want.assets, hash: want.hash, saved: savedRecs.length, carriedCopies: safety.length };
+    } catch (e) {
+      try { await rollback(); } catch (e2) {}
+      return { status: 'rolled-back', reason: 'error: ' + ((e && e.message) || e) };
+    }
+  }
+  return { migrateFromLocalStorage, KEYS, FLAG };
+});
   const E = window.Engine,
     KEY = 'rep-v4',
     UIKEY = 'rep-v4-ui',
@@ -198,6 +649,77 @@
   try {
     RAW0 = localStorage.getItem(KEY);
   } catch (e) {}
+  const LS0 = RAW0; /* the old localStorage text at start: never written by this version (it stays as the untouched fallback); a different text later means an older app version or a test wrote it */
+  /* ---------- IndexedDB boot (card B1): open the store, take the writer lock, copy localStorage -> IndexedDB once (verified, rolled back on mismatch), then read the portfolio from IndexedDB. Any failure falls back to the old localStorage path. ---------- */
+  const OKL = (o) => !!(o && typeof o === 'object' && Array.isArray(o.houses) && o.g);
+  let IDBS = null,
+    IDBMODE = false,
+    IDBMETA = null,
+    IDBSAFE0 = [],
+    IDBNOTE = '';
+  const idbMajor = (label) =>
+    /migration|additions|unreadable/.test(label) ? 'data migration' : /backup/.test(label) ? 'backup import' : /removing/.test(label) ? 'delete asset' : 'restore'; /* the only kinds of change that take a safety copy */
+  const idbSafeMap = (list) =>
+    list.map((x) => ({ ts: x.ts, reason: x.reason, build: x.build || '', state: RepData.fromV22(x.data) }));
+  try {
+    if (window.RepData && RepData.createStore && typeof indexedDB !== 'undefined') {
+      const st = RepData.createStore();
+      await st.open();
+      let got = await new Promise((res) => {
+        const t = setTimeout(() => res(false), 1500);
+        st.onChange((e) => {
+          if (e.type === 'writer') {
+            clearTimeout(t);
+            res(true);
+          }
+        });
+        st.claimWriter().then((g) => {
+          if (g) {
+            clearTimeout(t);
+            res(true);
+          }
+        });
+      }); /* a tab that opens while another still holds the lock (a reload) waits a moment for it; if it never gets the lock it stays read-only */
+      const mig = got ? await RepData.migrateFromLocalStorage({ ls: localStorage, store: st }) : { status: 'skipped' };
+      let ld = await st.load();
+      if (ld) {
+        let L = RepData.fromV22(ld.portfolio);
+        IDBMETA = ld.portfolio.meta;
+        const seen = await st.kvGet('lsSeen');
+        if (got && LS0 && RepData.hash(LS0) !== seen) {
+          /* localStorage changed outside this version (an older cached app in another tab, a restore by hand, a test): adopt it, after filing the stored portfolio as a safety copy */
+          let o = null;
+          try {
+            o = JSON.parse(LS0);
+          } catch (e) {}
+          if (OKL(o)) {
+            if (RepData.hashOf(o) !== RepData.hashOf(L)) {
+              const p = RepData.toV22(o, { meta: IDBMETA, id: 'current' });
+              const r = await st.saveMajor('data migration', p, STAMPS.app, 'migration: localStorage changed outside this version');
+              if (r.ok) {
+                L = o;
+                IDBNOTE = 'adopted localStorage';
+              }
+            }
+            await st.kvSet('lsSeen', RepData.hash(LS0));
+          }
+        }
+        RAW0 = JSON.stringify(L);
+        IDBMODE = true;
+      } else if (mig.status === 'nothing') {
+        IDBMODE = true;
+        RAW0 = null;
+      } else IDBNOTE = 'fallback: ' + mig.status + (mig.reason ? ' ' + mig.reason : '');
+      if (IDBMODE) {
+        IDBS = st;
+        IDBSAFE0 = idbSafeMap((await st.snapshots()).filter((x) => x.data && x.data.schemaVersion === 22));
+        st.persist(); /* ask the browser not to evict this origin's storage */
+      } else st.close();
+    }
+  } catch (e) {
+    IDBMODE = false;
+    IDBNOTE = 'fallback: ' + String((e && e.message) || e).slice(0, 80);
+  }
   const HAD0 = RAW0 != null && RAW0 !== '';
   try {
     S = JSON.parse(RAW0);
@@ -262,7 +784,7 @@
         old = JSON.parse(RAW0);
       } catch (e) {}
       STARTSNAP = true;
-      const ok = D.safeAdd(localStorage, old, why, STAMPS.app, NOW(), RAW0);
+      const ok = IDBMODE ? safeCopy(why, old) : D.safeAdd(localStorage, old, why, STAMPS.app, NOW(), RAW0);
       logEv(
         !VALID0 || V0 !== DATA_V ? 'migration' : 'additions',
         why + (ok ? ': safety copy filed' : ': safety copy could not be stored'),
@@ -359,7 +881,80 @@
   }; /* did the last save read back exactly as written? (an invariant the anomaly monitor checks) */
   let STALE = false; /* another tab changed the stored portfolio: this page keeps skipping saves and shows the Reload line */
   let LASTJS = RAW0; /* the last text of the portfolio this page read or wrote: a save never replaces a stored portfolio that differs from it (another tab, a restore or a test changed it): the stale page would overwrite newer data with its own copy */
+  /* IndexedDB save: serialised (one write at a time, the latest state wins), refused when this tab is stale or read-only */
+  let IDB_BUSY = false,
+    IDB_DIRTY = false,
+    IDBP = Promise.resolve();
+  const goStale = (why) => {
+    logEv('stale', why);
+    if (!STALE) {
+      STALE = true;
+      try {
+        injectNotes();
+      } catch (e) {}
+    }
+  };
+  const idbPump = () => {
+    IDB_BUSY = true;
+    IDB_DIRTY = false;
+    let p;
+    try {
+      IDBMETA.moneyView = UI.unit === 'future' ? 'future' : 'today';
+      p = RepData.toV22(S, { meta: IDBMETA, id: 'current' });
+    } catch (e) {
+      IDB_BUSY = false;
+      return;
+    }
+    IDBP = IDBS.save(p)
+      .then((r) => {
+        if (r.ok) {
+          storageOK = true;
+          RW.ok = true;
+          RW.err = '';
+        } else if (r.stale || r.readonly) goStale(r.readonly ? 'save skipped: another tab is the writer; this page is read-only' : 'save skipped: the stored portfolio was changed elsewhere; this page keeps it');
+        else {
+          storageOK = false;
+          RW.ok = false;
+          RW.err = String(r.error || 'save failed').slice(0, 80);
+          logEv('storage', 'save failed: ' + RW.err);
+        }
+      })
+      .catch((e) => {
+        storageOK = false;
+        RW.ok = false;
+        RW.err = String((e && e.message) || e).slice(0, 80);
+        logEv('storage', 'save failed: ' + RW.err);
+      })
+      .then(() => {
+        IDB_BUSY = false;
+        if (IDB_DIRTY && !STALE) idbPump();
+      });
+  };
+  const saveIdb = () => {
+    if (STALE) return;
+    try {
+      const cur = localStorage.getItem(KEY);
+      if (cur !== null && cur !== '' && cur !== LS0) {
+        const o = JSON.parse(cur);
+        if (OKL(o)) {
+          goStale('save skipped: the stored portfolio was changed elsewhere; this page keeps it');
+          return;
+        }
+      }
+    } catch (e) {}
+    try {
+      localStorage.setItem(UIKEY, JSON.stringify(UI));
+    } catch (e) {}
+    RW.chars = 0;
+    IDB_DIRTY = true;
+    if (!IDB_BUSY) idbPump();
+  };
+  if (IDBMODE)
+    IDBS.onChange((e) => {
+      if (e.type === 'stale') goStale('another tab saved the portfolio; this page keeps what is stored');
+    });
   const save = () => {
+    if (IDBMODE) return saveIdb();
     try {
       const js = JSON.stringify(S);
       const cur = localStorage.getItem(KEY);
@@ -409,8 +1004,21 @@
   };
   /* safety copies: a snapshot of the working portfolio in the ring (rep-v4-safety) taken BEFORE anything that could replace it */
   let SAFE_CACHE = null;
-  const safeList = () => SAFE_CACHE || (SAFE_CACHE = D ? D.safeRead(localStorage) : []);
+  const safeList = () => SAFE_CACHE || (SAFE_CACHE = IDBMODE ? IDBSAFE0 : D ? D.safeRead(localStorage) : []);
   function safeCopy(reason, st) {
+    if (IDBMODE) {
+      /* a copy of the state BEFORE a major change, in IndexedDB, the 3 newest kept (pruned in the same transaction) */
+      try {
+        const state = JSON.parse(JSON.stringify(st || S));
+        SAFE_CACHE = [{ ts: NOW(), reason: String(reason).slice(0, 80), build: STAMPS.app, state }].concat(safeList()).slice(0, 3);
+        IDBS.snapshotData(idbMajor(reason), RepData.toV22(state, { meta: IDBMETA, id: 'current' }), STAMPS.app, String(reason).slice(0, 80)).catch((e) => logEv('safety', 'copy could not be stored: ' + String((e && e.message) || e).slice(0, 80)));
+        logEv('safety', reason + ': copy filed');
+        return true;
+      } catch (e) {
+        logEv('safety', reason + ': copy could not be stored');
+        return false;
+      }
+    }
     SAFE_CACHE = null;
     if (!D) return false;
     const r = D.safeAdd(localStorage, st || S, reason, STAMPS.app, NOW());
@@ -3731,13 +4339,6 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
           dgSave();
         }
       } /* the last-known fingerprint: asset ids hash, counts, time */
-      if (NOW() - lastDailyChk > 1800000) {
-        lastDailyChk = NOW();
-        if (!DG.flags.replaced && D.safeDaily(localStorage, S, STAMPS.app, NOW())) {
-          SAFE_CACHE = null;
-          logEv('safety', 'daily copy: copy filed');
-        }
-      }
       refreshSW();
       injectNotes();
     } catch (e) {}
@@ -3799,7 +4400,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   const safeStats = (it) => (it.state ? statsOf({ id: 'sc' + it.ts, ts: it.ts, state: it.state }) : null);
   function safetyCard() {
     const items = safeList();
-    const head = `<section class="card" data-testid="safety-card"><p class="note" style="margin:0">The app keeps its last ${D ? D.SAFE_MAX : 5} copies of your portfolio here, taken before anything that could replace it.${infoBtn('safety')}</p>${items.length ? '' : '<p class="note" data-testid="safety-empty">No copies yet. The first one is taken before your next change.</p>'}</section>`;
+    const head = `<section class="card" data-testid="safety-card"><p class="note" style="margin:0">The app keeps its last ${D ? D.SAFE_MAX : 3} copies of your portfolio here, each taken just before a major change (a data update, a backup restore, a restore of a copy or Saved portfolio, a CSV import, or deleting an asset).${infoBtn('safety')}</p>${items.length ? '' : '<p class="note" data-testid="safety-empty">No copies yet. The first one is taken before your next change.</p>'}</section>`;
     return (
       head +
       items
@@ -4218,13 +4819,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     );
     dgSave();
   }
-  if (D && !STARTSNAP && !DG.flags.replaced) {
-    const r = D.safeDaily(localStorage, S, STAMPS.app, NOW());
-    if (r) {
-      SAFE_CACHE = null;
-      logEv('safety', 'daily copy: copy filed');
-    }
-  }
+  /* B1: no daily copies; a safety copy is taken only before a major change */
   DIAG_MS += performance.now() - tDiag2;
   save(); /* persist the migrated state (S.v, S.added) so it is stored right after load */
   function showPage(k) {
@@ -5925,6 +6520,10 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       .catch((e) => logEv('sw', 'register failed: ' + (e && e.message)));
   } /*ENDSW*/
   window.__app = {
+    get idb() {
+      return IDBMODE ? { mode: 'indexeddb', writer: IDBS.isWriter, note: IDBNOTE } : { mode: 'localStorage', note: IDBNOTE };
+    },
+    whenSaved: () => Promise.resolve(IDBP).then(() => (IDB_BUSY || IDB_DIRTY ? IDBP : null)).then(() => IDBP),
     get state() {
       return S;
     },

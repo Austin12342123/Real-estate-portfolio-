@@ -18,6 +18,8 @@ def build(srcdir):
     files = sorted(glob.glob(os.path.join(D, srcdir, "*.js")))
     if not files:
         raise SystemExit("no modules in " + srcdir)
+    if srcdir == "src/app":  # the data layer (../../data/*.js, UMD, global RepData) is bundled into app.js right after 00-head.js, inside the same closure
+        files = files[:1] + [os.path.join(D, "../../data", n) for n in ("schema.js", "store.js", "migrate.js")] + files[1:]
     parts = []
     for f in files:
         with open(f, encoding="utf-8", newline="") as fh:

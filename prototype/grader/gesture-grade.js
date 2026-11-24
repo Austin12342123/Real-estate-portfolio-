@@ -25,7 +25,7 @@ exports.run = async function run(X) {
   async function load(S, hash, ui) {
     await BOOT.boot(page, { base: base(), tag: 'i', S, DATA_V, hash, write: [([k, s, uk, u]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); if (u) localStorage.setItem(uk, JSON.stringify(u)); } catch (e) {} }, [KEY, S || null, UIKEY, ui || null]] });
   }
-  const store = () => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
+  const store = () => BOOT.stored(page); /* B1: the portfolio is read from IndexedDB (was localStorage rep-v4) */
   const hash = () => page.evaluate(() => location.hash);
   /* the main screen has three pages: Planned | Real | Saved. Planned rows and categories live on Planned, bought ones (owned-*) on Real. */
   const tab = async (k) => { await page.waitForSelector('[data-testid=tab-' + k + ']'); if ((await page.getAttribute('[data-testid=tab-' + k + ']', 'aria-selected')) !== 'true') { await page.click('[data-testid=tab-' + k + ']'); await page.waitForTimeout(60); } };

@@ -315,13 +315,7 @@
     );
     dgSave();
   }
-  if (D && !STARTSNAP && !DG.flags.replaced) {
-    const r = D.safeDaily(localStorage, S, STAMPS.app, NOW());
-    if (r) {
-      SAFE_CACHE = null;
-      logEv('safety', 'daily copy: copy filed');
-    }
-  }
+  /* B1: no daily copies; a safety copy is taken only before a major change */
   DIAG_MS += performance.now() - tDiag2;
   save(); /* persist the migrated state (S.v, S.added) so it is stored right after load */
   function showPage(k) {

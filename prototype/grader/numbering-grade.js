@@ -47,7 +47,7 @@ exports.run = async function run(X) {
     await BOOT.boot(page, { base: base(), tag: 'n', S, DATA_V, hash, write: [([k, s, uk, ex]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); (ex || []).forEach(([a, b]) => localStorage.setItem(a, JSON.stringify(b))); } catch (e) {} }, [KEY, S || null, UIKEY, extraLS || []]] }); await settle();
   }
   const settle = async () => { await page.waitForTimeout(40); for (let i = 0; i < 3; i++) { const n = await page.evaluate(EXPAND_JS).catch(() => 0); if (!n) break; await page.waitForTimeout(20); } };
-  const store = () => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
+  const store = () => BOOT.stored(page); /* B1: the portfolio is read from IndexedDB (was localStorage rep-v4) */
   const tab = async (k) => { await page.waitForSelector('[data-testid=tab-' + k + ']'); if ((await page.getAttribute('[data-testid=tab-' + k + ']', 'aria-selected')) !== 'true') { await page.click('[data-testid=tab-' + k + ']'); await page.waitForTimeout(40); } await settle(); };
   const toMain = async () => { if (await page.evaluate(() => location.hash !== '' && location.hash !== '#')) { await page.evaluate(() => { location.hash = ''; }); await page.waitForTimeout(60); } await page.waitForSelector('[data-testid=page-tabs]'); await settle(); };
   /* every row on the page that is showing: id, badge text, aria-label, section */

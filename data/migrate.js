@@ -60,7 +60,7 @@
         const k = await req(tx.objectStore('snapshots').add({ ts: it.ts, reason: 'carried over: ' + (it.reason || 'safety copy'), build: it.build || '', hash: SCH.hashOf(SCH.toV22(it.state, { now: t })), assets: SCH.countAssets(it.state), rev: 0, data: SCH.toV22(it.state, { now: t }) }));
         written.snaps.push(k);
       }
-      [['ui', ui], ['examples', parse(readLS(ls, KEYS.examples))], ['backupAt', readLS(ls, KEYS.backup)]].forEach(([k, v]) => {
+      [['lsSeen', SCH.hash(raw)], ['ui', ui], ['examples', parse(readLS(ls, KEYS.examples))], ['backupAt', readLS(ls, KEYS.backup)]].forEach(([k, v]) => {
         if (v !== null && v !== undefined) { tx.objectStore('kv').put({ key: k, value: v }); written.kv.push(k); }
       });
       await done(tx);

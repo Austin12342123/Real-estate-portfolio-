@@ -16,9 +16,14 @@ async function guard(page, S, DATA_V) {
   if (miss.length) throw new Error('app booted from a different portfolio: expected ' + want.length + ' houses, app has ' + have.length + ' (missing ' + miss.slice(0, 5).join(',') + (miss.length > 5 ? ',...' : '') + ')');
 }
 /* o: { base, tag, write: [fn, args] (runs on the file page), S, DATA_V, hash, ready (default '#app > *') } */
+/* B1: the portfolio now lives in IndexedDB ('rep-v4-store'); clearing site data clears it too, so a test that seeds a portfolio through localStorage first removes the database (the app then migrates / adopts the seed at its next start) */
+const wipeIdb = (page) => page.evaluate(() => new Promise((r) => { try { const q = indexedDB.deleteDatabase('rep-v4-store'); q.onsuccess = q.onerror = q.onblocked = () => r(); } catch (e) { r(); } }));
+/* the portfolio as the app stored it (legacy shape), read from IndexedDB after the app's own save finished; falls back to localStorage when the app runs without IndexedDB */
+const stored = async (page) => { try { await page.evaluate(() => (window.__app && window.__app.whenSaved ? window.__app.whenSaved() : null)); } catch (e) {} return page.evaluate(() => new Promise((res) => { const ls = () => { try { return JSON.parse(localStorage.getItem('rep-v4')); } catch (e) { return null; } }; if (!window.RepData || !window.__app || !window.__app.idb || window.__app.idb.mode !== 'indexeddb') return res(ls()); const r = indexedDB.open('rep-v4-store'); r.onerror = () => res(ls()); r.onsuccess = () => { const d = r.result, g = d.transaction('portfolio', 'readonly').objectStore('portfolio').get('current'); g.onsuccess = () => { d.close(); try { res(g.result ? window.RepData.fromV22(g.result.data) : null); } catch (e) { res(null); } }; }; })); };
 async function boot(page, o) {
   const t = o.tag || 'b';
   await page.goto(o.base + FILE + '?' + t + '=' + n++);
+  await wipeIdb(page);
   await page.evaluate(o.write[0], o.write[1]);
   await page.goto(o.base + '/index.html?' + t + '=' + n++ + (o.hash || ''));
   await page.waitForSelector(o.ready || '#app > *');
@@ -52,4 +57,4 @@ async function raceSelfTest(mk, o, load, runs = 30, rate = 4) {
   }
   return { runs, mismatches: bad, detail: detail.join('; ') };
 }
-module.exports = { boot, guard, writeS, oldLoad, raceSelfTest };
+module.exports = { boot, guard, writeS, oldLoad, raceSelfTest, wipeIdb, stored };

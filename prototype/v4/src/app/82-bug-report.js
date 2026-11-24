@@ -400,13 +400,6 @@
           dgSave();
         }
       } /* the last-known fingerprint: asset ids hash, counts, time */
-      if (NOW() - lastDailyChk > 1800000) {
-        lastDailyChk = NOW();
-        if (!DG.flags.replaced && D.safeDaily(localStorage, S, STAMPS.app, NOW())) {
-          SAFE_CACHE = null;
-          logEv('safety', 'daily copy: copy filed');
-        }
-      }
       refreshSW();
       injectNotes();
     } catch (e) {}
@@ -468,7 +461,7 @@
   const safeStats = (it) => (it.state ? statsOf({ id: 'sc' + it.ts, ts: it.ts, state: it.state }) : null);
   function safetyCard() {
     const items = safeList();
-    const head = `<section class="card" data-testid="safety-card"><p class="note" style="margin:0">The app keeps its last ${D ? D.SAFE_MAX : 5} copies of your portfolio here, taken before anything that could replace it.${infoBtn('safety')}</p>${items.length ? '' : '<p class="note" data-testid="safety-empty">No copies yet. The first one is taken before your next change.</p>'}</section>`;
+    const head = `<section class="card" data-testid="safety-card"><p class="note" style="margin:0">The app keeps its last ${D ? D.SAFE_MAX : 3} copies of your portfolio here, each taken just before a major change (a data update, a backup restore, a restore of a copy or Saved portfolio, a CSV import, or deleting an asset).${infoBtn('safety')}</p>${items.length ? '' : '<p class="note" data-testid="safety-empty">No copies yet. The first one is taken before your next change.</p>'}</section>`;
     return (
       head +
       items

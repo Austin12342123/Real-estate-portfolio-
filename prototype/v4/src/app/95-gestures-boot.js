@@ -155,6 +155,10 @@
       .catch((e) => logEv('sw', 'register failed: ' + (e && e.message)));
   } /*ENDSW*/
   window.__app = {
+    get idb() {
+      return IDBMODE ? { mode: 'indexeddb', writer: IDBS.isWriter, note: IDBNOTE } : { mode: 'localStorage', note: IDBNOTE };
+    },
+    whenSaved: () => Promise.resolve(IDBP).then(() => (IDB_BUSY || IDB_DIRTY ? IDBP : null)).then(() => IDBP),
     get state() {
       return S;
     },
