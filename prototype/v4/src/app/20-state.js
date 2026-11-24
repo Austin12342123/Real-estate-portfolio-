@@ -181,6 +181,7 @@
     chars: 0,
     err: '',
   }; /* did the last save read back exactly as written? (an invariant the anomaly monitor checks) */
+  let STALE = false; /* another tab changed the stored portfolio: this page keeps skipping saves and shows the Reload line */
   let LASTJS = RAW0; /* the last text of the portfolio this page read or wrote: a save never replaces a stored portfolio that differs from it (another tab, a restore or a test changed it): the stale page would overwrite newer data with its own copy */
   const save = () => {
     try {
@@ -195,6 +196,12 @@
       } /* only a readable portfolio counts: an unreadable or damaged value is still replaced by a good save */
       if (foreign) {
         logEv('stale', 'save skipped: the stored portfolio was changed elsewhere; this page keeps it');
+        if (!STALE) {
+          STALE = true;
+          try {
+            injectNotes();
+          } catch (e) {}
+        }
         storageOK = true;
         RW.ok = true;
         RW.err = '';

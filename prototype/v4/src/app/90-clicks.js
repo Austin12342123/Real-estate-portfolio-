@@ -642,6 +642,10 @@
         openIssue();
         return;
       }
+      if (t.closest('[data-stale-reload]')) {
+        location.reload();
+        return;
+      }
       if (t.closest('[data-anom-copy]')) {
         quickCopy();
         return;

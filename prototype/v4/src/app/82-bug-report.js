@@ -331,8 +331,10 @@
       (c) => !ANOMDIS[c] && !(c === 'state-replaced' && DG.flags.replaced),
     ); /* the replaced banner already says it */
   const notesHtml = () => {
-    if (!D) return '';
     let h = '';
+    if (STALE)
+      h += `<div class="migrate" role="status" data-testid="stale-note"><span>Another tab changed your portfolio.</span><button type="button" class="chip link" data-stale-reload data-testid="stale-reload">Reload</button></div>`;
+    if (!D) return h;
     if (DG.flags.replaced) {
       const cand = D.restoreCandidate(safeList(), S);
       h += `<div class="warnbox" role="status" data-testid="replaced-note"><b>Your portfolio may have been replaced by the default plan.</b> ${cand ? 'A safety copy from ' + fmtDT(cand.ts) + ' is ready.' : 'No safety copy was found.'}<div class="chips">${cand ? '<button type="button" class="chip link" data-replaced-restore data-testid="replaced-restore">Restore my previous portfolio</button>' : ''}<button type="button" class="chip link" data-replaced-dismiss data-testid="replaced-dismiss" aria-label="Dismiss this note">Dismiss</button></div></div>`;
@@ -346,7 +348,7 @@
     const ap = document.getElementById('app'),
       tabs = ap && ap.querySelector('[data-testid=page-tabs]');
     if (!tabs) return;
-    const old = [...ap.querySelectorAll('[data-testid=anomaly-note],[data-testid=replaced-note]')],
+    const old = [...ap.querySelectorAll('[data-testid=anomaly-note],[data-testid=replaced-note],[data-testid=stale-note]')],
       h = notesHtml();
     if (old.map((n) => n.outerHTML).join('') === h) return;
     old.forEach((n) => n.remove());
@@ -446,6 +448,17 @@
   );
   window.addEventListener('hashchange', () => act('route ' + routeSafe()));
   window.addEventListener('pagehide', dgSave);
+  window.addEventListener('storage', (e) => {
+    /* another tab saved the portfolio: say so now, before this page edits anything (this page's saves are skipped from here on) */
+    try {
+      if (e.key !== KEY || !e.newValue || e.newValue === LASTJS) return;
+      const o = JSON.parse(e.newValue);
+      if (o && Array.isArray(o.houses) && !STALE) {
+        STALE = true;
+        injectNotes();
+      }
+    } catch (x) {}
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) dgSave();
   });

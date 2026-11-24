@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'bb65ad7e'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'8dfc7796'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine,
@@ -357,6 +357,7 @@
     chars: 0,
     err: '',
   }; /* did the last save read back exactly as written? (an invariant the anomaly monitor checks) */
+  let STALE = false; /* another tab changed the stored portfolio: this page keeps skipping saves and shows the Reload line */
   let LASTJS = RAW0; /* the last text of the portfolio this page read or wrote: a save never replaces a stored portfolio that differs from it (another tab, a restore or a test changed it): the stale page would overwrite newer data with its own copy */
   const save = () => {
     try {
@@ -371,6 +372,12 @@
       } /* only a readable portfolio counts: an unreadable or damaged value is still replaced by a good save */
       if (foreign) {
         logEv('stale', 'save skipped: the stored portfolio was changed elsewhere; this page keeps it');
+        if (!STALE) {
+          STALE = true;
+          try {
+            injectNotes();
+          } catch (e) {}
+        }
         storageOK = true;
         RW.ok = true;
         RW.err = '';
@@ -3655,8 +3662,10 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       (c) => !ANOMDIS[c] && !(c === 'state-replaced' && DG.flags.replaced),
     ); /* the replaced banner already says it */
   const notesHtml = () => {
-    if (!D) return '';
     let h = '';
+    if (STALE)
+      h += `<div class="migrate" role="status" data-testid="stale-note"><span>Another tab changed your portfolio.</span><button type="button" class="chip link" data-stale-reload data-testid="stale-reload">Reload</button></div>`;
+    if (!D) return h;
     if (DG.flags.replaced) {
       const cand = D.restoreCandidate(safeList(), S);
       h += `<div class="warnbox" role="status" data-testid="replaced-note"><b>Your portfolio may have been replaced by the default plan.</b> ${cand ? 'A safety copy from ' + fmtDT(cand.ts) + ' is ready.' : 'No safety copy was found.'}<div class="chips">${cand ? '<button type="button" class="chip link" data-replaced-restore data-testid="replaced-restore">Restore my previous portfolio</button>' : ''}<button type="button" class="chip link" data-replaced-dismiss data-testid="replaced-dismiss" aria-label="Dismiss this note">Dismiss</button></div></div>`;
@@ -3670,7 +3679,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const ap = document.getElementById('app'),
       tabs = ap && ap.querySelector('[data-testid=page-tabs]');
     if (!tabs) return;
-    const old = [...ap.querySelectorAll('[data-testid=anomaly-note],[data-testid=replaced-note]')],
+    const old = [...ap.querySelectorAll('[data-testid=anomaly-note],[data-testid=replaced-note],[data-testid=stale-note]')],
       h = notesHtml();
     if (old.map((n) => n.outerHTML).join('') === h) return;
     old.forEach((n) => n.remove());
@@ -3770,6 +3779,17 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   );
   window.addEventListener('hashchange', () => act('route ' + routeSafe()));
   window.addEventListener('pagehide', dgSave);
+  window.addEventListener('storage', (e) => {
+    /* another tab saved the portfolio: say so now, before this page edits anything (this page's saves are skipped from here on) */
+    try {
+      if (e.key !== KEY || !e.newValue || e.newValue === LASTJS) return;
+      const o = JSON.parse(e.newValue);
+      if (o && Array.isArray(o.houses) && !STALE) {
+        STALE = true;
+        injectNotes();
+      }
+    } catch (x) {}
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) dgSave();
   });
@@ -5303,6 +5323,10 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       }
       if (t.closest('[data-bugissue]')) {
         openIssue();
+        return;
+      }
+      if (t.closest('[data-stale-reload]')) {
+        location.reload();
         return;
       }
       if (t.closest('[data-anom-copy]')) {
