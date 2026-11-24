@@ -23,5 +23,11 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
   const p1 = await ctx.newPage(); await p1.goto(BASE + '/index.html'); await p1.waitForSelector('#app > *'); const p2 = await ctx.newPage(); await p2.goto(BASE + '/index.html'); await p2.waitForSelector('#app > *');
   await p2.locator('[data-coll]').first().click(); await p2.evaluate(() => { const k = 'rep-v4', s = JSON.parse(localStorage.getItem(k)); s.houses = s.houses.slice(0, 3); localStorage.setItem(k, JSON.stringify(s)); }); await p1.waitForTimeout(400);
   const ev = await p1.locator('[data-testid=stale-note]').count(); console.log(ev === 1 ? 'PASS storage event shows the line in the other tab' : 'FAIL no line after another tab saved'); 
-  await browser.close(); srv.close(); process.exit(n === 5 && ok2 && ev === 1 ? 0 : 1);
+  /* later edits in the stale tab cannot overwrite; other pages; Reload shows the newer portfolio and the line goes */
+  await p1.locator('[data-coll]').first().click().catch(() => {}); await p1.evaluate(() => { const i = document.querySelector('#app input'); if (i) { i.focus(); i.value = '123'; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); i.blur(); } }); await p1.waitForTimeout(300);
+  const kept = await p1.evaluate(() => JSON.parse(localStorage.getItem('rep-v4')).houses.length); console.log(kept === 3 ? 'PASS tab A edits after the line did not overwrite the newer data (3 assets kept)' : 'FAIL newer data overwritten, now ' + kept);
+  const where = {}; for (const h of ['#finances', '#assumptions', '#saved', '']) { await p1.evaluate((h) => { location.hash = h; }, h); await p1.waitForTimeout(250); where[h || 'planned'] = await p1.locator('[data-testid=stale-note]').count(); } console.log('INFO line count per page (1 = shown):', JSON.stringify(where));
+  await p1.locator('[data-testid=stale-reload]').click(); await p1.waitForSelector('#app > *'); await p1.waitForTimeout(300);
+  const a2 = await p1.evaluate(() => ({ n: JSON.parse(localStorage.getItem('rep-v4')).houses.length, line: !!document.querySelector('[data-testid=stale-note]'), cards: document.querySelectorAll('[data-testid^=asset-],[data-house]').length })); const ok3 = a2.n === 3 && !a2.line; console.log(ok3 ? 'PASS Reload in tab A: newer portfolio (3 assets) loaded, line gone ' + JSON.stringify(a2) : 'FAIL after Reload ' + JSON.stringify(a2));
+  await browser.close(); srv.close(); process.exit(n === 5 && ok2 && ev === 1 && kept === 3 && ok3 ? 0 : 1);
 })();
