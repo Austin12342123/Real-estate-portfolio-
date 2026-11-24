@@ -17,13 +17,13 @@ exports.run = async function run(X) {
   async function hcheck(id, name, points, repro, fn) {
     if (process.env.H_ONLY && process.env.H_ONLY.split(',').indexOf(id) < 0) return;
     let r; const t0 = Date.now();
-    try { r = await fn(); } catch (e) { r = { ratio: 0, detail: 'CRASH in check: ' + (e && e.stack || e).toString().slice(0, 1400) }; }
+    try { r = await fn(); } catch (e) { r = { ratio: 0, detail: 'CRASH in check: ' + (e && e.stack || e).toString().slice(0, 500) }; }
     if (r instanceof Parts) r = { ratio: r.ratio, detail: r.detail };
     if (typeof r === 'boolean') r = { ratio: r ? 1 : 0, detail: r ? 'ok' : 'failed' };
     const ratio = Math.max(0, Math.min(1, r.ratio));
     const rec = { id, category: 'H', name, points, earned: Math.round(points * ratio * 100) / 100, ratio, detail: r.detail || '', repro, seconds: +((Date.now() - t0) / 1000).toFixed(1) };
     checks.push(rec);
-    console.log(`  [${rec.earned.toFixed(2)}/${points}] ${id} ${name}  (${rec.seconds}s)${ratio < 1 ? '  <-- ' + String(rec.detail).slice(0, 1400) : ''}`);
+    console.log(`  [${rec.earned.toFixed(2)}/${points}] ${id} ${name}  (${rec.seconds}s)${ratio < 1 ? '  <-- ' + String(rec.detail).slice(0, 400) : ''}`);
   }
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const PHZ = (st) => require('./plannedhz.js')(E).plannedHz(st, E.planR(clone(st))); /* the Planned page shows the planned assets only */
@@ -83,6 +83,10 @@ exports.run = async function run(X) {
       P.t(sloppy.length === 0, 'no markup, doubled spaces, placeholders, "e.g."/"i.e." or unfinished sentences', 0.5, sloppy.join(','));
       const lab = Object.entries(LABEL).filter(([, k]) => !INFO[k]).map(([l]) => l), lo = Object.entries(LOAN).filter(([, k]) => !INFO[k]).map(([l]) => l);
       P.t(lab.length === 0 && lo.length === 0, 'every LABEL and LOAN mapping points at an existing entry', 1, lab.concat(lo).join(','));
+      const unmapped = E.LOANS.filter((l) => !LOAN[l.id]).map((l) => l.id);
+      const sem = { conv: /Conventional/i, fha: /^FHA 30/i, k203: /203\(k\)/i, dscrloan: /DSCR/i, cashbuy: /Cash/i, bankloan: /bank|commercial/i, sba: /SBA/i, bridge: /Bridge/i, sellerfin: /Seller/i };
+      const wrong = E.LOANS.filter((l) => LOAN[l.id] && sem[LOAN[l.id]] && !sem[LOAN[l.id]].test(l.name)).map((l) => l.id + '->' + LOAN[l.id]);
+      P.t(unmapped.length === 0 && wrong.length === 0, 'every engine loan option has an info entry that is actually about that loan type', 1.5, 'unmapped ' + unmapped.join(',') + ' wrong ' + wrong.join(','));
       /* acronyms must be defined: own title, own entry elsewhere in the glossary, or spelled out inside the sentence */
       const ok = (a, k) => INFO[k].t.includes(a) || keys.some((q) => INFO[q].t.includes(a)) || new RegExp('\\(also called|\\(' + a.replace(/[()]/g, '\\$&') + '\\)|' + a + '\\)').test(INFO[k].b) || ['U.S.', 'LOC'].includes(a);
       const undef = []; keys.forEach((k) => { const all = INFO[k].b + ' ' + (INFO[k].e || ''); (all.match(/\b[A-Z]{3,}\b|\b[A-Z]{2,}\b/g) || []).forEach((a) => { if (!ok(a, k)) undef.push(k + ':' + a); }); });
@@ -130,7 +134,6 @@ exports.run = async function run(X) {
       for (const c of COV) {
         const s = await visit(page, c.fixture(), c.hash, c.pre);
         for (const [re, allowed] of c.list) {
-          if (!allowed.some((k) => INFO[k])) continue; /* C1 copy trim: this popup was removed on purpose (docs/cut-list.tsv), so its label needs no (i) */
           const shown = s.texts.filter((t) => re.test(t.replace(/\s*auto$/, '').replace(/\s*i$/, '')) || re.test(t));
           const hit = s.keys.filter((k) => allowed.includes(k.key) && re.test(k.inLabel.replace(/\s*auto$/, '').replace(/\s*i\s*(auto)?$/, '').trim()));
           const any = s.keys.some((k) => allowed.includes(k.key));
@@ -141,18 +144,18 @@ exports.run = async function run(X) {
         await load(page, sampleS(), '#add'); await clickSel(page, `[data-addtype="${tp}"]`); if (!(await page.$('[data-testid=loan-options]'))) await page.click('[data-testid=loan-row]');
         const cards = await page.evaluate(() => [...document.querySelectorAll('.loanrow')].map((r) => ({ id: (r.querySelector('[data-pickloan]') || { dataset: {} }).dataset.pickloan, info: (r.querySelector('button.info') || { dataset: {} }).dataset.info })));
         cards.forEach((c) => { if (c.info) seenKeys.add(c.info); });
-        const withInfo = cards.filter((c) => c.info).map((c) => c.id);
-        P.t(withInfo.length === 0 && cards.length > 0, 'Add ' + tp + ': loan cards carry no (i); the app shows only "Rates and terms are typical, not a quote."', 2, 'cards with (i): ' + withInfo.join(','));
+        const missing = ids.filter((id) => !cards.find((c) => c.id === id && c.info === LOAN[id]));
+        P.t(missing.length === 0, 'Add ' + tp + ': every loan card (' + ids.join(', ') + ') has an (i) beside it with its own definition', 2, 'missing/wrong: ' + missing.join(','));
       }
       { await load(page, sampleS(), '#add'); await clickSel(page, '[data-kind=multi]');
         const mfCards = await page.evaluate(() => [...document.querySelectorAll('.loanrow')].map((r) => ({ id: (r.querySelector('[data-pickloan]') || { dataset: {} }).dataset.pickloan, info: (r.querySelector('button.info') || { dataset: {} }).dataset.info })));
         const infos = await page.evaluate(() => [...document.querySelectorAll('#app button.info')].map((b) => b.dataset.info)); infos.forEach((k) => seenKeys.add(k)); mfCards.forEach((c) => { if (c.info) seenKeys.add(c.info); });
-        const withInfoMf = mfCards.filter((c) => c.info).map((c) => c.id);
-        P.t(withInfoMf.length === 0 && mfCards.length > 0 && infos.includes('unitcount') && infos.includes('mfpack'), 'Add multi-family: Number of units, Building or pack have an (i); loan cards carry none', 2, 'loan cards with (i): ' + withInfoMf.join(',')); }
+        const miss = E.MFLOANS.map((l) => l.id).filter((id) => !mfCards.find((c) => c.id === id && c.info === LOAN[id]));
+        P.t(miss.length === 0 && infos.includes('hometype') && infos.includes('unitcount') && infos.includes('mfpack'), 'Add multi-family: Home type, Number of units, Building or pack and every one of the ' + E.MFLOANS.length + ' loan cards have an (i) with their own definition', 2, 'missing: ' + miss.join(',')); }
       for (const [tp, multi, id] of [['house', false, 'home-va'], ['house', true, 'multi-hack'], ['commercial', false, 'comm-nnn'], ['business', false, 'biz-vend']]) { /* the example editor: its (i) buttons count as shown, and every editor label that has a definition keeps it */
         await load(page, sampleS(), '#add'); if (tp !== 'house') await clickSel(page, `[data-addtype="${tp}"]`); if (multi) await clickSel(page, '[data-kind=multi]'); await clickSel(page, '[data-testid=ex-toggle]'); await clickSel(page, `[data-testid=ex-edit-${id}]`);
         const ks = await page.evaluate(() => [...document.querySelectorAll('#app [data-testid=ex-editor] button.info, #app [data-testid=ex-fields] button.info')].map((b) => b.dataset.info)); ks.forEach((k) => seenKeys.add(k));
-        P.t(ks.includes('exedit') && (tp !== 'business' || ks.includes('revenue')) && (!multi || ks.includes('unitcount')), 'Example editor (' + id + '): (i) beside the title' + (tp === 'business' ? ' and revenue' : '') + (multi ? ' and the number of units' : ''), 1, ks.join(','));
+        P.t(ks.includes('exedit') && ks.includes('loanoption') && ks.includes('sellcost') && ks.includes('downpayment') && (tp !== 'business' || (ks.includes('revenue') && ks.includes('margin'))) && (!multi || ks.includes('unitcount')), 'Example editor (' + id + '): (i) beside the title, the loan option, selling costs, down payment' + (tp === 'business' ? ', revenue and margin' : '') + (multi ? ' and the number of units' : ''), 1, ks.join(','));
       }
       /* extra states: FHA / 203(k) / bridge / cash / seller assets */
       for (const id of ['fh', 'k2', 'br', 'cs', 'sb']) await visit(page, mixedS(), '#house-' + id);
@@ -174,41 +177,41 @@ exports.run = async function run(X) {
 
   await hcheck('H3', 'Info popover: opens with the right content on click / tap only, closes by a second click / Escape / an outside click / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data', 16,
     'Playwright 390x844 and 320x568: open (i), inspect dialog, close every way', async () => {
-      const P = new Parts(); await load(page, sampleS(), '#'); await page.setViewportSize({ width: 390, height: 844 }); const PK = await page.evaluate(() => [...new Set([...document.querySelectorAll('#app button.info')].map((x) => x.dataset.info))]); const KA = PK[0], KB = PK[1], KC = PK[2]; /* C1: the former dscr / cashflow / networth buttons were removed; use the first three (i) on the page */
+      const P = new Parts(); await load(page, sampleS(), '#'); await page.setViewportSize({ width: 390, height: 844 });
       P.t((await page.locator('[data-testid=info-pop]').count()) === 0, 'no sheet is open on load', 0.3);
       const st0 = await page.evaluate(() => localStorage.getItem('rep-v4'));
-      await page.click(`[data-info=${KA}]`); await page.waitForTimeout(50); let sh = await page.evaluate(SHEET), d = INFO[KA];
+      await page.click('[data-info=dscr]'); await page.waitForTimeout(50); let sh = await page.evaluate(SHEET), d = INFO.dscr;
       P.t(!!sh && sh.h === d.t && sh.ps[0] === d.b && (!d.e || sh.ps[1] === 'Example: ' + d.e), 'opens with the title, meaning and example of that term (DSCR)', 1.2, sh && sh.h + ' / ' + (sh && sh.ps.join(' | ').slice(0, 80)));
       P.t(!!sh && sh.role === 'note' && sh.modal === null && sh.lb && sh.lbText === d.t, 'the popover is a non-modal role=note labelled by its heading (no dialog, no aria-modal)', 1, JSON.stringify(sh && [sh.role, sh.modal, sh.lb]));
       P.t(!!sh && !sh.btn && !sh.bg && sh.expanded && !sh.inert, 'no "Got it" button, no dimmed backdrop, nothing inert; the (i) says aria-expanded=true and aria-describedby the popover', 1, sh && [sh.btn, sh.bg, sh.expanded, sh.inert]);
       P.t(!!sh && sh.rect.t >= 15.5 && sh.rect.b <= sh.vh - 15.5 && sh.rect.l >= 15.5 && sh.rect.r <= sh.vw - 15.5, 'the popover sits inside the viewport with the page gutter', 0.5, JSON.stringify(sh && sh.rect));
       const sheetClick = await page.evaluate(() => { document.querySelector('[data-testid=info-pop] p').click(); return !!document.querySelector('[data-testid=info-pop]'); });
       P.t(sheetClick, 'tapping the text inside the popover does not close it', 0.4);
-      await page.click(`[data-info=${KA}]`); await page.waitForTimeout(40);
+      await page.click('[data-info=dscr]'); await page.waitForTimeout(40);
       P.t((await page.locator('[data-testid=info-pop]').count()) === 0 && (await page.evaluate(() => location.hash)) === '' || (await page.evaluate(() => location.hash)) === '#', 'a second click on the (i) closes it and the page stays where it was (same route)', 0.8);
       P.t((await page.evaluate(() => localStorage.getItem('rep-v4'))) === st0, 'opening and closing help never changes saved data', 0.6);
       /* focus goes back where the person was */
       const back = await page.evaluate(() => { const a = document.activeElement; return a && a.dataset && a.dataset.info; });
-      P.t(back === KA, 'after closing, keyboard focus returns to the (i) that opened it', 1.2, 'focus is on ' + (await page.evaluate(() => { const a = document.activeElement; return a ? a.tagName + '.' + (a.className || '') : 'none'; })));
+      P.t(back === 'dscr', 'after closing, keyboard focus returns to the (i) that opened it', 1.2, 'focus is on ' + (await page.evaluate(() => { const a = document.activeElement; return a ? a.tagName + '.' + (a.className || '') : 'none'; })));
       /* escape + backdrop */
-      await page.click(`[data-info=${KC}]`); await page.waitForTimeout(40); await page.keyboard.press('Escape'); await page.waitForTimeout(40);
+      await page.click('[data-info=networth]'); await page.waitForTimeout(40); await page.keyboard.press('Escape'); await page.waitForTimeout(40);
       P.t((await page.locator('[data-testid=info-pop]').count()) === 0, 'Escape closes it', 1);
       await page.keyboard.press('Escape'); await page.waitForTimeout(30); P.t((await text(page)).length > 100 && (await page.locator('[data-testid=info-pop]').count()) === 0, 'Escape with nothing open does nothing', 0.2);
-      await page.click(`[data-info=${KB}]`); await page.waitForTimeout(40);
+      await page.click('[data-info=cashflow]'); await page.waitForTimeout(40);
       const noBg = await page.evaluate(() => !document.querySelector('.sheet-bg'));
       await page.mouse.click(3, 400); await page.waitForTimeout(40);
       P.t(noBg && (await page.locator('[data-testid=info-pop]').count()) === 0, 'an outside click closes it (there is no dimmed backdrop)', 1, 'no backdrop ' + noBg);
       /* keyboard open */
-      await page.focus(`[data-info=${KA}]`); await page.keyboard.press('Enter'); await page.waitForTimeout(40); const k1 = (await page.locator('[data-testid=info-pop]').count()) === 1; await page.keyboard.press('Escape'); await page.waitForTimeout(30);
-      await page.focus(`[data-info=${KA}]`); await page.keyboard.press('Space'); await page.waitForTimeout(40); const k2 = (await page.locator('[data-testid=info-pop]').count()) === 1; await page.keyboard.press('Escape'); await page.waitForTimeout(30);
+      await page.focus('[data-info=dscr]'); await page.keyboard.press('Enter'); await page.waitForTimeout(40); const k1 = (await page.locator('[data-testid=info-pop]').count()) === 1; await page.keyboard.press('Escape'); await page.waitForTimeout(30);
+      await page.focus('[data-info=dscr]'); await page.keyboard.press('Space'); await page.waitForTimeout(40); const k2 = (await page.locator('[data-testid=info-pop]').count()) === 1; await page.keyboard.press('Escape'); await page.waitForTimeout(30);
       P.t(k1 && k2, 'the (i) opens with Enter and with Space (it is a real button)', 0.8, [k1, k2]);
-      await page.click(`[data-info=${KA}]`); await page.waitForTimeout(30); await page.click(`[data-info=${KB}]`); await page.waitForTimeout(30); sh = await page.evaluate(SHEET);
-      P.t(!!sh && sh.h === INFO[KB].t, 'a second (i) opened while the first is open replaces it: one popover at a time, with its own definition', 0.5, sh && sh.h);
+      await page.click('[data-info=dscr]'); await page.waitForTimeout(30); await page.click('[data-info=cashflow]'); await page.waitForTimeout(30); sh = await page.evaluate(SHEET);
+      P.t(!!sh && sh.h === INFO.cashflow.t, 'a second (i) opened while the first is open replaces it: one popover at a time, with its own definition', 0.5, sh && sh.h);
       await page.keyboard.press('Tab'); await page.keyboard.press('Tab'); await page.waitForTimeout(30);
       const free = await page.evaluate(() => { const a = document.activeElement; return { open: !!document.querySelector('[data-testid=info-pop]'), inPop: !!(a && a.closest && a.closest('#infopop')), tag: a ? a.tagName : '', inert: document.querySelectorAll('[inert]').length }; });
       P.t(free.open && !free.inPop && free.tag !== 'BODY' && !free.inert, 'non-modal: there is no focus trap and nothing is inert; Tab moves on to the controls of the page while the popover stays', 0.8, JSON.stringify(free));
       await page.keyboard.press('Escape');
-      await page.click(`[data-info=${KA}]`); await page.waitForTimeout(30); await nav(page, '#assumptions'); P.t((await page.locator('[data-testid=info-pop]').count()) === 0, 'changing page (hash) closes an open popover', 0.4);
+      await page.click('[data-info=dscr]'); await page.waitForTimeout(30); await nav(page, '#assumptions'); P.t((await page.locator('[data-testid=info-pop]').count()) === 0, 'changing page (hash) closes an open popover', 0.4);
       /* content + accessible names for EVERY (i) on every page */
       const bad = [], names = []; let nBtn = 0;
       const sweep = async (S, hash, pre) => { await load(page, S, hash); if (pre) await pre(page); await openAll(page);
@@ -219,20 +222,20 @@ exports.run = async function run(X) {
       P.t(bad.length === 0 && nBtn > 80, 'every one of the ' + nBtn + ' (i) buttons on 7 pages opens exactly its own title, meaning and example', 2, bad.slice(0, 3).join(' | '));
       P.t(names.length === 0, 'every (i) is a type=button with an accessible name "What does <term> mean?" naming its own term, and a hidden glyph', 1.5, names.slice(0, 3).join(' | '));
       /* (i) does not trigger the control around it */
-      await load(page, sampleS(), '#house-maple'); await openAll(page); const before = await page.evaluate(() => document.querySelector('[data-p="h.maple.extra"]').value);
-      const hasRate = !!(await page.$('[data-info=extra]')); if (hasRate) { await page.click('[data-info=extra]'); await page.waitForTimeout(40); }
-      const aft = await page.evaluate(() => ({ v: document.querySelector('[data-p="h.maple.extra"]').value, act: document.activeElement.dataset.p || '', open: !!document.querySelector('[data-testid=info-pop]') }));
+      await load(page, sampleS(), '#house-maple'); await openAll(page); const before = await page.evaluate(() => document.querySelector('[data-p="h.maple.rate"]').value);
+      const hasRate = !!(await page.$('[data-info=rate]')); if (hasRate) { await page.click('[data-info=rate]'); await page.waitForTimeout(40); }
+      const aft = await page.evaluate(() => ({ v: document.querySelector('[data-p="h.maple.rate"]').value, act: document.activeElement.dataset.p || '', open: !!document.querySelector('[data-testid=info-pop]') }));
       if (hasRate) await page.keyboard.press('Escape');
       await load(page, sampleS(), '#add'); const n0 = (await stateOf(page)).houses.length, sel0 = await page.evaluate(() => document.querySelector('.loanopt.on') && document.querySelector('.loanopt.on').dataset.pickloan);
-      const hasCard = true; const sel1 = await page.evaluate(() => document.querySelector('.loanopt.on') && document.querySelector('.loanopt.on').dataset.pickloan); const n1 = (await stateOf(page)).houses.length;
-      P.t(hasRate && hasCard && aft.open && before === aft.v && aft.act !== 'h.maple.extra' && sel0 === sel1 && n0 === n1 && (await page.evaluate(() => location.hash)) === '#add', 'tapping an (i) inside a field does not edit the field, change the loan, add anything or navigate', 1, JSON.stringify([before, aft, sel0, sel1, n0, n1]));
+      const hasCard = !!(await page.$('[data-info=conv]')); if (hasCard) { await page.click('[data-info=conv]'); await page.waitForTimeout(40); await page.keyboard.press('Escape'); } const sel1 = await page.evaluate(() => document.querySelector('.loanopt.on') && document.querySelector('.loanopt.on').dataset.pickloan); const n1 = (await stateOf(page)).houses.length;
+      P.t(hasRate && hasCard && aft.open && before === aft.v && aft.act !== 'h.maple.rate' && sel0 === sel1 && n0 === n1 && (await page.evaluate(() => location.hash)) === '#add', 'tapping an (i) inside a field or loan card does not edit the field, pick the loan, add anything or navigate', 1, JSON.stringify([before, aft, sel0, sel1, n0, n1]));
       /* small phone: the longest definitions fit and stay reachable */
-      await page.setViewportSize({ width: 320, height: 568 }); await load(page, sampleS(), '#house-maple'); await openAll(page); await page.click('[data-info=extra]'); await page.waitForTimeout(40); sh = await page.evaluate(SHEET);
+      await page.setViewportSize({ width: 320, height: 568 }); await load(page, sampleS(), '#add'); await page.click('[data-info=k203]'); await page.waitForTimeout(40); sh = await page.evaluate(SHEET);
       const reach = !!sh && sh.rect.t >= 15.5 && sh.rect.b <= sh.vh - 15.5 && sh.rect.l >= 15.5 && sh.rect.r <= sh.vw - 15.5;
-      P.t(reach || (sh && sh.ov !== 'visible' && sh.rect.h <= sh.vh), 'at 320x568 a definition (Extra payment) fits on screen inside the gutter or scrolls inside the popover', 1.2, JSON.stringify(sh && [sh.rect, sh.scrollH, sh.clientH, sh.ov]));
+      P.t(reach || (sh && sh.ov !== 'visible' && sh.rect.h <= sh.vh), 'at 320x568 the longest definition (FHA 203(k)) fits on screen inside the gutter or scrolls inside the popover', 1.2, JSON.stringify(sh && [sh.rect, sh.scrollH, sh.clientH, sh.ov]));
       P.t(!(await page.evaluate(() => !!document.querySelector('[data-testid=info-close],.sheet,.sheet-bg'))), 'at 320x568 there is no "Got it" button, sheet or backdrop', 0.6); await page.keyboard.press('Escape'); await page.setViewportSize({ width: 390, height: 844 });
       /* contrast in both colour schemes */
-      const lowC = []; for (const scheme of ['light', 'dark']) { await page.emulateMedia({ colorScheme: scheme }); await load(page, sampleS(), '#'); await page.click(`[data-info=${KA}]`); await page.waitForTimeout(40); (await page.evaluate(CONTRAST)).forEach((c) => { if (c.cr < 4.5) lowC.push(scheme + ' ' + c.t + ' ' + c.cr.toFixed(2)); }); }
+      const lowC = []; for (const scheme of ['light', 'dark']) { await page.emulateMedia({ colorScheme: scheme }); await load(page, sampleS(), '#'); await page.click('[data-info=dscr]'); await page.waitForTimeout(40); (await page.evaluate(CONTRAST)).forEach((c) => { if (c.cr < 4.5) lowC.push(scheme + ' ' + c.t + ' ' + c.cr.toFixed(2)); }); }
       await page.emulateMedia({ colorScheme: 'light' });
       P.t(lowC.length === 0, 'popover text contrast >= 4.5:1 in light and dark mode', 0.8, lowC.join('; '));
       return P; });
@@ -243,30 +246,49 @@ exports.run = async function run(X) {
       const P = new Parts(), L = (id) => E.LOANS.find((l) => l.id === id), G = E.GDEF, S0 = mkS({ closing: 0, appr: 0 }, []);
       const inRange = (txt, v, tag, w, re) => { const m = (re || /(\d+(?:\.\d+)?)%\s+to\s+(\d+(?:\.\d+)?)%/).exec(txt); return P.t(!!m && v >= +m[1] - 1e-9 && v <= +m[2] + 1e-9, tag, w, m ? v + ' not in ' + m[1] + '-' + m[2] : 'no range found'); };
       /* loan rules */
+      P.t(numsIn(INFO.fha.b).includes(L('fha').dp) && L('fha').dp === 3.5 && L('fha').ownerOcc === true, 'FHA: "3.5%" down and owner-occupied only match the loan table', 1, INFO.fha.b);
       P.t(numsIn(INFO.mip.b).includes(L('fha').upfrontMip) && numsIn(INFO.mip.b).includes(L('fha').annualMip), 'Mortgage insurance: "1.75%" up front and "0.55%" a year equal the engine (upfrontMip, annualMip)', 1, L('fha').upfrontMip + '/' + L('fha').annualMip);
+      P.t(numsIn(INFO.k203.b).includes(L('k203').dp) && L('k203').finRehab === true && L('k203').ownerOcc === true, '203(k): 3.5% down, rehab financed in the loan, owner-occupied match the loan table', 1);
       const A = (c) => { const S = mkS({ closing: 0 }, [E.newAsset('house', 'k203', { id: 'k', price: 200000, capex: c, status: 'planned' })]); return E.view(S, S.houses[0]); }, vk = A(40000);
       P.t(Math.abs(vk.down - (200000 + 40000) * 0.035) < 1, '203(k) "3.5% of the price plus repairs" is what the engine charges as down payment', 1, vk.down + ' vs ' + 240000 * 0.035);
       const cap = (n) => { const S = mkS({}, []); return n; };
+      P.t(/\$75,000/.test(INFO.k203.b), '203(k): the Limited cap is quoted as $75,000', 0.3);
+      inRange(INFO.conv.b, L('conv30').dp, 'Conventional: "15% to 25% down" contains the engine default (20%)', 0.7);
+      inRange(INFO.dscrloan.b, L('dscr').dp, 'DSCR loan: "20% to 25% down" contains the engine default (25%)', 0.7);
+      const bk = /DSCR of (\d+(?:\.\d+)?) or more\) and (\d+)% or more down/.exec(INFO.bankloan.b);
+      P.t(!!bk && L('comm25').dp >= +bk[2] && L('bankbiz').dp >= +bk[2] && +bk[1] === 1.25, 'Bank loan: "25% or more down" holds for both bank loan options and the DSCR figure matches the 1.25 used on the Portfolio page', 1, bk && bk[0]);
+      P.t(/\$5 million/.test(INFO.sba.b) && /\$5\.5 million/.test(INFO.sba.b) && /\$5M/.test(L('sba7a').name) && L('sba7a').term <= 120 && /operate/.test(L('sba504').name), 'SBA: 7(a) up to $5 million and 504 up to $5.5 million agree with the loan names; 504 needs you to operate in it', 1);
+      P.t(L('bridge').io === true && /interest-only/i.test(INFO.bridge.b) && L('bridge').term <= 60 && /short/i.test(INFO.bridge.b), 'Bridge loan: interest-only and short term, as the engine models it', 0.6);
       { const S = mkS({}, [E.newAsset('house', 'bridge', { id: 'b', price: 500000, status: 'owned', extra: 0 })]), h = S.houses[0], v = E.view(S, h), i = h.rate / 1200, L0 = v.L; const S2 = mkS({}, [E.newAsset('house', 'bridge', { id: 'b', price: 500000, status: 'owned', extra: 1000 })]); const d0 = E.plan(S).series.debt, d1 = E.plan(S2).series.debt;
         P.t(Math.abs(v.P - L0 * i) < 0.01 && Math.abs(d0[12] - L0) < 1 && d1[12] < d0[12] - 5000, 'Interest-only: payment is interest only, the balance does not fall, extra payments do reduce it', 1, v.P + ' vs ' + L0 * i + ' / ' + d0[12] + ' ' + d1[12]); }
       P.t(L('cashh').dp === 100 && E.view(mkS({}, [E.newAsset('house', 'cashh', { id: 'c', price: 200000 })]), E.newAsset('house', 'cashh', { id: 'c', price: 200000 })).P === 0, 'Cash purchase: 100% down, no loan payment', 0.6);
       /* defaults vs the stated ranges */
-      P.t(/85%/.test(INFO.creditline.b) && /85%/.test(INFO.debtcap.e) && G.cap === 85, 'Credit line / debt cap: "up to 85%" and "80% to 85%" agree with the default cap (85)', 1, G.cap);
-      P.t(G.dti === 43, 'Debt-to-income: "43% or less" equals the default limit (43)', 1, G.dti);
+      P.t(/85%/.test(INFO.creditline.b) && /85%/.test(INFO.debtcap.e) && G.cap === 85 && /80% to 85%/.test(INFO.debtcap.b), 'Credit line / debt cap: "up to 85%" and "80% to 85%" agree with the default cap (85)', 1, G.cap);
+      P.t(/43%/.test(INFO.dti.b) && G.dti === 43, 'Debt-to-income: "43% or less" equals the default limit (43)', 1, G.dti);
+      P.t(/75%/.test(INFO.rentcount.b) && G.rentCount === 75, 'Rent counted: "often 75%" equals the default (75)', 0.8, G.rentCount);
+      P.t(/5% haircut means they count only 95%/.test(INFO.haircut.b) && G.haircut >= 0, 'Appraisal cut: the 5% -> 95% example is right', 0.4);
       { /* the cut really lowers what you can borrow: a home worth 200,000 with no loan, 85% cap */
         const D = (h, need) => { const S = mkS({ closing: 0, haircut: h, cap: 85 }, [E.newAsset('house', 'cashh', { id: 'a', status: 'owned', price: 200000, growth: 0, target: 'b', loanId: 'custom' }), E.newAsset('house', 'conv30', { id: 'b', status: 'planned', price: need / 0.2, dp: 20, growth: 0, closingPct: 0, target: '' })]); S.houses[0].dp = 100; return E.locMonths(S, S.houses[0], 0); };
         P.t(D(5, 161500) === 0 && D(5, 161600) > 0 && D(0, 169900) === 0 && D(0, 170100) > 0, 'Credit line and appraisal cut: 85% x $200,000 = $170,000 of room; with a 5% cut it is $161,500 (engine opens the line right at those amounts)', 1.4, [D(5, 161500), D(5, 161600), D(0, 169900), D(0, 170100)].join(',')); }
-      P.t(Math.abs(0.07 * 365 - 26) <= 0.5 && G.vac === 7, 'Vacancy: 7% of a year is about 26 days, it is the default, and the help names the Census rate it matches', 0.6);
-      P.t(G.maint === 1, 'Repairs reserve: "1% a year" equals the default (1)', 0.4);
+      P.t(Math.abs(0.07 * 365 - 26) <= 0.5 && /26 empty days/.test(INFO.vacancy.b) && G.vac === 7 && /Census/.test(INFO.vacancy.b), 'Vacancy: 7% of a year is about 26 days, it is the default, and the help names the Census rate it matches', 0.6);
+      inRange(INFO.mgmt.b, G.mgmt, 'Management fee: "8% to 10%" contains the default (8)', 0.5);
+      P.t(/1% a year/.test(INFO.repairs.b) && G.maint === 1, 'Repairs reserve: "1% a year" equals the default (1)', 0.4);
       { const S = mkS({ vac: 0, mgmt: 0, maint: 1 }, [E.newAsset('house', 'conv30', { id: 'r', price: 240000, rent: 2000, tax: 0, ins: 0 })]), S2 = mkS({ vac: 0, mgmt: 0, maint: 0 }, [E.newAsset('house', 'conv30', { id: 'r', price: 240000, rent: 2000, tax: 0, ins: 0 })]);
         P.t(Math.abs(E.view(S2, S2.houses[0]).noi - E.view(S, S.houses[0]).noi - 240000 * 0.01 / 12) < 0.01, 'Repairs: 1% a year of the value is taken out of income every month (240,000 x 1% / 12 = 200)', 0.8); }
       { const S = mkS({ vac: 5, mgmt: 0, maint: 0 }, [E.newAsset('house', 'conv30', { id: 'r', price: 240000, rent: 2000, tax: 0, ins: 0 })]);
         P.t(Math.abs(E.view(S, S.houses[0]).noi - 1900) < 0.01, 'Vacancy: 5% on $2,000 rent leaves $1,900 of income', 0.6); }
+      P.t(E.LOANS.every((l) => l.closing >= 1 && l.closing <= 5) && G.closing >= 2 && G.closing <= 5 && /2% to 5%/.test(INFO.closing.b), 'Closing costs: "about 2% to 5%" - default and every loan option are within 1.5-5%', 0.6, E.LOANS.map((l) => l.closing).join(','));
+      P.t(/5% to 7%/.test(INFO.sellcost.b) && E.newAsset('house', 'conv30', {}).sellCost >= 5 && E.newAsset('house', 'conv30', {}).sellCost <= 7, 'Selling costs: homes "5% to 7%" contains the default for a home', 0.5);
       /* worked examples */
-      const ex = (k) => numsIn((INFO[k] || {}).e || '');
+      const ex = (k) => numsIn(INFO[k].e || '');
       const e1 = ex('downpayment'), e2 = ex('liens'), e3 = ex('dscr'), e5 = ex('caprate'), e6 = ex('multiple'), e7 = ex('liftincome'), e8 = ex('debtcap');
+      P.t(e1[0] / 100 * e1[1] === e1[2], 'Example (down payment): 20% of $200,000 = $40,000', 0.8, e1.join(','));
+      P.t(e2.length >= 4 && e2[0] - e2[1] - e2[2] === e2[3], 'Example (liens): $200,000 - $140,000 - $20,000 = $40,000 of real ownership', 0.8, e2.join(','));
+      P.t(Math.abs(e3[0] / e3[1] - 1.3) < 1e-9 && /1\.3/.test(INFO.dscr.e), 'Example (DSCR): $1,300 / $1,000 = 1.3', 0.8, e3.join(','));
       P.t(!INFO.coc, 'Cash-on-cash is gone from the glossary (the asset page shows the cap rate)', 0.8, 'coc entry ' + (INFO.coc ? 'present' : 'absent'));
       P.t(Math.abs(e5[0] / e5[1] * 100 - 8) < 1e-9, 'Example (cap rate): $80,000 / $1,000,000 = 8%', 0.8, e5.join(','));
+      P.t(Math.max(...e6.slice(0, 2)) / Math.min(...e6.slice(0, 2)) === e6[2], 'Example (price / yearly profit): $300,000 / $100,000 = 3x', 0.8, e6.join(','));
+      P.t(Math.abs(e7[1] * (1 + e7[0] / 100) - e7[2]) < 1e-9, 'Example (rent increase): 10% on $2,000 = $2,200', 0.8, e7.join(','));
       P.t(e8[0] / 100 * e8[1] === e8[2], 'Example (debt cap): 85% of $200,000 = $170,000', 0.8, e8.join(','));
       /* engine does what the text says */
       { const mk = (liens) => mkS({ closing: 0, appr: 0 }, [E.newAsset('house', 'conv30', { id: 'a', status: 'owned', price: 300000, paid: 0, exit: 'sell', exitMonth: 24, sellCost: 6, liens, growth: 0, rent: 2500, tax: 0, ins: 0 })]); const p0 = E.plan(mk(0)), p1 = E.plan(mk(20000));
@@ -276,16 +298,17 @@ exports.run = async function run(X) {
       { const vf = E.view(mkS({ closing: 0 }, [E.newAsset('house', 'fha', { id: 'f', price: 200000, status: 'planned' })]), E.newAsset('house', 'fha', { id: 'f', price: 200000, status: 'planned' })); const S = mkS({ closing: 0 }, [E.newAsset('house', 'fha', { id: 'f', price: 200000, status: 'planned' })]), h = S.houses[0], v = E.view(S, h);
         P.t(Math.abs(v.L - 200000 * 0.965 * 1.0175) < 0.5 && v.mip > 0 && Math.abs(v.mip - v.L / 1.0175 * 0.0055 / 12) < 0.01, 'Loan amount and MIP: FHA loan = price - 3.5% down + 1.75% added to the loan; 0.55% a year of the loan without the added premium is paid monthly (24 CFR 203.284)', 1.2, v.L + ' / ' + v.mip); }
       { const S = mkS({}, [E.newAsset('house', 'conv30', { id: 'g', price: 200000, capex: 20000, arv: 260000, status: 'planned' })]); const v = E.view(S, S.houses[0]);
-        P.t(Math.abs(v.valueGain - (260000 - 200000 - 20000)) < 0.01, 'Value gained = new appraisal - (price + repair cost)', 0.7, v.valueGain); }
+        P.t(Math.abs(v.valueGain - (260000 - 200000 - 20000)) < 0.01 && /minus \(price \+ repair cost\)/.test(INFO.gain.b), 'Value gained = new appraisal - (price + repair cost)', 0.7, v.valueGain); }
       { const hh = E.newAsset('house', 'conv30', { id: 'd', price: 250000, dp: 20, status: 'planned' }); const S = mkS({}, [hh]); const v = E.view(S, S.houses[0]);
-      }
+        P.t(Math.abs(v.down - 250000 * 0.2) < 0.01 && Math.abs(v.L - 200000) < 0.01 && /price × down payment %/.test(INFO.downamt.b), 'Down payment $ = price x down payment %; loan = price - down payment', 0.6, v.down + ' ' + v.L); }
       { const S = mkS({}, []); S.p = E.normalizePersonal(Object.assign(E.samplePersonal(), { cash: 0, living: 3000, emergencyMonths: 6, jobs: [] })); S.g.otherDebt = 500; const f = E.finance(S, E.plan(S));
-      }
+        P.t(Math.abs(f.series.reserve[0] - 6 * 3500) < 0.01 && /months of living costs plus debts/.test(INFO.emergency.b), 'Emergency reserve = months x (living costs + other debts): 6 x $3,500 = $21,000', 0.8, f.series.reserve[0]); }
+      P.t(E.samplePersonal().inflation === 3 && E.samplePersonal().portfolioTaxPct === null && E.samplePersonal().salesTaxPct === null && /3% is a common/.test(INFO.inflation.b) && /Left blank, the app works it out/.test(INFO.portfoliotax.b) && /50 allows for two weeks off/.test(INFO.weeks.b), 'Finance defaults quoted in help (3% cost increases, taxes worked out unless a rate is typed, 50 weeks = two weeks off) equal the sample profile / hourly default', 0.7);
       { const j = E.normalizePersonal({ jobs: [{ id: 'x', kind: 'hourly', wage: 15, hours: 25, tips: 0, end: 12 }] }).jobs[0];
-        P.t(E.jobMonthly(j, 11) > 0 && E.jobMonthly(j, 12) === 0 && /blank/i.test(INFO.jobend.b), 'Job end: "months from today the job ends" - income runs through month 11 and stops at 12; blank = no end', 0.8); }
+        P.t(E.jobMonthly(j, 11) > 0 && E.jobMonthly(j, 12) === 0 && /how many months from today the job ends/i.test(INFO.jobend.b) && /blank/i.test(INFO.jobend.b), 'Job end: "months from today the job ends" - income runs through month 11 and stops at 12; blank = no end', 0.8); }
       { const mkJ = (o) => E.normalizePersonal({ jobs: [Object.assign({ id: 'x', kind: 'hourly', wage: 20, tips: 5, hours: 30, weeks: 50 }, o)] }).jobs[0];
-      }
-      P.t(/no state tax/.test(INFO.taxrate.b) && E.estTaxPct(20000) < E.estTaxPct(200000), 'Tax rate help: the blank-means-estimate and "no state tax" statements describe estTaxPct', 0.4);
+        P.t(mkJ({}).gross === 37500 && /multiplies it by your hours and weeks/.test(INFO.wage.b) && /count as income and are taxed/.test(INFO.tips.b), 'Hourly wage / tips: tips count as income (wage + tips) x hours x weeks = $37,500', 0.6, mkJ({}).gross); }
+      P.t(/estimates it from your income/.test(INFO.taxrate.b) && /no state tax/.test(INFO.taxrate.b) && E.estTaxPct(20000) < E.estTaxPct(200000), 'Tax rate help: the blank-means-estimate and "no state tax" statements describe estTaxPct', 0.4);
       return P; });
 
   /* ================================================================ H5 hourly job flows */
@@ -447,15 +470,15 @@ exports.run = async function run(X) {
     'Fresh state: check aria-expanded, hidden fields, labels', async () => {
       const P = new Parts(); await load(page, sampleS(), '#house-maple');
       const secs = ['loan', 'rent', 'exit', 'impact']; const st = {}; for (const s of secs) st[s] = await coll(page, s);
-      const hidden = await page.evaluate(() => ({ rate: !!document.querySelector('[data-p="h.maple.extra"]'), rent: !!document.querySelector('[data-p="h.maple.rent"]'), need: !!document.querySelector('[data-p="h.maple.need"]'), capex: !!document.querySelector('[data-p="h.maple.capex"]'), impact: !!document.querySelector('[data-testid=impact]'), price: !!document.querySelector('[data-p="h.maple.price"]'), dp: !!document.querySelector('[data-p="h.maple.dp"]') }));
+      const hidden = await page.evaluate(() => ({ rate: !!document.querySelector('[data-p="h.maple.rate"]'), rent: !!document.querySelector('[data-p="h.maple.rent"]'), need: !!document.querySelector('[data-p="h.maple.need"]'), capex: !!document.querySelector('[data-p="h.maple.capex"]'), impact: !!document.querySelector('[data-testid=impact]'), price: !!document.querySelector('[data-p="h.maple.price"]'), dp: !!document.querySelector('[data-p="h.maple.dp"]') }));
       P.t(secs.every((s) => st[s] && st[s].exp === 'false' && (st[s].role === 'button' || st[s].role === 'BUTTON') && st[s].tab === '0') && !hidden.rate && !hidden.rent && !hidden.need && !hidden.capex && !hidden.impact && hidden.price && hidden.dp && (await coll(page, 'loc')).exp === 'true', 'Asset page: loan, rent, exit and impact are collapsed by default (focusable buttons, aria-expanded=false, fields not rendered); the Funded by the trust section is open so the explanation is visible; price and down payment stay visible', 1.5, JSON.stringify([secs.map((s) => st[s] && st[s].exp), hidden]));
-      await page.click('[data-coll="loan"]'); await page.waitForTimeout(40); const o1 = await coll(page, 'loan'), f1 = await page.evaluate(() => !!document.querySelector('[data-p="h.maple.extra"]'));
+      await page.click('[data-coll="loan"]'); await page.waitForTimeout(40); const o1 = await coll(page, 'loan'), f1 = await page.evaluate(() => !!document.querySelector('[data-p="h.maple.rate"]'));
       P.t(o1.exp === 'true' && f1, 'tapping a section header opens it (aria-expanded=true, fields appear)', 0.5);
       await page.focus('[data-coll="rent"]'); await page.keyboard.press('Enter'); await page.waitForTimeout(40); const o2 = await coll(page, 'rent'); await page.focus('[data-coll="exit"]'); await page.keyboard.press('Space'); await page.waitForTimeout(40); const o3 = await coll(page, 'exit');
       P.t(o2.exp === 'true' && o3.exp === 'true', 'sections also open from the keyboard (Enter and Space)', 0.5, [o2.exp, o3.exp]);
       await page.reload(); await page.waitForSelector('#app > *'); const o4 = await coll(page, 'loan'), o5 = await coll(page, 'impact');
       P.t(o4.exp === 'true' && o5.exp === 'false', 'an opened section stays open after reload; the others stay closed', 0.5, [o4.exp, o5.exp]);
-      await page.click('[data-coll="loan"]'); await page.waitForTimeout(40); P.t((await coll(page, 'loan')).exp === 'false' && !(await page.evaluate(() => !!document.querySelector('[data-p="h.maple.extra"]'))), 'tapping again closes it', 0.3);
+      await page.click('[data-coll="loan"]'); await page.waitForTimeout(40); P.t((await coll(page, 'loan')).exp === 'false' && !(await page.evaluate(() => !!document.querySelector('[data-p="h.maple.rate"]'))), 'tapping again closes it', 0.3);
       await load(page, sampleS(), '#assumptions'); const b = await coll(page, 'backup'), sm = await coll(page, 'samples'), ex = await page.evaluate(() => !!document.querySelector('[data-testid=export]'));
       P.t(b && sm && b.exp === 'false' && sm.exp === 'false' && !ex && (await page.locator('[data-p="g.cap"]').count()) === 1, 'Assumptions: backup and samples are collapsed (export hidden), the settings fields are visible', 0.8, JSON.stringify([b, sm, ex]));
       await load(page, sampleS(), '#finances', null, true); const fi = await coll(page, 'fin-inc'), fc = await coll(page, 'fin-cash'), cashHidden = (await page.locator('[data-p="p.cash"]').count()) === 0; await page.click('[data-coll=fin-cash]'); await page.click('[data-coll=fin-inc]'); await page.waitForTimeout(40); const ft = await coll(page, 'fin-tax'), fm = await coll(page, 'fin-time'), jid = (await stateOf(page)).p.jobs[0].id, jm = await coll(page, 'jmo:' + jid);
