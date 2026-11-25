@@ -1,0 +1,632 @@
+{
+ "contrast": {
+  "lo": 4.562324265124598,
+  "at": "clay accent on surface2"
+ },
+ "round": 3,
+ "pages": {
+  "main": [
+   {
+    "id": "M7",
+    "name": "Summary line then actions (final)",
+    "score": 97,
+    "parts": {
+     "informative": 100,
+     "small": 80,
+     "friendly": 100,
+     "intuitive": 100,
+     "pretty": 100,
+     "research": 100
+    },
+    "weights": {
+     "informative": 25,
+     "small": 15,
+     "friendly": 15,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "small: about 196px tall"
+    ]
+   },
+   {
+    "id": "M4",
+    "name": "Summary then actions",
+    "score": 95,
+    "parts": {
+     "informative": 100,
+     "small": 67,
+     "friendly": 100,
+     "intuitive": 100,
+     "pretty": 100,
+     "research": 100
+    },
+    "weights": {
+     "informative": 25,
+     "small": 15,
+     "friendly": 15,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "small: about 230px tall"
+    ]
+   },
+   {
+    "id": "M1",
+    "name": "Twin buttons",
+    "score": 84,
+    "parts": {
+     "informative": 60,
+     "small": 100,
+     "friendly": 100,
+     "intuitive": 100,
+     "pretty": 100,
+     "research": 40
+    },
+    "weights": {
+     "informative": 25,
+     "small": 15,
+     "friendly": 15,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "informative: no category totals (cash flow, value, next buy) before you tap",
+     "research: portfolio apps (RentRedi, Baselane) lead with a roll-up of the category"
+    ]
+   },
+   {
+    "id": "M3",
+    "name": "Icon tiles",
+    "score": 76,
+    "parts": {
+     "informative": 60,
+     "small": 80,
+     "friendly": 100,
+     "intuitive": 75,
+     "pretty": 100,
+     "research": 40
+    },
+    "weights": {
+     "informative": 25,
+     "small": 15,
+     "friendly": 15,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "informative: no category totals (cash flow, value, next buy) before you tap",
+     "small: about 190px tall",
+     "intuitive: Add and View look the same weight; no clear main action",
+     "research: portfolio apps (RentRedi, Baselane) lead with a roll-up of the category"
+    ]
+   },
+   {
+    "id": "M2",
+    "name": "Split pill",
+    "score": 74,
+    "parts": {
+     "informative": 60,
+     "small": 100,
+     "friendly": 67,
+     "intuitive": 75,
+     "pretty": 100,
+     "research": 40
+    },
+    "weights": {
+     "informative": 25,
+     "small": 15,
+     "friendly": 15,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "informative: no category totals (cash flow, value, next buy) before you tap",
+     "friendly: Add has no + sign",
+     "intuitive: Add and View look the same weight; no clear main action",
+     "research: portfolio apps (RentRedi, Baselane) lead with a roll-up of the category"
+    ]
+   },
+   {
+    "id": "M6",
+    "name": "Settings rows",
+    "score": 71,
+    "parts": {
+     "informative": 60,
+     "small": 80,
+     "friendly": 67,
+     "intuitive": 75,
+     "pretty": 100,
+     "research": 40
+    },
+    "weights": {
+     "informative": 25,
+     "small": 15,
+     "friendly": 15,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "informative: no category totals (cash flow, value, next buy) before you tap",
+     "small: about 180px tall",
+     "friendly: Add has no + sign",
+     "intuitive: Add and View look the same weight; no clear main action",
+     "research: portfolio apps (RentRedi, Baselane) lead with a roll-up of the category"
+    ]
+   },
+   {
+    "id": "M5",
+    "name": "Text links",
+    "score": 59,
+    "parts": {
+     "informative": 60,
+     "small": 100,
+     "friendly": 67,
+     "intuitive": 0,
+     "pretty": 100,
+     "research": 40
+    },
+    "weights": {
+     "informative": 25,
+     "small": 15,
+     "friendly": 15,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "informative: no category totals (cash flow, value, next buy) before you tap",
+     "friendly: Add has no + sign",
+     "intuitive: buttons 32px, 32px tall, under 44px",
+     "intuitive: Add and View look the same weight; no clear main action",
+     "intuitive: small targets far from the thumb",
+     "research: portfolio apps (RentRedi, Baselane) lead with a roll-up of the category"
+    ]
+   }
+  ],
+  "list": [
+   {
+    "id": "L7",
+    "name": "Stat card with trust bar (final)",
+    "score": 97,
+    "parts": {
+     "informative": 100,
+     "small": 80,
+     "friendly": 100,
+     "intuitive": 100,
+     "pretty": 100,
+     "research": 100
+    },
+    "weights": {
+     "informative": 30,
+     "small": 15,
+     "friendly": 10,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "small: 2 asset(s) in the first screen"
+    ]
+   },
+   {
+    "id": "L2",
+    "name": "Stat grid card",
+    "score": 81.5,
+    "parts": {
+     "informative": 85,
+     "small": 60,
+     "friendly": 100,
+     "intuitive": 75,
+     "pretty": 80,
+     "research": 100
+    },
+    "weights": {
+     "informative": 30,
+     "small": 15,
+     "friendly": 10,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "informative: extras shown: cash-on-cash, equity, \"Can I buy this?\" verdict",
+     "small: 2 asset(s) in the first screen",
+     "intuitive: no Add button on the list",
+     "intuitive: sort chips do not say which one is on",
+     "small: labels too long for their cell at 390px: Cap rate, Cash-on-cash",
+     "pretty: 7 type sizes (12, 13, 15, 16, 17, 26, 28); 5 or fewer reads calmer"
+    ]
+   },
+   {
+    "id": "L4",
+    "name": "Trust progress card",
+    "score": 80,
+    "parts": {
+     "informative": 80,
+     "small": 80,
+     "friendly": 70,
+     "intuitive": 75,
+     "pretty": 80,
+     "research": 100
+    },
+    "weights": {
+     "informative": 30,
+     "small": 15,
+     "friendly": 10,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "informative: extras shown: monthly payment, cash to close",
+     "small: 2 asset(s) in the first screen",
+     "friendly: no verdict in words and icon",
+     "intuitive: no Add button on the list",
+     "intuitive: sort chips do not say which one is on",
+     "pretty: 7 type sizes (12, 13, 15, 16, 17, 22, 28); 5 or fewer reads calmer"
+    ]
+   },
+   {
+    "id": "L3",
+    "name": "Hero number and chips",
+    "score": 74,
+    "parts": {
+     "informative": 70,
+     "small": 100,
+     "friendly": 30,
+     "intuitive": 75,
+     "pretty": 100,
+     "research": 50
+    },
+    "weights": {
+     "informative": 30,
+     "small": 15,
+     "friendly": 10,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "informative: extras shown: none",
+     "friendly: no verdict in words and icon",
+     "friendly: no (i) explaining cap, dscr",
+     "intuitive: no Add button on the list",
+     "intuitive: sort chips do not say which one is on",
+     "research: formulas are not one tap away (DealCheck, Baselane put them behind an info icon)"
+    ]
+   },
+   {
+    "id": "L6",
+    "name": "Swipe carousel",
+    "score": 62.5,
+    "parts": {
+     "informative": 80,
+     "small": 40,
+     "friendly": 60,
+     "intuitive": 40,
+     "pretty": 90,
+     "research": 50
+    },
+    "weights": {
+     "informative": 30,
+     "small": 15,
+     "friendly": 10,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "informative: extras shown: cash-on-cash, \"Can I buy this?\" verdict",
+     "small: 1 asset(s) in the first screen",
+     "friendly: no (i) explaining cap, dscr, coc",
+     "intuitive: no sort",
+     "intuitive: no Add button on the list",
+     "intuitive: you have to swipe sideways to see every home or number",
+     "pretty: 6 type sizes (13, 15, 16, 18, 28, 34); 5 or fewer reads calmer",
+     "research: formulas are not one tap away (DealCheck, Baselane put them behind an info icon)"
+    ]
+   },
+   {
+    "id": "L1",
+    "name": "Ledger rows",
+    "score": 58,
+    "parts": {
+     "informative": 40,
+     "small": 100,
+     "friendly": 30,
+     "intuitive": 75,
+     "pretty": 87,
+     "research": 0
+    },
+    "weights": {
+     "informative": 30,
+     "small": 15,
+     "friendly": 10,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "informative: missing purchase price",
+     "informative: missing estimated value",
+     "informative: missing down payment needed",
+     "informative: extras shown: none",
+     "friendly: no verdict in words and icon",
+     "friendly: no (i) explaining cap, dscr",
+     "intuitive: no Add button on the list",
+     "intuitive: sort chips do not say which one is on",
+     "pretty: corners do not follow the theme",
+     "research: no single big headline number per home",
+     "research: formulas are not one tap away (DealCheck, Baselane put them behind an info icon)"
+    ]
+   },
+   {
+    "id": "L5",
+    "name": "Compact table",
+    "score": 49,
+    "parts": {
+     "informative": 70,
+     "small": 67,
+     "friendly": 30,
+     "intuitive": 35,
+     "pretty": 53,
+     "research": 0
+    },
+    "weights": {
+     "informative": 30,
+     "small": 15,
+     "friendly": 10,
+     "intuitive": 20,
+     "pretty": 15,
+     "research": 10
+    },
+    "deductions": [
+     "informative: extras shown: none",
+     "small: the table scrolls sideways on a phone",
+     "friendly: no verdict in words and icon",
+     "friendly: no (i) explaining cap, dscr",
+     "intuitive: no Add button on the list",
+     "intuitive: a row does not open its home",
+     "intuitive: you have to swipe sideways to see every home or number",
+     "intuitive: sort chips do not say which one is on",
+     "pretty: text at 11px, under the 12px floor from the phone test",
+     "pretty: corners do not follow the theme",
+     "research: no single big headline number per home",
+     "research: formulas are not one tap away (DealCheck, Baselane put them behind an info icon)"
+    ]
+   }
+  ],
+  "card": [
+   {
+    "id": "C7",
+    "name": "Deck with live result (final)",
+    "score": 100,
+    "parts": {
+     "informative": 100,
+     "small": 100,
+     "friendly": 100,
+     "intuitive": 100,
+     "pretty": 100,
+     "research": 100,
+     "typing": 100
+    },
+    "weights": {
+     "informative": 12,
+     "small": 10,
+     "friendly": 13,
+     "intuitive": 22,
+     "pretty": 13,
+     "research": 15,
+     "typing": 15
+    },
+    "deductions": []
+   },
+   {
+    "id": "C5",
+    "name": "Deck with live result",
+    "score": 98.7,
+    "parts": {
+     "informative": 100,
+     "small": 100,
+     "friendly": 100,
+     "intuitive": 100,
+     "pretty": 90,
+     "research": 100,
+     "typing": 100
+    },
+    "weights": {
+     "informative": 12,
+     "small": 10,
+     "friendly": 13,
+     "intuitive": 22,
+     "pretty": 13,
+     "research": 15,
+     "typing": 15
+    },
+    "deductions": [
+     "pretty: 6 type sizes (12, 13, 15, 16, 24, 26); 5 or fewer reads calmer"
+    ]
+   },
+   {
+    "id": "C2",
+    "name": "Card deck",
+    "score": 96.8,
+    "parts": {
+     "informative": 73,
+     "small": 100,
+     "friendly": 100,
+     "intuitive": 100,
+     "pretty": 100,
+     "research": 100,
+     "typing": 100
+    },
+    "weights": {
+     "informative": 12,
+     "small": 10,
+     "friendly": 13,
+     "intuitive": 22,
+     "pretty": 13,
+     "research": 15,
+     "typing": 15
+    },
+    "deductions": [
+     "checked: claims swipeHint but the page does not show it",
+     "informative: you do not see what an answer does to cash flow or the verdict until the end"
+    ]
+   },
+   {
+    "id": "C6",
+    "name": "Big tiles",
+    "score": 74.4,
+    "parts": {
+     "informative": 53,
+     "small": 100,
+     "friendly": 67,
+     "intuitive": 88,
+     "pretty": 100,
+     "research": 60,
+     "typing": 53
+    },
+    "weights": {
+     "informative": 12,
+     "small": 10,
+     "friendly": 13,
+     "intuitive": 22,
+     "pretty": 13,
+     "research": 15,
+     "typing": 15
+    },
+    "deductions": [
+     "informative: no section name (where am I in the flow?)",
+     "informative: you do not see what an answer does to cash flow or the verdict until the end",
+     "friendly: no hint that you can swipe or that a pick moves on",
+     "intuitive: progress is count, not a bar with \"7 of 24\"",
+     "research: long flows need sections so no stretch feels like 20 questions in a row",
+     "typing: number pad has no decimal point (rates and cents need one)",
+     "typing: the box has no visible label",
+     "typing: no help line saying where to find the number"
+    ]
+   },
+   {
+    "id": "C4",
+    "name": "Bottom sheet",
+    "score": 62.9,
+    "parts": {
+     "informative": 53,
+     "small": 100,
+     "friendly": 33,
+     "intuitive": 64,
+     "pretty": 93,
+     "research": 40,
+     "typing": 67
+    },
+    "weights": {
+     "informative": 12,
+     "small": 10,
+     "friendly": 13,
+     "intuitive": 22,
+     "pretty": 13,
+     "research": 15,
+     "typing": 15
+    },
+    "deductions": [
+     "informative: no section name (where am I in the flow?)",
+     "informative: you do not see what an answer does to cash flow or the verdict until the end",
+     "friendly: no Skip (use a typical value)",
+     "friendly: no hint that you can swipe or that a pick moves on",
+     "intuitive: progress is dots, not a bar with \"7 of 24\"",
+     "intuitive: no Back button for people who do not swipe",
+     "pretty: faded layer lowers contrast",
+     "research: long flows need sections so no stretch feels like 20 questions in a row",
+     "typing: the box has no visible label",
+     "typing: no help line saying where to find the number"
+    ]
+   },
+   {
+    "id": "C1",
+    "name": "Full-screen question",
+    "score": 55.3,
+    "parts": {
+     "informative": 53,
+     "small": 100,
+     "friendly": 33,
+     "intuitive": 48,
+     "pretty": 100,
+     "research": 40,
+     "typing": 33
+    },
+    "weights": {
+     "informative": 12,
+     "small": 10,
+     "friendly": 13,
+     "intuitive": 22,
+     "pretty": 13,
+     "research": 15,
+     "typing": 15
+    },
+    "deductions": [
+     "checked: claims back but the page does not show it",
+     "informative: no section name (where am I in the flow?)",
+     "informative: you do not see what an answer does to cash flow or the verdict until the end",
+     "friendly: no Skip (use a typical value)",
+     "friendly: no hint that you can swipe or that a pick moves on",
+     "intuitive: progress is number, not a bar with \"7 of 24\"",
+     "intuitive: no Back button for people who do not swipe",
+     "intuitive: no swipe between cards (asked for)",
+     "research: long flows need sections so no stretch feels like 20 questions in a row",
+     "typing: opens the full keyboard for a number",
+     "typing: no help line saying where to find the number",
+     "typing: Next/Send button 36px"
+    ]
+   },
+   {
+    "id": "C3",
+    "name": "Chat",
+    "score": 43.5,
+    "parts": {
+     "informative": 33,
+     "small": 100,
+     "friendly": 33,
+     "intuitive": 36,
+     "pretty": 87,
+     "research": 40,
+     "typing": 0
+    },
+    "weights": {
+     "informative": 12,
+     "small": 10,
+     "friendly": 13,
+     "intuitive": 22,
+     "pretty": 13,
+     "research": 15,
+     "typing": 15
+    },
+    "deductions": [
+     "informative: options have no one-line explanation",
+     "informative: no section name (where am I in the flow?)",
+     "informative: you do not see what an answer does to cash flow or the verdict until the end",
+     "friendly: no Skip (use a typical value)",
+     "friendly: no hint that you can swipe or that a pick moves on",
+     "intuitive: progress is none, not a bar with \"7 of 24\"",
+     "intuitive: no Back button for people who do not swipe",
+     "intuitive: no swipe between cards (asked for)",
+     "pretty: corners do not follow the theme",
+     "research: long flows need sections so no stretch feels like 20 questions in a row",
+     "typing: opens the full keyboard for a number",
+     "typing: the box has no visible label",
+     "typing: no help line saying where to find the number",
+     "typing: Next/Send button 40px",
+     "typing: no clear Next button after typing"
+    ]
+   }
+  ]
+ }
+}

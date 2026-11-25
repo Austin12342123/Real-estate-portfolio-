@@ -10,3 +10,4 @@ Read-only inputs for the build cards. Read them with `git show origin/claude/pla
 - themes-contrast-check.py: contrast check for the six themes (card TH1a ports it into scripts/)
 - cut-list-v2.tsv: Nov 24 cut list under Austin's corrected rule (every (i) keeps its popup); flips-v2.md lists what changed
 - themes-v2.json, themes-v2.md, build-themes-v2.py: themes v2 (Nov 25), replaces themes.json for card TH1 v2.
+- asset-flow/: asset flow redesign (design thread, Nov 25; Austin approved for the build). Its src/themes.json is the old theme set: build it on themes-v2.json tokens and radius tokens instead.
