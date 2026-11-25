@@ -1,0 +1,58 @@
+// AF1 smoke 2: Real page "+ Add owned" opens the deck preset to owned; add an owned duplex using only swipes; then View assets sorts.
+import { createRequire } from 'module';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const require = createRequire((process.env.PW_DIR || path.dirname(fileURLToPath(import.meta.url))) + '/');
+const { chromium } = require('playwright');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../prototype/v4');
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 393, height: 852 }, hasTouch: false });
+const errs = [];
+p.on('pageerror', (e) => errs.push(e.message));
+await p.goto('file://' + root + '/index.html');
+await p.waitForTimeout(400);
+const txt = async (s) => (await p.locator(s).first().innerText()).replace(/\s+/g, ' ');
+const swipe = async (dir) => {
+  const bx = await p.locator('#dkcard').boundingBox();
+  const a = dir < 0 ? bx.x + bx.width * 0.85 : bx.x + 40, z = dir < 0 ? bx.x + 40 : bx.x + bx.width * 0.85;
+  await p.mouse.move(a, bx.y + 20);
+  await p.mouse.down();
+  await p.mouse.move(z, bx.y + 24, { steps: 8 });
+  await p.mouse.up();
+  await p.waitForTimeout(150);
+};
+const res = {};
+await p.click('[data-testid=tab-real]');
+await p.click('[data-testid=add-owned]');
+await p.waitForTimeout(200);
+res.ownedPreset = await p.evaluate(() => document.querySelector('[data-dkpick="I already own it"]') ? 'status card present' : 'none');
+res.start = await txt('[data-testid=dk-count]');
+await p.click('[data-dkpick="Multi-family"]');
+await p.waitForTimeout(400);
+await p.click('[data-dkpick="2 (duplex)"]');
+await p.waitForTimeout(400);
+res.afterUnits = await txt('[data-testid=dk-count]');
+await swipe(1);
+res.back = await txt('[data-testid=dk-count]');
+await swipe(-1);
+let n = 0;
+while (!(await p.locator('[data-dksave]').count()) && n++ < 40) await swipe(-1);
+res.review = (await txt('#dkcard')).slice(0, 200);
+await p.click('[data-dksave]');
+await p.waitForTimeout(400);
+await p.goto('file://' + root + '/index.html#');
+await p.click('[data-testid=tab-real]');
+res.real = (await txt('[data-testid=bought-sum]')) || '';
+await p.evaluate(() => { location.hash = '#assets-house'; });
+await p.waitForTimeout(300);
+if (await p.locator('[data-vsort]').count()) for (const k of ['cf', 'cap', 'dscr', 'order']) {
+  await p.click('[data-vsort="' + k + '"]');
+  res['sort_' + k] = await p.locator('.va-so button.on').innerText();
+}
+res.hash = await p.evaluate(() => location.hash + ' | ' + document.getElementById('app').innerText.slice(0, 120).replace(/\n/g, ' '));
+console.log(res.hash, errs);
+res.firstOwned = (await txt('[data-testid=va-card]')).slice(0, 80);
+res.hash = await p.evaluate(() => location.hash + ' ' + document.getElementById('app').innerText.slice(0, 60));
+console.log(JSON.stringify(res, null, 1));
+console.log('errors', errs);
+await b.close();

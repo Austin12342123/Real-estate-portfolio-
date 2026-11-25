@@ -95,6 +95,7 @@
       set('dp', N('dp')); set('rate', N('rate')); set('closingPct', N('closing'));
       if (AF.chip.rate0) h.term = parseFloat(AF.chip.rate0) * 12;
     }
+    if (!own && N('job') !== undefined) h.jobPay = Math.max(0, N('job'));
     if (own) {
       const d = AF.inp['owned:0'] || '', m = /([A-Za-z]{3})[a-z]*\.?\s*(\d{4})/.exec(d), i = m ? AFMO.findIndex((x) => x.toLowerCase() === m[1].toLowerCase()) : -1;
       if (i >= 0) h.boughtOn = m[2] + '-' + String(i + 1).padStart(2, '0') + '-01';
@@ -139,7 +140,7 @@
       case 'hoaamt': return hasHoa && a('hoa') === 'Yes';
       case 'tax': case 'ins': case 'repairs': case 'manage': return K !== 'business';
       case 'value': case 'owned': return O;
-      case 'when': return !O;
+      case 'when': case 'job': return !O;
       case 'whenm': return !O && a('when') === 'Not before a month I pick';
       case 'sellyr': return a('exit') === 'Sell it later' || a('exit') === 'Refinance later';
       case 'rate': return false;
@@ -228,7 +229,7 @@
     const row = (l, val, id) => `<div class="dk-rv"><span>${l}</span><b>${val}</b>${inP(id) ? `<button class="dk-ed" data-dkjump="${id}" aria-label="Edit ${esc(l)}">Edit</button>` : '<span></span>'}</div>`;
     const cash = afLoanName() === 'Cash';
     return `<h3 class="dk-q">${esc(afQ({ id: 'review' }))}</h3><p class="dk-help">Check it once, then add it. You can change anything later.</p>
-    ${row('Kind', esc(K === 'multi' ? (afPack() ? 'A pack of ' + afUnits() + ' houses' : 'Multi-family, ' + afUnits() + ' units') : AF.ans.type || 'Single-family home'), 'type')}${row('Own it?', O ? 'Yes, I own it' : 'Planning to buy', 'status')}${row('Address', esc(h.addr), 'addr')}${inP('home') && h.info ? row('Home', esc((h.info.beds || '-') + ' beds, ' + (h.info.baths || '-') + ' baths' + (h.info.sqft ? ', ' + h.info.sqft + ' sq ft' : '')), 'home') : ''}${row('Price', $f(h.price), 'price')}${row('Loan', esc(afLoanName()) + (cash ? '' : ', ' + r(h.rate, 2) + '%, ' + r(h.term / 12, 0) + ' years'), 'loan')}${cash ? '' : row('Down payment', $f(m.down) + ' (' + r(h.dp, 1) + '%)', 'dp')}${K === 'business' ? row('Revenue and margin', $f(E.revOf(h) * 12) + '/yr at ' + r(E.marginOf(h), 0) + '%', 'revenue') : row(K === 'multi' ? 'Rent' : K === 'commercial' ? 'Lease income' : 'Rent', $f(h.rent) + '/mo', K === 'multi' ? 'unitmix' : 'rent')}${K === 'business' ? '' : row('Property tax', $f(h.tax) + '/mo', 'tax') + row('Insurance', $f(h.ins) + '/mo', 'ins') + row('Manager', E.mgmtOf(S, h) ? r(E.mgmtOf(S, h), 0) + '% of rent' : 'You (no fee)', 'manage')}${O ? '' : row('Closing costs', $f(m.close), 'closing')}${inP('hoa') ? row('HOA', h.hoa ? $f(h.hoa) + '/mo' : 'None', h.hoa ? 'hoaamt' : 'hoa') : ''}${inP('rehab') ? row('Fix-up', h.capex > 0 ? $f(h.capex) + ' rehab budget' : 'Move-in ready', 'rehab') : ''}${row('Growth', r(h.growth, 1) + '% a year', 'growth')}
+    ${row('Kind', esc(K === 'multi' ? (afPack() ? 'A pack of ' + afUnits() + ' houses' : 'Multi-family, ' + afUnits() + ' units') : AF.ans.type || 'Single-family home'), 'type')}${row('Own it?', O ? 'Yes, I own it' : 'Planning to buy', 'status')}${row('Address', esc(h.addr), 'addr')}${inP('home') && h.info ? row('Home', esc((h.info.beds || '-') + ' beds, ' + (h.info.baths || '-') + ' baths' + (h.info.sqft ? ', ' + h.info.sqft + ' sq ft' : '')), 'home') : ''}${row('Price', $f(h.price), 'price')}${row('Loan', esc(afLoanName()) + (cash ? '' : ', ' + r(h.rate, 2) + '%, ' + r(h.term / 12, 0) + ' years'), 'loan')}${cash ? '' : row('Down payment', $f(m.down) + ' (' + r(h.dp, 1) + '%)', 'dp')}${K === 'business' ? row('Revenue and margin', $f(E.revOf(h) * 12) + '/yr at ' + r(E.marginOf(h), 0) + '%', 'revenue') : row(K === 'multi' ? 'Rent' : K === 'commercial' ? 'Lease income' : 'Rent', $f(h.rent) + '/mo', K === 'multi' ? 'unitmix' : 'rent')}${K === 'business' ? '' : row('Property tax', $f(h.tax) + '/mo', 'tax') + row('Insurance', $f(h.ins) + '/mo', 'ins') + row('Manager', E.mgmtOf(S, h) ? r(E.mgmtOf(S, h), 0) + '% of rent' : 'You (no fee)', 'manage')}${O ? '' : row('Closing costs', $f(m.close), 'closing')}${inP('hoa') ? row('HOA', h.hoa ? $f(h.hoa) + '/mo' : 'None', h.hoa ? 'hoaamt' : 'hoa') : ''}${inP('rehab') ? row('Fix-up', h.capex > 0 ? $f(h.capex) + ' rehab budget' : 'Move-in ready', 'rehab') : ''}${!O && h.jobPay != null ? row('Job money', $f(h.jobPay) + '/mo', 'job') : ''}${row('Growth', r(h.growth, 1) + '% a year', 'growth')}
     <div class="dk-rvs"><div><span class="k">Cash flow</span><b class="${m.cf < 0 ? 'bad' : 'ok'}">${$s(m.cf)}/mo</b></div><div><span class="k">${O ? 'Value' : 'Cash to close ' + infoBtn('cash')}</span><b>${$k(O ? h.price : m.cash)}</b></div><div><span class="k">${O ? 'Deal ' : 'Trust ready '}${infoBtn(O ? 'deal' : 'trust')}</span><b>${O ? AFV[v][1] : afMoTxt(mo)}</b></div></div>
     <p class="dk-help">${O ? '' : 'Deal: ' + AFV[v][0].toLowerCase() + ' (DSCR ' + (isFinite(m.dscr) ? r(m.dscr, 2) : 'no loan') + '). The trust is funded in buy order, so this one is bought after the assets already planned.'}</p><button class="dk-save" data-dksave data-testid="dk-save">${O ? 'Add to what I own' : 'Add to my plan'}</button>`;
   }
@@ -368,7 +369,7 @@
     pl.snap.forEach((x) => (snapBy[x.id] = x));
     const list = S.houses.filter((h) => (h.type || 'house') === tp && !(pl.exits[h.id] && pl.sellAt[h.id] <= pl.planM));
     const rows = list.map((h, i) => {
-      const own = h.status === 'owned', m = afMetrics(h), v = pl.V[h.id], tt = E.todayTotals(S, pl, [h.id]), vd = verdictFor(pl, h), tr = pl.trust[h.id] || {}, bm = pl.purchase[h.id], need = tr.need || m.cash;
+      const own = h.status === 'owned', m = afMetrics(h), v = pl.V[h.id], tt = E.todayTotals(S, pl, [h.id]), vd = own ? { word: AFV[afVerdict(m)][1], cls: afVerdict(m) } : verdictFor(pl, h), tr = pl.trust[h.id] || {}, bm = pl.purchase[h.id], need = tr.need || m.cash;
       const planned = list.filter((q) => q.status !== 'owned').sort((a, b) => bno[a.id] - bno[b.id]), pi = planned.indexOf(h), prevA = pi > 0 ? planned[pi - 1] : null;
       const have = Math.min(need, Math.max(0, +tr.have || 0)), pct = need > 0 ? Math.min(100, (have / need) * 100) : 100;
       const when = !isFinite(bm) ? 'not funded in the plan' : bm <= 0 ? 'ready now' : 'ready in <b>' + bm + ' mo</b>';
