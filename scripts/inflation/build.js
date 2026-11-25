@@ -6,7 +6,7 @@ const path = require('path');
 const { buildPath } = require('./blend');
 const { backtest, bandFromOffsets } = require('./backtest');
 
-const SRC_NAMES = { cleveland: 'Cleveland Fed expected inflation', spf: 'Philadelphia Fed SPF 10-year CPI', treasury: 'Treasury 10-year breakeven', cpi: 'BLS CPI-U all items NSA (CUUR0000SA0)' };
+const SRC_NAMES = { cleveland: 'Cleveland Fed expected inflation', spf: 'Philadelphia Fed SPF 10-year CPI', treasury: 'Treasury 10-year breakeven', cpi: 'FRED CPIAUCNS (CPI-U all items NSA)' };
 
 // res = result of fetch.fetchAll (or a fixture); prev = previous data/inflation.json or null.
 // Returns { json, failures:[string], notes:[string] }.

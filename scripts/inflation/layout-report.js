@@ -38,11 +38,9 @@ async function section(name, fn) {
       lines.slice(0, 3).forEach(l => log('  ' + l));
     });
   }
-  await section('BLS CPI flat file', async () => {
-    const lines = (await get(URLS.blsCpi)).toString('utf8').split(/\r?\n/);
-    log('  header: ' + JSON.stringify(lines[0]));
-    const cu = lines.filter(l => l.startsWith('CUUR0000SA0'));
-    log(`  CUUR0000SA0 rows ${cu.length}; first ${JSON.stringify(cu[0])}; last ${JSON.stringify(cu[cu.length - 1])}`);
+  await section('FRED CPIAUCNS CSV', async () => {
+    const lines = (await get(URLS.fredCpi)).toString('utf8').split(/\r?\n/).filter(Boolean);
+    log(`  lines ${lines.length}; header ${lines[0]}; first ${lines[1]}; last ${lines[lines.length - 1]}`);
   });
   await section('Philadelphia Fed SPF release pages', async () => {
     const now = new Date(), q = Math.floor(now.getUTCMonth() / 3) + 1;
@@ -64,6 +62,12 @@ async function section(name, fn) {
     const t = (await get('https://www.philadelphiafed.org/surveys-and-data/real-time-data-research/survey-of-professional-forecasters')).toString('utf8');
     const links = [...t.matchAll(/href="([^"]*(?:spf|long-term|cpi10|mean|median)[^"]*)"/gi)].map(m => m[1]);
     log('  links: ' + JSON.stringify([...new Set(links)].slice(0, 40)));
+  });
+  for (const pg of ['mean-forecasts', 'median-forecasts']) await section('SPF ' + pg + ' page', async () => {
+    const t = (await get('https://www.philadelphiafed.org/surveys-and-data/real-time-data-research/' + pg)).toString('utf8');
+    const links = [...t.matchAll(/href="([^"]+\.(?:xlsx?|csv|zip)[^"]*)"/gi)].map(m => m[1].replace(/&amp;/g, '&'));
+    log('  data links: ' + JSON.stringify([...new Set(links)].slice(0, 40)));
+    log('  CPI10 mentions: ' + JSON.stringify([...t.matchAll(/.{0,80}(?:cpi10|CPI10|10-year CPI).{0,80}/g)].slice(0, 5).map(m => m[0])));
   });
   if (process.argv[2]) fs.writeFileSync(process.argv[2], out.join('\n') + '\n');
 })();

@@ -5,15 +5,29 @@ Output: data/inflation.json. Engine and Settings use it in card IF1b, not here.
 
 ## Source layouts (read this before the parsers)
 
-STATUS: the layouts below are NOT verified against the real files. On 2026-11-23 this
-build environment could not reach clevelandfed.org, home.treasury.gov, www.treasury.gov,
-philadelphiafed.org, api.bls.gov or download.bls.gov (proxy 403 on CONNECT). The spec's
-"not checked yet" item (which maturities the real curve CSV covers) is therefore still
-open. What follows is the expected layout, from public descriptions. The parsers find
-columns by header text, not by position, and throw a clear error when a header they need
-is missing, so a wrong guess fails loudly in the workflow instead of producing wrong
-numbers. On the first run from a machine that can reach the hosts: open each file,
-correct this section, and fix the parsers if needed.
+STATUS: layouts VERIFIED against the real files on 2026-11-25 by a GitHub Actions run
+(run 45613926226, layout-report.js). From the build sandbox the Fed, Treasury and BLS hosts
+were blocked (proxy 403); from the GitHub runner Cleveland, Treasury and Philadelphia Fed
+answered HTTP 200 and download.bls.gov answered 403. CPI therefore now comes from FRED.
+Real facts (corrections to the earlier guesses are marked CORRECTED):
+- Cleveland: workbook has sheets "Data Key For Graphs", "Expected Inflation" (540 rows),
+  "Ten-year Expected Chart", "Real Interest Rate". Sheet "Expected Inflation": header
+  "Model Output Date", then " 1 year Expected Inflation" ... " 30 year Expected Inflation"
+  (leading space). Dates are Excel serial numbers (29952 = Nov 1980 start of rows; last 46327).
+  CORRECTED: values in this sheet are FRACTIONS (0.0266630958 = 2.666%), not percent. The
+  "Ten-year Expected Chart" sheet is in percent (2.6663096). Last row 10-year = 2.6663%,
+  equal to FRED EXPINF10YR for 2026-11.
+- Treasury real curve: header Date,"5 YR","7 YR","10 YR","20 YR","30 YR" (as guessed),
+  dates MM/DD/YYYY newest first, 226 lines for 2026. Nominal header has "1 Mo","1.5 Month",
+  "2 Mo",...,"1 Yr","2 Yr","3 Yr","5 Yr","7 Yr","10 Yr","20 Yr","30 Yr". 2026-11-24: real 10 YR
+  2.79, nominal 10 Yr 4.91, breakeven 2.12. Each request takes about 19 seconds.
+- Philadelphia Fed: release page spf-q4-2026 exists (CPI 10-year 2.49, previous survey 2.30;
+  PCE 2.23). Sentence: "Over the next 10 years, 2026 to 2035, ... headline CPI inflation will
+  be at an annual-average rate of 2.49 percent". CORRECTED: it is "10 years" in prose, and the
+  table row is "2026-2035 2.30 2.49 N.A. N.A. 2.20 2.23" (previous, current CPI; previous,
+  current PCE). The landing page links no data file; it links mean-forecasts and
+  median-forecasts pages (the history file link is still being located, see layout report).
+- BLS: download.bls.gov returned 403 from the runner. REPLACED by FRED, see below.
 
 ### Cleveland Fed expected inflation (inflation-expectations.xlsx), expected layout
 - URL: https://www.clevelandfed.org/-/media/files/webcharts/inflationexpectations/inflation-expectations.xlsx
@@ -46,14 +60,11 @@ correct this section, and fix the parsers if needed.
   SPF_HISTORY_URL (env) or sources.js.
 - If the history cannot be fetched or parsed the build keeps the last good band (spec 5).
 
-### BLS CPI-U all items, not seasonally adjusted (CUUR0000SA0)
-- URL: https://download.bls.gov/pub/time.series/cu/cu.data.0.Current (tab separated:
-  series_id, year, period, value, footnote_codes). Rows with series_id CUUR0000SA0 are
-  used; period M13 (annual average) is skipped.
-- BLS asks for a descriptive User-Agent with contact info; the fetcher sends BLS_USER_AGENT
-  from the environment (generic default otherwise).
-- FRED CPIAUCNS (same index, reachable here) read 337.511 for 2026-10 and 336.940 for
-  2026-09. It is NOT used by the pipeline.
+### CPI-U all items, not seasonally adjusted: FRED CPIAUCNS (replaces BLS file)
+- URL: https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS (free, no key). Same
+  series as BLS CUUR0000SA0. CSV, header observation_date,CPIAUCNS, rows YYYY-MM-01,value.
+  Read 2026-11-23: 2026-10 = 337.511, 2026-09 = 336.940.
+- Assumption (user did not name the source): FRED CPIAUCNS. [ask-user-if-wrong]
 
 ## data/inflation.json shape
 

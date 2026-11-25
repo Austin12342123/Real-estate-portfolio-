@@ -154,6 +154,11 @@ describe('parsers and build (offline fixtures)', () => {
     expect(out[1].points.length).toBe(30);
     near(out[1].points[9], 0.0267);
   });
+  it('Cleveland values stored as fractions (real file) are not divided again', () => {
+    const head = ['Model Output Date', ...Array.from({ length: 30 }, (_, i) => ` ${i + 1} year Expected Inflation`)];
+    const buf = writeXlsx([{ name: 'Expected Inflation', rows: [head, [46327, ...Array(30).fill(0.0266630958)]] }]);
+    near(fetchers.parseCleveland(buf)[0].points[9], 0.0266630958);
+  });
   it('computes breakeven = nominal - real from Treasury CSVs', () => {
     const nom = fetchers.parseTreasuryCsv('"Date","1 Mo","5 Yr","10 Yr"\n"11/19/2026","3.9","4.00","4.40"\n');
     const real = fetchers.parseTreasuryCsv('"Date","5 YR","10 YR"\n"11/19/2026","1.70","2.24"\n');
@@ -161,9 +166,11 @@ describe('parsers and build (offline fixtures)', () => {
     expect(be.date).toBe('2026-11-19');
     near(be.byMaturity[10].breakeven, 2.16, 1e-6);
   });
-  it('parses BLS flat file and SPF history', () => {
-    const cpi = fetchers.parseBlsCpi('series_id\tyear\tperiod\tvalue\nCUUR0000SA0\t2026\tM10\t337.511\nCUUR0000SA0\t2026\tM13\t300\nOTHER\t2026\tM10\t1\n');
-    expect(cpi).toEqual({ '2026-10': 337.511 });
+  it('parses FRED CPIAUCNS csv and SPF history', () => {
+    const cpi = fetchers.parseFredCpi('observation_date,CPIAUCNS\n2026-09-01,336.940\n2026-10-01,337.511\n');
+    expect(cpi).toEqual({ '2026-09': 336.94, '2026-10': 337.511 });
+    expect(() => fetchers.parseFredCpi('a,b\n1,2\n')).toThrow(/header/);
+    expect(fetchers.parseSpfRelease('<p>Over the next 10 years, 2026 to 2035, the forecasters predict headline CPI inflation will be at an annual-average rate of 2.49 percent. The corresponding estimate for 10-year PCE is 2.23 percent.</p>')).toBe(2.49);
     expect(fetchers.parseSpfHistory('YEAR,QUARTER,CPI10\n2026,3,2.30\n')[0]).toEqual({ month: '2026-08', s: 0.023 });
   });
   it('a failed source keeps its last value and is named in the PR text; band is never guessed', () => {

@@ -9,7 +9,7 @@ const URLS = {
   treasuryNominal: y => `https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/${y}/all?type=daily_treasury_yield_curve&field_tdr_date_value=${y}&page&_format=csv`,
   spfRelease: (q, y) => `https://www.philadelphiafed.org/surveys-and-data/real-time-data-research/spf-q${q}-${y}`,
   spfHistory: process.env.SPF_HISTORY_URL || '',
-  blsCpi: 'https://download.bls.gov/pub/time.series/cu/cu.data.0.Current',
+  fredCpi: 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS',
 };
 
 async function getBuf(url, headers) {
@@ -39,7 +39,9 @@ function parseCleveland(buf) {
       const pts = [];
       for (let n = 1; n <= 30; n++) pts.push(r[cols[n]]);
       if (pts.some(v => typeof v !== 'number')) continue;
-      out.push({ month: iso.slice(0, 7), points: pts.map(v => v / 100) });
+      // real file stores fractions (0.0267); accept percent (2.67) too
+      const div = Math.max(...pts) > 0.5 ? 100 : 1;
+      out.push({ month: iso.slice(0, 7), points: pts.map(v => v / div) });
     }
     if (!out.length) throw new Error('Cleveland: sheet ' + sh.name + ' has no data rows');
     out.sort((a, b) => a.month < b.month ? -1 : 1);
@@ -108,16 +110,16 @@ function parseSpfHistory(text) {
   return out;
 }
 
-// ---- BLS flat file -> { 'YYYY-MM': index }
-function parseBlsCpi(text, series) {
+// ---- FRED CPIAUCNS (CPI-U all items NSA, same series as BLS CUUR0000SA0): CSV observation_date,CPIAUCNS
+function parseFredCpi(text) {
+  const rows = csvRows(text), head = rows[0] || [];
+  if (!/date/i.test(head[0] || '') || !/CPIAUCNS/i.test(head[1] || '')) throw new Error('FRED CPI: unexpected header ' + head.join('|'));
   const out = {};
-  for (const line of text.split(/\r?\n/)) {
-    const c = line.split('\t').map(s => s.trim());
-    if (c[0] !== (series || 'CUUR0000SA0')) continue;
-    const m = /^M(\d{2})$/.exec(c[2]); if (!m || m[1] === '13') continue;
-    const v = parseFloat(c[3]); if (!isNaN(v)) out[c[1] + '-' + m[1]] = v;
+  for (const r of rows.slice(1)) {
+    const m = /^(\d{4}-\d{2})-\d{2}$/.exec(r[0] || ''); const v = parseFloat(r[1]);
+    if (m && !isNaN(v)) out[m[1]] = v;
   }
-  if (!Object.keys(out).length) throw new Error('BLS: no rows for series CUUR0000SA0');
+  if (!Object.keys(out).length) throw new Error('FRED CPI: no rows');
   return out;
 }
 
@@ -139,8 +141,8 @@ async function fetchAll(now) {
     if (r.ok || k === 0) res.spf = r;
   }
   res.spfHistory = URLS.spfHistory ? await attempt(URLS.spfHistory, async () => parseSpfHistory(await getText(URLS.spfHistory))) : { ok: false, url: '', error: 'SPF_HISTORY_URL not set' };
-  res.cpi = await attempt(URLS.blsCpi, async () => parseBlsCpi(await getText(URLS.blsCpi)));
+  res.cpi = await attempt(URLS.fredCpi, async () => parseFredCpi(await getText(URLS.fredCpi)));
   return res;
 }
 
-module.exports = { URLS, parseCleveland, parseTreasuryCsv, breakevens, parseSpfRelease, parseSpfHistory, parseBlsCpi, fetchAll };
+module.exports = { URLS, parseCleveland, parseTreasuryCsv, breakevens, parseSpfRelease, parseSpfHistory, parseFredCpi, fetchAll };
