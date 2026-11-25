@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'24cd7fc5'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'3874e435'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (function () {
   const E = window.Engine,
