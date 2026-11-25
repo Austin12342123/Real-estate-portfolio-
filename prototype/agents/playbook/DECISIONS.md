@@ -5,3 +5,6 @@
 4. Adoption: yes. CLAUDE.md now carries the agent-workflow section.
 
 - 2026-11-19 (user): ACCEPTED the loosened sync-grade basis-label check (/portfolio row/) after the asset-note text was cut at the user's request.
+
+- 2026-11-25 (user): MERGE the module-split lineage to main ("Merge the new version"). Done: main = ac12b16 (full run 20261123T055744-18571 clean), Artifact v54.
+- 2026-11-25 (user): STANDING RULE: publish every resolved card to the live app right away, one by one (see AUTOPUSH.md). Server sync, hosting changes and paid services still need his yes.
