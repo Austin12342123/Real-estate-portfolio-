@@ -20,6 +20,8 @@ async function guard(page, S, DATA_V) {
 const wipeIdb = (page) => page.evaluate(() => new Promise((r) => { try { const q = indexedDB.deleteDatabase('rep-v4-store'); q.onsuccess = q.onerror = q.onblocked = () => r(); } catch (e) { r(); } }));
 /* the portfolio as the app stored it (legacy shape), read from IndexedDB after the app's own save finished; falls back to localStorage when the app runs without IndexedDB */
 const stored = async (page) => { try { await page.evaluate(() => (window.__app && window.__app.whenSaved ? window.__app.whenSaved() : null)); } catch (e) {} return page.evaluate(() => new Promise((res) => { const ls = () => { try { return JSON.parse(localStorage.getItem('rep-v4')); } catch (e) { return null; } }; if (!window.RepData || !window.__app || !window.__app.idb || window.__app.idb.mode !== 'indexeddb') return res(ls()); const r = indexedDB.open('rep-v4-store'); r.onerror = () => res(ls()); r.onsuccess = () => { const d = r.result, g = d.transaction('portfolio', 'readonly').objectStore('portfolio').get('current'); g.onsuccess = () => { d.close(); try { res(g.result ? window.RepData.fromV22(g.result.data) : null); } catch (e) { res(null); } }; }; })); };
+/* the safety copies, newest first: [{ ts, reason, kind, build, state }] read from IndexedDB (the 3-copy ring); with an app that runs without IndexedDB, from the old localStorage ring */
+const ring = (page) => page.evaluate(() => new Promise((res) => { const ls = () => { try { return JSON.parse(localStorage.getItem('rep-v4-safety')).items || []; } catch (e) { return []; } }; if (!window.RepData || !window.__app || !window.__app.idb || window.__app.idb.mode !== 'indexeddb') return res(ls()); const r = indexedDB.open('rep-v4-store'); r.onerror = () => res(ls()); r.onsuccess = () => { const d = r.result, g = d.transaction('snapshots', 'readonly').objectStore('snapshots').getAll(); g.onsuccess = () => { d.close(); res(g.result.sort((a, b) => b.seq - a.seq).map((x) => ({ ts: x.ts, reason: x.reason, kind: x.kind, build: x.build, state: window.RepData.fromV22(x.data) }))); }; }; }));
 async function boot(page, o) {
   const t = o.tag || 'b';
   await page.goto(o.base + FILE + '?' + t + '=' + n++);
@@ -57,4 +59,4 @@ async function raceSelfTest(mk, o, load, runs = 30, rate = 4) {
   }
   return { runs, mismatches: bad, detail: detail.join('; ') };
 }
-module.exports = { boot, guard, writeS, oldLoad, raceSelfTest, wipeIdb, stored };
+module.exports = { boot, guard, writeS, oldLoad, raceSelfTest, wipeIdb, stored, ring };

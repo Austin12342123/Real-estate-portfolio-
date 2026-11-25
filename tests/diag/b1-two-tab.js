@@ -23,7 +23,8 @@ const readDb = (pg) => pg.evaluate(() => new Promise((res) => { const r = indexe
   const B = await ctx.newPage(); await B.goto(BASE + '/index.html'); await B.waitForSelector('#app > *'); await B.waitForTimeout(1900);
   const ib = await B.evaluate(() => window.__app.idb); t(ib.mode === 'indexeddb' && ib.writer === false, 'tab B is read-only (another tab holds the write lock) ' + JSON.stringify(ib));
   await B.locator('[data-coll]').first().click(); await B.waitForTimeout(300);
-  t((await B.locator('[data-testid=stale-note]').count()) === 1 && /Another tab changed your portfolio/.test(await B.locator('[data-testid=stale-note]').textContent()), 'tab B shows the line "Another tab changed your portfolio." with Reload');
+  t((await B.locator('[data-testid=stale-note]').count()) === 1 && /Close the other tab, then reload\./.test(await B.locator('[data-testid=stale-note]').textContent()), 'tab B (read-only: another tab holds the write lock) shows the line "Close the other tab, then reload." with Reload');
+  for (const h of ['#finances', '#assumptions', '#saved', '#order', '']) { await B.evaluate((h) => { location.hash = h; }, h); await B.waitForTimeout(250); t((await B.locator('[data-testid=stale-note]').count()) === 1, 'tab B shows the line on page ' + (h || 'planned')); }
   db = await readDb(A); t(db.n === 5 && db.rev === revA, 'tab B wrote nothing (5 assets, rev ' + db.rev + ' = ' + revA + ')'); const rev1 = db.rev;
   /* tab A saves: tab B (already stale) keeps its line; A's rev moves */
   await A.locator('[data-coll]').first().click(); await A.waitForTimeout(200); await A.evaluate(() => window.__app.whenSaved()); db = await readDb(A); t(db.rev > rev1 && db.n === 5, 'tab A saved normally (rev ' + db.rev + ')');
@@ -40,5 +41,10 @@ const readDb = (pg) => pg.evaluate(() => new Promise((res) => { const r = indexe
   t(JSON.stringify(db.snaps.map((s) => s.assets)) === JSON.stringify([sizes[2], sizes[1], sizes[0]]), 'the 3 newest copies are the portfolios as they were BEFORE changes 4, 3 and 2 (changes 1 was pruned) ' + JSON.stringify(db.snaps.map((s) => s.assets)));
   t((await A.evaluate(() => localStorage.getItem('rep-v4'))) === ls0, 'the old localStorage key is still untouched');
   t((await A.evaluate(() => document.querySelectorAll('[data-testid=safety-item]').length)) <= 3, 'the Safety copies card lists at most 3');
+  /* a fresh start (nothing stored anywhere): an edit is stored and survives a reload (regression: the first save threw because there was no meta yet) */
+  const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }), F = await ctx2.newPage();
+  await F.goto(BASE + '/index.html#house-maple'); await F.waitForSelector('#app > *'); for (const b of await F.locator('[data-coll]').all()) if ((await b.getAttribute('aria-expanded')) !== 'true') await b.click();
+  await F.locator('#app input[data-p="h.maple.extra"]').first().click(); await F.keyboard.press('Control+A'); await F.keyboard.insertText('1234'); await F.keyboard.press('Enter'); await F.evaluate(() => window.__app.whenSaved());
+  await F.reload(); await F.waitForSelector('#app > *'); t((await F.evaluate(() => window.__app.state.houses.find((h) => h.id === 'maple').extra)) === 1234, 'fresh start: an edit is stored in IndexedDB and survives a reload');
   await browser.close(); srv.close(); process.exit(bad ? 1 : 0);
 })();

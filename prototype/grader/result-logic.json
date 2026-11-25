@@ -1,5 +1,5 @@
 {
- "run": "2026-11-19T21:41:39.546Z",
+ "run": "2026-11-25T12:47:17.921Z",
  "total": 100,
  "max": 100,
  "categories": {
@@ -424,7 +424,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "peak DTI 9.9% at month 118 vs limit 43",
+   "detail": "peak DTI 9.9% at month 116 vs limit 43",
    "source": "",
    "disclosedOnly": false
   },
@@ -435,7 +435,7 @@
    "pts": 0.5,
    "earned": 0.5,
    "pass": true,
-   "detail": "ok; peak 7(a) outstanding $3917343 at month 133",
+   "detail": "ok; peak 7(a) outstanding $3911823 at month 132",
    "source": "S2,S3,S4,S5",
    "disclosedOnly": false
   },
@@ -794,11 +794,11 @@
   {
    "cat": "L8",
    "id": "L8.4",
-   "name": "Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M in TODAY'S dollars (125-135M at the 28-year plan end after dividing by 1.03^28, i.e. about $286-309M in future dollars; 40-100M in today's dollars at 25 years: the plan starts from zero owned assets and compounds) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative",
+   "name": "Default plan is a smooth, self-funded, lender-qualified build: net worth about $125M in TODAY'S dollars (125-140M at the 28-year plan end after dividing by 1.03^28, i.e. about $286-309M in future dollars; 40-100M in today's dollars at 25 years: the plan starts from zero owned assets and compounds) with 4% growth; purchase prices of the commercial/business chain rise by 1.0-1.4x per step (about 25%, no big jump) in buy order; no partner capital or outside financing; every loan meets lender DSCR (see L4.4); homes never negative; the finance verdict is Yes with cash never negative",
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "NW (today's dollars) 25y $85.1M, 28y $131.7M (future $301.2M); step ratios 1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23; assets 36; business growth 4",
+   "detail": "NW (today's dollars) 25y $88.9M, 28y $138.7M (future $317.4M); step ratios 1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23,1.23; assets 36; business growth 4",
    "source": "",
    "disclosedOnly": false
   },
@@ -809,18 +809,18 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "after-tax cash flow today's dollars $1380287/mo (before tax $1951091, tax $570804), NW $131.7M, verdict yes",
+   "detail": "after-tax cash flow today's dollars $1388032/mo (before tax $1963469, tax $575437), NW $138.7M, verdict yes",
    "source": "",
    "disclosedOnly": false
   },
   {
    "cat": "L8",
    "id": "L8.4b",
-   "name": "Default plan targets, in TODAY'S dollars (future dollars divided by 1.03^28): net worth at the 28-year plan end is $125M to $135M AND the monthly cash flow at plan end (Cash flow / mo, before tax, after loan payments) is at least $1.3M (at least $286M and $2.98M in future dollars); the cash flow is the sum of the asset rows (income minus operating costs and loan payments) and equals income before loans (net operating income) minus loan payments",
+   "name": "Default plan targets, in TODAY'S dollars (future dollars divided by 1.03^28): net worth at the 28-year plan end is $125M to $140M AND the monthly cash flow at plan end (Cash flow / mo, before tax, after loan payments) is at least $1.3M (at least $286M and $2.98M in future dollars); the cash flow is the sum of the asset rows (income minus operating costs and loan payments) and equals income before loans (net operating income) minus loan payments",
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "today's dollars NW $131.65M, cash flow $1.951M/mo; future dollars NW $301.21M, cash flow $4.464M/mo (rows $4.464M), income before loans $4.464M, loan payments $0.000M",
+   "detail": "today's dollars NW $138.73M, cash flow $1.963M/mo; future dollars NW $317.41M, cash flow $4.492M/mo (rows $4.492M), income before loans $4.492M, loan payments $0.000M",
    "source": "",
    "disclosedOnly": false
   },
@@ -842,7 +842,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "6,13,17,21,21,24,24,31,41,48,56,66,86,95,103,118,127,127,128,133,149,151,162,173,190,191,200,209,223,226,236,246,257,261,271,271; verdict yes, lowest liquid cash $26820",
+   "detail": "6,11,14,18,18,21,21,29,39,45,53,64,84,93,101,116,125,125,127,132,147,150,160,171,188,189,198,207,221,224,234,244,255,259,269,269; verdict yes, lowest liquid cash $24844",
    "source": "",
    "disclosedOnly": false
   },
@@ -854,6 +854,50 @@
    "earned": 1.5,
    "pass": true,
    "detail": "0 months disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "F1",
+   "id": "F1.1",
+   "name": "Savings fund the first purchase: savings 60000, cushion 0, house at month 3 (price 200000, down 40000, closing 6000) -> savings 14000 and net worth 54000 (equity 40000 + savings 14000); the month before it is 60000",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "savings 14000, nw 54000",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "F1",
+   "id": "F1.2",
+   "name": "Savings 30000 (cushion 0): the house is not bought, it is short by exactly 16000 (down 40000 + closing 6000 - 30000), nothing is borrowed, savings stay 30000",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "short 16000 / Not possible - short $16,000",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "F1",
+   "id": "F1.3",
+   "name": "Breakdown sums to the headline with savings: assetsAt(t) equity sums (assets + Your savings row + trust cash) = series net worth at every sampled month on the F1 fixture and the default plan",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "0 months disagree",
+   "source": "",
+   "disclosedOnly": false
+  },
+  {
+   "cat": "F1",
+   "id": "F1.4",
+   "name": "Can I buy this? fixture (price 170839, reno 35000 financed, cash to close 15747, savings 25849): Money still uncovered = 0 (compares cash to close, not the price; was -144990), Down payment covered shows 10102 to spare, never short $0, loan payment line names the mortgage insurance amount",
+   "pts": 1.5,
+   "earned": 1.5,
+   "pass": true,
+   "detail": "[0,\"Down payment covered\",10102,\"principal + interest + mortgage insurance $90 on $197,297 at 7%\"]",
    "source": "",
    "disclosedOnly": false
   },
@@ -963,7 +1007,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "owned false first pooled false no-job unfunded 36 NW on/off 301.2/58.1",
+   "detail": "owned false first pooled false no-job unfunded 36 NW on/off 317.4/56.9",
    "source": "",
    "disclosedOnly": false
   },
@@ -1040,7 +1084,7 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "default NW $301.2M, cf $4.46M, DTI 10%, last buy month 271; weak profile (job money $580/mo): NW $35.1M, verdict no, last buy month 378",
+   "detail": "default NW $317.4M, cf $4.49M, DTI 10%, last buy month 269; weak profile (job money $580/mo): NW $35.4M, verdict no, last buy month 378",
    "source": "",
    "disclosedOnly": false
   },
@@ -1062,7 +1106,7 @@
    "pts": 2,
    "earned": 2,
    "pass": true,
-   "detail": "bought in month 170 (plan 240), verdict no, NW end $542M, cash flow after $1859253 vs carry $287500/mo",
+   "detail": "bought in month 169 (plan 240), verdict no, NW end $551M, cash flow after $1884551 vs carry $287500/mo",
    "source": "",
    "disclosedOnly": false
   },
@@ -1168,7 +1212,7 @@
   {
    "cat": "L12",
    "id": "L12.1",
-   "name": "The user's example ($10M business, $2.5M down, $1M can be pulled out, $250,000/mo of income): cash needed $2.5M, down payment short -$1.5M, money uncovered -$9M, payment from the loan formula, monthly covered",
+   "name": "The user's example ($10M business, $2.5M down, $1M can be pulled out, $250,000/mo of income): cash needed $2.5M, down payment short -$1.5M, money uncovered -$1.5M (cash you can pull out vs cash to close, not the price), payment from the loan formula, monthly covered",
    "pts": 3,
    "earned": 3,
    "pass": true,
@@ -1271,7 +1315,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "yes  131653652",
+   "detail": "yes  138733896",
    "source": "",
    "disclosedOnly": false
   },
@@ -1392,7 +1436,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "[[1436,200796,21555991,234677,100],[10913,1056844,301214033,3157996,271],[3257,18336,542250657,1083061,170]]",
+   "detail": "[[1436,207784,43319824,234677,100],[10846,1053074,317413120,3175717,269],[3220,451709,550692506,1091789,169]]",
    "source": "",
    "disclosedOnly": false
   },
@@ -1403,7 +1447,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "at5 506.1961619615092 want 506.1961619615092 end 120->91 default {\"amount\":128.69676450099058,\"from\":100}",
+   "detail": "at5 506.1961619615092 want 506.1961619615092 end 120->88 default {\"amount\":128.69676450099058,\"from\":100}",
    "source": "",
    "disclosedOnly": false
   },
@@ -1414,7 +1458,7 @@
    "pts": 1,
    "earned": 1,
    "pass": true,
-   "detail": "{\"surplus0\":1030,\"assigned\":15000,\"count\":3,\"over\":true,\"shortMonths\":95,\"firstShort\":2,\"short0\":0} worst 7.275957614183426e-12",
+   "detail": "{\"surplus0\":1030,\"assigned\":15000,\"count\":3,\"over\":true,\"shortMonths\":102,\"firstShort\":0,\"short0\":13970} worst 7.275957614183426e-12",
    "source": "",
    "disclosedOnly": false
   },

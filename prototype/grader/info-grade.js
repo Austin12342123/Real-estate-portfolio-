@@ -179,7 +179,7 @@ exports.run = async function run(X) {
     'Playwright 390x844 and 320x568: open (i), inspect dialog, close every way', async () => {
       const P = new Parts(); await load(page, sampleS(), '#'); await page.setViewportSize({ width: 390, height: 844 });
       P.t((await page.locator('[data-testid=info-pop]').count()) === 0, 'no sheet is open on load', 0.3);
-      const st0 = await page.evaluate(() => localStorage.getItem('rep-v4'));
+      const st0 = JSON.stringify(await BOOT.stored(page));
       await page.click('[data-info=dscr]'); await page.waitForTimeout(50); let sh = await page.evaluate(SHEET), d = INFO.dscr;
       P.t(!!sh && sh.h === d.t && sh.ps[0] === d.b && (!d.e || sh.ps[1] === 'Example: ' + d.e), 'opens with the title, meaning and example of that term (DSCR)', 1.2, sh && sh.h + ' / ' + (sh && sh.ps.join(' | ').slice(0, 80)));
       P.t(!!sh && sh.role === 'note' && sh.modal === null && sh.lb && sh.lbText === d.t, 'the popover is a non-modal role=note labelled by its heading (no dialog, no aria-modal)', 1, JSON.stringify(sh && [sh.role, sh.modal, sh.lb]));
@@ -189,7 +189,7 @@ exports.run = async function run(X) {
       P.t(sheetClick, 'tapping the text inside the popover does not close it', 0.4);
       await page.click('[data-info=dscr]'); await page.waitForTimeout(40);
       P.t((await page.locator('[data-testid=info-pop]').count()) === 0 && (await page.evaluate(() => location.hash)) === '' || (await page.evaluate(() => location.hash)) === '#', 'a second click on the (i) closes it and the page stays where it was (same route)', 0.8);
-      P.t((await page.evaluate(() => localStorage.getItem('rep-v4'))) === st0, 'opening and closing help never changes saved data', 0.6);
+      P.t((JSON.stringify(await BOOT.stored(page))) === st0, 'opening and closing help never changes saved data', 0.6);
       /* focus goes back where the person was */
       const back = await page.evaluate(() => { const a = document.activeElement; return a && a.dataset && a.dataset.info; });
       P.t(back === 'dscr', 'after closing, keyboard focus returns to the (i) that opened it', 1.2, 'focus is on ' + (await page.evaluate(() => { const a = document.activeElement; return a ? a.tagName + '.' + (a.className || '') : 'none'; })));

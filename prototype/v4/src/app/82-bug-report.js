@@ -89,6 +89,7 @@
         const k = localStorage.key(i);
         if (k && k.indexOf('rep-v4') === 0) keys.push([k, (localStorage.getItem(k) || '').length]);
       }
+      if (IDBMODE && !keys.some((k) => k[0] === 'rep-v4-safety')) keys.push(['rep-v4-safety', JSON.stringify(safeList()).length]); /* B1: the safety copies live in IndexedDB; their size is reported under the old name */
       keys.sort((a, b) => (a[0] < b[0] ? -1 : 1));
     } catch (e) {
       ls = false;
@@ -332,8 +333,6 @@
     ); /* the replaced banner already says it */
   const notesHtml = () => {
     let h = '';
-    if (STALE)
-      h += `<div class="migrate" role="status" data-testid="stale-note"><span>Another tab changed your portfolio.</span><button type="button" class="chip link" data-stale-reload data-testid="stale-reload">Reload</button></div>`;
     if (!D) return h;
     if (DG.flags.replaced) {
       const cand = D.restoreCandidate(safeList(), S);
@@ -343,12 +342,34 @@
       h += `<div class="migrate" role="status" data-testid="anomaly-note"><span><button type="button" class="chip link" data-anom-copy data-testid="anomaly-copy">${ANOMCOPIED ? 'Copied. Paste it into your Claude chat.' : 'Something looked wrong. Tap to copy a bug report'}</button></span><button type="button" class="chip link" data-anom-dismiss data-testid="anomaly-dismiss" aria-label="Dismiss this note">Dismiss</button></div>`;
     return h;
   };
+  /* the stale / read-only line: shown at the top of the app on EVERY page (any page can save), outside #app so no redraw touches it. Same testids and text as before; a read-only tab (another tab holds the write lock) says what to do. */
+  function injectStale() {
+    let el = document.getElementById('stale-host');
+    if (!STALE) {
+      if (el) el.remove();
+      return;
+    }
+    const ap = document.getElementById('app');
+    if (!ap || !ap.parentNode) return;
+    const msg = STALEKIND === 'readonly' ? 'Close the other tab, then reload.' : 'Another tab changed your portfolio.';
+    const h = `<div class="migrate" role="status" data-testid="stale-note"><span>${msg}</span><button type="button" class="chip link" data-stale-reload data-testid="stale-reload">Reload</button></div>`;
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'stale-host';
+      el.addEventListener('click', (e) => {
+        if (e.target.closest && e.target.closest('[data-stale-reload]')) location.reload();
+      }); /* outside #app, so the app's own click handler does not see it */
+      ap.parentNode.insertBefore(el, ap);
+    }
+    if (el.innerHTML !== h) el.innerHTML = h;
+  }
   function injectNotes() {
+    injectStale();
     if (routeOf() !== '' || page !== 'planned') return;
     const ap = document.getElementById('app'),
       tabs = ap && ap.querySelector('[data-testid=page-tabs]');
     if (!tabs) return;
-    const old = [...ap.querySelectorAll('[data-testid=anomaly-note],[data-testid=replaced-note],[data-testid=stale-note]')],
+    const old = [...ap.querySelectorAll('[data-testid=anomaly-note],[data-testid=replaced-note]')],
       h = notesHtml();
     if (old.map((n) => n.outerHTML).join('') === h) return;
     old.forEach((n) => n.remove());

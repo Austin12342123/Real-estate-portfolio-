@@ -25,6 +25,7 @@
   const LS0 = RAW0; /* the old localStorage text at start: never written by this version (it stays as the untouched fallback); a different text later means an older app version or a test wrote it */
   /* ---------- IndexedDB boot (card B1): open the store, take the writer lock, copy localStorage -> IndexedDB once (verified, rolled back on mismatch), then read the portfolio from IndexedDB. Any failure falls back to the old localStorage path. ---------- */
   const OKL = (o) => !!(o && typeof o === 'object' && Array.isArray(o.houses) && o.g);
+  let SAFE_CACHE = null; /* the safety copies shown in the app (declared here: the start-up migration files one before the rest of this module has run) */
   let IDBS = null,
     IDBMODE = false,
     IDBMETA = null,
@@ -85,6 +86,7 @@
       } else IDBNOTE = 'fallback: ' + mig.status + (mig.reason ? ' ' + mig.reason : '');
       if (IDBMODE) {
         IDBS = st;
+        if (!IDBMETA) IDBMETA = RepData.defaultMeta(); /* a fresh start has no stored portfolio yet, so no meta: without this the first save threw and nothing was ever stored */
         IDBSAFE0 = idbSafeMap((await st.snapshots()).filter((x) => x.data && x.data.schemaVersion === 22));
         st.persist(); /* ask the browser not to evict this origin's storage */
       } else st.close();
@@ -252,20 +254,20 @@
     chars: 0,
     err: '',
   }; /* did the last save read back exactly as written? (an invariant the anomaly monitor checks) */
+  let STALEKIND = '';
   let STALE = false; /* another tab changed the stored portfolio: this page keeps skipping saves and shows the Reload line */
   let LASTJS = RAW0; /* the last text of the portfolio this page read or wrote: a save never replaces a stored portfolio that differs from it (another tab, a restore or a test changed it): the stale page would overwrite newer data with its own copy */
   /* IndexedDB save: serialised (one write at a time, the latest state wins), refused when this tab is stale or read-only */
   let IDB_BUSY = false,
     IDB_DIRTY = false,
     IDBP = Promise.resolve();
-  const goStale = (why) => {
+  const goStale = (why, kind) => {
     logEv('stale', why);
-    if (!STALE) {
-      STALE = true;
-      try {
-        injectNotes();
-      } catch (e) {}
-    }
+    if (STALEKIND !== 'stale') STALEKIND = kind || 'stale'; /* 'stale' (another tab changed the stored portfolio) wins over 'readonly' (another tab holds the write lock) */
+    if (!STALE) STALE = true;
+    try {
+      injectNotes();
+    } catch (e) {}
   };
   const idbPump = () => {
     IDB_BUSY = true;
@@ -276,6 +278,10 @@
       p = RepData.toV22(S, { meta: IDBMETA, id: 'current' });
     } catch (e) {
       IDB_BUSY = false;
+      storageOK = false;
+      RW.ok = false;
+      RW.err = String((e && e.message) || e).slice(0, 80);
+      logEv('storage', 'save failed: ' + RW.err);
       return;
     }
     IDBP = IDBS.save(p)
@@ -284,7 +290,7 @@
           storageOK = true;
           RW.ok = true;
           RW.err = '';
-        } else if (r.stale || r.readonly) goStale(r.readonly ? 'save skipped: another tab is the writer; this page is read-only' : 'save skipped: the stored portfolio was changed elsewhere; this page keeps it');
+        } else if (r.stale || r.readonly) goStale(r.readonly ? 'save skipped: another tab is the writer; this page is read-only' : 'save skipped: the stored portfolio was changed elsewhere; this page keeps it', r.readonly ? 'readonly' : 'stale');
         else {
           storageOK = false;
           RW.ok = false;
@@ -376,8 +382,9 @@
     }
   };
   /* safety copies: a snapshot of the working portfolio in the ring (rep-v4-safety) taken BEFORE anything that could replace it */
-  let SAFE_CACHE = null;
-  const safeList = () => SAFE_CACHE || (SAFE_CACHE = IDBMODE ? IDBSAFE0 : D ? D.safeRead(localStorage) : []);
+  function safeList() {
+    return SAFE_CACHE || (SAFE_CACHE = IDBMODE ? IDBSAFE0 : D ? D.safeRead(localStorage) : []);
+  }
   function safeCopy(reason, st) {
     if (IDBMODE) {
       /* a copy of the state BEFORE a major change, in IndexedDB, the 3 newest kept (pruned in the same transaction) */

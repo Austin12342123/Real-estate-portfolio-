@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'31a25751'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'ce0c6486'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (async function () {
 /* Data schema v22 (docs/schema-v22.md). Pure functions, no storage. Works in the browser (global RepData) and in node (require).
@@ -652,6 +652,7 @@
   const LS0 = RAW0; /* the old localStorage text at start: never written by this version (it stays as the untouched fallback); a different text later means an older app version or a test wrote it */
   /* ---------- IndexedDB boot (card B1): open the store, take the writer lock, copy localStorage -> IndexedDB once (verified, rolled back on mismatch), then read the portfolio from IndexedDB. Any failure falls back to the old localStorage path. ---------- */
   const OKL = (o) => !!(o && typeof o === 'object' && Array.isArray(o.houses) && o.g);
+  let SAFE_CACHE = null; /* the safety copies shown in the app (declared here: the start-up migration files one before the rest of this module has run) */
   let IDBS = null,
     IDBMODE = false,
     IDBMETA = null,
@@ -712,6 +713,7 @@
       } else IDBNOTE = 'fallback: ' + mig.status + (mig.reason ? ' ' + mig.reason : '');
       if (IDBMODE) {
         IDBS = st;
+        if (!IDBMETA) IDBMETA = RepData.defaultMeta(); /* a fresh start has no stored portfolio yet, so no meta: without this the first save threw and nothing was ever stored */
         IDBSAFE0 = idbSafeMap((await st.snapshots()).filter((x) => x.data && x.data.schemaVersion === 22));
         st.persist(); /* ask the browser not to evict this origin's storage */
       } else st.close();
@@ -879,20 +881,20 @@
     chars: 0,
     err: '',
   }; /* did the last save read back exactly as written? (an invariant the anomaly monitor checks) */
+  let STALEKIND = '';
   let STALE = false; /* another tab changed the stored portfolio: this page keeps skipping saves and shows the Reload line */
   let LASTJS = RAW0; /* the last text of the portfolio this page read or wrote: a save never replaces a stored portfolio that differs from it (another tab, a restore or a test changed it): the stale page would overwrite newer data with its own copy */
   /* IndexedDB save: serialised (one write at a time, the latest state wins), refused when this tab is stale or read-only */
   let IDB_BUSY = false,
     IDB_DIRTY = false,
     IDBP = Promise.resolve();
-  const goStale = (why) => {
+  const goStale = (why, kind) => {
     logEv('stale', why);
-    if (!STALE) {
-      STALE = true;
-      try {
-        injectNotes();
-      } catch (e) {}
-    }
+    if (STALEKIND !== 'stale') STALEKIND = kind || 'stale'; /* 'stale' (another tab changed the stored portfolio) wins over 'readonly' (another tab holds the write lock) */
+    if (!STALE) STALE = true;
+    try {
+      injectNotes();
+    } catch (e) {}
   };
   const idbPump = () => {
     IDB_BUSY = true;
@@ -903,6 +905,10 @@
       p = RepData.toV22(S, { meta: IDBMETA, id: 'current' });
     } catch (e) {
       IDB_BUSY = false;
+      storageOK = false;
+      RW.ok = false;
+      RW.err = String((e && e.message) || e).slice(0, 80);
+      logEv('storage', 'save failed: ' + RW.err);
       return;
     }
     IDBP = IDBS.save(p)
@@ -911,7 +917,7 @@
           storageOK = true;
           RW.ok = true;
           RW.err = '';
-        } else if (r.stale || r.readonly) goStale(r.readonly ? 'save skipped: another tab is the writer; this page is read-only' : 'save skipped: the stored portfolio was changed elsewhere; this page keeps it');
+        } else if (r.stale || r.readonly) goStale(r.readonly ? 'save skipped: another tab is the writer; this page is read-only' : 'save skipped: the stored portfolio was changed elsewhere; this page keeps it', r.readonly ? 'readonly' : 'stale');
         else {
           storageOK = false;
           RW.ok = false;
@@ -1003,8 +1009,9 @@
     }
   };
   /* safety copies: a snapshot of the working portfolio in the ring (rep-v4-safety) taken BEFORE anything that could replace it */
-  let SAFE_CACHE = null;
-  const safeList = () => SAFE_CACHE || (SAFE_CACHE = IDBMODE ? IDBSAFE0 : D ? D.safeRead(localStorage) : []);
+  function safeList() {
+    return SAFE_CACHE || (SAFE_CACHE = IDBMODE ? IDBSAFE0 : D ? D.safeRead(localStorage) : []);
+  }
   function safeCopy(reason, st) {
     if (IDBMODE) {
       /* a copy of the state BEFORE a major change, in IndexedDB, the 3 newest kept (pruned in the same transaction) */
@@ -3935,6 +3942,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
         (el.closest('label,.kpi,tr') || el).classList.add('flash');
     });
     prev = cur;
+    injectStale();
     scheduleMonitor();
   }
   /* ---------- anomaly monitor, notices, safety copies and the bug report. Cheap, debounced after each render, never throws; nothing leaves this device. ---------- */
@@ -4028,6 +4036,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
         const k = localStorage.key(i);
         if (k && k.indexOf('rep-v4') === 0) keys.push([k, (localStorage.getItem(k) || '').length]);
       }
+      if (IDBMODE && !keys.some((k) => k[0] === 'rep-v4-safety')) keys.push(['rep-v4-safety', JSON.stringify(safeList()).length]); /* B1: the safety copies live in IndexedDB; their size is reported under the old name */
       keys.sort((a, b) => (a[0] < b[0] ? -1 : 1));
     } catch (e) {
       ls = false;
@@ -4271,8 +4280,6 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     ); /* the replaced banner already says it */
   const notesHtml = () => {
     let h = '';
-    if (STALE)
-      h += `<div class="migrate" role="status" data-testid="stale-note"><span>Another tab changed your portfolio.</span><button type="button" class="chip link" data-stale-reload data-testid="stale-reload">Reload</button></div>`;
     if (!D) return h;
     if (DG.flags.replaced) {
       const cand = D.restoreCandidate(safeList(), S);
@@ -4282,12 +4289,34 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       h += `<div class="migrate" role="status" data-testid="anomaly-note"><span><button type="button" class="chip link" data-anom-copy data-testid="anomaly-copy">${ANOMCOPIED ? 'Copied. Paste it into your Claude chat.' : 'Something looked wrong. Tap to copy a bug report'}</button></span><button type="button" class="chip link" data-anom-dismiss data-testid="anomaly-dismiss" aria-label="Dismiss this note">Dismiss</button></div>`;
     return h;
   };
+  /* the stale / read-only line: shown at the top of the app on EVERY page (any page can save), outside #app so no redraw touches it. Same testids and text as before; a read-only tab (another tab holds the write lock) says what to do. */
+  function injectStale() {
+    let el = document.getElementById('stale-host');
+    if (!STALE) {
+      if (el) el.remove();
+      return;
+    }
+    const ap = document.getElementById('app');
+    if (!ap || !ap.parentNode) return;
+    const msg = STALEKIND === 'readonly' ? 'Close the other tab, then reload.' : 'Another tab changed your portfolio.';
+    const h = `<div class="migrate" role="status" data-testid="stale-note"><span>${msg}</span><button type="button" class="chip link" data-stale-reload data-testid="stale-reload">Reload</button></div>`;
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'stale-host';
+      el.addEventListener('click', (e) => {
+        if (e.target.closest && e.target.closest('[data-stale-reload]')) location.reload();
+      }); /* outside #app, so the app's own click handler does not see it */
+      ap.parentNode.insertBefore(el, ap);
+    }
+    if (el.innerHTML !== h) el.innerHTML = h;
+  }
   function injectNotes() {
+    injectStale();
     if (routeOf() !== '' || page !== 'planned') return;
     const ap = document.getElementById('app'),
       tabs = ap && ap.querySelector('[data-testid=page-tabs]');
     if (!tabs) return;
-    const old = [...ap.querySelectorAll('[data-testid=anomaly-note],[data-testid=replaced-note],[data-testid=stale-note]')],
+    const old = [...ap.querySelectorAll('[data-testid=anomaly-note],[data-testid=replaced-note]')],
       h = notesHtml();
     if (old.map((n) => n.outerHTML).join('') === h) return;
     old.forEach((n) => n.remove());

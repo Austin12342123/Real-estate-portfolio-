@@ -152,5 +152,6 @@
         (el.closest('label,.kpi,tr') || el).classList.add('flash');
     });
     prev = cur;
+    injectStale();
     scheduleMonitor();
   }
