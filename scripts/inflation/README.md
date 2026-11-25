@@ -52,13 +52,20 @@ Real facts (corrections to the earlier guesses are marked CORRECTED):
   /^(\d+)\s*yr$/i and ignores "Mo" columns. Cross-check: FRED T10YIE read 2.16 on 2026-11-19.
 - Breakevens are shown in the sources list only. They never move the band (spec 5).
 
-### Philadelphia Fed Survey of Professional Forecasters, expected layout
+### Philadelphia Fed Survey of Professional Forecasters, VERIFIED layout (run 45682117685)
 - Release page: https://www.philadelphiafed.org/surveys-and-data/real-time-data-research/spf-q{Q}-{YYYY}
-  Its long-term table lists the 10-year average CPI and PCE forecasts (Q3 2026: CPI 2.30).
-- History for the backtest: a CSV with YEAR, QUARTER and a 10-year CPI column (header
-  matches /cpi10|10.?year.*cpi/i). The exact SPF file name is unverified; set it in
-  SPF_HISTORY_URL (env) or sources.js.
-- If the history cannot be fetched or parsed the build keeps the last good band (spec 5).
+  Its long-term table lists the 10-year average CPI and PCE forecasts (Q4 2026: CPI 2.49,
+  previous survey 2.30). Reachable from the runner (HTTP 200).
+- History for the backtest: the mean-forecasts / median-forecasts pages link
+  medianLevel.xlsx and meanLevel.xlsx (also medianGrowth.xlsx, meanGrowth.xlsx) under
+  /-/media/FRBP/Assets/Surveys-And-Data/survey-of-professional-forecasters/historical-data/.
+  The workbook has one sheet per variable. Each sheet has a header row `YEAR, QUARTER,
+  <VARIABLE>_<n>` and then one row per survey quarter (1968 Q4 onwards); missing values are
+  the text "#N/A". The default history is medianLevel.xlsx; parseSpfXlsx found the 10-year
+  CPI series (CPI10) with its YEAR and QUARTER columns, in percent, and the backtest ran on
+  real data (cases per horizon: 395 at 1 year, 60 at 29 years, 0 from 35 years).
+- If the history cannot be fetched or parsed the build keeps the last good band (spec 5);
+  it never guesses one.
 
 ### CPI-U all items, not seasonally adjusted: FRED CPIAUCNS (replaces BLS file)
 - URL: https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS (free, no key). Same
@@ -91,3 +98,15 @@ Real facts (corrections to the earlier guesses are marked CORRECTED):
 ## Commands
     node scripts/inflation/build.js        (needs network; writes data/inflation.json and out/pr-body.md)
     npx vitest run tests/inflation
+
+## Run notes (data/inflation.json, 2026-11-25)
+- Built on a GitHub runner: run 45682117685 (commit 5945195), "Source failures: none".
+  SHA256 of the committed file: 25e73658b18156c254a8859bf3f35e5613776c8db95419a5a510dd8a1b40095d.
+- The artifact blob host (productionresultssa31.blob.core.windows.net) is blocked from the
+  build sandbox, so the workflow also prints the whole file between JSON-BEGIN and JSON-END
+  with a SHA256 line; the committed file was copied from that log and checked against the hash.
+- Requests use the generic User-Agent "inflation-data-build"; no name, email or project
+  detail is sent.
+- Checks on the produced file: r(10) from the level series = 2.586% (spec blend
+  0.5 x 2.6663 + 0.5 x 2.49 = 2.578%), 0.08 below FRED EXPINF10YR 2.6663 for 2026-11 (limit
+  0.3). bandSupported is true for horizons 1 to 29 only (cases >= 60); 0 rule violations.
