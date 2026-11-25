@@ -242,7 +242,9 @@
           ? '#house-' + p.slice(2)
           : p.startsWith('import/')
             ? '#import-' + p.slice(7)
-            : p === 'add'
+            : p.startsWith('assets/')
+              ? '#assets-' + p.slice(7)
+              : p === 'add'
               ? '#add'
               : p === 'finances'
                 ? '#finances'
@@ -257,7 +259,9 @@
         ? 'h/' + h.slice(6)
         : h.startsWith('import-')
           ? 'import/' + h.slice(7)
-          : h === 'add'
+          : h.startsWith('assets-')
+            ? 'assets/' + h.slice(7)
+            : h === 'add'
             ? 'add'
             : h === 'finances'
               ? 'finances'

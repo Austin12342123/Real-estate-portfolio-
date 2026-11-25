@@ -328,7 +328,7 @@
       const nn = tp ? NOUN[tp] : ['sold', 'sold'],
         sub = list.length ? statStrip(tp, list, tid) : 'None yet';
       return `<section class="card cat${open ? ' open' : ''}${tp ? '' : ' soldcat'}" data-testid="cat-${tid}"><div class="cathw"><div class="cath" data-coll="${id}" role="button" tabindex="0" aria-expanded="${open}" data-testid="cat-header-${tid}"><span class="catt"><b>${title}</b></span><span class="chev" aria-hidden="true">›</span></div><div class="cats" data-testid="cat-sub-${tid}" aria-label="Latest added, for information only">${sub}</div></div>
-        ${open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp && !pre ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length && tp ? costBreakdown(list, tid) : ''}${!tp && list.length ? '<p class="note" data-testid="sold-note">Numbers follow purchase order, counted from 1 on this page only (Planned and Real number their own assets). A sold asset keeps its place in that order, so its number is missing from the other lists here. Cash profit is after selling costs, the loan, tax and the cash you put in.</p>' : ''}${list.length > 1 && tp && !pre ? '<p class="note hold">Hold and drag ⋮⋮ to reorder. An asset is never bought before the ones above it, and they fund it.</p>' : ''}</div>` : ''}</section>`;
+        ${open && tp && !pre ? `<div class="catbody" data-catbody="${tid}">${afCatBody(tp, pl, bno)}</div>` : open ? `<div class="catbody" data-catbody="${tid}">${list.length ? list.map((h, i) => rowOf(h, list, i)).join('') : `<p class="none" data-testid="cat-empty-${tid}">None yet</p>`}${tp && !pre ? `<button class="addrow" data-add="${tp}" data-testid="add-${tp}">+ Add ${ADD[tp]}</button>` : ''}${list.length && tp ? costBreakdown(list, tid) : ''}${!tp && list.length ? '<p class="note" data-testid="sold-note">Numbers follow purchase order, counted from 1 on this page only (Planned and Real number their own assets). A sold asset keeps its place in that order, so its number is missing from the other lists here. Cash profit is after selling costs, the loan, tax and the cash you put in.</p>' : ''}${list.length > 1 && tp && !pre ? '<p class="note hold">Hold and drag ⋮⋮ to reorder. An asset is never bought before the ones above it, and they fund it.</p>' : ''}</div>` : ''}</section>`;
     };
     const CATS = [
       ['house', 'Homes'],
@@ -361,6 +361,11 @@
       0,
       ...ownedAll.filter((h) => pl.V[h.id].B0 > 0.5).map((h) => pl.loanEnd[h.id]),
     );
+    const tdAll = E.todayTotals(S, pl),
+      pcard =
+        page === 'planned'
+          ? `<section class="card pcard" data-testid="portfolio-card"><div class="kg"><div class="kpi"><small>Net worth ${infoBtn('networth')}</small><b data-testid="pc-nw">${$f(tdAll.nw)}</b></div><div class="kpi"><small>Trust savings ${infoBtn('tsave')}</small><b data-testid="pc-trust">${$f(tdAll.trust)}</b></div></div></section>`
+          : '';
     const head = `<div class="mast"><span class="kick"><span class="kl">The </span>Portfolio<span class="kl"> Review</span></span><span class="hb">${page === 'planned' && S.houses.filter((x) => x.status !== 'owned').length > 1 ? '<button type="button" class="btn reorderbtn" data-go="order" data-testid="reorder-main-btn" aria-label="Reorder the buy order"><span class="ri" aria-hidden="true">⇅</span><span class="rl">Reorder</span></button>' : ''}<button class="txtbtn" data-go="finances" data-testid="finances-link">Finances</button><button class="ic" data-go="settings" aria-label="Settings" data-testid="settings-link">⚙</button></span></div><h1 class="disp sr">Portfolio</h1>
         ${storageOK ? '' : '<div class="warnbox">⚠ Storage is unavailable, so changes will not be saved. Export a backup from Assumptions.</div>'}
     <div class="seg pagetabs pill" role="tablist" aria-label="Portfolio pages" data-testid="page-tabs">${[
@@ -374,7 +379,7 @@
       )
       .join(
         '',
-      )}</div>${page === 'planned' ? notesHtml() : ''}${page === 'planned' && UI.migNote ? `<div class="migrate" role="status" data-testid="migrate-note"><span>Your earlier portfolio is saved in Saved as “${esc(UI.migNote)}”.</span><button type="button" class="chip link" data-mig-dismiss data-testid="migrate-dismiss" aria-label="Dismiss this note">Dismiss</button></div>` : ''}`;
+      )}</div>${pcard}${page === 'planned' ? notesHtml() : ''}${page === 'planned' && UI.migNote ? `<div class="migrate" role="status" data-testid="migrate-note"><span>Your earlier portfolio is saved in Saved as “${esc(UI.migNote)}”.</span><button type="button" class="chip link" data-mig-dismiss data-testid="migrate-dismiss" aria-label="Dismiss this note">Dismiss</button></div>` : ''}`;
     /* the quiet group at the bottom of Planned: the actions that are not the plan itself */
     const manage =
       page === 'planned'

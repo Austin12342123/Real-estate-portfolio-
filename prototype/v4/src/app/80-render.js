@@ -102,8 +102,12 @@
         ? finances()
         : route === 'order'
           ? orderPage()
-          : route === 'add'
-            ? addPage()
+          : route.startsWith('assets/')
+            ? assetsPage(route.slice(7))
+            : route === 'add'
+            ? UI.addClassic
+              ? addPage()
+              : afPage()
             : route.startsWith('import/')
               ? importPage(route.slice(7))
               : route === 'settings'

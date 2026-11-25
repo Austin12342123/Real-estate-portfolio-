@@ -166,7 +166,8 @@
       UI.addPack = false;
       UI.addEx = '';
       exOpen = false;
-      goto('add');
+      UI.addClassic = false;
+      afStart('house', true);
       return;
     }
     const vw = t.closest('[data-view]');
@@ -301,7 +302,8 @@
       UI.addOwned = false;
       UI.addEx = '';
       exOpen = false;
-      goto('add');
+      UI.addClassic = false;
+      afStart(E.TYPES[t.dataset.add] ? t.dataset.add : 'house', false);
       return;
     }
     const at = t.closest('[data-addtype]');
