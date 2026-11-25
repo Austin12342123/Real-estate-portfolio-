@@ -32,7 +32,8 @@ async function boot(page, S, hash) {
   await page.waitForSelector('#app > *');
   timing.last = { seed_ms: t1 - t0, goto_ms: t2 - t1, ready_ms: Date.now() - t2 };
 }
-const openAll = async (pg) => { for (let i = 0; i < 40; i++) { const b = await pg.$('#app [data-coll][aria-expanded=false]'); if (!b) break; await b.click(); await pg.waitForTimeout(20); } };
+/* expand every collapsed panel with DOM clicks inside the page (as the grader does): one Playwright click per panel took 40-50 s per screen on iPad Pro landscape WebKit in CI (actionability waits) */
+const openAll = (pg) => pg.evaluate(async () => { for (let i = 0; i < 40; i++) { const b = document.querySelector('#app [data-coll][aria-expanded=false]'); if (!b) break; b.click(); await new Promise((r) => setTimeout(r, 20)); } });
 
 /* every screen of the app (same list as the grader's ALLP) */
 const PAGES = [
