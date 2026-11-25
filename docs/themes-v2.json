@@ -1,0 +1,417 @@
+{
+ "oxford": {
+  "mode": "light",
+  "palette": [
+   "#F7F3EA",
+   "#14213D",
+   "#1F5135",
+   "#7A1F2B"
+  ],
+  "bg": "#ECE8E1",
+  "surface": "#F7F3EA",
+  "surface2": "#E3E0DA",
+  "border": "#D3D1CE",
+  "control": "#767B87",
+  "text": "#14213D",
+  "textMuted": "#586071",
+  "accent": "#14213D",
+  "onAccent": "#F7F3EA",
+  "good": "#1F5135",
+  "warn": "#7A1F2B",
+  "bad": "#7A1F2B",
+  "fontDisplay": "Lora",
+  "fontBody": "Lora",
+  "fontNumbers": "Lora",
+  "fontWeightBody": "500",
+  "fontWeightHeading": "700",
+  "fontWeightNumbers": "700",
+  "radiusSm": "10px",
+  "radius": "14px",
+  "radiusLg": "20px",
+  "radiusPill": "999px",
+  "mixes": {
+   "bg": [
+    "paper",
+    "ink",
+    0.05
+   ],
+   "surface": [
+    "paper"
+   ],
+   "surface2": [
+    "paper",
+    "ink",
+    0.09
+   ],
+   "border": [
+    "paper",
+    "ink",
+    0.16
+   ],
+   "control": [
+    "paper",
+    "ink",
+    0.57
+   ],
+   "textMuted": [
+    "paper",
+    "ink",
+    0.7
+   ]
+  },
+  "fontFile": "lora-latin-wght-normal.woff2",
+  "style": "Rounded brushed serif in place of Times New Roman; heavier text kept",
+  "paletteNames": [
+   "ivory",
+   "navy",
+   "Oxford green",
+   "oxblood"
+  ]
+ },
+ "clay": {
+  "mode": "light",
+  "palette": [
+   "#F4F2EF",
+   "#171513",
+   "#4D6A48",
+   "#9C3E25"
+  ],
+  "bg": "#E9E7E4",
+  "surface": "#F4F2EF",
+  "surface2": "#E0DEDB",
+  "border": "#D1CFCC",
+  "control": "#7A7876",
+  "text": "#171513",
+  "textMuted": "#605E5C",
+  "accent": "#171513",
+  "onAccent": "#F4F2EF",
+  "good": "#4D6A48",
+  "warn": "#9C3E25",
+  "bad": "#9C3E25",
+  "fontDisplay": "Nunito",
+  "fontBody": "Nunito",
+  "fontNumbers": "Nunito",
+  "fontWeightBody": "450",
+  "fontWeightHeading": "750",
+  "fontWeightNumbers": "700",
+  "radiusSm": "14px",
+  "radius": "20px",
+  "radiusLg": "28px",
+  "radiusPill": "999px",
+  "mixes": {
+   "bg": [
+    "paper",
+    "ink",
+    0.05
+   ],
+   "surface": [
+    "paper"
+   ],
+   "surface2": [
+    "paper",
+    "ink",
+    0.09
+   ],
+   "border": [
+    "paper",
+    "ink",
+    0.16
+   ],
+   "control": [
+    "paper",
+    "ink",
+    0.55
+   ],
+   "textMuted": [
+    "paper",
+    "ink",
+    0.67
+   ]
+  },
+  "fontFile": "nunito-latin-wght-normal.woff2",
+  "style": "Soft round-ended sans; black controls, terracotta highlight",
+  "paletteNames": [
+   "off-white",
+   "near-black",
+   "sage",
+   "terracotta"
+  ]
+ },
+ "cottagecore": {
+  "mode": "light",
+  "palette": [
+   "#F4F0E1",
+   "#3A2E24",
+   "#4A6A36",
+   "#98413A"
+  ],
+  "bg": "#EBE6D8",
+  "surface": "#F4F0E1",
+  "surface2": "#E3DFD0",
+  "border": "#D6D1C3",
+  "control": "#81786C",
+  "text": "#3A2E24",
+  "textMuted": "#685E53",
+  "accent": "#4A6A36",
+  "onAccent": "#F4F0E1",
+  "good": "#4A6A36",
+  "warn": "#98413A",
+  "bad": "#98413A",
+  "fontDisplay": "M PLUS Rounded 1c",
+  "fontBody": "M PLUS Rounded 1c",
+  "fontNumbers": "M PLUS Rounded 1c",
+  "fontWeightBody": "500",
+  "fontWeightHeading": "700",
+  "fontWeightNumbers": "700",
+  "radiusSm": "12px",
+  "radius": "18px",
+  "radiusLg": "24px",
+  "radiusPill": "999px",
+  "mixes": {
+   "bg": [
+    "paper",
+    "ink",
+    0.05
+   ],
+   "surface": [
+    "paper"
+   ],
+   "surface2": [
+    "paper",
+    "ink",
+    0.09
+   ],
+   "border": [
+    "paper",
+    "ink",
+    0.16
+   ],
+   "control": [
+    "paper",
+    "ink",
+    0.62
+   ],
+   "textMuted": [
+    "paper",
+    "ink",
+    0.75
+   ]
+  },
+  "fontFile": "m-plus-rounded-1c-latin-500-normal.woff2 + -700-normal.woff2",
+  "style": "Fully rounded sans; heavier text kept",
+  "paletteNames": [
+   "cream",
+   "bark brown",
+   "moss",
+   "rosewood"
+  ]
+ },
+ "technoir": {
+  "mode": "dark",
+  "palette": [
+   "#0B0C0F",
+   "#E3E6EC",
+   "#5CC8D6",
+   "#FF6B85"
+  ],
+  "bg": "#0B0C0F",
+  "surface": "#18191C",
+  "surface2": "#232427",
+  "border": "#2E2F32",
+  "control": "#717277",
+  "text": "#E3E6EC",
+  "textMuted": "#8D8F94",
+  "accent": "#5CC8D6",
+  "onAccent": "#0B0C0F",
+  "good": "#5CC8D6",
+  "warn": "#FF6B85",
+  "bad": "#FF6B85",
+  "fontDisplay": "Recursive (Casual)",
+  "fontBody": "Recursive (Casual)",
+  "fontNumbers": "Recursive (Casual)",
+  "fontWeightBody": "420",
+  "fontWeightHeading": "700",
+  "fontWeightNumbers": "600",
+  "radiusSm": "10px",
+  "radius": "12px",
+  "radiusLg": "16px",
+  "radiusPill": "999px",
+  "mixes": {
+   "bg": [
+    "paper"
+   ],
+   "surface": [
+    "paper",
+    "ink",
+    0.06
+   ],
+   "surface2": [
+    "paper",
+    "ink",
+    0.11
+   ],
+   "border": [
+    "paper",
+    "ink",
+    0.16
+   ],
+   "control": [
+    "paper",
+    "ink",
+    0.47
+   ],
+   "textMuted": [
+    "paper",
+    "ink",
+    0.6
+   ]
+  },
+  "fontFile": "recursive-latin-casl-normal.woff2",
+  "style": "Rounded casual tech sans (CASL 1)",
+  "paletteNames": [
+   "black",
+   "silver",
+   "cyan",
+   "neon rose"
+  ]
+ },
+ "darkacademia": {
+  "mode": "dark",
+  "palette": [
+   "#111A14",
+   "#E8DFCB",
+   "#C8A75E",
+   "#D98A8A"
+  ],
+  "bg": "#111A14",
+  "surface": "#1E261F",
+  "surface2": "#293028",
+  "border": "#333A31",
+  "control": "#7C7C70",
+  "text": "#E8DFCB",
+  "textMuted": "#9D9A8B",
+  "accent": "#C8A75E",
+  "onAccent": "#111A14",
+  "good": "#C8A75E",
+  "warn": "#D98A8A",
+  "bad": "#D98A8A",
+  "fontDisplay": "Fraunces (Soft)",
+  "fontBody": "Fraunces (Soft)",
+  "fontNumbers": "Young Serif",
+  "fontWeightBody": "420",
+  "fontWeightHeading": "650",
+  "fontWeightNumbers": "400",
+  "radiusSm": "10px",
+  "radius": "12px",
+  "radiusLg": "16px",
+  "radiusPill": "999px",
+  "mixes": {
+   "bg": [
+    "paper"
+   ],
+   "surface": [
+    "paper",
+    "ink",
+    0.06
+   ],
+   "surface2": [
+    "paper",
+    "ink",
+    0.11
+   ],
+   "border": [
+    "paper",
+    "ink",
+    0.16
+   ],
+   "control": [
+    "paper",
+    "ink",
+    0.5
+   ],
+   "textMuted": [
+    "paper",
+    "ink",
+    0.65
+   ]
+  },
+  "fontFile": "fraunces-latin-soft-normal.woff2",
+  "style": "Old-style serif at SOFT 100 (rounded serifs); figures in Young Serif because Fraunces has no tabular digits",
+  "paletteNames": [
+   "forest black",
+   "parchment",
+   "brass",
+   "claret rose"
+  ],
+  "fontNumbersFile": "young-serif-latin-400-normal.woff2"
+ },
+ "ember": {
+  "mode": "dark",
+  "palette": [
+   "#161311",
+   "#F2EBE3",
+   "#E9B65A",
+   "#F0775A"
+  ],
+  "bg": "#161311",
+  "surface": "#23201E",
+  "surface2": "#2E2B28",
+  "border": "#393633",
+  "control": "#7D7974",
+  "text": "#F2EBE3",
+  "textMuted": "#9A958F",
+  "accent": "#E9B65A",
+  "onAccent": "#161311",
+  "good": "#E9B65A",
+  "warn": "#F0775A",
+  "bad": "#F0775A",
+  "fontDisplay": "Baloo 2",
+  "fontBody": "Baloo 2",
+  "fontNumbers": "Baloo 2",
+  "fontWeightBody": "450",
+  "fontWeightHeading": "700",
+  "fontWeightNumbers": "600",
+  "radiusSm": "14px",
+  "radius": "18px",
+  "radiusLg": "24px",
+  "radiusPill": "999px",
+  "mixes": {
+   "bg": [
+    "paper"
+   ],
+   "surface": [
+    "paper",
+    "ink",
+    0.06
+   ],
+   "surface2": [
+    "paper",
+    "ink",
+    0.11
+   ],
+   "border": [
+    "paper",
+    "ink",
+    0.16
+   ],
+   "control": [
+    "paper",
+    "ink",
+    0.47
+   ],
+   "textMuted": [
+    "paper",
+    "ink",
+    0.6
+   ]
+  },
+  "fontFile": "baloo-2-latin-wght-normal.woff2",
+  "style": "Chunky warm rounded sans",
+  "paletteNames": [
+   "charcoal",
+   "cream",
+   "flame gold",
+   "ember red"
+  ]
+ }
+}
