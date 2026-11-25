@@ -8,7 +8,7 @@ const URLS = {
   treasuryReal: y => `https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/${y}/all?type=daily_treasury_real_yield_curve&field_tdr_date_value=${y}&page&_format=csv`,
   treasuryNominal: y => `https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/${y}/all?type=daily_treasury_yield_curve&field_tdr_date_value=${y}&page&_format=csv`,
   spfRelease: (q, y) => `https://www.philadelphiafed.org/surveys-and-data/real-time-data-research/spf-q${q}-${y}`,
-  spfHistory: process.env.SPF_HISTORY_URL || '',
+  spfHistory: process.env.SPF_HISTORY_URL || 'https://www.philadelphiafed.org/-/media/FRBP/Assets/Surveys-And-Data/survey-of-professional-forecasters/historical-data/medianLevel.xlsx',
   fredCpi: 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS',
 };
 
@@ -110,6 +110,28 @@ function parseSpfHistory(text) {
   return out;
 }
 
+// SPF medianLevel.xlsx (layout UNVERIFIED: see layout report): sheet named like CPI10, header with YEAR and QUARTER.
+function parseSpfXlsx(buf) {
+  for (const sh of readXlsx(buf)) {
+    const hi = sh.rows.findIndex(r => r && r.some(c => /^year$/i.test(String(c).trim())) && r.some(c => /^quarter$/i.test(String(c).trim())));
+    if (hi < 0) continue;
+    const head = sh.rows[hi].map(c => String(c == null ? '' : c).trim());
+    const named = /cpi10/i.test(sh.name);
+    const vi = head.findIndex(h => /cpi10/i.test(h));
+    if (!named && vi < 0) continue;
+    const yi = head.findIndex(h => /^year$/i.test(h)), qi = head.findIndex(h => /^quarter$/i.test(h));
+    let ci = vi >= 0 ? vi : head.findIndex((h, i) => i !== yi && i !== qi && h);
+    if (ci < 0) ci = 2;
+    const out = [];
+    for (const r of sh.rows.slice(hi + 1)) {
+      const y = +r[yi], q = +r[qi], v = +r[ci];
+      if (y && q && typeof r[ci] === 'number') out.push({ month: y + '-' + String((q - 1) * 3 + 2).padStart(2, '0'), s: v / 100 });
+    }
+    if (out.length) return out;
+  }
+  throw new Error('SPF xlsx: no sheet/column with CPI10 by YEAR and QUARTER found');
+}
+
 // ---- FRED CPIAUCNS (CPI-U all items NSA, same series as BLS CUUR0000SA0): CSV observation_date,CPIAUCNS
 function parseFredCpi(text) {
   const rows = csvRows(text), head = rows[0] || [];
@@ -140,9 +162,9 @@ async function fetchAll(now) {
     const r = await attempt(u, async () => ({ value: parseSpfRelease(await getText(u)), quarter: yy + 'Q' + qq }));
     if (r.ok || k === 0) res.spf = r;
   }
-  res.spfHistory = URLS.spfHistory ? await attempt(URLS.spfHistory, async () => parseSpfHistory(await getText(URLS.spfHistory))) : { ok: false, url: '', error: 'SPF_HISTORY_URL not set' };
+  res.spfHistory = URLS.spfHistory ? await attempt(URLS.spfHistory, async () => { const b = await getBuf(URLS.spfHistory); return /\.xlsx/i.test(URLS.spfHistory) ? parseSpfXlsx(b) : parseSpfHistory(b.toString('utf8')); }) : { ok: false, url: '', error: 'SPF_HISTORY_URL not set' };
   res.cpi = await attempt(URLS.fredCpi, async () => parseFredCpi(await getText(URLS.fredCpi)));
   return res;
 }
 
-module.exports = { URLS, parseCleveland, parseTreasuryCsv, breakevens, parseSpfRelease, parseSpfHistory, parseFredCpi, fetchAll };
+module.exports = { URLS, parseCleveland, parseTreasuryCsv, breakevens, parseSpfRelease, parseSpfHistory, parseFredCpi, parseSpfXlsx, fetchAll };

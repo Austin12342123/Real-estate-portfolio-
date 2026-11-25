@@ -69,5 +69,12 @@ async function section(name, fn) {
     log('  data links: ' + JSON.stringify([...new Set(links)].slice(0, 40)));
     log('  CPI10 mentions: ' + JSON.stringify([...t.matchAll(/.{0,80}(?:cpi10|CPI10|10-year CPI).{0,80}/g)].slice(0, 5).map(m => m[0])));
   });
+  await section('SPF medianLevel.xlsx', async () => {
+    const buf = await get(URLS.spfHistory);
+    for (const sh of readXlsx(buf)) {
+      log(`  SHEET "${sh.name}" rows=${sh.rows.length}`);
+      sh.rows.slice(0, 3).forEach((r, i) => log(`    row${i}: ` + JSON.stringify(r).slice(0, 300)));
+    }
+  });
   if (process.argv[2]) fs.writeFileSync(process.argv[2], out.join('\n') + '\n');
 })();

@@ -159,6 +159,10 @@ describe('parsers and build (offline fixtures)', () => {
     const buf = writeXlsx([{ name: 'Expected Inflation', rows: [head, [46327, ...Array(30).fill(0.0266630958)]] }]);
     near(fetchers.parseCleveland(buf)[0].points[9], 0.0266630958);
   });
+  it('parses an SPF-shaped xlsx (CPI10 sheet, YEAR, QUARTER) [layout guess, unverified]', () => {
+    const buf = writeXlsx([{ name: 'CPI', rows: [['YEAR', 'QUARTER', 'CPI1']] }, { name: 'CPI10', rows: [['YEAR', 'QUARTER', 'CPI10'], [1991, 4, 3.5], [2026, 3, 2.3]] }]);
+    expect(fetchers.parseSpfXlsx(buf)).toEqual([{ month: '1991-11', s: 0.035 }, { month: '2026-08', s: 0.023 }]);
+  });
   it('computes breakeven = nominal - real from Treasury CSVs', () => {
     const nom = fetchers.parseTreasuryCsv('"Date","1 Mo","5 Yr","10 Yr"\n"11/19/2026","3.9","4.00","4.40"\n');
     const real = fetchers.parseTreasuryCsv('"Date","5 YR","10 YR"\n"11/19/2026","1.70","2.24"\n');
