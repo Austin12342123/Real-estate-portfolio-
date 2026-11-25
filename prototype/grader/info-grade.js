@@ -245,6 +245,10 @@ exports.run = async function run(X) {
     'node: parse numbers out of v4/info.js and compare with engine.js constants and engine calculations', async () => {
       const P = new Parts(), L = (id) => E.LOANS.find((l) => l.id === id), G = E.GDEF, S0 = mkS({ closing: 0, appr: 0 }, []);
       const inRange = (txt, v, tag, w, re) => { const m = (re || /(\d+(?:\.\d+)?)%\s+to\s+(\d+(?:\.\d+)?)%/).exec(txt); return P.t(!!m && v >= +m[1] - 1e-9 && v <= +m[2] + 1e-9, tag, w, m ? v + ' not in ' + m[1] + '-' + m[2] : 'no range found'); };
+      { /* C1a-v2: every SHORTEN popup of docs/cut-list-v2.tsv ends with its cut-list short text after one plain meaning sentence (at most 30 words), and keeps every number of that text */
+        const rows = fs.readFileSync(path.join(__dirname, '..', '..', 'docs', 'cut-list-v2.tsv'), 'utf8').split('\n').filter((l) => l.startsWith('info\t') && l.split('\t')[2] === 'SHORTEN').map((l) => l.split('\t'));
+        const bad = rows.filter(([, k, , rep]) => { const b = (INFO[k] || {}).b || ''; const first = b.split(/(?<=[.!?])\s+/)[0] || ''; return !(b.endsWith(rep) && first.split(/\s+/).length <= 30 && (rep.match(/\d[\d,.]*/g) || []).every((x) => b.includes(x))); }).map((r) => r[1]);
+        P.t(rows.length === 57 && bad.length === 0, 'every shortened popup (cut-list-v2, 57) opens with one plain sentence and ends with its short text and numbers', 1, rows.length + ' rows; bad: ' + bad.join(',')); }
       /* loan rules */
       P.t(numsIn(INFO.fha.b).includes(L('fha').dp) && L('fha').dp === 3.5 && L('fha').ownerOcc === true, 'FHA: "3.5%" down and owner-occupied only match the loan table', 1, INFO.fha.b);
       P.t(numsIn(INFO.mip.b).includes(L('fha').upfrontMip) && numsIn(INFO.mip.b).includes(L('fha').annualMip), 'Mortgage insurance: "1.75%" up front and "0.55%" a year equal the engine (upfrontMip, annualMip)', 1, L('fha').upfrontMip + '/' + L('fha').annualMip);
@@ -263,16 +267,16 @@ exports.run = async function run(X) {
         P.t(Math.abs(v.P - L0 * i) < 0.01 && Math.abs(d0[12] - L0) < 1 && d1[12] < d0[12] - 5000, 'Interest-only: payment is interest only, the balance does not fall, extra payments do reduce it', 1, v.P + ' vs ' + L0 * i + ' / ' + d0[12] + ' ' + d1[12]); }
       P.t(L('cashh').dp === 100 && E.view(mkS({}, [E.newAsset('house', 'cashh', { id: 'c', price: 200000 })]), E.newAsset('house', 'cashh', { id: 'c', price: 200000 })).P === 0, 'Cash purchase: 100% down, no loan payment', 0.6);
       /* defaults vs the stated ranges */
-      P.t(/85%/.test(INFO.creditline.b) && /85%/.test(INFO.debtcap.e) && G.cap === 85 && /80% to 85%/.test(INFO.debtcap.b), 'Credit line / debt cap: "up to 85%" and "80% to 85%" agree with the default cap (85)', 1, G.cap);
-      P.t(/43%/.test(INFO.dti.b) && G.dti === 43, 'Debt-to-income: "43% or less" equals the default limit (43)', 1, G.dti);
+      P.t(/85%/.test(INFO.creditline.b) && /85%/.test(INFO.debtcap.e) && G.cap === 85 && /^The most total debt allowed against a house/.test(INFO.debtcap.b), 'Credit line / debt cap: "up to 85%" and the debt-cap help (opens with its meaning) agree with the default cap (85)', 1, G.cap);
+      P.t(/^Your monthly debt payments divided by your monthly income\./.test(INFO.dti.b) && G.dti === 43, 'Debt-to-income: the help opens with its meaning; the default limit is 43', 1, G.dti);
       P.t(/75%/.test(INFO.rentcount.b) && G.rentCount === 75, 'Rent counted: "often 75%" equals the default (75)', 0.8, G.rentCount);
       P.t(/5% haircut means they count only 95%/.test(INFO.haircut.b) && G.haircut >= 0, 'Appraisal cut: the 5% -> 95% example is right', 0.4);
       { /* the cut really lowers what you can borrow: a home worth 200,000 with no loan, 85% cap */
         const D = (h, need) => { const S = mkS({ closing: 0, haircut: h, cap: 85 }, [E.newAsset('house', 'cashh', { id: 'a', status: 'owned', price: 200000, growth: 0, target: 'b', loanId: 'custom' }), E.newAsset('house', 'conv30', { id: 'b', status: 'planned', price: need / 0.2, dp: 20, growth: 0, closingPct: 0, target: '' })]); S.houses[0].dp = 100; return E.locMonths(S, S.houses[0], 0); };
         P.t(D(5, 161500) === 0 && D(5, 161600) > 0 && D(0, 169900) === 0 && D(0, 170100) > 0, 'Credit line and appraisal cut: 85% x $200,000 = $170,000 of room; with a 5% cut it is $161,500 (engine opens the line right at those amounts)', 1.4, [D(5, 161500), D(5, 161600), D(0, 169900), D(0, 170100)].join(',')); }
-      P.t(Math.abs(0.07 * 365 - 26) <= 0.5 && /26 empty days/.test(INFO.vacancy.b) && G.vac === 7 && /Census/.test(INFO.vacancy.b), 'Vacancy: 7% of a year is about 26 days, it is the default, and the help names the Census rate it matches', 0.6);
+      P.t(Math.abs(0.07 * 365 - 26) <= 0.5 && /The default is 7%/.test(INFO.vacancy.b) && G.vac === 7 && /rental vacancy rate/.test(INFO.vacancy.b), 'Vacancy: 7% of a year is about 26 days, it is the default, and the help names the rental vacancy rate it matches', 0.6);
       inRange(INFO.mgmt.b, G.mgmt, 'Management fee: "8% to 10%" contains the default (8)', 0.5);
-      P.t(/1% a year/.test(INFO.repairs.b) && G.maint === 1, 'Repairs reserve: "1% a year" equals the default (1)', 0.4);
+      P.t(/yearly percent of the asset's value/.test(INFO.repairs.b) && G.maint === 1, 'Repairs reserve: the help says a yearly percent of value; the default is 1', 0.4);
       { const S = mkS({ vac: 0, mgmt: 0, maint: 1 }, [E.newAsset('house', 'conv30', { id: 'r', price: 240000, rent: 2000, tax: 0, ins: 0 })]), S2 = mkS({ vac: 0, mgmt: 0, maint: 0 }, [E.newAsset('house', 'conv30', { id: 'r', price: 240000, rent: 2000, tax: 0, ins: 0 })]);
         P.t(Math.abs(E.view(S2, S2.houses[0]).noi - E.view(S, S.houses[0]).noi - 240000 * 0.01 / 12) < 0.01, 'Repairs: 1% a year of the value is taken out of income every month (240,000 x 1% / 12 = 200)', 0.8); }
       { const S = mkS({ vac: 5, mgmt: 0, maint: 0 }, [E.newAsset('house', 'conv30', { id: 'r', price: 240000, rent: 2000, tax: 0, ins: 0 })]);
@@ -298,17 +302,17 @@ exports.run = async function run(X) {
       { const vf = E.view(mkS({ closing: 0 }, [E.newAsset('house', 'fha', { id: 'f', price: 200000, status: 'planned' })]), E.newAsset('house', 'fha', { id: 'f', price: 200000, status: 'planned' })); const S = mkS({ closing: 0 }, [E.newAsset('house', 'fha', { id: 'f', price: 200000, status: 'planned' })]), h = S.houses[0], v = E.view(S, h);
         P.t(Math.abs(v.L - 200000 * 0.965 * 1.0175) < 0.5 && v.mip > 0 && Math.abs(v.mip - v.L / 1.0175 * 0.0055 / 12) < 0.01, 'Loan amount and MIP: FHA loan = price - 3.5% down + 1.75% added to the loan; 0.55% a year of the loan without the added premium is paid monthly (24 CFR 203.284)', 1.2, v.L + ' / ' + v.mip); }
       { const S = mkS({}, [E.newAsset('house', 'conv30', { id: 'g', price: 200000, capex: 20000, arv: 260000, status: 'planned' })]); const v = E.view(S, S.houses[0]);
-        P.t(Math.abs(v.valueGain - (260000 - 200000 - 20000)) < 0.01 && /minus \(price \+ repair cost\)/.test(INFO.gain.b), 'Value gained = new appraisal - (price + repair cost)', 0.7, v.valueGain); }
+        P.t(Math.abs(v.valueGain - (260000 - 200000 - 20000)) < 0.01 && /price plus the repair cost/.test(INFO.gain.b), 'Value gained = new appraisal - (price + repair cost)', 0.7, v.valueGain); }
       { const hh = E.newAsset('house', 'conv30', { id: 'd', price: 250000, dp: 20, status: 'planned' }); const S = mkS({}, [hh]); const v = E.view(S, S.houses[0]);
         P.t(Math.abs(v.down - 250000 * 0.2) < 0.01 && Math.abs(v.L - 200000) < 0.01 && /price × down payment %/.test(INFO.downamt.b), 'Down payment $ = price x down payment %; loan = price - down payment', 0.6, v.down + ' ' + v.L); }
       { const S = mkS({}, []); S.p = E.normalizePersonal(Object.assign(E.samplePersonal(), { cash: 0, living: 3000, emergencyMonths: 6, jobs: [] })); S.g.otherDebt = 500; const f = E.finance(S, E.plan(S));
         P.t(Math.abs(f.series.reserve[0] - 6 * 3500) < 0.01 && /months of living costs plus debts/.test(INFO.emergency.b), 'Emergency reserve = months x (living costs + other debts): 6 x $3,500 = $21,000', 0.8, f.series.reserve[0]); }
-      P.t(E.samplePersonal().inflation === 3 && E.samplePersonal().portfolioTaxPct === null && E.samplePersonal().salesTaxPct === null && /3% is a common/.test(INFO.inflation.b) && /Left blank, the app works it out/.test(INFO.portfoliotax.b) && /50 allows for two weeks off/.test(INFO.weeks.b), 'Finance defaults quoted in help (3% cost increases, taxes worked out unless a rate is typed, 50 weeks = two weeks off) equal the sample profile / hourly default', 0.7);
+      P.t(E.samplePersonal().inflation === 3 && E.samplePersonal().portfolioTaxPct === null && E.samplePersonal().salesTaxPct === null && /3% is a common/.test(INFO.inflation.b) && /Left blank, the app estimates/.test(INFO.portfoliotax.b) && /50 allows for two weeks off/.test(INFO.weeks.b), 'Finance defaults quoted in help (3% cost increases, taxes worked out unless a rate is typed, 50 weeks = two weeks off) equal the sample profile / hourly default', 0.7);
       { const j = E.normalizePersonal({ jobs: [{ id: 'x', kind: 'hourly', wage: 15, hours: 25, tips: 0, end: 12 }] }).jobs[0];
-        P.t(E.jobMonthly(j, 11) > 0 && E.jobMonthly(j, 12) === 0 && /how many months from today the job ends/i.test(INFO.jobend.b) && /blank/i.test(INFO.jobend.b), 'Job end: "months from today the job ends" - income runs through month 11 and stops at 12; blank = no end', 0.8); }
+        P.t(E.jobMonthly(j, 11) > 0 && E.jobMonthly(j, 12) === 0 && /^The month this job stops paying you\./.test(INFO.jobend.b) && /blank/i.test(INFO.jobend.b), 'Job end: "months from today the job ends" - income runs through month 11 and stops at 12; blank = no end', 0.8); }
       { const mkJ = (o) => E.normalizePersonal({ jobs: [Object.assign({ id: 'x', kind: 'hourly', wage: 20, tips: 5, hours: 30, weeks: 50 }, o)] }).jobs[0];
         P.t(mkJ({}).gross === 37500 && /multiplies it by your hours and weeks/.test(INFO.wage.b) && /count as income and are taxed/.test(INFO.tips.b), 'Hourly wage / tips: tips count as income (wage + tips) x hours x weeks = $37,500', 0.6, mkJ({}).gross); }
-      P.t(/estimates it from your income/.test(INFO.taxrate.b) && /no state tax/.test(INFO.taxrate.b) && E.estTaxPct(20000) < E.estTaxPct(200000), 'Tax rate help: the blank-means-estimate and "no state tax" statements describe estTaxPct', 0.4);
+      P.t(/rough U\.S\. estimate/.test(INFO.taxrate.b) && /no state tax/.test(INFO.taxrate.b) && E.estTaxPct(20000) < E.estTaxPct(200000), 'Tax rate help: the blank-means-estimate and "no state tax" statements describe estTaxPct', 0.4);
       return P; });
 
   /* ================================================================ H5 hourly job flows */

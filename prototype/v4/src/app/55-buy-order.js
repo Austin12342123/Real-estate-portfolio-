@@ -20,7 +20,7 @@
       .join('');
     return `<div class="top"><button class="ic" data-go="" aria-label="Back" data-testid="order-back">‹</button><h2>Buy order</h2></div>
     <section class="card" data-testid="order-intro"><p class="note" style="margin:0">The first asset is bought first, paid for by the trust from everything above it. Drag a row, use the arrows or type a number. Assets you already own are not in this list.</p></section>
-    ${n > 1 ? '<p class="note hold ordhint" data-testid="order-hint">Drag a row to move it (on a phone or tablet: press and hold first)</p>' : ''}
+    ${n > 1 ? '<p class="note hold ordhint" data-testid="order-hint">On a phone or tablet, press and hold a row before dragging.</p>' : ''}
     ${n ? `<section class="card ordlist" data-testid="order-list">${rows}</section>` : '<section class="card"><p class="note" style="margin:0" data-testid="order-empty">Nothing is planned yet.</p></section>'}`;
   }
 

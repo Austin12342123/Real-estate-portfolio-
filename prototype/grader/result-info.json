@@ -1,6 +1,6 @@
 {
   "info": {
-    "earned": 100,
+    "earned": 64.96,
     "max": 100,
     "checks": [
       {
@@ -8,9 +8,9 @@
         "category": "H",
         "name": "Glossary integrity: complete entries, plain wording, every label / loan mapped to a real and sensible entry, acronyms explained",
         "points": 8,
-        "earned": 8,
-        "ratio": 1,
-        "detail": "9/9 sub-checks pass",
+        "earned": 6.77,
+        "ratio": 0.8461538461538461,
+        "detail": "7/8 sub-checks pass. FAIL: every acronym used in a definition is itself explained (own entry, title or spelled out) [loanamount:FHA]",
         "repro": "node: inspect v4/info.js INFO / LABEL / LOAN",
         "seconds": 0
       },
@@ -19,33 +19,33 @@
         "category": "H",
         "name": "Info-button coverage: every jargon label on every page (Portfolio, asset types, Assumptions, Finances, Add) has an (i) with the right definition; no orphan glossary entries",
         "points": 16,
-        "earned": 16,
-        "ratio": 1,
-        "detail": "112/112 sub-checks pass",
+        "earned": 14.19,
+        "ratio": 0.8867924528301887,
+        "detail": "42/47 sub-checks pass. FAIL: Add multi-family: Home type, Number of units, Building or pack have an (i); loan cards carry none [loan cards with (i): ]; Example editor (home-va): (i) beside the title, the loan option, selling costs, down payment [exedit,capexmonths,growth]; Example editor (multi-hack): (i) beside the title, the loan option, selling costs, down payment and the number of units [exedit,unitcount,capexmonths,rentunit,growth]; Example editor (comm-nnn): (i) beside the title, the loan option, selling costs, down payment [exedit,nnn,growth]; Example editor (biz-vend): (i) beside the title, the loan option, selling costs, down payment, revenue and margin [exedit,revenue,growth]",
         "repro": "Open each page without expanding anything extra, expand its sections as a user would, list the (i) buttons beside labels",
-        "seconds": 12.9
+        "seconds": 21.4
       },
       {
         "id": "H3",
         "category": "H",
         "name": "Info popover: opens with the right content on click / tap only, closes by a second click / Escape / an outside click / navigation, accessible names and roles, keyboard, contrast, fits small screens, never changes data",
         "points": 16,
-        "earned": 16,
-        "ratio": 1,
-        "detail": "22/22 sub-checks pass",
+        "earned": 0,
+        "ratio": 0,
+        "detail": "CRASH in check: page.click: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-info=dscr]')\u001b[22m\n\n    at /home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2b456f1ef5ee48e2/prototype/grader/info-grade.js:180:18\n    at async hcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2b456f1ef5ee48e2/prototype/grader/info-grade.js:20:15)\n    at async Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2b456f1ef5ee48e2/prototype/grader/info-grade.js:175:3)\n    ",
         "repro": "Playwright 390x844 and 320x568: open (i), inspect dialog, close every way",
-        "seconds": 9
+        "seconds": 4.3
       },
       {
         "id": "H4",
         "category": "H",
         "name": "Definitions are accurate: numbers quoted match the engine constants and loan table, examples do their own arithmetic, stated rules behave that way in the engine",
         "points": 16,
-        "earned": 16,
-        "ratio": 1,
-        "detail": "42/42 sub-checks pass",
+        "earned": 0,
+        "ratio": 0,
+        "detail": "CRASH in check: TypeError: Cannot read properties of undefined (reading 'b')\n    at /home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2b456f1ef5ee48e2/prototype/grader/info-grade.js:246:27\n    at hcheck (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2b456f1ef5ee48e2/prototype/grader/info-grade.js:20:21)\n    at Object.run (/home/user/Real-estate-portfolio-/.claude/worktrees/agent-a2b456f1ef5ee48e2/prototype/grader/info-grade.js:241:9)\n    at async /home/user/Real-estate-portfolio-/.claude/w",
         "repro": "node: parse numbers out of v4/info.js and compare with engine.js constants and engine calculations",
-        "seconds": 0.1
+        "seconds": 0
       },
       {
         "id": "H5",
@@ -56,7 +56,7 @@
         "ratio": 1,
         "detail": "28/28 sub-checks pass",
         "repro": "Finances: + Add an hourly job (data-addjob=hourly); edit wage, tips, hours, weeks, tax, end",
-        "seconds": 3.8
+        "seconds": 5.8
       },
       {
         "id": "H6",
@@ -67,7 +67,7 @@
         "ratio": 1,
         "detail": "16/16 sub-checks pass",
         "repro": "Blank every optional field in turn; compare saved state, verdict and plan with the engine; scan for NaN",
-        "seconds": 6.6
+        "seconds": 8.9
       },
       {
         "id": "H7",
@@ -78,7 +78,7 @@
         "ratio": 1,
         "detail": "10/10 sub-checks pass",
         "repro": "Load crafted localStorage states; pasted old backup restore",
-        "seconds": 2.3
+        "seconds": 3.1
       },
       {
         "id": "H8",
@@ -100,7 +100,7 @@
         "ratio": 1,
         "detail": "12/12 sub-checks pass",
         "repro": "Fresh state: check aria-expanded, hidden fields, labels",
-        "seconds": 3.3
+        "seconds": 3.9
       },
       {
         "id": "H10",

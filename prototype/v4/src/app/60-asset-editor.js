@@ -66,7 +66,7 @@
             ? 'improve ' + $c(h.capex)
             : 'none planned',
       `<section class="card" data-testid="exit-section">
-      ${field('Improvement budget', P + 'capex', grp(h.capex), { pre: '$' })}${h.finCapex ? '<p class="note" data-testid="rehab-financed">Financed in your loan, so nothing extra is due at closing.</p>' : ''}${field('Months to finish', P + 'capexMonths', h.capexMonths)}${field('New appraised value', P + 'arv', grp(h.arv), { pre: '$', calc: arvAuto && (h.capex > 0 || h.comp > 0) ? 1 : 0 })}${field('Average comp value', P + 'comp', h.comp > 0 ? grp(h.comp) : '', { pre: '$', ph: 'optional', info: 'comp' })}${field('Value gained (vs price + rehab)', P + 'gain', h.arv > 0 ? grp(v.valueGain) : '', { pre: '$', calc: 1 })}<p class="note" data-testid="arv-note" data-auto="${arvAuto && (h.capex > 0 || h.comp > 0) ? 1 : 0}">${h.capex > 0 || h.comp > 0 ? (arvAuto ? 'Auto: the new appraisal is ' + (h.comp > 0 ? 'the middle of ' + (h.capex > 0 ? (h.finCapex ? 'price + rehab + 15%' : 'price + 1.4 × the budget') : 'the price') + ' and the average comp value' : h.finCapex ? 'price + rehab + 15%' : 'price + 1.4 × the budget') + ' = ' + $f(E.autoArv(h)) + ', and it follows the budget. Type your own appraisal to override it.' : 'You set this appraisal, so changing the budget will not change it.') : 'Enter a budget and the appraisal fills in (price + 1.4 × the budget). Or type the new appraisal, or the value you expect to gain.'} No appraisal means the value does not change.${infoBtn('arv')}</p>${(h.capex > 0 || h.comp > 0) && !arvAuto ? `<button class="btn plain" data-arv-auto="${h.id}" data-testid="arv-use-auto">Use auto (${$f(E.autoArv(h))})</button>` : ''}${h.arv > 0 && h.arv < h.price + (h.capex || 0) ? '<p class="note" data-testid="arv-low">⚠ That appraisal is below price + rehab, so the work loses money.</p>' : ''}${field(type === 'business' ? 'Profit increase' : 'Rent increase', P + 'liftIncome', r(h.liftIncome, 1), { suf: '%' })}<p class="note" data-testid="rent-lift" data-before="${Math.round(h.rent)}" data-after="${Math.round(h.rent * (1 + (h.liftIncome || 0) / 100))}">${type === 'business' ? 'Profit' : 'Rent'} ${$f(h.rent)}/mo now → ${$f(h.rent * (1 + (h.liftIncome || 0) / 100))}/mo after the work${h.liftIncome ? '' : ' (no increase set)'}.</p>
+      ${field('Improvement budget', P + 'capex', grp(h.capex), { pre: '$' })}${field('Months to finish', P + 'capexMonths', h.capexMonths)}${field('New appraised value', P + 'arv', grp(h.arv), { pre: '$', calc: arvAuto && (h.capex > 0 || h.comp > 0) ? 1 : 0 })}${field('Average comp value', P + 'comp', h.comp > 0 ? grp(h.comp) : '', { pre: '$', ph: 'optional', info: 'comp' })}${field('Value gained (vs price + rehab)', P + 'gain', h.arv > 0 ? grp(v.valueGain) : '', { pre: '$', calc: 1 })}<p class="note" data-testid="arv-note" data-auto="${arvAuto && (h.capex > 0 || h.comp > 0) ? 1 : 0}">${h.capex > 0 || h.comp > 0 ? (arvAuto ? 'Auto: the new appraisal is ' + (h.comp > 0 ? 'the middle of ' + (h.capex > 0 ? (h.finCapex ? 'price + rehab + 15%' : 'price + 1.4 × the budget') : 'the price') + ' and the average comp value' : h.finCapex ? 'price + rehab + 15%' : 'price + 1.4 × the budget') + ' = ' + $f(E.autoArv(h)) + ', and it follows the budget. Type your own appraisal to override it.' : 'You set this appraisal, so changing the budget will not change it.') : 'Enter a budget and the appraisal fills in (price + 1.4 × the budget). Or type the new appraisal, or the value you expect to gain.'} No appraisal means the value does not change.${infoBtn('arv')}</p>${(h.capex > 0 || h.comp > 0) && !arvAuto ? `<button class="btn plain" data-arv-auto="${h.id}" data-testid="arv-use-auto">Use auto (${$f(E.autoArv(h))})</button>` : ''}${h.arv > 0 && h.arv < h.price + (h.capex || 0) ? '<p class="note" data-testid="arv-low">⚠ That appraisal is below price + rehab, so the work loses money.</p>' : ''}${field(type === 'business' ? 'Profit increase' : 'Rent increase', P + 'liftIncome', r(h.liftIncome, 1), { suf: '%' })}<p class="note" data-testid="rent-lift" data-before="${Math.round(h.rent)}" data-after="${Math.round(h.rent * (1 + (h.liftIncome || 0) / 100))}">${type === 'business' ? 'Profit' : 'Rent'} ${$f(h.rent)}/mo now → ${$f(h.rent * (1 + (h.liftIncome || 0) / 100))}/mo after the work${h.liftIncome ? '' : ' (no increase set)'}.</p>
       
       ${
         h.exit === 'sell'
@@ -91,10 +91,10 @@
               )
               .join(
                 '',
-              )}</select></div>${field('Synergy lift', P + 'exitLift', r(h.exitLift, 1), { suf: '%' })}<p class="note">When merged, value and income rise by the synergy lift. It stays in your totals.</p>`
+              )}</select></div>${field('Synergy lift', P + 'exitLift', r(h.exitLift, 1), { suf: '%' })}`
           : ''
       }
-      <p class="note">Improvements are paid from sale cash first, then outside money.</p></section>`,
+      </section>`,
       !(h.capex > 0 || h.arv > 0 || h.exit !== 'hold'),
     );
     const homeLoses =
@@ -357,7 +357,7 @@
           );
     const statusCard =
       h.status === 'owned'
-        ? `<section class="card" data-testid="payoff-card"><div class="f" data-testid="bought-on"><span class="lb">Bought on${infoBtn('boughton')}</span><span class="iw"><input type="date" data-bought="${h.id}" value="${h.boughtOn || ''}" max="${isoToday()}" aria-label="Bought on" data-testid="bought-on-input"></span></div><p class="note" data-testid="bought-on-note" data-date="${h.boughtOn || ''}">${h.boughtOn ? 'Bought on ' + isoLong(h.boughtOn) + '.' : 'Date not recorded. Pick the day you bought it.'}</p><div class="f"><span class="lb">Loan still due</span><b data-testid="h-loan-due" data-k="h-loan-due">${$f(v.B0)}</b></div>
+        ? `<section class="card" data-testid="payoff-card"><div class="f" data-testid="bought-on"><span class="lb">Bought on${infoBtn('boughton')}</span><span class="iw"><input type="date" data-bought="${h.id}" value="${h.boughtOn || ''}" max="${isoToday()}" aria-label="Bought on" data-testid="bought-on-input"></span></div><div class="f"><span class="lb">Loan still due</span><b data-testid="h-loan-due" data-k="h-loan-due">${$f(v.B0)}</b></div>
         <div class="f"><span class="lb">Line of credit you can take against it</span><b data-testid="h-line" data-k="h-line">${$f(v.head0)}</b></div>
         <div class="f"><span class="lb">Paid off in</span><b data-testid="h-payoff" data-k="h-payoff" data-months="${isFinite(life) ? life : ''}">${v.B0 <= 0.5 ? 'no loan' : isFinite(life) ? ym(life) : 'not within the plan'}</b></div>
         <p class="note">Line of credit = ${v.cap}% of its value today (${$f(v.valueNow)})${S.g.haircut ? ' less the ' + S.g.haircut + '% appraisal cut' : ''}, minus the loan and other liens.${v.B0 > 0.5 ? ' The payoff time counts your extra payment and the automatic extra payments below.' : ''}</p>${splitLines}</section>`
@@ -387,7 +387,6 @@
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2><input class="t" data-p="${P}addr" type="text" autocorrect="on" autocapitalize="words" spellcheck="true" autocomplete="off" enterkeyhint="done" value="${esc(h.addr)}" aria-label="Name or address"></h2><span class="tag" style="margin:0" data-testid="asset-buy-no" data-no="${NUMB.num[h.id]}" data-nview="${NUMB.view[h.id]}" aria-label="${NUMB.view[h.id] === 'owned' ? 'Bought' : 'Planned'} asset number ${NUMB.num[h.id]}">#${NUMB.num[h.id]} ${NUMB.view[h.id] === 'owned' ? 'bought' : 'planned'} · ${TL[type]}${multi ? ' · ' + (h.pack ? 'pack of ' + mf.units : mf.units + ' units') : ''}</span></div>${String(h.addr).length > 19 ? `<p class="fulladdr" data-testid="full-addr">${esc(h.addr)}</p>` : ''}
     ${saleCard}
     ${homeLoses}
-    ${h.status !== 'owned' && !exSold ? buyPanel(pl, h) : ''}
     ${h.fresh && type === 'house' && !multi ? `<section class="card"><b>Have a Zillow listing?</b><p class="note">Fill in price, rent, taxes and insurance from a file.</p><button class="btn plain" data-go="import/${h.id}" data-testid="import-listing">Import from listing file</button></section>` : ''}
     <section class="card"><div class="kg">${kpi(
       'h-payment',
@@ -436,6 +435,7 @@
       })()}</p>
       <div class="f" style="border-top:0;min-height:36px"><span class="lb">Plan for this asset${infoBtn('exit')}</span></div><div class="seg" style="margin-top:0" role="tablist"><button data-exit="hold" class="${h.exit === 'hold' ? 'on' : ''}">Hold</button><button data-exit="sell" class="${h.exit === 'sell' ? 'on' : ''}" data-testid="exit-sell">Sell</button><button data-exit="merge" class="${h.exit === 'merge' ? 'on' : ''}">Merge</button></div>
       ${exS ? `<div class="f" style="border-top:0;min-height:30px" data-testid="sold-status"><span class="lb">Status</span><b>Sold in ${mond(pl.sellAt[h.id])}</b></div><div class="f" style="border-top:0;min-height:30px"><span class="lb">Until the sale it is</span></div>` : `<div class="f" style="border-top:0;min-height:30px"><span class="lb">Status</span></div>`}<div class="seg" style="margin-top:0"><button class="${h.status === 'owned' ? 'on' : ''}" data-status="owned">Owned</button><button class="${h.status === 'planned' ? 'on' : ''}" data-status="planned">Planned</button></div>${h.status === 'planned' ? field('Buy position', P + 'pos', NUMB.num[h.id], { info: 'buypos' }) : ''}${timing}</section>
+    ${h.status !== 'owned' && !exSold ? buyPanel(pl, h) : ''}
     ${h.listingUrl ? `<p class="note" style="margin:10px 4px 0">Imported from a listing${h.info && h.info.beds ? ' · ' + h.info.beds + ' bd / ' + h.info.baths + ' ba · ' + (h.info.sqft || '?') + ' sqft' : ''}.</p>` : ''}
     ${statusCard}
     ${unitsSec}
@@ -495,7 +495,7 @@
       false,
     )}
     ${exitSec}
-    ${colSec('impact', 'Impact on your plan', impactLines.length ? impactLines.length + ' changes to this plan' : 'no change', `<section class="card" data-testid="impact">${impactLines.length ? impactLines.join('') : '<p class="note" style="margin:0">Adding or removing this does not change the numbers below.</p>'}<p class="note" data-testid="impact-note">The whole portfolio (planned and bought), without this asset → with it: the Planned page plus the Real page. Cash flow and payments are in today\'s terms (2026*), like those pages; net worth is at the plan end.${infoBtn('impact')}</p></section>`, true)}
+    ${colSec('impact', 'Impact on your plan' + infoBtn('impact'), impactLines.length ? impactLines.length + ' changes to this plan' : 'no change', `<section class="card" data-testid="impact">${impactLines.length ? impactLines.join('') : '<p class="note" style="margin:0">Adding or removing this does not change the numbers below.</p>'}</section>`, true)}
     ${ask === 'del:' + h.id ? confirmBox('Remove ' + esc(h.addr) + '? The trust re-works the funding of every asset after it.', 'data-del-yes="' + h.id + '"', 'Yes, remove') : `<button class="btn plain" data-dup="${h.id}" data-testid="h-duplicate">Duplicate this ${TL[type].toLowerCase()}</button><button class="btn ghost" data-del="${h.id}" data-testid="h-delete">Remove</button>`}`;
   }
 
