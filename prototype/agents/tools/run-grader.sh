@@ -93,6 +93,9 @@ if [ "$kind" != full ]; then
 fi
 rm -rf "$SNAP"
 fails="$(grep -E '<--' "$RUND/output.log" | sed -E 's/^ *\[[^]]*\] *([A-Z]+[0-9]+[a-z]?).*/\1/' | sort -u | paste -sd, -)"
+# Logic-grader failures (FAIL L<n>.<m> (<weight>)) count too when their weight is above 0 (weight-0 lines are UNVERIFIED notes). Without this a weighted logic regression printed "clean" (run 20261125T201343-401: L 93.08 vs 100).
+lfails="$(grep -E '^ +FAIL L[0-9]+\.[0-9]+ \(' "$RUND/output.log" | sed -E 's/^ +FAIL (L[0-9]+\.[0-9]+) \(([0-9.]+)\).*/\1 \2/' | awk '$2+0>0{print $1}' | sort -u | paste -sd, -)"
+[ -n "$lfails" ] && fails="${fails:+$fails,}$lfails"
 if [ "$ec" = 124 ]; then verdict=timeout; elif [ "$h0" != "$h1" ]; then verdict=invalid-tree-changed; elif [ "$ec" != 0 ]; then verdict=aborted; elif [ -n "$fails" ]; then verdict=failing; else verdict=clean; fi
 jw event=end run="$rid" owner="$owner" task="$task" slice="$slice" kind="$kind" n:exit="$ec" n:secs=$((t1-t0)) tree_start="$h0" tree_end="$h1" l:failing="$fails" verdict="$verdict" partial_restored="$restored" log="$RUND/output.log" ts="$(iso)" >> "$LEDGER"
 rm -f "$LOCKS/grader.holder"
