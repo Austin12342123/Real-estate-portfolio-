@@ -47,7 +47,10 @@ jobs:
         run: |
           cp "$RUNNER_TEMP/layout-report.txt" "$RUNNER_TEMP/pr-body.md" . 2>/dev/null || true
           cat "$RUNNER_TEMP/pr-body.md" 2>/dev/null || true
-          node -e "const j=require('./data/inflation.json');console.log(JSON.stringify({sources:j.sources,low:j.low,high:j.high,bandSupported:j.bandSupported,cases:j.band.cases,level:[j.level[0],j.level[12],j.level[120],j.level[600]]}))" || true
+          echo "SHA256 $(sha256sum data/inflation.json)"
+          echo "JSON-BEGIN"
+          cat data/inflation.json
+          echo "JSON-END"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

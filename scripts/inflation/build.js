@@ -66,7 +66,7 @@ function assemble(res, prev, today) {
   const json = {
     generatedAt: today,
     sources,
-    level: path_.level.map(v => +v.toFixed(8)),
+    level: path_.level.map(v => +v.toFixed(6)),
     low: bands.low.map(v => +v.toFixed(6)),
     high: bands.high.map(v => +v.toFixed(6)),
     bandSupported: bands.bandSupported,
