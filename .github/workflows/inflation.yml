@@ -4,6 +4,10 @@ name: inflation-data
 # NOTE: the schedule is OFF on purpose (card IF1a). Austin enables it by uncommenting the
 # cron lines below. Until then this runs only on demand (Actions tab, "Run workflow").
 on:
+  # TEMPORARY push trigger (IF1a-run), removed once data/inflation.json is produced.
+  push:
+    branches: [claude/if1a-inflation-data]
+    paths: ['scripts/inflation/**', '.github/workflows/inflation.yml']
   workflow_dispatch:
     inputs:
       open_pr:
