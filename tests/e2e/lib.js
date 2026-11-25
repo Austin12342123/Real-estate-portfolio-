@@ -20,11 +20,17 @@ async function pin(ctxOrPage) { await ctxOrPage.addInitScript(() => { window.REP
 
 /* write the portfolio from a same-origin page that does not run the app, then open the app once (same as grader/boot.js) */
 let n = 0;
+const timing = { boot: [], last: null };
 async function boot(page, S, hash) {
-  await page.goto('/manifest.webmanifest?e=' + n++);
+  const t0 = Date.now();
+  await page.goto('/manifest.webmanifest?e=' + n++, { waitUntil: 'domcontentloaded' });
   await page.evaluate(([k, s]) => { try { localStorage.clear(); if (s) localStorage.setItem(k, JSON.stringify(s)); } catch (e) {} }, [KEY, S || null]);
-  await page.goto('/index.html?e=' + n++ + (hash || ''));
+  const t1 = Date.now();
+  /* wait on the real condition (the app rendered), not on the window load event, which stalled > 60 s on iPad Pro landscape WebKit in CI */
+  await page.goto('/index.html?e=' + n++ + (hash || ''), { waitUntil: 'domcontentloaded' });
+  const t2 = Date.now();
   await page.waitForSelector('#app > *');
+  timing.last = { seed_ms: t1 - t0, goto_ms: t2 - t1, ready_ms: Date.now() - t2 };
 }
 const openAll = async (pg) => { for (let i = 0; i < 40; i++) { const b = await pg.$('#app [data-coll][aria-expanded=false]'); if (!b) break; await b.click(); await pg.waitForTimeout(20); } };
 
@@ -63,4 +69,4 @@ const CLIP_JS = () => {
   return [...new Set(out)].slice(0, 12);
 };
 
-module.exports = { E, KEY, DATA_V, V4, SWEEP_JS, CLIP_JS, seedS, ownedS, feasS, withV, pin, boot, openAll, PAGES, PAGE_NAMES, goPage };
+module.exports = { timing, E, KEY, DATA_V, V4, SWEEP_JS, CLIP_JS, seedS, ownedS, feasS, withV, pin, boot, openAll, PAGES, PAGE_NAMES, goPage };

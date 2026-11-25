@@ -78,7 +78,7 @@ const K45_GROUPS = []; for (let i = 0; i < L.PAGE_NAMES.length; i += 3) K45_GROU
 for (const sc of SCHEMES) K45_GROUPS.forEach((names, gi) => test('K45 screenshots at this size: ' + sc + ' group ' + (gi + 1) + '/' + K45_GROUPS.length + ' (' + names[0] + '..' + names[names.length - 1] + ')', async ({ page }, info) => {
   test.skip(Math.min(vwOf(page), page.viewportSize().height) < 600, 'the grader runs K45 on iPad only'); test.setTimeout(180000);
   const bad = []; let n = 0; await page.emulateMedia({ colorScheme: sc });
-  for (const name of names) { try { await L.goPage(page, name); const buf = await page.screenshot({ fullPage: false }); if (buf.length < 1000) throw new Error('empty'); await info.attach('v7-' + name + '-' + info.project.name + '-' + sc + '.png', { body: buf, contentType: 'image/png' }); n++; } catch (e) { bad.push(name); } }
+  for (const name of names) { const t0 = Date.now(); try { await L.goPage(page, name); const t1 = Date.now(); const buf = await page.screenshot({ fullPage: false }); console.log('K45-TIMING ' + info.project.name + ' ' + sc + ' ' + name + ' page_ms=' + (t1 - t0) + ' (' + JSON.stringify(L.timing.last) + ') screenshot_ms=' + (Date.now() - t1)); if (buf.length < 1000) throw new Error('empty'); await info.attach('v7-' + name + '-' + info.project.name + '-' + sc + '.png', { body: buf, contentType: 'image/png' }); n++; } catch (e) { bad.push(name); } }
   expect(bad, n + ' screenshots saved').toEqual([]); expect(n).toBe(names.length);
 }));
 
