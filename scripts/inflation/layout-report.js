@@ -24,7 +24,7 @@ async function section(name, fn) {
   const y = new Date().getUTCFullYear();
   await section('Cleveland Fed xlsx', async () => {
     const buf = await get(URLS.cleveland);
-    log('  bytes ' + buf.length);
+    log('  bytes ' + buf.length + ', parsing');
     for (const sh of readXlsx(buf)) {
       log(`  SHEET "${sh.name}" rows=${sh.rows.length}`);
       sh.rows.slice(0, 6).forEach((r, i) => log(`    row${i}: ` + JSON.stringify(r).slice(0, 700)));

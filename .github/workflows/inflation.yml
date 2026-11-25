@@ -35,7 +35,8 @@ jobs:
         continue-on-error: true
         env:
           BLS_USER_AGENT: inflation-data-pipeline (GitHub Actions, ${{ github.repository }})
-        run: node scripts/inflation/layout-report.js "$RUNNER_TEMP/layout-report.txt"
+        timeout-minutes: 4
+        run: timeout 200 node scripts/inflation/layout-report.js "$RUNNER_TEMP/layout-report.txt"
       - name: Build data/inflation.json
         env:
           BLS_USER_AGENT: inflation-data-pipeline (GitHub Actions, ${{ github.repository }})
