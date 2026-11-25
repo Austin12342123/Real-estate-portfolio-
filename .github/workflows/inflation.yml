@@ -33,14 +33,10 @@ jobs:
           node-version: 22
       - name: Layout report (real sheet, header and maturity layout of each source)
         continue-on-error: true
-        env:
-          BLS_USER_AGENT: inflation-data-pipeline (GitHub Actions, ${{ github.repository }})
         timeout-minutes: 4
         run: timeout 200 node scripts/inflation/layout-report.js "$RUNNER_TEMP/layout-report.txt"
       - name: Build data/inflation.json
         timeout-minutes: 4
-        env:
-          BLS_USER_AGENT: inflation-data-pipeline (GitHub Actions, ${{ github.repository }})
         run: node scripts/inflation/build.js "$RUNNER_TEMP/pr-body.md"
       - name: Print the data file summary
         if: always()

@@ -13,7 +13,7 @@ const URLS = {
 };
 
 async function getBuf(url, headers) {
-  const res = await fetch(url, { headers: Object.assign({ 'User-Agent': process.env.BLS_USER_AGENT || 'inflation-data-pipeline (GitHub Actions; repository maintainers)' }, headers), signal: AbortSignal.timeout(60000) });
+  const res = await fetch(url, { headers: Object.assign({ 'User-Agent': 'inflation-data-build' }, headers), signal: AbortSignal.timeout(60000) });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return Buffer.from(await res.arrayBuffer());
 }

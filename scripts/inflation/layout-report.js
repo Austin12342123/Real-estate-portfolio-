@@ -5,7 +5,7 @@ const fs = require('fs');
 const { URLS } = require('./fetch');
 const { readXlsx } = require('./xlsx');
 
-const UA = process.env.BLS_USER_AGENT || 'inflation-data-pipeline (GitHub Actions; repository maintainers)';
+const UA = 'inflation-data-build';
 const out = [];
 const log = s => { out.push(s); console.log(s); };
 
