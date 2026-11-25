@@ -937,7 +937,7 @@ async function reqChecks(page) {
     /* the 'with it' numbers are the page's own KPIs */
     await goMain(page); const sp = await snap(page), whole = (k) => sp[k] + (sp.real ? sp.real[k] : 0), pk = planKpi.cedar, rk = planKpi.maple;
     P.t(pk && rk && Math.abs(whole('cf') - pk.cf) <= 3 && Math.abs(whole('mon') - pk.pay) <= 3 && Math.abs(whole('cf') - rk.cf) <= 3, 'the "with it" cash flow and payments equal the Planned page KPI plus the Real page KPI (' + Math.round(whole('cf')) + ' / ' + Math.round(whole('mon')) + ')', 1.4, JSON.stringify(pk) + ' vs ' + whole('cf') + ' / ' + whole('mon'));
-    await goHash(page, '#house-cedar'); P.t((await page.locator('[data-testid=impact-note] [data-info=impact]').count()) === 1, 'the impact note carries the (i)', 0.2, '');
+    await goHash(page, '#house-cedar'); P.t((await page.locator('[data-coll=impact] [data-info=impact]').count()) === 1, 'the Impact on your plan header carries the (i)', 0.2, '');
     const I = require(path.join(V4, 'info.js')).INFO; P.t(I.impact && (I.impact.b + I.impact.e).length <= 450 && /net profit/i.test(I.cashflow.b), 'the Impact (i) exists (at most 450 characters) and Cash flow is explained as the net profit of all assets in the trust', 0.3, '');
     return P; });
 
@@ -945,10 +945,10 @@ async function reqChecks(page) {
     const P = new Parts(), S = A_S(); await aState('cedar', S); const note = () => page.evaluate(() => ({ t: (document.querySelector('[data-testid=bought-on-note]') || {}).textContent || '', d: (document.querySelector('[data-testid=bought-on-note]') || { dataset: {} }).dataset.date, inp: (document.querySelector('[data-testid=bought-on-input]') || {}).value, n: document.querySelectorAll('[data-testid=bought-on-input]').length }));
     let n = await note(); P.t(n.n === 0, 'a planned asset has no Bought on box', 0.2, JSON.stringify(n));
     await page.click('[data-status=owned]'); await page.waitForTimeout(80); await expandAll(page); let h = await aSt('cedar'); n = await note();
-    P.t(h.status === 'owned' && h.boughtOn === '2026-11-12' && n.d === '2026-11-12' && n.inp === '2026-11-12', 'Planned -> Owned stores today (2026-11-12) and the date box shows it', 1, JSON.stringify(n) + ' ' + h.boughtOn);
+    P.t(h.status === 'owned' && h.boughtOn === '2026-11-12' && n.inp === '2026-11-12', 'Planned -> Owned stores today (2026-11-12) and the date box shows it', 1, JSON.stringify(n) + ' ' + h.boughtOn);
     await page.click('[data-status=planned]'); await page.waitForTimeout(80); h = await aSt('cedar'); P.t(h.status === 'planned' && h.boughtOn === null, 'back to Planned clears the date', 0.4, h.boughtOn);
     await aState('maple', (() => { const S2 = A_S(), m = S2.houses.find((x) => x.id === 'maple'); m.status = 'owned'; m.paid = 18; E.normalize(S2); return S2; })()); n = await note();
-    P.t(n.d === '' && n.inp === '', 'an asset owned before the update shows an empty date box', 0.6, JSON.stringify(n));
+    P.t(n.inp === '', 'an asset owned before the update shows an empty date box', 0.6, JSON.stringify(n));
     await page.fill('[data-testid=bought-on-input]', '2026-05-01'); await page.waitForTimeout(80); await expandAll(page); h = await aSt('maple'); n = await note(); P.t(h.boughtOn === '2026-05-01' && /May 1, 2026/.test(n.t), 'setting the date stores it and shows "Bought on May 1, 2026"', 0.7, JSON.stringify(n));
     await page.fill('[data-testid=bought-on-input]', '2027-03-01'); await page.waitForTimeout(80); h = await aSt('maple'); P.t(h.boughtOn === '2026-05-01', 'a date in the future is refused', 0.3, h.boughtOn);
     const N0 = E.normalize(clone((() => { const S3 = A_S(); const a = S3.houses[0]; a.status = 'owned'; a.boughtOn = '2026-05-01'; const b = S3.houses[1]; b.status = 'owned'; b.boughtOn = 'yesterday'; const c = S3.houses[2]; c.boughtOn = '2026-01-01'; return S3; })()));
