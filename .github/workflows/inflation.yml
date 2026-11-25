@@ -1,0 +1,70 @@
+name: inflation-data
+
+# Spec: docs/inflation-spec.md section 2. Refreshes data/inflation.json and opens a PR to dev.
+# NOTE: the schedule is OFF on purpose (card IF1a). Austin enables it by uncommenting the
+# cron lines below. Until then this runs only on demand (Actions tab, "Run workflow").
+on:
+  workflow_dispatch:
+    inputs:
+      open_pr:
+        description: 'Open a PR to dev (default false: only upload the data file and layout report as an artifact)'
+        type: boolean
+        default: false
+  # schedule:
+  #   - cron: '17 9 11 * *'   # monthly on the 11th, after Cleveland's CPI-day release
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.open_pr && 'dev' || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Layout report (real sheet, header and maturity layout of each source)
+        continue-on-error: true
+        timeout-minutes: 4
+        run: timeout 200 node scripts/inflation/layout-report.js "$RUNNER_TEMP/layout-report.txt"
+      - name: Build data/inflation.json
+        timeout-minutes: 4
+        run: node scripts/inflation/build.js "$RUNNER_TEMP/pr-body.md"
+      - name: Print the data file summary
+        if: always()
+        run: |
+          cp "$RUNNER_TEMP/layout-report.txt" "$RUNNER_TEMP/pr-body.md" . 2>/dev/null || true
+          cat "$RUNNER_TEMP/pr-body.md" 2>/dev/null || true
+          echo "SHA256 $(sha256sum data/inflation.json)"
+          echo "JSON-BEGIN"
+          cat data/inflation.json
+          echo "JSON-END"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: inflation-run
+          path: |
+            data/inflation.json
+            layout-report.txt
+            pr-body.md
+      - name: Open pull request to dev
+        if: ${{ inputs.open_pr }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- data/inflation.json; then
+            echo "No change in data/inflation.json; no PR."
+            exit 0
+          fi
+          BRANCH="inflation-data-$(date -u +%Y%m%d-%H%M)"
+          git config user.name "inflation-bot"
+          git config user.email "inflation-bot@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add data/inflation.json
+          git commit -m "Refresh inflation data"
+          git push origin "$BRANCH"
+          gh pr create --base dev --head "$BRANCH" --title "Refresh inflation data" --body-file "$RUNNER_TEMP/pr-body.md"
