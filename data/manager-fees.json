@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-11-26",
+  "units": "percent of revenue",
+  "quality": "LOW. Only search-result snippets were reachable (WebFetch hosts baselane.com, ipropertymanagement.com, bls.gov were blocked by the session network). Every figure is third-party marketing or aggregator content, not a survey table. pct:null means no single defensible number is published; use range if present, else the app must choose and label it.",
+  "types": {
+    "home": {
+      "national": {"pct": 8.49, "range": [8, 12], "source": "https://www.baselane.com/resources/property-management-fee-statistics", "asOf": "2022 (iPropertyManagement research as cited by Baselane/VantaInsights; page date not verified)", "note": "Average % of collected rent; range 3.75-14 across locations/types. Range 8-12 for single-family: https://www.apartmentlist.com/rental-management/average-property-management-fees"},
+      "byState": {
+        "CA": {"pct": 7.44, "source": "https://www.baselane.com/resources/property-management-fee-statistics", "asOf": "undated snippet (not verified)", "note": "Baselane average of collected rent; flat-fee alternative $111.61"},
+        "FL": {"pct": 9.04, "source": "https://www.baselane.com/resources/property-management-fee-statistics", "asOf": "undated snippet (not verified)", "note": "Baselane average of collected rent"}
+      }
+    },
+    "multi": {
+      "national": {"pct": null, "range": [10, 15], "source": "https://www.apartmentlist.com/rental-management/average-property-management-fees", "asOf": "2024 (page title)", "note": "Published range for 2-4 unit multi-family. Larger multifamily not found. No point average published; app should label any chosen point (e.g. midpoint 12.5) as derived."},
+      "byState": {}
+    },
+    "commercial": {
+      "national": {"pct": null, "range": [4, 12], "source": "https://www.commercialrealestate.loans/commercial-real-estate-glossary/commercial-property-management-fees", "asOf": "undated", "note": "Broad glossary range. Other snippets: 3-8% (a manager's fee page), 3-4% NNN (BiggerPockets forum posts, anecdotal). No survey average found."},
+      "byState": {}
+    },
+    "business": {
+      "national": {"pct": null, "source": "https://www.bls.gov/oes/current/featured_data.htm", "asOf": "May 2024", "note": "BLS OEWS general and operations managers national mean annual wage $133,120 (median $102,950), employment 3,584,420. No published manager-pay-as-percent-of-revenue exists; would need a revenue benchmark (SBA/BizBuySell/IBISWorld) not reached. Not invented."},
+      "byState": {}
+    }
+  },
+  "notes": [
+    "Property management % is of collected rent. Leasing/tenant-placement and other extras were not found as part of any published average and are NOT included.",
+    "Arizona 6-10% (https://www.turbotenant.com/property-management/fees-arizona/) and Ohio 6-10% (snippet) are ranges only; not entered as points.",
+    "Phoenix city 8.7% (iPropertyManagement, single-home owners) is city-level, not state."
+  ],
+  "gaps": [
+    "home: 48 states + DC have no point figure (all except CA, FL); AZ and OH range-only",
+    "multi: no state or point national figure",
+    "commercial: no state figure, no point national figure",
+    "business: no percent of revenue at any level; BLS state wages (not reached) are the only possible basis"
+  ]
+}
