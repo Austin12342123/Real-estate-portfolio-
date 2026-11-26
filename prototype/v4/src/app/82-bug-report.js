@@ -482,7 +482,7 @@
   const safeStats = (it) => (it.state ? statsOf({ id: 'sc' + it.ts, ts: it.ts, state: it.state }) : null);
   function safetyCard() {
     const items = safeList();
-    const head = `<section class="card" data-testid="safety-card"><p class="note" style="margin:0">The app keeps its last ${D ? D.SAFE_MAX : 3} copies of your portfolio here, each taken just before a major change (a data update, a backup restore, a restore of a copy or Saved portfolio, a CSV import, or deleting an asset).${infoBtn('safety')}</p>${items.length ? '' : '<p class="note" data-testid="safety-empty">No copies yet. The first one is taken before your next change.</p>'}</section>`;
+    const head = `<section class="card" data-testid="safety-card"><p class="note" style="margin:0">The app keeps its last ${D ? D.SAFE_MAX : 3} copies here, each taken just before a major change: an update, a restore, an import or a delete.${infoBtn('safety')}</p>${items.length ? '' : '<p class="note" data-testid="safety-empty">No copies yet. The first one is taken before your next change.</p>'}</section>`;
     return (
       head +
       items

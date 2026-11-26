@@ -243,3 +243,16 @@ describe('B1 persistent storage', () => {
     if (nav0) Object.defineProperty(globalThis, 'navigator', nav0);
   });
 });
+
+describe('B1 jobPay / jobSavedOverride round trip (J57/J59 follow-up)', () => {
+  it('null, empty string, 0 and a number survive toV22 then fromV22 exactly, including through the store', async () => {
+    const S = E.seedPlan(); S.v = DATA_V;
+    const vals = [[null, null], ['', null], [0, 0], [300, 12.5], [null, 0], [1234.5, null]];
+    vals.forEach(([jp, js], i) => { S.houses[i].jobPay = jp; S.houses[i].jobSavedOverride = js; });
+    const store = fresh(); await store.open(); await store.load();
+    expect((await store.save(SCH.toV22(S))).ok).toBe(true);
+    const back = SCH.fromV22((await store.load()).portfolio);
+    vals.forEach(([jp, js], i) => { expect(back.houses[i].jobPay, 'jobPay ' + i).toBe(jp); expect(back.houses[i].jobSavedOverride, 'jobSavedOverride ' + i).toBe(js); });
+    expect(SCH.hashOf(back)).toBe(SCH.hashOf(S));
+  });
+});

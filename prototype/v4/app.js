@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'ba945d72'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'64c20ae0'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (async function () {
 /* Data schema v22 (docs/schema-v22.md). Pure functions, no storage. Works in the browser (global RepData) and in node (require).
@@ -652,6 +652,8 @@
   const LS0 = RAW0; /* the old localStorage text at start: never written by this version (it stays as the untouched fallback); a different text later means an older app version or a test wrote it */
   /* ---------- IndexedDB boot (card B1): open the store, take the writer lock, copy localStorage -> IndexedDB once (verified, rolled back on mismatch), then read the portfolio from IndexedDB. Any failure falls back to the old localStorage path. ---------- */
   const OKL = (o) => !!(o && typeof o === 'object' && Array.isArray(o.houses) && o.g);
+  const WALKEY = 'rep-v4-wal';
+  let WALT = 0;
   let SAFE_CACHE = null; /* the safety copies shown in the app (declared here: the start-up migration files one before the rest of this module has run) */
   let IDBS = null,
     IDBMODE = false,
@@ -686,6 +688,24 @@
       if (ld) {
         let L = RepData.fromV22(ld.portfolio);
         IDBMETA = ld.portfolio.meta;
+        /* write-ahead copy: every save first writes the newest portfolio to localStorage 'rep-v4-wal' (synchronous, so it survives a reload or close that tears the IndexedDB write down). If it is newer than what IndexedDB holds, it is the user's own last edit: adopt it (the old key rep-v4 is not touched). */
+        try {
+          const wal = JSON.parse(localStorage.getItem(WALKEY));
+          const have = (ld.portfolio.meta && ld.portfolio.meta.walT) || 0;
+          if (got && wal && wal.js && wal.t > have) {
+            const o = JSON.parse(wal.js);
+            if (OKL(o)) {
+              const m = Object.assign({}, IDBMETA, { walT: wal.t });
+              const r = await st.save(RepData.toV22(o, { meta: m, id: 'current' }));
+              if (r.ok) {
+                L = o;
+                IDBMETA = m;
+                WALT = wal.t;
+                IDBNOTE = 'recovered an edit that had not reached IndexedDB';
+              }
+            }
+          }
+        } catch (e) {}
         const seen = await st.kvGet('lsSeen');
         if (got && LS0 && RepData.hash(LS0) !== seen) {
           /* localStorage changed outside this version (an older cached app in another tab, a restore by hand, a test): adopt it, after filing the stored portfolio as a safety copy */
@@ -899,10 +919,13 @@
   const idbPump = () => {
     IDB_BUSY = true;
     IDB_DIRTY = false;
-    let p;
+    let p,
+      walPut = 0;
     try {
       IDBMETA.moneyView = UI.unit === 'future' ? 'future' : 'today';
+      IDBMETA.walT = WALT;
       p = RepData.toV22(S, { meta: IDBMETA, id: 'current' });
+      walPut = WALT;
     } catch (e) {
       IDB_BUSY = false;
       storageOK = false;
@@ -917,6 +940,9 @@
           storageOK = true;
           RW.ok = true;
           RW.err = '';
+          try {
+            if (walPut === WALT) localStorage.removeItem(WALKEY); /* landed, and nothing newer is waiting */
+          } catch (e) {}
         } else if (r.stale || r.readonly) goStale(r.readonly ? 'save skipped: another tab is the writer; this page is read-only' : 'save skipped: the stored portfolio was changed elsewhere; this page keeps it', r.readonly ? 'readonly' : 'stale');
         else {
           storageOK = false;
@@ -951,10 +977,24 @@
     try {
       localStorage.setItem(UIKEY, JSON.stringify(UI));
     } catch (e) {}
+    if (IDBS.isWriter && !IDBS.needsReload) {
+      try {
+        WALT = Math.max(NOW(), WALT + 1);
+        localStorage.setItem(WALKEY, JSON.stringify({ t: WALT, js: JSON.stringify(S) }));
+      } catch (e) {} /* a full or blocked localStorage only loses this safety net */
+    }
     RW.chars = 0;
     IDB_DIRTY = true;
     if (!IDB_BUSY) idbPump();
   };
+  const idbFlush = () => {
+    /* best effort when the page is hidden or closing: start the write now if one is waiting (the write-ahead copy already holds the latest edit) */
+    if (IDBMODE && IDB_DIRTY && !IDB_BUSY && !STALE) idbPump();
+  };
+  window.addEventListener('pagehide', idbFlush);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) idbFlush();
+  });
   if (IDBMODE)
     IDBS.onChange((e) => {
       if (e.type === 'stale') goStale('another tab saved the portfolio; this page keeps what is stored');
@@ -4429,7 +4469,7 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
   const safeStats = (it) => (it.state ? statsOf({ id: 'sc' + it.ts, ts: it.ts, state: it.state }) : null);
   function safetyCard() {
     const items = safeList();
-    const head = `<section class="card" data-testid="safety-card"><p class="note" style="margin:0">The app keeps its last ${D ? D.SAFE_MAX : 3} copies of your portfolio here, each taken just before a major change (a data update, a backup restore, a restore of a copy or Saved portfolio, a CSV import, or deleting an asset).${infoBtn('safety')}</p>${items.length ? '' : '<p class="note" data-testid="safety-empty">No copies yet. The first one is taken before your next change.</p>'}</section>`;
+    const head = `<section class="card" data-testid="safety-card"><p class="note" style="margin:0">The app keeps its last ${D ? D.SAFE_MAX : 3} copies here, each taken just before a major change: an update, a restore, an import or a delete.${infoBtn('safety')}</p>${items.length ? '' : '<p class="note" data-testid="safety-empty">No copies yet. The first one is taken before your next change.</p>'}</section>`;
     return (
       head +
       items

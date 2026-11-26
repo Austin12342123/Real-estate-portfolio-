@@ -1,5 +1,5 @@
 {
- "run": "2026-11-25T12:47:17.921Z",
+ "run": "2026-11-26T18:55:26.350Z",
  "total": 100,
  "max": 100,
  "categories": {
@@ -313,7 +313,7 @@
    "name": "UNVERIFIED (upper bound verified): the 50% business credit-line cap is a conservative disclosed choice. No fetchable lender rule found for lending against an operating business (the OCC asset-based-lending handbook S37 only bounds it: the best collateral advances 70-85%, so a whole business must be lower); the UI says it is a choice, not a lender quote, and the field is editable",
    "pts": 0,
    "earned": 0,
-   "pass": true,
+   "pass": false,
    "detail": "default 50% (unverified; below the 70-85% OCC advance rates on the most liquid collateral)",
    "source": "S37",
    "disclosedOnly": true
@@ -380,7 +380,7 @@
    "pts": 1.5,
    "earned": 1.5,
    "pass": true,
-   "detail": "Your monthly debt payments divided by the monthly income a lender counts. Limits vary by loan and lender, often 43% to 50% at most. The check turns amber above ",
+   "detail": "Your monthly debt payments divided by your monthly income. Lenders vary, often 43% to 50% at most. Your own rent or mortgage (set in Finances) counts as a debt.",
    "source": "S10,S11",
    "disclosedOnly": false
   },
