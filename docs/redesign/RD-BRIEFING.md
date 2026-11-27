@@ -18,4 +18,30 @@ Austin's rules that every RD card keeps:
 
 Scale (Austin, Nov 27 02:15Z, 100+ assets): every RD card and PE1 meets the scale rule in docs/redesign/SC1.md part A and is tested on fixtures/scale-150 and scale-300.
 
-<!-- Saved from the relayed message "Part 1 of 7" (2026-11-27). Parts 2-7 (the individual RD cards, PE1.md and SC1.md) are appended as they arrive; mockups and grader notes were not included. -->
+Phases (each starts once the cards it depends on land; S ~60k, M ~120k, L ~200k):
+Phase 1, design kit (after TH1 v2)
+- RD1 (M): component kit (tile, card, metric strip, table, chart, empty state) on theme tokens.
+- RD2 (S): number formatting and chart style rules, applied to existing screens.
+- SC1 (M): 100+ asset fixtures, engine caching and worker, speed budgets in CI (docs/redesign/SC1.md part B). Beside RD1.
+Phase 2, navigation (after RD1, M2, AF1)
+- RD3 (M): tab bar on phone, side rail on iPad and desktop, account button with Settings, Learn and notes.
+- RD4 (M): move existing sections into Home, Properties, Buy, Money and Plan, no figure changes. Build every section as a registered section (see PE1's section registry) so PE1 can move and hide it later.
+Phase 3, dashboard (after RD4, C2)
+- RD5 (M): headline tiles and the attention list (ranked alerts, each with its fix).
+- RD6 (M): net worth chart with ranges, and the allocation ring.
+- RD7: folded into PE1 (the page editor covers reordering and hiding Home tiles).
+Phase 4, property pages (after RD4, AF1); runs beside phase 3 on separate files
+- RD8 (L): property page shell, metric strip, equity or gross switch, Overview tab.
+- RD9 (M): Money and Loan tabs (FHA MIP shown in every payment figure).
+- RD10 (S): Units and leases, and Notes tabs.
+- RD11 (M): spreadsheet view of all assets.
+Phase 5, deal analysis (after BA0-BA7 and the Can I buy this? cards)
+- RD12 (M): my buy rules and pass or fail rows; results strip before the rules.
+- RD13 (S): max offer.
+- RD14 (M): what-if sliders and the 10, 20 and 30 year projection.
+- RD15 (M): compare planned assets.
+Phase 6, reports (alongside tax books); runs beside phase 5
+- RD16 (M): property report and portfolio summary with print styles.
+- RD17 (M): income statement and cash flow by period, property and bucket.
+
+<!-- Saved from the relayed messages "Part 1 of 7" and "Part 2 of 7" (2026-11-27). Parts 3-7 (RD18, PE1.md, SC1.md and the rest) are appended as they arrive; mockups and grader notes were not included. -->
