@@ -702,6 +702,17 @@
       render();
       return;
     }
+    const ca = t.closest('[data-closing-auto]');
+    if (ca) {
+      const hc = H(ca.dataset.closingAuto),
+        lc = hc && E.loanById(hc.loanId);
+      if (hc) {
+        hc.closingPct = lc ? lc.closing : null;
+        save();
+        render();
+      }
+      return;
+    }
     const au = t.closest('[data-arv-auto]');
     if (au) {
       const hh = H(au.dataset.arvAuto);

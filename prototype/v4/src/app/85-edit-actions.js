@@ -80,6 +80,13 @@
       hm.mgmtPct = null;
       return true;
     } /* blank = back to the Assumptions rate */
+    if (t === 'h' && k === 'closingPct' && String(s).trim() === '') {
+      const hc = H(x),
+        lc = hc && E.loanById(hc.loanId);
+      if (!hc) return false;
+      hc.closingPct = lc ? lc.closing : null;
+      return true;
+    } /* blank = back to the loan's own closing % (or the Assumptions % with no loan) */
     if (t === 'h' && (k === 'refiRate' || k === 'refiTermY') && String(s).trim() === '') {
       H(x)[k === 'refiRate' ? 'refiRate' : 'refiTerm'] = null;
       return true;

@@ -126,6 +126,11 @@
       fm(down) +
       ' + closing ' +
       fm(closing) +
+      ' (' +
+      +clPct(S, h).toFixed(2) +
+      '% of ' +
+      fm(price) +
+      ')' +
       (rehab > 0 ? ' + rehab ' + fm(rehab) : '') +
       '); can pull out ' +
       fm(have) +

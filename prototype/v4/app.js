@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'dc17ca6e'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'013ca5c2'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (async function () {
 /* Data schema v22 (docs/schema-v22.md). Pure functions, no storage. Works in the browser (global RepData) and in node (require).
@@ -2547,6 +2547,13 @@
         v.P > 0
           ? v.noi / v.P
           : NaN; /* cap rate = a year of income after costs (NOI) / value, on every asset type */
+    const clLo = E.loanById(h.loanId),
+      clSrc =
+        h.closingPct == null
+          ? { k: 'auto', reset: false }
+          : clLo && +h.closingPct === +clLo.closing
+            ? { k: 'loan', name: clLo.name.replace(/\s*\([^()]*\)\s*$/, ''), reset: false }
+            : { k: 'own', reset: true }; /* CC1: where the closing % comes from */
     const lo = E.loanById(h.loanId),
       multi = E.isMulti(h),
       mf = multi ? E.mfInfo(S, h) : null,
@@ -2964,7 +2971,7 @@
         ' yr' +
         (lo ? '' : ' · tap to pick a loan'),
       `<section class="card">${loanSel}${lo || h.io ? `<p class="note">${lo ? esc(lo.note) + ' ' : ''}${h.io ? 'Interest-only: extra payments reduce the balance. At maturity the balance is refinanced (see below).' : ''}</p>` : '<p class="note">Custom terms. Pick a loan option to auto-fill them.</p>'}${multi && lo && lo.info ? `<p class="note" data-testid="loan-info-only">Info only. Modelled as ${esc(lo.modelledAs)}. See the (i) for what is left out.${infoBtn(GL.LOAN[lo.id])}</p>` : ''}${multi && lo && lo.multi && !E.mfFit(lo, mf.units, !!h.pack).ok ? `<div class="warnbox" data-testid="loan-nofit">⚠ ${esc(lo.name)} is not for ${mf.units} units: ${esc(lo.only.charAt(0).toLowerCase() + lo.only.slice(1))}. Pick another loan option.</div>` : ''}${multi && dscrNeed > 0 && v.P > 0 ? `<p class="note" data-testid="mf-dscr">Lenders usually want a DSCR of ${r(dscrNeed, 2)} or more for this loan. Yours is <b class="${dscrH >= dscrNeed ? '' : 'warn'}">${r(dscrH, 2)}</b>${dscrH >= dscrNeed ? '' : ': too low, so a lender may ask for a bigger down payment'}.${infoBtn('dscr')}</p>` : ''}${h.ownerOcc ? '<span class="chip warnchip" data-testid="owner-occ">You must live here (owner-occupied)</span>' + infoBtn('ownerocc') : ''}${h.loanId === 'k203' && h.capex > 75000 ? '<p class="note" data-testid="k203-cap">⚠ Over the $75,000 Limited 203(k) cap. This rehab needs a Standard 203(k) with a HUD consultant.</p>' : ''}
-      ${field('Interest rate', P + 'rate', r(h.rate, 3), { suf: '%' })}${field('Term (years)', P + 'termY', r(h.term / 12, 2))}${field('Closing costs', P + 'closingPct', r(h.closingPct == null ? g.closing : h.closingPct, 2), { suf: '%' })}${field('Extra / month', P + 'extra', grp(v.X), { pre: '$' })}${extraBreak}${field('Paid off in (months)', P + 'payoff', isFinite(v.payoff) ? v.payoff : '', { calc: 1 })}${field('Other liens', P + 'liens', grp(h.liens), { pre: '$' })}
+      ${field('Interest rate', P + 'rate', r(h.rate, 3), { suf: '%' })}${field('Term (years)', P + 'termY', r(h.term / 12, 2))}${field('Closing costs', P + 'closingPct', r(h.closingPct == null ? g.closing : h.closingPct, 2), { suf: '%', calc: clSrc.k === 'auto' ? 1 : 0 })}<p class="note" data-testid="closing-note" data-src="${clSrc.k}">${clSrc.k === 'loan' ? 'From the loan: ' + r(h.closingPct, 2) + '% (' + clSrc.name + ')' : clSrc.k === 'auto' ? 'Portfolio setting: ' + r(g.closing, 2) + '%' : 'You set this: ' + r(h.closingPct, 2) + '%'}${clSrc.k === 'own' ? '. Assumptions does not change it.' : '.'}</p>${clSrc.reset ? `<button class="btn plain" data-closing-auto="${h.id}" data-testid="closing-reset">Reset to auto</button>` : ''}${field('Extra / month', P + 'extra', grp(v.X), { pre: '$' })}${extraBreak}${field('Paid off in (months)', P + 'payoff', isFinite(v.payoff) ? v.payoff : '', { calc: 1 })}${field('Other liens', P + 'liens', grp(h.liens), { pre: '$' })}
       ${field('Loan comes due in (months)', P + 'mat', E.matOf(h) || '', { ph: 'never', info: 'refi' })}${E.matOf(h) > 0 ? field('Refinance rate', P + 'refiRate', h.refiRate == null ? '' : r(h.refiRate, 2), { suf: '%', ph: 'auto ' + r(g.refiRate, 2), info: 'refi' }) + field('Refinance term (years)', P + 'refiTermY', h.refiTerm == null ? '' : r(h.refiTerm / 12, 1), { ph: 'auto ' + r(g.refiTerm / 12, 1), info: 'refi' }) : ''}
       ${v.refi ? `<p class="note" data-testid="refi-note">Comes due in ${v.refi.month} month${v.refi.month === 1 ? '' : 's'} with ${$f(v.refi.balance)} left. That balance is refinanced at ${r(v.refi.rate, 2)}% over ${r(v.refi.termMonths / 12, 1)} year${r(v.refi.termMonths / 12, 1) === '1' ? '' : 's'}, so the payment becomes ${$f(v.refi.payment)}/mo (DSCR then ${r(v.noi / Math.max(1, v.refi.payment + v.mip), 2)}). Cash flow now is shown before this change.</p>` : ''}
       <p class="note">${isFinite(v.payoff) ? `Paid off in ${mo(v.payoff)} with your scheduled payment and extra` : h.io ? 'Not paid off until you refinance or sell' : 'Payment does not cover interest'}${v.L > 0 && isFinite(life) && Math.abs(life - v.payoff) > 0.5 ? `; ${ym(life)} with the automatic extra from its own profit and your job` : ''}. ${v.mip > 0 ? 'Includes ' + $f(v.mip) + '/mo mortgage insurance' + infoBtn('mip') + '. ' : ''}${h.io ? 'Interest-only' + infoBtn('interestonly') + '. ' : ''}Debt now: ${$f(debt)} (${r((debt / (v.valueNow || h.price)) * 100)}% of today's value).${tr && tr.pooled && tr.draw > 0.5 && h.status !== 'owned' ? ' Its down payment includes ' + $f(tr.draw) + " drawn on the trust's line of credit; that counts in the portfolio debt, not in this loan." : ''}</p></section>`,
@@ -3691,7 +3698,7 @@
       F = (l, k, o) => field(l, 'g.' + k, o && o.pre === '$' ? grp(g[k]) : g[k], o);
     return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Assumptions</h2></div>
     <p class="note" style="margin:0 4px 6px">Defaults work for most people. Change them when you know your lender. You can type simple math in any number box, like 650*3.${infoBtn('calc')} Keyboard shortcuts${infoBtn('shortcuts')}</p>
-    <div class="sec">Borrowing</div><section class="card">${F('Max loan vs value', 'cap', { suf: '%' })}${F('Max loan vs value (business)', 'capBiz', { suf: '%' })}${F('Appraisal cut', 'haircut', { suf: '%' })}${F('Closing costs', 'closing', { suf: '%' })}${F('Line of credit rate', 'hrate', { suf: '%' })}${F('Refinance rate', 'refiRate', { suf: '%' })}${field('Refinance term (years)', 'g.refiTermY', r(g.refiTerm / 12, 1), { info: 'refi' })}<p class="note">Appraisal cut: what lenders subtract from a home's value. Rent counted: the share of rent lenders accept as income.</p></section>
+    <div class="sec">Borrowing</div><section class="card">${F('Max loan vs value', 'cap', { suf: '%' })}${F('Max loan vs value (business)', 'capBiz', { suf: '%' })}${F('Appraisal cut', 'haircut', { suf: '%' })}${F('Closing costs', 'closing', { suf: '%' })}<p class="note" data-testid="closing-g-note">Used by homes with no loan picked (${S.houses.filter((x) => x.closingPct == null).length} use it). A home with a loan uses that loan's own closing %.</p>${F('Line of credit rate', 'hrate', { suf: '%' })}${F('Refinance rate', 'refiRate', { suf: '%' })}${field('Refinance term (years)', 'g.refiTermY', r(g.refiTerm / 12, 1), { info: 'refi' })}<p class="note">Appraisal cut: what lenders subtract from a home's value. Rent counted: the share of rent lenders accept as income.</p></section>
     ${colSec('set-pay', 'Paying loans down', g.autoPay === false ? 'off' : 'on', `<section class="card" data-testid="autopay-card"><div class="subh"><h3>Paying loans down</h3>${infoBtn('autopay')}</div><div class="f" style="border-top:0;min-height:36px"><span class="lb">Send profit and job money to loans</span></div><div class="seg" style="margin-top:0" role="tablist" aria-label="Send profit and job money to loans"><button data-autopay="on" class="${g.autoPay !== false ? 'on' : ''}" data-testid="autopay-on">On</button><button data-autopay="off" class="${g.autoPay === false ? 'on' : ''}" data-testid="autopay-off">Off</button></div></section>`, true)}
     ${colSec('set-qual', 'Who helps you qualify', 'DTI limit ' + g.dti + '%', `<section class="card"><div class="subh"><h3>Who helps you qualify</h3>${infoBtn('qualifying')}</div>${F('Co-signer 1 / yr', 'p1', { pre: '$' })}${F('Co-signer 2 / yr', 'p2', { pre: '$' })}${F('Debt-to-income limit', 'dti', { suf: '%' })}${F('Rent counted', 'rentCount', { suf: '%' })}${F('Other monthly debts', 'otherDebt', { pre: '$' })}</section>`, true)}
     ${colSec('set-ops', 'Operating costs', 'vacancy ' + g.vac + '%', `<section class="card">${F('Vacancy', 'vac', { suf: '%' })}${F('Management (of rent)', 'mgmt', { suf: '%' })}${F('Repairs / yr', 'maint', { suf: '%' })}${F('Growth / yr', 'appr', { suf: '%' })}${F('Projection length (years)', 'planYears', {})}</section>`, true)}
@@ -4670,6 +4677,13 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       hm.mgmtPct = null;
       return true;
     } /* blank = back to the Assumptions rate */
+    if (t === 'h' && k === 'closingPct' && String(s).trim() === '') {
+      const hc = H(x),
+        lc = hc && E.loanById(hc.loanId);
+      if (!hc) return false;
+      hc.closingPct = lc ? lc.closing : null;
+      return true;
+    } /* blank = back to the loan's own closing % (or the Assumptions % with no loan) */
     if (t === 'h' && (k === 'refiRate' || k === 'refiTermY') && String(s).trim() === '') {
       H(x)[k === 'refiRate' ? 'refiRate' : 'refiTerm'] = null;
       return true;
@@ -6064,6 +6078,17 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
       else if (h.status !== 'owned') h.boughtOn = null;
       /* the day it was marked bought */ save();
       render();
+      return;
+    }
+    const ca = t.closest('[data-closing-auto]');
+    if (ca) {
+      const hc = H(ca.dataset.closingAuto),
+        lc = hc && E.loanById(hc.loanId);
+      if (hc) {
+        hc.closingPct = lc ? lc.closing : null;
+        save();
+        render();
+      }
       return;
     }
     const au = t.closest('[data-arv-auto]');
