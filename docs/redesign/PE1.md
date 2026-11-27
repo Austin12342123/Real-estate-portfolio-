@@ -18,4 +18,8 @@ Do:
 6. Safety: hiding never deletes data or changes a figure; engine-diff 0. A page can't be left empty: at least one section stays (say so in one line). Hidden alerts still count for anything that blocks a buy, and the attention list says "1 hidden" with a Show link. Settings can't hide "Edit pages" itself, so the user can always get back.
 7. Every (i) stays on any shown term or number. Gains and losses keep sign and arrow. Status keeps icon plus word.
 
-<!-- Saved from the relayed messages "Part 3 of 7" and "Part 4 of 7" (2026-11-27). Items 8 onward are appended as they arrive. -->
+Done when: on all three device sizes, a user can open Settings > Edit pages, pick each page, move, hide, edit and re-add every section and item, save, reload and see the same layout, restore it from a backup, and Reset page restores the default; T1-T6, grader, device matrix and engine-diff 0 pass in all six themes; one 393px and one 1280px screenshot of edit mode per page in the handback.
+Files: ui/shared/sections.*, ui/shared/edit-mode.*, ui/**/ (register sections, edit-mode hooks, markup and CSS only), ui/more/settings.*, data/schema (meta.layout + migration), tests/e2e/page-editor.*, tests for the migration and backup round trip. No engine/.
+Owner pe1.
+
+<!-- Saved from the relayed messages "Part 3 of 7" to "Part 5 of 7" (2026-11-27). PE1.md is complete. -->
