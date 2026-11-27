@@ -16,6 +16,8 @@
     const f = q.jobFrom(id);
     return { amount: f >= 0 ? q.jobAt(id, f) / dfac(S, f) : 0, from: f };
   }; /* today's dollars (2026*), the unit the box takes */
+  /* PR1: a copy of the portfolio with only the Owned assets, as if nothing else is bought (the Finances "Real" view). The original is not changed. */
+  const realOnly = (S) => Object.assign({}, S, { houses: (S.houses || []).filter((h) => h.status === 'owned') });
   const jobMoney = (S, pl) => {
     const surplus0 = (pl.jobs && pl.jobs.surplus[0]) || 0,
       set = (S.houses || []).filter((h) => h.jobPay !== null && h.jobPay !== undefined),
@@ -94,6 +96,7 @@
     realPlan,
     planR,
     planIn,
+    realOnly,
     depCum,
     costBasis,
     saleTax,

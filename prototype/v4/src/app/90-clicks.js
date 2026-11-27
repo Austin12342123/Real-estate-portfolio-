@@ -46,6 +46,13 @@
       render();
       return;
     }
+    const fv = t.closest('[data-finview]');
+    if (fv) {
+      UI.finView = fv.dataset.finview === 'real' ? 'real' : 'plan';
+      save();
+      render();
+      return;
+    }
     const oo = t.closest('[data-openon]');
     if (oo) {
       UI.openOn = PAGES.indexOf(oo.dataset.openon) >= 0 ? oo.dataset.openon : 'planned';

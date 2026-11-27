@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'067719c2'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{engine:'dc17ca6e'});/*ENDSTAMP*/
 /* Portfolio finance engine v4 — pure functions, no DOM. Browser: window.Engine. Node: module.exports.
    Asset = { id, addr, type:'house'|'commercial'|'business', status:'owned'|'planned', price, dp, rate, term(months), io, closingPct, loanId,
    extra, driver, wait, rent (monthly base rent, or monthly owner profit for a business = revenue x margin/100), revenue (business only: monthly revenue, or null = rent / margin) and margin (business only: owner profit % of revenue, or null = 20), tax, ins, hoa (gross costs), nnn (% of tax+ins+hoa tenants repay), mat (months until the loan is due, 0 = none; io loans are due at their term), refiRate/refiTerm (null = Assumptions), liens, paid, buyIn (the earliest month it may be bought; the trust decides the real month), growth(%/yr or null), target (old links; ignored: every asset is funded by the trust of all assets before it) }.
@@ -8032,6 +8032,8 @@
     const f = q.jobFrom(id);
     return { amount: f >= 0 ? q.jobAt(id, f) / dfac(S, f) : 0, from: f };
   }; /* today's dollars (2026*), the unit the box takes */
+  /* PR1: a copy of the portfolio with only the Owned assets, as if nothing else is bought (the Finances "Real" view). The original is not changed. */
+  const realOnly = (S) => Object.assign({}, S, { houses: (S.houses || []).filter((h) => h.status === 'owned') });
   const jobMoney = (S, pl) => {
     const surplus0 = (pl.jobs && pl.jobs.surplus[0]) || 0,
       set = (S.houses || []).filter((h) => h.jobPay !== null && h.jobPay !== undefined),
@@ -8110,6 +8112,7 @@
     realPlan,
     planR,
     planIn,
+    realOnly,
     depCum,
     costBasis,
     saleTax,

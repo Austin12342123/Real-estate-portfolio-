@@ -15,6 +15,7 @@
       addPack: false,
       addEx: '',
       view: 'plan',
+      finView: 'plan',
       openOn: 'planned',
       addOwned: false,
     };
@@ -224,6 +225,7 @@
   } catch (e) {}
   if (UI.unit !== 'future')
     UI.unit = 'today'; /* Show figures in: today's dollars (default) or future dollars */
+  if (UI.finView !== 'real') UI.finView = 'plan'; /* Finances: Planned (default) or Real (owned assets only) */
   const isToday = () => UI.unit !== 'future';
   const PLAN = (s) =>
     E.planIn(

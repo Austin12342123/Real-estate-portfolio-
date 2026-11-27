@@ -1,4 +1,4 @@
-/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'067719c2'});/*ENDSTAMP*/
+/*STAMP*/globalThis.__BUILD=Object.assign(globalThis.__BUILD||{},{app:'dc17ca6e'});/*ENDSTAMP*/
 /* Portfolio app v3 — UI layer. All math lives in engine.js. Data never leaves the device (localStorage; IndexedDB in the final build). */
 (async function () {
 /* Data schema v22 (docs/schema-v22.md). Pure functions, no storage. Works in the browser (global RepData) and in node (require).
@@ -642,6 +642,7 @@
       addPack: false,
       addEx: '',
       view: 'plan',
+      finView: 'plan',
       openOn: 'planned',
       addOwned: false,
     };
@@ -851,6 +852,7 @@
   } catch (e) {}
   if (UI.unit !== 'future')
     UI.unit = 'today'; /* Show figures in: today's dollars (default) or future dollars */
+  if (UI.finView !== 'real') UI.finView = 'plan'; /* Finances: Planned (default) or Real (owned assets only) */
   const isToday = () => UI.unit !== 'future';
   const PLAN = (s) =>
     E.planIn(
@@ -3043,8 +3045,22 @@
   }
   function finances() {
     if (!S.p) S.p = E.samplePersonal();
-    const pl = PLAN(S),
-      f = E.finance(S, pl),
+    const real = UI.finView === 'real',
+      SF = real ? E.realOnly(S) : S; /* the Real view runs the plan and finance on a copy with only the owned assets; S is never changed */
+    const topbar = '<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Finances</h2></div>',
+      finToggle = `<div class="seg" role="radiogroup" aria-label="Finances view" data-testid="fin-view">${[
+        ['plan', 'Planned'],
+        ['real', 'Real'],
+      ]
+        .map(
+          ([k, l]) =>
+            `<button type="button" role="radio" data-finview="${k}" class="${real === (k === 'real') ? 'on' : ''}" aria-checked="${real === (k === 'real')}" data-testid="finview-${k}">${l}</button>`,
+        )
+        .join('')}</div><p class="note" data-testid="fin-view-note">${real ? 'Only what you own, no planned buys.' : 'What you own plus every planned buy.'}</p>`;
+    if (real && !SF.houses.length)
+      return `${topbar}${finToggle}<section class="card realempty" data-testid="real-empty"><b data-testid="bought-empty">Nothing bought yet</b><p class="note">This page shows what you have really bought: the loan still due, the line of credit it opens and when each loan is paid off. Add something you already own to see it here. Your plan on the Planned page does not need anything bought.</p><button class="btn" data-add-owned data-testid="add-owned" aria-label="Add something you already own">+ Add owned</button></section>`;
+    const pl = PLAN(SF),
+      f = E.finance(SF, pl),
       p = S.p,
       g = S.g,
       k = f.kpis,
@@ -3086,8 +3102,8 @@
       if (!p.jobs.length || !(R.income[0] > 0))
         return '<p class="note" data-testid="job-split">You have no job income right now, so no job money is split between your assets.</p>';
       const js = k.jobSurplus0,
-        waiting = S.houses.some((h) => h.status !== 'owned' && isFinite(pl.purchase[h.id])),
-        nLoans = S.houses.filter((h) => h.status === 'owned' && pl.balAt(h.id, 0) > 0.005).length,
+        waiting = SF.houses.some((h) => h.status !== 'owned' && isFinite(pl.purchase[h.id])),
+        nLoans = SF.houses.filter((h) => h.status === 'owned' && pl.balAt(h.id, 0) > 0.005).length,
         nPool = pl.poolAt(0).n;
       if (g.autoPay === false)
         return `<p class="note" data-testid="job-split" data-v="${Math.round(js)}">Of your job income, ${$f(js)}/mo is left after living costs. Automatic payments are switched off in Assumptions, so it stays in your cash.</p>`;
@@ -3102,7 +3118,7 @@
               (k.jobSplit0 > 0.5
                 ? ` and only ${$f(k.jobSplit0)}/mo is split now.`
                 : ', so nothing is split yet.')
-            : k.jobSplit0 < js - 0.5
+            : k.jobSplit0 < js - 0.5 && (waiting || !real)
               ? 'It stays in your cash for now: it builds up toward the first purchase, which is paid from your savings above the cushion plus this money. It is split across the trust and the loans once nothing is waiting on it.' +
                 tail
               : waiting
@@ -3120,8 +3136,9 @@
           `<div class="drv"><span>${cap(mond(c.month))}${c.assets.length ? ' · ' + esc(c.assets.join(', ')) : ''}</span><span><b>${$f(c.amount)}</b></span></div>`,
       )
       .join('');
-    return `<div class="top"><button class="ic" data-go="" aria-label="Back">‹</button><h2>Finances</h2></div>
-    <section class="card vcard ${f.feas && f.feas.none ? 'yes' : vS}" data-testid="verdict-card"><div class="vrow" style="cursor:default"><span class="vchip ${f.feas && f.feas.none ? 'yes' : vS}" data-testid="verdict-chip">${f.feas && f.feas.none ? 'Nothing planned' : VL[vS]}</span><b data-testid="verdict-headline">${esc(f.feas && f.feas.none ? 'Nothing planned yet. Add an asset to see whether you can afford it.' : vS !== f.status ? 'Not yet. Lenders may decline a loan around ' + mond(pl.worst.month) + '.' : f.headline)}</b></div>
+    /* CO1 hook: the "never bought" note under the chart belongs to the Planned view only; show it when !real */
+    return `${topbar}${finToggle}
+    <section class="card vcard ${f.feas && f.feas.none ? 'yes' : vS}" data-testid="verdict-card"><div class="vrow" style="cursor:default"><span class="vchip ${f.feas && f.feas.none ? 'yes' : vS}" data-testid="verdict-chip">${f.feas && f.feas.none ? (real ? 'Owned only' : 'Nothing planned') : VL[vS]}</span><b data-testid="verdict-headline">${esc(f.feas && f.feas.none ? (real ? 'Only what you own is counted here.' : 'Nothing planned yet. Add an asset to see whether you can afford it.') : vS !== f.status ? 'Not yet. Lenders may decline a loan around ' + mond(pl.worst.month) + '.' : f.headline)}</b></div>
       ${
         f.feas && f.feas.none
           ? ''
@@ -3147,7 +3164,7 @@
           : ''
       }
       ${(() => {
-        const jm = E.jobMoney(S, pl);
+        const jm = E.jobMoney(SF, pl);
         return jm.over || jm.shortMonths > 0
           ? `<div class="rsn warn" data-testid="jobmoney-shortfall"><span aria-hidden="true">!</span><span>Job money you set for your homes: ${$f(jm.assigned)} a month, but your job leaves ${$f(jm.surplus0)} after living costs${jm.shortMonths ? ', so ' + jm.shortMonths + ' month' + (jm.shortMonths === 1 ? '' : 's') + ' of the plan cannot pay the full amount' : ''}. Lower an amount on a home page or raise your pay.</span></div>`
           : '';
@@ -5389,6 +5406,13 @@ Money is US dollars as plain numbers. taxAnnual and insuranceAnnual are per YEAR
     const un = t.closest('[data-unit]');
     if (un) {
       UI.unit = un.dataset.unit === 'future' ? 'future' : 'today';
+      save();
+      render();
+      return;
+    }
+    const fv = t.closest('[data-finview]');
+    if (fv) {
+      UI.finView = fv.dataset.finview === 'real' ? 'real' : 'plan';
       save();
       render();
       return;
