@@ -44,4 +44,8 @@ Phase 6, reports (alongside tax books); runs beside phase 5
 - RD16 (M): property report and portfolio summary with print styles.
 - RD17 (M): income statement and cash flow by period, property and bucket.
 
-<!-- Saved from the relayed messages "Part 1 of 7" and "Part 2 of 7" (2026-11-27). Parts 3-7 (RD18, PE1.md, SC1.md and the rest) are appended as they arrive; mockups and grader notes were not included. -->
+Phase 7, onboarding (after ACC1b)
+- RD18 (M): setup checklist, start options and Schedule E categories.
+Phase 8, page editor (after RD5, RD8, RD12 and RD16, so every page's sections exist): PE1, docs/redesign/PE1.md.
+
+<!-- Saved from the relayed messages "Part 1 of 7", "Part 2 of 7" and "Part 3 of 7" (2026-11-27). Parts 4-7 (the rest of PE1.md, SC1.md and the rest) are appended as they arrive; mockups and grader notes were not included. -->
