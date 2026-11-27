@@ -18,4 +18,12 @@ Test portfolios: fixtures/scale-150.json and fixtures/scale-300.json (made by SC
 B. SC1 card (Phase 1, beside RD1; size M, budget 120k; stop and hand back at 120k)
 1. Fixtures: scripts/make-scale-fixtures.* writes scale-150 and scale-300 from the engine's own asset types; checked in under fixtures/.
 
-<!-- Saved from the relayed messages "Part 5 of 7" and "Part 6 of 7" (2026-11-27). The rest of part B (items 2 onward, the speed budgets) is appended as it arrives. -->
+2. Engine speed: memoize each asset's monthly figures and recompute only the assets an edit touches; run the long plan projection in a Web Worker so the screen never waits on it; no figure may change (engine-diff 0 over the 40 portfolios and both fixtures, run twice).
+3. Storage: confirm a 300-asset portfolio, its 3 safety copies (B1) and its backup file save and load in IndexedDB on iPhone Safari, iPad Safari and desktop Chrome; report sizes in the handback.
+4. Budgets, measured in the device matrix on scale-300 (CPU throttled 4x for the phone profile): first screen in 2 s; tap to response 100 ms; scrolling a 300-row list with no long frames over 50 ms; an edit to one asset updates Home in 300 ms; memory under 150 MB on the phone profile.
+5. Add a perf test (tests/e2e/scale.*) that runs these budgets in CI and fails on a regression of more than 20%.
+Done when: both fixtures exist; budgets pass on phone, iPad and laptop profiles; engine-diff 0; T1-T6, grader and device matrix green; the handback lists each measured number.
+Files: scripts/make-scale-fixtures.*, fixtures/scale-*.json, engine/ (caching and worker wrapper only, no math), ui/shared (list virtualization helper), tests/e2e/scale.*, playwright config.
+Owner sc1.
+
+<!-- Saved from the relayed messages "Part 5 of 7" to "Part 7 of 7" (2026-11-27). SC1.md is complete. -->
